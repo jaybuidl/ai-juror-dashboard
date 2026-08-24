@@ -27,15 +27,26 @@
 # intended — `default-src 'none'` and `form-action 'none'` mean a page that started
 # submitting anything would break loudly.
 #
-# connect-src is an allowlist of the endpoints the dashboard is permitted to read. It is
-# currently narrower than the app needs, because the app currently fetches nothing.
+# connect-src is an allowlist of the endpoints the dashboard is permitted to read.
 # EVERY TICKET THAT ADDS A DATA SOURCE MUST ADD ITS HOST HERE, including any host
-# substituted through a VITE_ override. Known and not yet listed: the Ethereum mainnet
-# RPC that ticket 02 uses for ENS. Note that an ENS avatar served as an eip155 NFT needs
-# a metadata fetch too, so img-src alone will not cover it.
+# substituted through a VITE_ override. Ticket 02 added ethereum-rpc.publicnode.com for
+# ENS; it is the default behind VITE_MAINNET_RPC_URL, and overriding that variable with a
+# host absent from this list blocks ENS at the browser rather than at the endpoint.
 #
 # img-src allows arbitrary https hosts because ENS avatars for the six agent jurors
 # resolve to URLs this repo does not control.
+#
+# euc.li is in connect-src, not just covered by img-src, and the difference is not
+# obvious: viem's getEnsAvatar issues a HEAD request to the avatar URL to check its
+# content type before ever handing it to an <img>. That fetch is governed by connect-src.
+# Blocked, it does not fail visibly — viem catches the error and falls back to loading the
+# URL as an Image, which img-src permits — so the avatar still appears and the only trace
+# is a console violation on every load. That is precisely the failure this policy is meant
+# to make loud, so the host is listed rather than left to degrade quietly.
+#
+# All six records are plain https URLs on euc.li today. That is a property of the records,
+# not a guarantee: one re-pointed at an ipfs:// URI or an eip155 NFT would have viem fetch
+# a gateway (ipfs.io) or token metadata first, and would need that host added here too.
 #
 # There is no frame-src clause: the dashboard embeds nothing, and default-src 'none'
 # already denies it. frame-ancestors 'none' plus X-Frame-Options means Netlify's
@@ -53,7 +64,7 @@ script-src 'self'; \
 style-src 'self' 'unsafe-inline'; \
 img-src 'self' data: https:; \
 font-src 'self' data:; \
-connect-src 'self' https://api.goldsky.com https://arb1.arbitrum.io; \
+connect-src 'self' https://api.goldsky.com https://arb1.arbitrum.io https://ethereum-rpc.publicnode.com https://euc.li; \
 base-uri 'self'; \
 form-action 'none'; \
 frame-ancestors 'none'"""

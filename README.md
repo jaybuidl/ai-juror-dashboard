@@ -107,7 +107,12 @@ Two kinds of test, split by filename:
   directly, via `yarn test:integration` and `vitest.integration.config.ts`. Held out of the
   default run so `yarn test` never depends on the network. This split is deliberate: the pure
   core gets fixtures, the fetchers get the real endpoint, and nothing in between is stubbed.
-  The live suite passes with no tests today, because the readers arrive in tickets 02 onward.
+  The first of those readers is ENS, in `src/roster/`.
+
+**Components take what they render as props.** `App` is the composition root — providers, and the
+one place a hook reaches the network — while `Dashboard` and below are given their data. That is
+what lets the whole page be exercised offline against hand-built data, and is why `yarn test` needs
+no mock and no network to render it.
 
 **Lint runs at end of turn.** `.claude/settings.json` registers a Stop hook,
 [`.claude/hooks/lint-check.sh`](.claude/hooks/lint-check.sh), that runs `yarn lint` when an
@@ -146,9 +151,16 @@ invariant structurally true rather than merely intended: `default-src 'none'` an
 `form-action 'none'` mean a page that started submitting anything would break loudly.
 
 `connect-src` is an allowlist of the endpoints the dashboard may read. **Every ticket that adds a
-data source must add its host there** — the Ethereum mainnet RPC that ticket 02 needs for ENS is
-known and not yet listed. A blocked fetch reports itself in the browser console as a CSP
-violation, which is the intended failure mode: loud, and never mistakable for missing data.
+data source must add its host there.** A blocked fetch reports itself in the browser console as a
+CSP violation, which is the intended failure mode: loud, and never mistakable for missing data.
+
+One entry is there for a reason worth knowing before you touch it. `euc.li` serves the agent
+jurors' ENS avatars, which are images — so it looks like `img-src` alone should cover it. It does
+not: viem's `getEnsAvatar` sends a `HEAD` request to the avatar URL to check its content type
+before the URL ever reaches an `<img>`, and that request is governed by `connect-src`. Blocked, it
+fails *quietly* — viem catches the error and falls back to loading the URL as an `Image`, which
+`img-src` permits — so the avatars still appear and the only trace is a console violation on every
+load. Listing the host is what keeps this policy's failures loud.
 
 The policy carries no `frame-src`, because the dashboard embeds nothing. Combined with
 `frame-ancestors 'none'` and `X-Frame-Options: DENY` that also means Netlify's deploy-preview
