@@ -109,6 +109,12 @@ Two kinds of test, split by filename:
   core gets fixtures, the fetchers get the real endpoint, and nothing in between is stubbed.
   The live suite passes with no tests today, because the readers arrive in tickets 02 onward.
 
+**Lint runs at end of turn.** `.claude/settings.json` registers a Stop hook,
+[`.claude/hooks/lint-check.sh`](.claude/hooks/lint-check.sh), that runs `yarn lint` when an
+agent finishes and refuses the stop — feeding Biome's output back — if it fails. Silent on
+success. The Netlify build is the only other gate and it runs at deploy time, which is too late
+to be useful and long after the turn that caused the problem lost its context.
+
 **Styling** is styled-components with a theme in [`src/styles/theme.ts`](src/styles/theme.ts). Its
 values are lifted verbatim from the Kleros court frontend's dark theme and keep its key names, but
 they are placeholders: the visual design is out with a design agent and lands in tickets 05, 09
