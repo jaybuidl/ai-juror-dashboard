@@ -4,11 +4,14 @@ A public, read-only dashboard measuring six AI agent jurors in Kleros v2 court 3
 on two dimensions: **speed** (commit and reveal latency) and **coherence** (voting with the final
 ruling).
 
-**Status: scaffolded.** Ticket 01 is done — Vite + React + TypeScript, yarn 4, Biome, Vitest,
-and a `netlify.toml` that is the single source of truth for the deploy. There is still no data
-layer, no metric, and no matrix: the deployed page says so outright rather than rendering an
-empty grid. The design work behind it (glossary, four ADRs, a spec, thirteen tickets) came out of
-a full grilling session. Start by reading, not by writing.
+**Status: the roster is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01 and 02 are
+done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a `netlify.toml` that is the single source
+of truth for the deploy, and a page that names all six agent jurors by nickname and avatar. There
+is still no dispute data, no metric and no matrix — the page says so outright rather than rendering
+an empty grid, and says it *below* the roster precisely because showing who the six are is the
+point at which a visitor could start reading the page as a result. The design work behind it
+(glossary, four ADRs, a spec, thirteen tickets) came out of a full grilling session. Start by
+reading, not by writing.
 
 `README.md` covers the toolchain, the scripts, the test split and the CSP; this file covers the
 domain. Two constraints recorded there and easy to trip over: **yarn must be 4.18 or newer**
@@ -53,11 +56,22 @@ Things that cost real effort to discover and are easy to get wrong again:
   `timesPerPeriod` as a historical denominator. This is why latency is stored in seconds (ADR-0001).
 - **Commit timestamps do not exist in the subgraph.** `ClassicVote.commited` is a boolean. They come
   from `CommitCast` logs (ADR-0004). Reveal timestamps *are* in the subgraph, on the justification.
-- **The unit is the draw, not the vote.** 61 votes collapse to 44 draws. The subgraph's
-  `totalCoherentVotes` / `coherenceScore` are per-vote *and* global across all courts — unusable here
-  (ADR-0002). `ClassicJustification` is conveniently one per draw.
+- **The unit is the draw, not the vote.** Across the first thirteen disputes, 61 votes collapsed to
+  44 draws. The subgraph's `totalCoherentVotes` / `coherenceScore` are per-vote *and* global across
+  all courts — unusable here (ADR-0002). `ClassicJustification` is conveniently one per draw.
 - **Dispute 155 had a panel of one.** Coherence is tautological there. Any aggregate carries this.
-- **The matrix is 44% empty** and one agent juror has never been drawn. Sparsity is normal.
+- **The matrix is sparse** — it was 44% empty over the first thirteen disputes, and one agent juror
+  has never been drawn at all. A design that assumes a full grid will look broken.
+- **ENS reverse records are mostly unset.** Only three of the six addresses have one, because
+  setting it requires each operator to act from the agent's own wallet. Resolve *forward* from the
+  roster's subname; `getEnsName(address)` leaves half the roster anonymous.
+- **`getEnsAvatar` is a `connect-src` fetch, not just an image load.** viem sends a `HEAD` to the
+  avatar URL before it ever reaches an `<img>`. Blocked, it fails *silently* — viem catches it and
+  falls back to `new Image()`, so avatars still appear and the only symptom is a console violation
+  on every load. This is why `euc.li` is in `connect-src` and not left to `img-src`.
+- **The ENS nickname is a display name, not a key.** `blaise` carries a `name` text record reading
+  "Blaise", so what renders is not what the roster holds. Route, key and join on the roster
+  nickname, never the resolved one.
 - **agentkit is only partly browser-safe.** `src/core/juror-v2.ts` and `disputes-v2.ts` are clean;
   `config-source.ts`, `sdk-lock.ts`, `rate-limit.ts`, `report-issue.ts` are Node-only. Its
   `src/index.ts` does not export the domain readers, and `getSubgraphUrl` reads `process.env`.
@@ -72,13 +86,20 @@ Confirmed against live chain and subgraph; no key needed for any of these.
 
 ```
 Court                34 "Agentic Commerce Court", Arbitrum One (42161)
-Disputes             151–163, single-round, all in execution
+Disputes             start at 151; single-round so far. New ones arrive continually — query the
+                     court, never hard-code an upper bound, and treat any total you read here or
+                     in the spec as true only of the range it names
 KlerosCore           0x991d2df165670b9cac3B022f4B68D65b664222ea
 DisputeKitClassic    0x70B464be85A547144C72485eBa2577E5D3A45421
 Core subgraph        api.goldsky.com/api/public/project_cmgx9all3003atlp2bqha1zif/subgraphs/kleros-v2-coreneo/v0.17.2/gn
 DRT subgraph         …/subgraphs/kleros-v2-drt/v0.12.0/gn
 Arbitrum RPC         https://arb1.arbitrum.io/rpc  (accepts 8M-block eth_getLogs)
-Nicknames            ENS subnames of agents.kleroslabs.eth (mainnet), all six resolve with avatars
+Mainnet RPC          https://ethereum-rpc.publicnode.com  (ENS only; ankr needs a key now, and
+                     cloudflare-eth reverts inside the ENS universal resolver)
+Nicknames            007, aletheia, baskerville, blaise, columbo, daemonhill — ENS subnames of
+                     agents.kleroslabs.eth on mainnet, all six resolving with avatars on euc.li.
+                     baskerville has never been drawn; the roster in src/roster/ is the only
+                     place all six appear, and the live suite checks it against ENS
 Round.timeline       [commit start, reveal start, appeal start, execution start]
 ```
 

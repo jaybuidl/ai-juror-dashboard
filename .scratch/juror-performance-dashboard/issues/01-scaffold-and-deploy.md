@@ -12,7 +12,7 @@ is proven end to end.
 - [x] yarn v4 with `nodeLinker: node-modules`
 - [x] Biome configured for lint and format, and passing
 - [x] A test runner is configured and one trivial test passes
-- [ ] Deployed to Netlify at a public URL
+- [x] Deployed to Netlify at a public URL
 - [x] README states that any `VITE_`-prefixed configuration is baked into the bundle and is public by
       construction, so any endpoint key placed there must be origin-restricted rather than secret
 
@@ -56,3 +56,10 @@ Remaining, for the repo owner:
    if previews should stay closed while the dashboard is unfinished.
 
 Then tick the last box. Tickets 02 and 03 are unblocked and can run in parallel.
+
+### Deployed, 2026-08-25
+
+**Live at <https://kleros-ai-jurors.netlify.app>.** The last checkbox is ticked: the repo owner
+created the site and Git-linked it to master. Confirmed from outside — the deployed response
+carries the enforcing CSP from `netlify.toml`, including the `connect-src` hosts ticket 02 added,
+so the file really is the single source of truth for the deploy and a push really does ship it.
