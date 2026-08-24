@@ -6,7 +6,7 @@ render.
 
 **Blocked by:** 01
 
-**Status:** ready-for-human
+**Status:** done
 
 - [x] A checked-in roster carries, for each agent juror: nickname, address, stack label, and an
       optional one-line description. No operator names

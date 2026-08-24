@@ -117,7 +117,7 @@ Issues and specs live as markdown files under `.scratch/<feature>/` in this repo
 
 ### Triage labels
 
-The five canonical triage roles, used verbatim as `Status:` values on issue files. See `docs/agents/triage-labels.md`.
+The five canonical triage roles, used verbatim as `Status:` values on issue files, plus a local `done` for finished ones — `ready-for-human` means *waiting on* a person, not completed by one. See `docs/agents/triage-labels.md`.
 
 ### Domain docs
 

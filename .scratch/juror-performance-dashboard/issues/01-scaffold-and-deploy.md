@@ -6,7 +6,7 @@ is proven end to end.
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-human
+**Status:** done
 
 - [x] Vite + React + TypeScript application builds and runs locally
 - [x] yarn v4 with `nodeLinker: node-modules`
