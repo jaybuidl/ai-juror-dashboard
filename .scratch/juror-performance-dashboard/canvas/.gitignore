@@ -1,0 +1,8 @@
+# The seeded canvas: ~2.4 MB, almost all of it the Design Components editor that
+# seed-canvas.mjs bakes into every publish. Regenerate it from the .dc.html files
+# rather than tracking it — see README.md.
+ai-juror-dashboard.html
+
+# A copy of the Design Components runtime from ../../../../kleros-design-system,
+# fetched only so a .dc.html renders when opened straight from disk. Not ours to vendor.
+support.js

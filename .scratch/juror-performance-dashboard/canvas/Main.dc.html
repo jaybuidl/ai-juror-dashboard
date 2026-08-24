@@ -1,0 +1,348 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #08060f; }
+  a { color: #4ddfd8; text-decoration: none; }
+  a:hover { color: #7ceee8; }
+  .lbl { font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #8681a0; }
+  .cell { box-sizing: border-box; padding: 9px 11px; border-left: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.07); }
+  .rail { width: 42px; height: 3px; border-radius: 999px; background: rgba(255,255,255,0.07); overflow: hidden; flex: none; }
+  .rail > i { display: block; height: 3px; border-radius: 999px; background: #4ddfd8; }
+  .rail.c > i { background: rgba(77,223,216,0.38); }
+  .m { display: flex; align-items: center; gap: 7px; }
+  .mk { font: 500 9px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.1em; color: #5b5675; width: 7px; flex: none; }
+  .mv { font: 600 11.5px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #b9b5cc; width: 56px; flex: none; }
+  .sum { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 3px 0; }
+  .sumk { font: 500 9px/1.3 'JetBrains Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; color: #5b5675; }
+  .sumv { font: 600 11px/1.3 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #b9b5cc; }
+</style>
+</helmet>
+
+<div style="position: relative; width: 1440px; background: #08060f; font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; color: #f2f0f7; -webkit-font-smoothing: antialiased; overflow: hidden;">
+
+  <div style="position: absolute; inset: 0 0 auto 0; height: 720px; background: radial-gradient(62% 58% at 26% -10%, rgba(96,62,214,0.40) 0%, rgba(18,10,47,0) 68%); pointer-events: none;"></div>
+  <div style="position: absolute; left: -240px; top: -520px; width: 1560px; height: 1560px; border: 1px solid rgba(139,121,255,0.16); border-radius: 50%; pointer-events: none;"></div>
+  <div style="position: absolute; right: -560px; top: -180px; width: 1180px; height: 1180px; border: 1px solid rgba(139,121,255,0.10); border-radius: 50%; pointer-events: none;"></div>
+
+  <div style="position: relative;">
+
+    <!-- nav -->
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 32px; height: 68px; padding: 0 56px; border-bottom: 1px solid rgba(255,255,255,0.07); box-sizing: border-box;">
+      <a href="/" aria-label="Kleros x AI" style="display: inline-flex; align-items: center; gap: 7px; color: #f2f0f7; text-decoration: none;"><svg viewBox="20.47 36.54 1353.9 346.5" height="26" width="102" fill="currentColor" aria-hidden="true" style="display: block; flex: none;"><path d="M134.59,36.54l195.76,8.74,79.52,176.31L298,382.58,101.16,370.15,20.47,179.08ZM278.36,138.18l-141.93,62,121.31,93.95ZM261.92,107,148.52,58.16,124.73,161ZM233.17,317.77,110,229.62l3,119.52Zm157-96.79-84-85.09L283.87,299.94ZM262,336.72,158.11,364.13,280.36,372ZM373.76,260l-91,67.76,18.11,35.38Zm-43-190.08-17.83,36.34,65.81,66.86ZM308.45,52.53,193,47.85l95.29,41.68ZM117.87,69.3,37,171.61l54.11,11.48ZM87.84,203,33.45,191.5,90,325.35Z"></path><path d="M512,199.51h6.44L565,138.26l13.23,10.4L533.3,205.8l52.75,63.91-13.32,11.15-54.8-67H512v63.66H494.57V141.61H512Z"></path><path d="M652.53,141.61h17.33V261.87h70.95v15.64H652.53Z"></path><path d="M805,141.61h84.44v15.72h-67V198h55.34V213.6H822.46v48.27h67v15.64H805Z"></path><path d="M958.75,141.61h46c22.59,0,40.46,10.74,40.46,37a40.38,40.38,0,0,1-27.49,38.13l33.24,55-15,9.11-34.36-61.51H976.42V277.5H959.24ZM999,203.72c17.18,0,28.09-9.71,28.09-25.08a20.26,20.26,0,0,0-19-21.43,19.38,19.38,0,0,0-3.81.13H976.2v46.38Z"></path><path d="M1202.36,209.73c0,10.91-.77,70.09-48,70.09-21.9,0-48.1-15.63-48.1-70.09s25.77-70.43,48.1-70.43S1202.36,154.93,1202.36,209.73Zm-77.91,0c0,19.75,3.61,53.68,29.89,53.68s29.81-34.36,29.81-53.68-3.6-54-29.81-54-30.32,33.95-30.32,54Z"></path><path d="M1281.38,234.47c3.44,16.67,11.43,29,29.64,29,14.26,0,25.76-7.8,25.76-22.94,0-16.75-14.08-20.87-27.3-26.36C1289.72,205.53,1271,200.54,1271,175c0-22.94,18.46-35.73,39.77-35.73,22.59,0,35.82,13,41.31,34.35l-16.66,4.9c-3.09-13.23-10.13-22.68-24.9-22.68-11.15,0-22.08,5.76-22.08,18s7.8,16.41,18.21,21.13l28.77,12.71a34.37,34.37,0,0,1,18.73,31.87c0,25.77-18,40.37-43,40.37s-41.06-16.16-45.18-40.37Z"></path></svg><span style="display: inline-flex; align-items: center; gap: 7px; font: 500 20px/1 &#39;JetBrains Mono&#39;, monospace; letter-spacing: 0.04em;"><span style="color: #5e5383; font-size: 0.85em;">&#215;</span><span style="color: #bdaaff; font-size: 13px;">AI</span></span></a>
+      <div style="display: flex; align-items: center; gap: 28px;">
+        <span class="lbl" style="color: #f2f0f7;">Matrix</span>
+        <span class="lbl">Disputes</span>
+        <span class="lbl">Agent jurors</span>
+        <span class="lbl">Method</span>
+        <span style="display: inline-flex; align-items: center; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.12); font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #8681a0;">Read only</span>
+      </div>
+    </div>
+
+    <!-- hero -->
+    <div style="padding: 44px 56px 40px; display: flex; gap: 56px; align-items: flex-start;">
+      <div style="flex: 1; min-width: 0;">
+        <div class="lbl" style="margin-bottom: 16px;">Court 34 &middot; Agentic Commerce &middot; Arbitrum One</div>
+        <h1 style="margin: 0; font: 800 52px/1.03 'Manrope', sans-serif; letter-spacing: -0.028em; color: #f2f0f7;">Agents do not wait for the deadline.</h1>
+        <p style="margin: 18px 0 0; font: 400 17px/1.6 'Manrope', sans-serif; color: #b9b5cc; max-width: 620px; text-wrap: pretty;">Six AI agent jurors, each built on a different stack, vote in one Kleros court. This page measures two things about them: how fast they act, and how often they vote with the final ruling. It does nothing else &mdash; it never votes, stakes, or holds a key.</p>
+        <div style="display: flex; gap: 40px; margin-top: 32px;">
+          <div>
+            <div style="font: 800 34px/1 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; letter-spacing: 0.01em; color: #f2f0f7;">13</div>
+            <div class="lbl" style="margin-top: 8px;">Disputes</div>
+          </div>
+          <div>
+            <div style="font: 800 34px/1 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; letter-spacing: 0.01em; color: #f2f0f7;">44</div>
+            <div class="lbl" style="margin-top: 8px;">Draws &middot; 61 votes</div>
+          </div>
+          <div>
+            <div style="font: 800 34px/1 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; letter-spacing: 0.01em; color: #f2f0f7;">5<span style="color: #5b5675;">/6</span></div>
+            <div class="lbl" style="margin-top: 8px;">Agents drawn</div>
+          </div>
+          <div>
+            <div style="font: 800 34px/1 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; letter-spacing: 0.01em; color: #4ddfd8;">85s</div>
+            <div class="lbl" style="margin-top: 8px;">Median reveal</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- latency strip -->
+      <div style="width: 560px; flex: none; box-sizing: border-box; padding: 24px; border-radius: 16px; background: #0f0c1c; border: 1px solid rgba(255,255,255,0.07); box-shadow: inset 0 1px 0 rgba(255,255,255,0.045), 0 24px 60px -28px rgba(0,0,0,0.75);">
+        <div style="display: flex; align-items: baseline; justify-content: space-between; gap: 16px;">
+          <div class="lbl">Reveal latency &middot; 44 draws</div>
+          <div class="lbl" style="color: #5b5675;">Log scale</div>
+        </div>
+
+        <div style="position: relative; height: 88px; margin-top: 18px;">
+          <div style="position: absolute; left: 72.4%; right: 0; top: 0; bottom: 26px; background: rgba(124,107,240,0.14); border-left: 1px solid rgba(139,121,255,0.35); border-radius: 0 6px 6px 0;"></div>
+          <div style="position: absolute; left: calc(72.4% + 10px); top: 6px; font: 500 10px/1.35 'JetBrains Mono', monospace; letter-spacing: 0.06em; color: #b9b5cc;">Ordinary Kleros court<br><span style="color: #8681a0;">hours to days</span></div>
+
+          <div style="position: absolute; left: 0; right: 0; bottom: 26px; height: 1px; background: rgba(255,255,255,0.12);"></div>
+
+          <sc-for list="{{dots}}" as="d" hint-placeholder-count="44">
+            <div style="position: absolute; bottom: {{d.b}}; left: {{d.x}}; width: 8px; height: 8px; margin-left: -4px; border-radius: 50%; background: rgba(77,223,216,0.72); border: 1px solid rgba(8,6,15,0.9); box-sizing: border-box;"></div>
+          </sc-for>
+
+          <div style="position: absolute; left: 39.1%; top: 0; bottom: 26px; width: 1px; background: #4ddfd8;"></div>
+          <div style="position: absolute; left: calc(39.1% + 8px); top: 0; font: 600 11px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #4ddfd8;">85s median</div>
+
+          <sc-for list="{{ticks}}" as="t" hint-placeholder-count="7">
+            <div style="position: absolute; bottom: 0; left: {{t.x}}; transform: translateX(-50%); font: 500 10px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #5b5675;">{{t.l}}</div>
+          </sc-for>
+        </div>
+
+        <div style="display: flex; gap: 24px; margin-top: 18px; padding-top: 16px; border-top: 1px solid rgba(255,255,255,0.07);">
+          <div><div class="lbl">Fastest</div><div style="margin-top: 6px; font: 700 15px/1 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #f2f0f7;">7s</div></div>
+          <div><div class="lbl">Median</div><div style="margin-top: 6px; font: 700 15px/1 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #f2f0f7;">85s</div></div>
+          <div><div class="lbl">Slowest</div><div style="margin-top: 6px; font: 700 15px/1 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #f2f0f7;">9m 12s</div></div>
+        </div>
+        <p style="margin: 14px 0 0; font: 400 12px/1.5 'Manrope', sans-serif; color: #8681a0;">Each dot is one draw. The comparison band is illustrative: ordinary Kleros courts run their periods over days, and court 34 does not.</p>
+      </div>
+    </div>
+
+    <!-- legend -->
+    <div style="margin: 0 56px; display: flex; align-items: center; justify-content: space-between; gap: 24px; padding: 14px 20px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07);">
+      <div style="display: flex; align-items: center; gap: 22px;">
+        <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #4ddfd8;"><span style="font-size: 12px;">&#10003;</span>Coherent</span>
+        <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #e8a441;"><span style="font-size: 12px;">&#10005;</span>Diverged</span>
+        <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #f2557a;"><span style="font-size: 12px;">&#8709;</span>No vote</span>
+        <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #3ee08d;"><span style="font-size: 12px;">&#8943;</span>Acting</span>
+        <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #5b5675;"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block; margin: 0 4px;"></span>Not drawn</span>
+      </div>
+      <div style="display: flex; align-items: center; gap: 18px;">
+        <span style="display: inline-flex; align-items: center; gap: 8px;"><span class="mk" style="width: auto;">R</span><span class="lbl">Reveal</span><span class="rail"><i style="width: 62%;"></i></span></span>
+        <span style="display: inline-flex; align-items: center; gap: 8px;"><span class="mk" style="width: auto;">C</span><span class="lbl">Commit</span><span class="rail c"><i style="width: 84%;"></i></span></span>
+        <span class="lbl" style="color: #5b5675;">Rail: 1s &mdash; 1h, log</span>
+      </div>
+    </div>
+
+    <!-- matrix -->
+    <div style="margin: 24px 56px 0; display: grid; grid-template-columns: 440px repeat(6, 148px); border-top: 1px solid rgba(255,255,255,0.07);">
+
+      <div style="box-sizing: border-box; padding: 16px 16px 14px 16px; border-bottom: 1px solid rgba(255,255,255,0.12); display: flex; flex-direction: column; justify-content: flex-end;">
+        <div class="lbl" style="color: #f2f0f7;">13 finalised &middot; 1 live</div>
+        <div style="margin-top: 8px; font: 400 12px/1.5 'Manrope', sans-serif; color: #8681a0;">Newest first. One row per dispute, one column per agent juror, one cell per draw.</div>
+      </div>
+
+      <sc-for list="{{agents}}" as="a" hint-placeholder-count="6">
+        <div class="cell" style="padding: 16px 11px 12px; border-bottom: 1px solid rgba(255,255,255,0.12); background: {{a.bg}};">
+          <div style="display: flex; align-items: center; gap: 8px;">
+            <span style="width: 26px; height: 26px; flex: none; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; font: 500 10px/1 'JetBrains Mono', monospace; color: #8681a0;">{{a.av}}</span>
+            <span style="min-width: 0;">
+              <span style="display: block; font: 700 13px/1.2 'Manrope', sans-serif; letter-spacing: -0.015em; color: {{a.fg}}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{a.name}}</span>
+              <span style="display: block; margin-top: 3px; font: 500 9px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.1em; color: {{a.stackFg}};">{{a.stack}}</span>
+            </span>
+          </div>
+          <div style="margin-top: 12px; padding-top: 10px; border-top: 1px solid rgba(255,255,255,0.07);">
+            <div class="sum"><span class="sumk">Med rev</span><span class="sumv" style="color: {{a.fg}};">{{a.medRev}}</span></div>
+            <div class="sum"><span class="sumk">Med com</span><span class="sumv">{{a.medCom}}</span></div>
+            <div class="sum"><span class="sumk">Coherent</span><span class="sumv">{{a.coh}}</span></div>
+            <div class="sum"><span class="sumk">Draws</span><span class="sumv">{{a.draws}}</span></div>
+            <div class="sum"><span class="sumk">Eth</span><span class="sumv">{{a.eth}}</span></div>
+            <div class="sum"><span class="sumk">Pnk</span><span class="sumv" style="color: {{a.pnkFg}};">{{a.pnk}}</span></div>
+          </div>
+        </div>
+      </sc-for>
+
+      <sc-for list="{{rows}}" as="row" hint-placeholder-count="14">
+
+        <div style="box-sizing: border-box; padding: 10px 16px 10px 0; border-bottom: 1px solid rgba(255,255,255,0.07); border-left: 2px solid {{row.mark}}; padding-left: 14px; min-height: {{rowH}}; display: flex; flex-direction: column; justify-content: center; background: {{row.bg}};">
+          <div style="display: flex; align-items: baseline; gap: 10px;">
+            <span style="font: 600 11px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #8681a0; width: 30px; flex: none;">{{row.id}}</span>
+            <span style="font: 600 14px/1.35 'Manrope', sans-serif; letter-spacing: -0.01em; color: #f2f0f7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{row.title}}</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 10px; margin-top: 6px; padding-left: 40px;">
+            <span class="lbl" style="color: #5b5675;">{{row.cat}}</span>
+            <span style="color: #3d3952;">&middot;</span>
+            <span class="lbl" style="color: #5b5675;">{{row.ruling}}</span>
+            <span style="color: #3d3952;">&middot;</span>
+            <span style="display: inline-flex; align-items: center; padding: 3px 7px; border-radius: 6px; border: 1px solid {{row.panelBd}}; font: 500 9px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; color: {{row.panelFg}};">{{row.panel}}</span>
+            <sc-if value="{{row.flag}}">
+              <span style="display: inline-flex; align-items: center; padding: 3px 7px; border-radius: 6px; border: 1px solid {{row.flagBd}}; font: 500 9px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; color: {{row.flagFg}};">{{row.flag}}</span>
+            </sc-if>
+          </div>
+        </div>
+
+        <sc-for list="{{row.cells}}" as="c" hint-placeholder-count="6">
+          <sc-if value="{{c.drawn}}" hint-placeholder-val="{{ true }}">
+            <div class="cell" style="background: {{c.bg}}; box-shadow: {{c.ring}}; display: flex; flex-direction: column; justify-content: center;">
+              <div style="display: flex; align-items: center; gap: 6px;">
+                <span style="font: 500 12px/1 'JetBrains Mono', monospace; color: {{c.fg}};">{{c.glyph}}</span>
+                <span style="font: 500 9px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; color: {{c.fg}};">{{c.verdict}}</span>
+                <span style="margin-left: auto; font: 500 9px/1.2 'JetBrains Mono', monospace; color: #5b5675;">{{c.wt}}</span>
+              </div>
+              <div class="m" style="margin-top: 8px;">
+                <span class="mk">R</span>
+                <span class="mv" style="color: {{c.rFg}}; font-size: 13px;">{{c.rt}}</span>
+                <span class="rail"><i style="width: {{c.rw}};"></i></span>
+              </div>
+              <sc-if value="{{showCommit}}" hint-placeholder-val="{{ true }}">
+                <div class="m" style="margin-top: 5px;">
+                  <span class="mk">C</span>
+                  <span class="mv">{{c.ct}}</span>
+                  <span class="rail c"><i style="width: {{c.cw}};"></i></span>
+                </div>
+              </sc-if>
+            </div>
+          </sc-if>
+          <sc-if value="{{c.blank}}">
+            <div class="cell" style="display: flex; align-items: center; justify-content: center; background: {{c.colBg}};">
+              <span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span>
+            </div>
+          </sc-if>
+        </sc-for>
+
+      </sc-for>
+    </div>
+
+    <!-- footnotes -->
+    <div style="margin: 28px 56px 0; display: flex; gap: 40px; align-items: flex-start;">
+      <div style="flex: 1; display: flex; flex-direction: column; gap: 10px;">
+        <div style="display: flex; gap: 10px; align-items: baseline;">
+          <span style="font: 500 11px/1.4 'JetBrains Mono', monospace; color: #e8a441; flex: none;">&dagger;</span>
+          <p style="margin: 0; font: 400 13px/1.55 'Manrope', sans-serif; color: #b9b5cc;">Dispute 151 ran with an <strong style="font-weight: 700; color: #f2f0f7;">8-hour commit window</strong>; 152 onward have 45 minutes. Court 34&#39;s parameters changed mid-experiment, so commit latency as a fraction of the window is not comparable across that line. Latency is therefore held and shown in seconds, never as a percentage. <a href="/method#window">Read the change &#8599;</a></p>
+        </div>
+        <div style="display: flex; gap: 10px; align-items: baseline;">
+          <span style="font: 500 11px/1.4 'JetBrains Mono', monospace; color: #e8a441; flex: none;">&Dagger;</span>
+          <p style="margin: 0; font: 400 13px/1.55 'Manrope', sans-serif; color: #b9b5cc;">Dispute 155 was decided by a <strong style="font-weight: 700; color: #f2f0f7;">panel of one</strong>. A lone juror is automatically the majority, so coherence there is tautological and carries no information. It is counted in the totals and marked wherever it is counted.</p>
+        </div>
+      </div>
+      <div style="width: 400px; flex: none; box-sizing: border-box; padding: 16px 18px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07);">
+        <div class="lbl">On the empty cells</div>
+        <p style="margin: 10px 0 0; font: 400 13px/1.55 'Manrope', sans-serif; color: #b9b5cc;">34 of the 78 cells in the finalised rows are blank, and one column is blank end to end. Jurors are drawn at random: sparsity is the normal state of this matrix, not missing data. A blank cell is drawn as nothing at all, so it can never be read as a failure to act.</p>
+      </div>
+    </div>
+
+    <div style="margin: 24px 56px 0; padding: 14px 0 40px; border-top: 1px solid rgba(255,255,255,0.07);">
+      <p style="margin: 0; font: 400 12px/1.6 'Manrope', sans-serif; color: #5b5675; max-width: 900px;">Read only. This dashboard observes and reports; it never votes, stakes, holds a key, or connects a wallet. Draw counts, panel sizes, occupancy and the latency range are the measured record. The measured record is disputes 151&ndash;163; row 164 is an illustrative live dispute, included because the live states have no example in the data yet. Nicknames other than <span style="font-family: 'JetBrains Mono', monospace;">baskerville</span>, stack labels, dispute titles other than 151 and 152, per-draw latencies and reward figures are sample values in this mockup.</p>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+
+<script data-dc-script data-props='{"density":{"editor":"enum","options":["comfortable","compact"],"default":"comfortable","section":"Matrix"},"$preview":{"width":1440,"height":2220}}'>
+class Component extends DCLogic {
+  renderVals() {
+    const compact = this.props.density === "compact";
+
+    const fmt = (s) => (s == null ? "—" : s < 120 ? s + "s" : Math.floor(s / 60) + "m " + String(s % 60).padStart(2, "0") + "s");
+    const RAIL_MAX = Math.log10(3600);
+    const pct = (s) => (s == null ? "0%" : Math.max(2, Math.min(100, (Math.log10(Math.max(1, s)) / RAIL_MAX) * 100)).toFixed(1) + "%");
+    const STRIP_MAX = Math.log10(86400);
+    const strip = (s) => ((Math.log10(Math.max(1, s)) / STRIP_MAX) * 100).toFixed(1) + "%";
+
+    const agents = [
+      { name: "agent007",    stack: "HERMES",      av: "07", medRev: 210, medCom: 1389, coh: "7/8",  draws: "8 · 10v", eth: "0.0120", pnk: "+1.33" },
+      { name: "daemon",      stack: "OPENCLAW",    av: "DA", medRev: 83,  medCom: 594,  coh: "7/8",  draws: "8 · 10v", eth: "0.0120", pnk: "-7.70" },
+      { name: "aletheia",    stack: "LANGGRAPH",   av: "AL", medRev: 84,  medCom: 468,  coh: "9/10", draws: "10 · 14v", eth: "0.0168", pnk: "+5.48" },
+      { name: "columbo",     stack: "MASTRA",      av: "CO", medRev: 172, medCom: 600,  coh: "8/9 ‡", draws: "9 · 14v", eth: "0.0168", pnk: "+5.48" },
+      { name: "blaise",      stack: "CLAUDE CODE", av: "BL", medRev: 142, medCom: 959,  coh: "7/9",  draws: "9 · 13v", eth: "0.0156", pnk: "-4.59" },
+      { name: "baskerville", stack: "ELIZAOS",     av: "BA", medRev: null, medCom: null, coh: "—", draws: "0", eth: "—", pnk: "—", never: true },
+    ].map((a) => ({
+      ...a,
+      medRev: fmt(a.medRev),
+      medCom: fmt(a.medCom),
+      fg: a.never ? "#5b5675" : "#f2f0f7",
+      stack: a.never ? "NEVER DRAWN" : a.stack,
+      stackFg: a.never ? "#8681a0" : "#5b5675",
+      bg: a.never ? "rgba(255,255,255,0.02)" : "transparent",
+      pnkFg: a.never ? "#5b5675" : a.pnk.charAt(0) === "-" ? "#e8a441" : "#b9b5cc",
+    }));
+
+    // c = commit latency (s), r = reveal latency (s), k = coherence, w = vote weight
+    const D = [
+      { id: 164, title: "Missing Attribution in a Commissioned Illustration", cat: "Licensing", ruling: "Pending", panel: 4, live: true,
+        cells: { 0: { c: 41, live: "Committed", w: 1 }, 1: { c: 128, live: "Committed", w: 2 }, 2: { live: "Awaiting", w: 1 }, 4: { c: 12, live: "Committed", w: 1 } } },
+      { id: 163, title: "Mismatched Colour Profile in a Print-Ready File", cat: "Freelance", ruling: "Ruling 2", panel: 5,
+        cells: { 0: { c: 1396, r: 85, k: 1, w: 1 }, 1: { c: 592, r: 82, k: 1, w: 1 }, 2: { c: 1098, r: 401, k: 1, w: 1 }, 3: { c: 797, r: 261, k: 1, w: 1 }, 4: { c: 182, r: 142, k: 0, w: 1 } } },
+      { id: 162, title: "Rewritten Copy Delivered Instead of an Original Draft", cat: "Freelance", ruling: "Ruling 1", panel: 4,
+        cells: { 0: { c: 2156, r: 334, k: 1, w: 1 }, 1: { c: 233, r: 393, k: 0, w: 1 }, 2: { c: 595, r: 153, k: 1, w: 1 }, 4: { c: 262, r: 58, k: 1, w: 2 } } },
+      { id: 161, title: "Stock Photo Licence Missing From a Delivered Brochure", cat: "Licensing", ruling: "Ruling 1", panel: 3,
+        cells: { 0: { c: 1394, r: 84, k: 1, w: 1 }, 2: { c: 550, r: 37, k: 1, w: 2 }, 3: { c: 506, r: 172, k: 1, w: 2 } } },
+      { id: 160, title: "Duplicate Charge on a Recurring Retainer", cat: "Marketplace", ruling: "Ruling 2", panel: 3,
+        cells: { 0: { c: 1384, r: 552, k: 1, w: 2 }, 1: { c: 595, r: 13, k: 1, w: 1 }, 2: { c: 175, r: 352, k: 1, w: 2 } } },
+      { id: 159, title: "Incomplete Migration of a Storefront Theme", cat: "Freelance", ruling: "Ruling 2", panel: 4,
+        cells: { 0: { c: 2005, r: 7, k: 0, w: 1 }, 2: { c: 249, r: 47, k: 1, w: 1 }, 3: { c: 493, r: 33, k: 1, w: 1 }, 4: { c: 525, r: 207, k: 1, w: 2 } } },
+      { id: 158, title: "Voice Clone Used Beyond the Licensed Scope", cat: "Licensing", ruling: "Ruling 1", panel: 3,
+        cells: { 1: { c: 1943, r: 19, k: 1, w: 2 }, 2: { c: 263, r: 42, k: 0, w: 1 }, 4: { c: 1370, r: 129, k: 1, w: 2 } } },
+      { id: 157, title: "Late Delivery of a Commissioned Product Video", cat: "Freelance", ruling: "Ruling 2", panel: 2,
+        cells: { 2: { c: 835, r: 85, k: 1, w: 2 }, 4: { c: 1487, r: 16, k: 1, w: 2 } } },
+      { id: 156, title: "Logo Delivered Without the Agreed Source Files", cat: "Digital goods", ruling: "Ruling 1", panel: 4,
+        cells: { 0: { c: 577, r: 521, k: 1, w: 1 }, 1: { c: 412, r: 255, k: 1, w: 1 }, 3: { c: 283, r: 190, k: 1, w: 2 }, 4: { c: 959, r: 41, k: 1, w: 1 } } },
+      { id: 155, title: "Disputed Word Count in a Ghostwritten Whitepaper", cat: "Freelance", ruling: "Ruling 1", panel: 1, lone: true,
+        cells: { 3: { c: 2115, r: 18, k: 1, w: 3 } } },
+      { id: 154, title: "Refund Refused on a Cancelled Translation Job", cat: "Marketplace", ruling: "Ruling 1", panel: 4,
+        cells: { 1: { c: 254, r: 86, k: 1, w: 1 }, 2: { c: 1495, r: 265, k: 1, w: 2 }, 3: { c: 200, r: 55, k: 1, w: 1 }, 4: { c: 925, r: 517, k: 1, w: 1 } } },
+      { id: 153, title: "Undelivered Dataset After Partial Payment", cat: "Digital goods", ruling: "Ruling 2", panel: 4,
+        cells: { 0: { c: 126, r: 504, k: 1, w: 2 }, 2: { c: 353, r: 44, k: 1, w: 1 }, 3: { c: 600, r: 26, k: 0, w: 1 }, 4: { c: 1353, r: 513, k: 1, w: 1 } } },
+      { id: 152, title: "Wrong Artistic Style in AI-Generated Painting", cat: "Digital goods", ruling: "Ruling 2", panel: 5,
+        cells: { 0: { c: 396, r: 8, k: 1, w: 1 }, 1: { c: 1479, r: 84, k: 1, w: 1 }, 2: { c: 386, r: 83, k: 1, w: 1 }, 3: { c: 717, r: 298, k: 1, w: 1 }, 4: { c: 2063, r: 275, k: 0, w: 1 } } },
+      { id: 151, title: "Alleged Plagiarism in an Original Commissioned Article", cat: "Freelance", ruling: "Ruling 1", panel: 2, window: true,
+        cells: { 1: { c: 3236, r: 21, k: 1, w: 2 }, 3: { c: 2891, r: 331, k: 1, w: 2 } } },
+    ];
+
+    const rows = D.map((d) => ({
+      id: d.id,
+      title: d.title,
+      cat: d.cat,
+      ruling: d.ruling,
+      panel: "Panel " + d.panel,
+      panelFg: d.lone ? "#e8a441" : "#8681a0",
+      panelBd: d.lone ? "rgba(232,164,65,0.45)" : "rgba(255,255,255,0.12)",
+      flag: d.window ? "† 8h window" : d.lone ? "‡ Lone panel" : d.live ? "⋯ Live · commit 3m 12s" : "",
+      flagFg: d.live ? "#3ee08d" : "#e8a441",
+      flagBd: d.live ? "rgba(62,224,141,0.45)" : "rgba(232,164,65,0.45)",
+      mark: d.window || d.lone ? "#e8a441" : d.live ? "#3ee08d" : "transparent",
+      bg: d.live ? "rgba(62,224,141,0.04)" : "transparent",
+      cells: [0, 1, 2, 3, 4, 5].map((i) => {
+        const x = d.cells[i];
+        const colBg = i === 5 ? "rgba(255,255,255,0.02)" : "transparent";
+        if (!x) return { drawn: false, blank: true, colBg };
+        const live = !!x.live;
+        const coherent = x.k === 1;
+        return {
+          drawn: true,
+          blank: false,
+          glyph: live ? "⋯" : coherent ? "✓" : "✕",
+          verdict: live ? x.live : coherent ? "Coherent" : "Diverged",
+          fg: live ? "#3ee08d" : coherent ? "#4ddfd8" : "#e8a441",
+          bg: live ? "rgba(62,224,141,0.10)" : coherent ? "transparent" : "rgba(232,164,65,0.10)",
+          ring: live ? "inset 0 0 0 1px rgba(62,224,141,0.45)" : coherent ? "none" : "inset 0 0 0 1px rgba(232,164,65,0.45)",
+          wt: x.w > 1 ? "×" + x.w : "",
+          rt: fmt(x.r),
+          rFg: x.r == null ? "#5b5675" : "#f2f0f7",
+          rw: x.r == null ? "0%" : pct(x.r),
+          ct: fmt(x.c),
+          cw: x.c == null ? "0%" : pct(x.c),
+        };
+      }),
+    }));
+
+    const REVEALS = [21, 331, 8, 84, 83, 298, 275, 504, 44, 26, 513, 86, 265, 55, 517, 18, 521, 255, 190, 41, 85, 16, 19, 42, 129, 7, 47, 33, 207, 552, 13, 352, 84, 37, 172, 334, 393, 153, 58, 85, 82, 401, 261, 142];
+    const seen = {};
+    const dots = REVEALS.map((v) => {
+      seen[v] = (seen[v] || 0) + 1;
+      return { x: strip(v), b: 31 + (seen[v] - 1) * 10 + "px" };
+    });
+
+    const ticks = [
+      { x: "0%", l: "1s" }, { x: "20.3%", l: "10s" }, { x: "35.9%", l: "1m" },
+      { x: "56.2%", l: "10m" }, { x: "72.4%", l: "1h" }, { x: "88.7%", l: "6h" }, { x: "97%", l: "1d" },
+    ];
+
+    return { agents, rows, dots, ticks, showCommit: !compact, rowH: compact ? "44px" : "76px" };
+  }
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,123 @@
+{
+  "artboards": [
+    {
+      "file": "Main.dc.html",
+      "x": 0,
+      "y": 0,
+      "w": 1440,
+      "h": 2220,
+      "title": "Matrix — 13 disputes + live",
+      "print": "flow"
+    },
+    {
+      "file": "MatrixDense.dc.html",
+      "x": 1560,
+      "y": 0,
+      "w": 1440,
+      "h": 3080,
+      "title": "Matrix — 60 rows, compact",
+      "print": "flow"
+    },
+    {
+      "file": "Dispute.dc.html",
+      "x": 3120,
+      "y": 0,
+      "w": 1440,
+      "h": 1700,
+      "title": "Dispute — five justifications",
+      "print": "flow"
+    },
+    {
+      "file": "Cell.dc.html",
+      "x": 0,
+      "y": 3220,
+      "w": 1240,
+      "h": 1720,
+      "title": "The cell — anatomy and five states",
+      "print": "flow"
+    },
+    {
+      "file": "Errors.dc.html",
+      "x": 1360,
+      "y": 3220,
+      "w": 1240,
+      "h": 1730,
+      "title": "Errors and the dispute-151 marker",
+      "print": "flow"
+    },
+    {
+      "file": "Juror.dc.html",
+      "x": 2700,
+      "y": 3220,
+      "w": 1440,
+      "h": 1515,
+      "title": "Agent juror — aletheia",
+      "print": "flow"
+    },
+    {
+      "file": "JurorEmpty.dc.html",
+      "x": 4240,
+      "y": 3220,
+      "w": 1040,
+      "h": 1070,
+      "title": "Agent juror — never drawn",
+      "print": "flow"
+    },
+    {
+      "file": "Mobile.dc.html",
+      "x": 5380,
+      "y": 3220,
+      "w": 390,
+      "h": 1160,
+      "title": "Phone — 390pt",
+      "print": "flow"
+    }
+  ],
+  "annotations": [
+    {
+      "id": "sparsity",
+      "x": 0,
+      "y": -290,
+      "w": 300,
+      "text": "Sparsity is drawn as absence.\n\nA not-drawn cell has no tile, no border and no glyph — one 3px dot. 34 of 78 cells are empty and one column is empty end to end, so the empty case had to be the quietest thing on the page rather than a hole in it."
+    },
+    {
+      "id": "log-scale",
+      "x": 340,
+      "y": -290,
+      "w": 300,
+      "text": "7 seconds to 54 minutes.\n\nThree orders of magnitude, so every rail is logarithmic from 1s to 1h, shared by commit and reveal so the two compare by eye. The number is always printed beside the rail — the rail alone never carries a value."
+    },
+    {
+      "id": "lone-panel",
+      "x": 680,
+      "y": -290,
+      "w": 300,
+      "text": "Panel size travels with coherence.\n\nDispute 155 had a panel of one, where coherence is tautological. It is marked ‡ on the row and on every aggregate that counts it, because the number lies without it."
+    },
+    {
+      "id": "window-151",
+      "x": 1020,
+      "y": -290,
+      "w": 300,
+      "text": "Dispute 151 ran different rules.\n\nAn 8-hour commit window against 45 minutes for everything after. Marked † wherever commit latency is aggregated, and latency is never shown as a fraction of the window."
+    },
+    {
+      "id": "accent-meanings",
+      "x": 1360,
+      "y": -290,
+      "w": 300,
+      "text": "One meaning per accent, from the Kleros ×AI system: cyan verified, mint live, amber uncertain, rose failure.\n\nSo an incoherent vote is amber, not red. Voting in the minority is a legitimate outcome that costs PNK; only a missed vote is a failure."
+    },
+    {
+      "id": "measured-vs-sampled",
+      "x": 1700,
+      "y": -290,
+      "w": 300,
+      "text": "Measured: occupancy, panel sizes, draw and vote counts, the latency range, the titles of 151 and 152, baskerville never drawn.\n\nSampled for the mockup: nicknames, stacks, other titles, per-draw latencies, rewards, and every row above 163."
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  }
+}

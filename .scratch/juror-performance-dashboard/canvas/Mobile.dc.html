@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #08060f; }
+  a { color: #4ddfd8; text-decoration: none; }
+  a:hover { color: #7ceee8; }
+  .lbl { font: 500 9px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #8681a0; }
+  .card { box-sizing: border-box; padding: 16px; border-radius: 16px; background: #0f0c1c; border: 1px solid rgba(255,255,255,0.07); box-shadow: inset 0 1px 0 rgba(255,255,255,0.045), 0 24px 60px -28px rgba(0,0,0,0.75); }
+  .slot { width: 52px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 7px; min-height: 56px; justify-content: center; }
+  .avb { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; font: 500 10px/1 'JetBrains Mono', monospace; color: #8681a0; }
+  .tag { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+  .tm { font: 600 9.5px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #f2f0f7; white-space: nowrap; }
+</style>
+</helmet>
+
+<div style="position: relative; width: 390px; background: #08060f; font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; color: #f2f0f7; -webkit-font-smoothing: antialiased; overflow: hidden;">
+  <div style="position: absolute; inset: 0 0 auto 0; height: 340px; background: radial-gradient(80% 52% at 30% -6%, rgba(96,62,214,0.42) 0%, rgba(18,10,47,0) 70%); pointer-events: none;"></div>
+
+  <div style="position: relative; padding: 0 16px 24px;">
+
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; height: 56px;">
+      <span style="display: inline-flex; align-items: center; gap: 6px;">
+        <span style="font: 800 15px/1 'Manrope', sans-serif; letter-spacing: -0.02em; color: #f2f0f7;">KLEROS</span>
+        <span style="font: 500 11px/1 'JetBrains Mono', monospace; color: #5e5383;">&#215;</span>
+        <span style="font: 500 11px/1 'JetBrains Mono', monospace; color: #bdaaff;">AI</span>
+      </span>
+      <span style="display: inline-flex; align-items: center; gap: 10px;">
+        <span class="lbl" style="color: #5b5675;">Read only</span>
+        <span style="width: 30px; height: 30px; border-radius: 9px; border: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; font: 500 11px/1 'JetBrains Mono', monospace; color: #8681a0;">&#8801;</span>
+      </span>
+    </div>
+
+    <div style="margin-top: 14px;">
+      <div class="lbl">Court 34 &middot; Arbitrum One</div>
+      <h1 style="margin: 10px 0 0; font: 800 30px/1.06 'Manrope', sans-serif; letter-spacing: -0.028em; color: #f2f0f7;">Agents do not wait for the deadline.</h1>
+      <div style="display: flex; gap: 20px; margin-top: 18px;">
+        <div><div style="font: 800 24px/1 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #4ddfd8;">85s</div><div class="lbl" style="margin-top: 7px;">Median reveal</div></div>
+        <div><div style="font: 800 24px/1 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #f2f0f7;">44</div><div class="lbl" style="margin-top: 7px;">Draws</div></div>
+        <div><div style="font: 800 24px/1 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #f2f0f7;">13</div><div class="lbl" style="margin-top: 7px;">Disputes</div></div>
+      </div>
+    </div>
+
+    <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 24px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.07);">
+      <span class="lbl" style="color: #f2f0f7;">Newest first</span>
+      <span style="display: inline-flex; align-items: center; gap: 12px;">
+        <span class="lbl" style="color: #5b5675;">Reveal</span>
+        <span class="lbl" style="color: #5b5675;">Filter &#8595;</span>
+      </span>
+    </div>
+
+    <!-- live -->
+    <div class="card" style="margin-top: 14px; border-color: rgba(62,224,141,0.45); background: rgba(62,224,141,0.06);">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font: 600 10px/1.2 'JetBrains Mono', monospace; color: #8681a0;">164</span>
+        <span style="display: inline-flex; align-items: center; padding: 3px 7px; border-radius: 5px; border: 1px solid rgba(62,224,141,0.45); font: 500 9px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; color: #3ee08d;">&#8943; Live &middot; commit 3m 12s</span>
+      </div>
+      <div style="margin-top: 10px; font: 600 15px/1.35 'Manrope', sans-serif; letter-spacing: -0.015em; color: #f2f0f7;">Missing Attribution in a Commissioned Illustration</div>
+      <div style="margin-top: 8px;"><span class="lbl" style="color: #5b5675;">Licensing &middot; panel 4 &middot; ruling pending</span></div>
+      <div style="display: flex; gap: 0; justify-content: space-between; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.07);">
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">07</span><span class="tm tag"><span style="color: #3ee08d;">&#8943;</span><span style="color: #3ee08d;">41s</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">DA</span><span class="tm tag"><span style="color: #3ee08d;">&#8943;</span><span style="color: #3ee08d;">2m08s</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.18); border-style: dashed;">AL</span><span class="tm tag"><span style="color: #3ee08d;">&#8943;</span><span style="color: #5b5675;">&mdash;</span></span></span>
+        <span class="slot"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">BL</span><span class="tm tag"><span style="color: #3ee08d;">&#8943;</span><span style="color: #3ee08d;">12s</span></span></span>
+        <span class="slot"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span></span>
+      </div>
+    </div>
+
+    <!-- finalised -->
+    <div class="card" style="margin-top: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font: 600 10px/1.2 'JetBrains Mono', monospace; color: #8681a0;">163</span>
+        <span class="lbl" style="color: #5b5675;">Freelance &middot; ruling 2 &middot; panel 5</span>
+      </div>
+      <div style="margin-top: 10px; font: 600 15px/1.35 'Manrope', sans-serif; letter-spacing: -0.015em; color: #f2f0f7;">Mismatched Colour Profile in a Print-Ready File</div>
+      <div style="display: flex; gap: 0; justify-content: space-between; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.07);">
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">07</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">85s</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">DA</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">82s</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">AL</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">6m41s</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">CO</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">4m21s</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(232,164,65,0.45);">BL</span><span class="tm tag"><span style="color: #e8a441;">&#10005;</span><span style="color: #e8a441;">2m22s</span></span></span>
+        <span class="slot"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span></span>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font: 600 10px/1.2 'JetBrains Mono', monospace; color: #8681a0;">162</span>
+        <span class="lbl" style="color: #5b5675;">Freelance &middot; ruling 1 &middot; panel 4</span>
+      </div>
+      <div style="margin-top: 10px; font: 600 15px/1.35 'Manrope', sans-serif; letter-spacing: -0.015em; color: #f2f0f7;">Rewritten Copy Delivered Instead of an Original Draft</div>
+      <div style="display: flex; gap: 0; justify-content: space-between; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.07);">
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">07</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">5m34s</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(232,164,65,0.45);">DA</span><span class="tm tag"><span style="color: #e8a441;">&#10005;</span><span style="color: #e8a441;">6m33s</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">AL</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">2m33s</span></span></span>
+        <span class="slot"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">BL</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">58s</span></span></span>
+        <span class="slot"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span></span>
+      </div>
+    </div>
+
+    <div class="card" style="margin-top: 12px;">
+      <div style="display: flex; align-items: center; gap: 8px;">
+        <span style="font: 600 10px/1.2 'JetBrains Mono', monospace; color: #8681a0;">161</span>
+        <span class="lbl" style="color: #5b5675;">Licensing &middot; ruling 1 &middot; panel 3</span>
+      </div>
+      <div style="margin-top: 10px; font: 600 15px/1.35 'Manrope', sans-serif; letter-spacing: -0.015em; color: #f2f0f7;">Stock Photo Licence Missing From a Brochure</div>
+      <div style="display: flex; gap: 0; justify-content: space-between; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.07);">
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">07</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">84s</span></span></span>
+        <span class="slot"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">AL</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">37s</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">CO</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">2m52s</span></span></span>
+        <span class="slot"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span></span>
+        <span class="slot"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span></span>
+      </div>
+    </div>
+
+    <p style="margin: 18px 0 0; font: 400 12px/1.55 'Manrope', sans-serif; color: #5b5675;">Column position is the agent, on every card. Tap a card for both latencies and the published reasoning.</p>
+  </div>
+</div>
+</x-dc>
+</body>
+</html>

@@ -1,0 +1,225 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin="">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&amp;family=JetBrains+Mono:wght@400;500;600;700&amp;display=swap" rel="stylesheet">
+<style>
+  html, body { margin: 0; padding: 0; background: #08060f; }
+  a { color: #4ddfd8; text-decoration: none; }
+  a:hover { color: #7ceee8; }
+  .lbl { font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #8681a0; }
+  .cell { box-sizing: border-box; width: 148px; padding: 9px 11px; border: 1px solid rgba(255,255,255,0.05); border-radius: 2px; display: flex; flex-direction: column; justify-content: center; min-height: 76px; }
+  .rail { width: 42px; height: 3px; border-radius: 999px; background: rgba(255,255,255,0.07); overflow: hidden; flex: none; }
+  .rail > i { display: block; height: 3px; border-radius: 999px; background: #4ddfd8; }
+  .rail.c > i { background: rgba(77,223,216,0.38); }
+  .m { display: flex; align-items: center; gap: 7px; }
+  .mk { font: 500 9px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.1em; color: #5b5675; width: 7px; flex: none; }
+  .mv { font: 600 11.5px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #b9b5cc; width: 56px; flex: none; }
+  .vd { font: 500 9px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; }
+  .gl { font: 500 12px/1 'JetBrains Mono', monospace; }
+  .num { width: 18px; height: 18px; flex: none; border-radius: 5px; border: 1px solid rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; font: 500 9px/1 'JetBrains Mono', monospace; color: #8681a0; }
+  .note { font: 400 13.5px/1.55 'Manrope', sans-serif; color: #b9b5cc; margin: 0; }
+  .noteh { font: 700 13.5px/1.55 'Manrope', sans-serif; color: #f2f0f7; }
+</style>
+</helmet>
+
+<div style="position: relative; width: 1240px; background: #08060f; font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif; color: #f2f0f7; -webkit-font-smoothing: antialiased; overflow: hidden;">
+  <div style="position: absolute; inset: 0 0 auto 0; height: 460px; background: radial-gradient(58% 62% at 20% -14%, rgba(96,62,214,0.34) 0%, rgba(18,10,47,0) 68%); pointer-events: none;"></div>
+
+  <div style="position: relative; padding: 48px 48px 52px;">
+
+    <div class="lbl">The cell &middot; one draw</div>
+    <h1 style="margin: 14px 0 0; font: 800 40px/1.05 'Manrope', sans-serif; letter-spacing: -0.028em; color: #f2f0f7;">Five states that must never be confused.</h1>
+    <p style="margin: 14px 0 0; font: 400 16px/1.6 'Manrope', sans-serif; color: #b9b5cc; max-width: 780px; text-wrap: pretty;">One cell is one agent juror&#39;s involvement in one dispute. It carries two latencies, a coherence state, a vote count and the panel context it depends on &mdash; in 148 by 76 pixels, repeated up to six hundred times on one screen.</p>
+
+    <!-- anatomy -->
+    <div style="display: flex; gap: 56px; align-items: flex-start; margin-top: 40px; padding: 32px; border-radius: 16px; background: #0f0c1c; border: 1px solid rgba(255,255,255,0.07); box-shadow: inset 0 1px 0 rgba(255,255,255,0.045), 0 24px 60px -28px rgba(0,0,0,0.75);">
+
+      <div style="flex: none; width: 420px;">
+        <div class="lbl" style="margin-bottom: 18px;">Enlarged 2.6&#215;</div>
+        <div style="position: relative; box-sizing: border-box; width: 385px; padding: 23px 29px; border-radius: 6px; border: 1px solid rgba(255,255,255,0.07); background: rgba(255,255,255,0.02);">
+          <div style="display: flex; align-items: center; gap: 16px;">
+            <span style="font: 500 31px/1 'JetBrains Mono', monospace; color: #4ddfd8;">&#10003;</span>
+            <span style="font: 500 23px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; color: #4ddfd8;">Coherent</span>
+            <span style="margin-left: auto; font: 500 23px/1.2 'JetBrains Mono', monospace; color: #5b5675;">&#215;2</span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 18px; margin-top: 21px;">
+            <span style="font: 500 23px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.1em; color: #5b5675; width: 18px;">R</span>
+            <span style="font: 600 34px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #f2f0f7; width: 146px;">85s</span>
+            <span style="width: 109px; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.07); overflow: hidden; flex: none;"><i style="display: block; height: 8px; width: 54%; border-radius: 999px; background: #4ddfd8;"></i></span>
+          </div>
+          <div style="display: flex; align-items: center; gap: 18px; margin-top: 13px;">
+            <span style="font: 500 23px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.1em; color: #5b5675; width: 18px;">C</span>
+            <span style="font: 600 30px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #b9b5cc; width: 146px;">6m 36s</span>
+            <span style="width: 109px; height: 8px; border-radius: 999px; background: rgba(255,255,255,0.07); overflow: hidden; flex: none;"><i style="display: block; height: 8px; width: 71%; border-radius: 999px; background: rgba(77,223,216,0.38);"></i></span>
+          </div>
+
+          <span style="position: absolute; left: -13px; top: 18px; width: 22px; height: 22px; border-radius: 6px; background: #141026; border: 1px solid rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; font: 500 10px/1 'JetBrains Mono', monospace; color: #8681a0;">01</span>
+          <span style="position: absolute; right: -13px; top: 18px; width: 22px; height: 22px; border-radius: 6px; background: #141026; border: 1px solid rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; font: 500 10px/1 'JetBrains Mono', monospace; color: #8681a0;">03</span>
+          <span style="position: absolute; left: -13px; top: 78px; width: 22px; height: 22px; border-radius: 6px; background: #141026; border: 1px solid rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; font: 500 10px/1 'JetBrains Mono', monospace; color: #8681a0;">02</span>
+          <span style="position: absolute; right: -13px; top: 78px; width: 22px; height: 22px; border-radius: 6px; background: #141026; border: 1px solid rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; font: 500 10px/1 'JetBrains Mono', monospace; color: #8681a0;">04</span>
+          <span style="position: absolute; right: -13px; bottom: 20px; width: 22px; height: 22px; border-radius: 6px; background: #141026; border: 1px solid rgba(255,255,255,0.18); display: flex; align-items: center; justify-content: center; font: 500 10px/1 'JetBrains Mono', monospace; color: #8681a0;">05</span>
+        </div>
+
+        <div style="display: flex; align-items: center; gap: 20px; margin-top: 32px;">
+          <div class="lbl" style="width: 96px;">True size</div>
+          <div class="cell">
+            <div style="display: flex; align-items: center; gap: 6px;">
+              <span class="gl" style="color: #4ddfd8;">&#10003;</span>
+              <span class="vd" style="color: #4ddfd8;">Coherent</span>
+              <span style="margin-left: auto; font: 500 9px/1.2 'JetBrains Mono', monospace; color: #5b5675;">&#215;2</span>
+            </div>
+            <div class="m" style="margin-top: 8px;"><span class="mk">R</span><span class="mv" style="color: #f2f0f7; font-size: 13px;">85s</span><span class="rail"><i style="width: 54%;"></i></span></div>
+            <div class="m" style="margin-top: 5px;"><span class="mk">C</span><span class="mv">6m 36s</span><span class="rail c"><i style="width: 71%;"></i></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div style="flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 16px;">
+        <div style="display: flex; gap: 14px; align-items: flex-start;"><span class="num">01</span><p class="note"><span class="noteh">Coherence is a glyph and a word before it is a colour.</span> A check with the word <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">COHERENT</span> reads the same in greyscale, at 60% zoom, and to a reader who cannot separate cyan from amber. The colour is the second signal, never the only one.</p></div>
+        <div style="display: flex; gap: 14px; align-items: flex-start;"><span class="num">02</span><p class="note"><span class="noteh">Reveal latency is the headline number.</span> It is the figure the experiment is about, so it is the largest thing in the cell and the only one in heading ink. Values under two minutes read in seconds; longer ones switch to minutes, because 3,236s is not a number anyone reads.</p></div>
+        <div style="display: flex; gap: 14px; align-items: flex-start;"><span class="num">03</span><p class="note"><span class="noteh">Vote count, only when it is not one.</span> A drawn juror can hold several vote IDs and votes them in one transaction. 61 votes collapse to 44 draws, so the draw is the unit and the vote count is a quiet annotation &mdash; absent whenever it would say <span style="font-family: 'JetBrains Mono', monospace; font-size: 12px;">&#215;1</span>.</p></div>
+        <div style="display: flex; gap: 14px; align-items: flex-start;"><span class="num">04</span><p class="note"><span class="noteh">Commit latency sits below, dimmer.</span> Same unit, same scale, half the weight. It is context for the reveal, not a competing figure &mdash; and it is the one number the dispute-151 window change makes incomparable, which is why it never appears as a percentage.</p></div>
+        <div style="display: flex; gap: 14px; align-items: flex-start;"><span class="num">05</span><p class="note"><span class="noteh">One log rail, two marks.</span> The data spans three orders of magnitude: 7 seconds to 54 minutes. A linear bar would render every fast draw as nothing at all. The rail is logarithmic from 1s to 1h, shared by both measures so they can be compared by eye, and it is decoration only &mdash; the number is always present.</p></div>
+        <div style="display: flex; gap: 14px; align-items: flex-start;"><span class="num">06</span><p class="note"><span class="noteh">Panel size lives on the row, not in the cell.</span> Coherence is meaningless without it, so every row carries its panel size, and a panel of one is marked in amber on the row and on every aggregate that includes it. Repeating it 44 times inside the cells would cost more than it tells.</p></div>
+      </div>
+    </div>
+
+    <!-- five states -->
+    <h2 style="margin: 48px 0 0; font: 700 26px/1.15 'Manrope', sans-serif; letter-spacing: -0.02em; color: #f2f0f7;">The five states.</h2>
+    <p style="margin: 10px 0 0; font: 400 15px/1.6 'Manrope', sans-serif; color: #8681a0; max-width: 860px;">Two of these have no example in the data yet. They are drawn anyway, because the day they appear is the day the page has to be right.</p>
+
+    <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 20px; margin-top: 26px;">
+
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="padding: 16px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); display: flex; justify-content: center;">
+          <div class="cell">
+            <div style="display: flex; align-items: center; gap: 6px;"><span class="gl" style="color: #4ddfd8;">&#10003;</span><span class="vd" style="color: #4ddfd8;">Coherent</span></div>
+            <div class="m" style="margin-top: 8px;"><span class="mk">R</span><span class="mv" style="color: #f2f0f7; font-size: 13px;">85s</span><span class="rail"><i style="width: 54%;"></i></span></div>
+            <div class="m" style="margin-top: 5px;"><span class="mk">C</span><span class="mv">6m 36s</span><span class="rail c"><i style="width: 71%;"></i></span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #4ddfd8;">Voted with the ruling</div>
+          <p class="note" style="margin-top: 8px; font-size: 13px;">The common case: 38 of 44 draws. No fill, no border &mdash; the default state is the quiet one, so the exceptions are what the eye lands on.</p>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="padding: 16px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); display: flex; justify-content: center;">
+          <div class="cell" style="background: rgba(232,164,65,0.10); border-color: rgba(232,164,65,0.45);">
+            <div style="display: flex; align-items: center; gap: 6px;"><span class="gl" style="color: #e8a441;">&#10005;</span><span class="vd" style="color: #e8a441;">Diverged</span></div>
+            <div class="m" style="margin-top: 8px;"><span class="mk">R</span><span class="mv" style="color: #f2f0f7; font-size: 13px;">26s</span><span class="rail"><i style="width: 40%;"></i></span></div>
+            <div class="m" style="margin-top: 5px;"><span class="mk">C</span><span class="mv">10m 00s</span><span class="rail c"><i style="width: 78%;"></i></span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #e8a441;">Voted against the ruling</div>
+          <p class="note" style="margin-top: 8px; font-size: 13px;">Amber, not red. Voting in the minority is a legitimate outcome that costs the agent PNK &mdash; it is not a malfunction, and it must not look like one.</p>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="padding: 16px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); display: flex; justify-content: center;">
+          <div class="cell" style="background: rgba(242,85,122,0.10); border-color: rgba(242,85,122,0.45);">
+            <div style="display: flex; align-items: center; gap: 6px;"><span class="gl" style="color: #f2557a;">&#8709;</span><span class="vd" style="color: #f2557a;">No vote</span></div>
+            <div class="m" style="margin-top: 8px;"><span class="mk">R</span><span class="mv" style="color: #f2557a; font-size: 13px;">Missed</span><span class="rail"></span></div>
+            <div class="m" style="margin-top: 5px;"><span class="mk">C</span><span class="mv">2m 06s</span><span class="rail c"><i style="width: 62%;"></i></span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #f2557a;">Drawn and failed to act</div>
+          <p class="note" style="margin-top: 8px; font-size: 13px;">The only loud state. Rose is reserved for it: an agent was drawn, the period closed, and nothing arrived. No example yet in 44 draws.</p>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="padding: 16px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); display: flex; justify-content: center;">
+          <div class="cell" style="background: rgba(62,224,141,0.10); border-color: rgba(62,224,141,0.45);">
+            <div style="display: flex; align-items: center; gap: 6px;"><span class="gl" style="color: #3ee08d;">&#8943;</span><span class="vd" style="color: #3ee08d;">Committed</span></div>
+            <div class="m" style="margin-top: 8px;"><span class="mk">R</span><span class="mv" style="color: #5b5675; font-size: 13px;">&mdash;</span><span class="rail"></span></div>
+            <div class="m" style="margin-top: 5px;"><span class="mk">C</span><span class="mv">41s</span><span class="rail c"><i style="width: 45%;"></i></span></div>
+          </div>
+        </div>
+        <div>
+          <div style="font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #3ee08d;">Live, still acting</div>
+          <p class="note" style="margin-top: 8px; font-size: 13px;">The period is still open. What has not happened is dimmed to pending ink and dashed, never blank &mdash; blank means something else here.</p>
+        </div>
+      </div>
+
+      <div style="display: flex; flex-direction: column; gap: 14px;">
+        <div style="padding: 16px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); display: flex; justify-content: center;">
+          <div class="cell" style="align-items: center; justify-content: center; border-color: rgba(255,255,255,0.05);">
+            <span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span>
+          </div>
+        </div>
+        <div>
+          <div style="font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #5b5675;">Not drawn</div>
+          <p class="note" style="margin-top: 8px; font-size: 13px;">34 of 78 cells. Nothing happened and nothing was expected. It is drawn as nearly nothing: no tile, no border, one 3px dot so the grid keeps its rhythm.</p>
+        </div>
+      </div>
+    </div>
+
+    <div style="margin-top: 24px; padding: 16px 20px; border-radius: 12px; border: 1px solid rgba(242,85,122,0.45); background: rgba(242,85,122,0.10); display: flex; gap: 14px; align-items: flex-start;">
+      <span style="font: 500 13px/1.5 'JetBrains Mono', monospace; color: #f2557a; flex: none;">&#8709; vs &middot;</span>
+      <p class="note" style="font-size: 13.5px;"><span class="noteh">The one confusion this design exists to prevent.</span> &ldquo;Not drawn&rdquo; and &ldquo;failed to act&rdquo; share no glyph, no weight, no fill and no border. One is the emptiest thing on the page; the other is the loudest. Confusing them would attribute a failure to an agent that did nothing wrong.</p>
+    </div>
+
+    <!-- scale + density -->
+    <div style="display: flex; gap: 24px; margin-top: 44px; align-items: stretch;">
+
+      <div style="flex: 1; padding: 28px 32px; border-radius: 16px; background: #0f0c1c; border: 1px solid rgba(255,255,255,0.07); box-shadow: inset 0 1px 0 rgba(255,255,255,0.045), 0 24px 60px -28px rgba(0,0,0,0.75);">
+        <div class="lbl">Why the rail is logarithmic</div>
+        <p class="note" style="margin-top: 12px;">Reveal latency runs from 7s to 9m 12s; commit latency from 2m 06s to 53m 56s. On a linear scale the fastest three quarters of the record would be indistinguishable from zero.</p>
+        <div style="position: relative; height: 74px; margin-top: 24px;">
+          <div style="position: absolute; left: 0; right: 0; top: 20px; height: 6px; border-radius: 999px; background: rgba(255,255,255,0.07);"></div>
+          <div style="position: absolute; left: 23.8%; top: 20px; width: 6px; height: 6px; margin-left: -3px; border-radius: 999px; background: #4ddfd8;"></div>
+          <div style="position: absolute; left: 54.2%; top: 20px; width: 6px; height: 6px; margin-left: -3px; border-radius: 999px; background: #4ddfd8;"></div>
+          <div style="position: absolute; left: 77.1%; top: 20px; width: 6px; height: 6px; margin-left: -3px; border-radius: 999px; background: #4ddfd8;"></div>
+          <div style="position: absolute; left: 98.7%; top: 20px; width: 6px; height: 6px; margin-left: -3px; border-radius: 999px; background: rgba(77,223,216,0.38);"></div>
+          <div style="position: absolute; left: 23.8%; top: 0; transform: translateX(-50%); font: 600 11px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #f2f0f7;">7s</div>
+          <div style="position: absolute; left: 54.2%; top: 0; transform: translateX(-50%); font: 600 11px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #f2f0f7;">85s</div>
+          <div style="position: absolute; left: 77.1%; top: 0; transform: translateX(-50%); font: 600 11px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #f2f0f7;">9m 12s</div>
+          <div style="position: absolute; left: 98.7%; top: 0; transform: translateX(-100%); white-space: nowrap; font: 600 11px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #8681a0;">53m 56s</div>
+          <div style="position: absolute; left: 0; top: 40px; font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; color: #5b5675;">1S</div>
+          <div style="position: absolute; left: 35.9%; top: 40px; transform: translateX(-50%); font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; color: #5b5675;">1M</div>
+          <div style="position: absolute; right: 0; top: 40px; font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; color: #5b5675;">1H</div>
+        </div>
+        <p class="note" style="margin-top: 8px; font-size: 12.5px; color: #8681a0;">Fastest reveal, median reveal, slowest reveal, slowest commit. The rail is never the only carrier &mdash; the number is always beside it.</p>
+      </div>
+
+      <div style="width: 400px; flex: none; padding: 28px 32px; border-radius: 16px; background: #0f0c1c; border: 1px solid rgba(255,255,255,0.07); box-shadow: inset 0 1px 0 rgba(255,255,255,0.045), 0 24px 60px -28px rgba(0,0,0,0.75);">
+        <div class="lbl">Two densities</div>
+        <p class="note" style="margin-top: 12px; font-size: 13px;">Past roughly forty rows the commit line drops and the cell halves in height. Reveal latency and the coherence state survive at every density; nothing else does.</p>
+        <div style="display: flex; gap: 28px; margin-top: 22px; align-items: flex-start;">
+          <div>
+            <div class="lbl" style="margin-bottom: 10px; color: #5b5675;">76px</div>
+            <div class="cell">
+              <div style="display: flex; align-items: center; gap: 6px;"><span class="gl" style="color: #4ddfd8;">&#10003;</span><span class="vd" style="color: #4ddfd8;">Coherent</span></div>
+              <div class="m" style="margin-top: 8px;"><span class="mk">R</span><span class="mv" style="color: #f2f0f7; font-size: 13px;">85s</span><span class="rail"><i style="width: 54%;"></i></span></div>
+              <div class="m" style="margin-top: 5px;"><span class="mk">C</span><span class="mv">6m 36s</span><span class="rail c"><i style="width: 71%;"></i></span></div>
+            </div>
+          </div>
+          <div>
+            <div class="lbl" style="margin-bottom: 10px; color: #5b5675;">44px</div>
+            <div class="cell" style="min-height: 44px;">
+              <div class="m"><span class="gl" style="color: #4ddfd8;">&#10003;</span><span class="mv" style="color: #f2f0f7; font-size: 13px; width: 52px;">85s</span><span class="rail"><i style="width: 54%;"></i></span></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+</x-dc>
+</body>
+</html>
