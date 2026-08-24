@@ -1,0 +1,15 @@
+# Biome owns formatting for JS/TS/JSON; this covers the rest and the editor's defaults.
+root = true
+
+[*]
+end_of_line = lf
+charset = utf-8
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+[*.{js,jsx,ts,tsx,json,jsonc,yml,yaml,toml,html,css,md}]
+indent_style = space
+indent_size = 2
+
+[*.md]
+trim_trailing_whitespace = false

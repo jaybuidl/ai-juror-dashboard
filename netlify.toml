@@ -1,0 +1,86 @@
+# Build configuration for the AI Juror Dashboard.
+#
+# Settings here override anything entered in the Netlify UI, so this file is the single
+# source of truth: https://docs.netlify.com/build/configure-builds/file-based-configuration/
+#
+# Node version is deliberately NOT set here. Netlify's precedence is
+# .nvmrc > .node-version > NODE_VERSION > UI, so .nvmrc (which pins 22) already wins and
+# a second declaration would only be a decoy.
+# https://docs.netlify.com/build/configure-builds/available-software-at-build-time/
+#
+# Yarn comes from the `packageManager` field in package.json via corepack, and requires the
+# committed .yarnrc.yml with `nodeLinker: node-modules` — Netlify does not support PnP.
+# Because Netlify sets CI=true, Yarn enforces --immutable itself: an out-of-date yarn.lock
+# fails the build rather than being silently rewritten.
+# https://docs.netlify.com/build/configure-builds/manage-dependencies/
+
+[build]
+  # `build:ci`, not `build`: this deploy is the only gate between a change and a public
+  # page, so it lints and runs the tests as well as type-checking. There is no other CI.
+  command = "yarn build:ci"
+  publish = "dist"
+
+# --- Security headers --------------------------------------------------------------
+#
+# This dashboard is read-only forever: it never votes, stakes, holds a key, or connects
+# a wallet. The policy below is written to make that structurally true rather than merely
+# intended — `default-src 'none'` and `form-action 'none'` mean a page that started
+# submitting anything would break loudly.
+#
+# connect-src is an allowlist of the endpoints the dashboard is permitted to read. It is
+# currently narrower than the app needs, because the app currently fetches nothing.
+# EVERY TICKET THAT ADDS A DATA SOURCE MUST ADD ITS HOST HERE, including any host
+# substituted through a VITE_ override. Known and not yet listed: the Ethereum mainnet
+# RPC that ticket 02 uses for ENS. Note that an ENS avatar served as an eip155 NFT needs
+# a metadata fetch too, so img-src alone will not cover it.
+#
+# img-src allows arbitrary https hosts because ENS avatars for the six agent jurors
+# resolve to URLs this repo does not control.
+#
+# There is no frame-src clause: the dashboard embeds nothing, and default-src 'none'
+# already denies it. frame-ancestors 'none' plus X-Frame-Options means Netlify's
+# deploy-preview Drawer cannot embed the site either — accepted, in exchange for a
+# policy with no capability in it that the product does not use.
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "DENY"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Content-Security-Policy = """
+default-src 'none'; \
+script-src 'self'; \
+style-src 'self' 'unsafe-inline'; \
+img-src 'self' data: https:; \
+font-src 'self' data:; \
+connect-src 'self' https://api.goldsky.com https://arb1.arbitrum.io; \
+base-uri 'self'; \
+form-action 'none'; \
+frame-ancestors 'none'"""
+
+# Vite emits content-hashed filenames under /assets, so they can be cached indefinitely.
+[[headers]]
+  for = "/assets/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+# --- SPA fallback ------------------------------------------------------------------
+#
+# Must stay last: the redirect engine takes the first matching rule. Deliberately
+# unforced — Netlify serves a real file in preference to an unforced rewrite, so the
+# hashed bundles under /assets/ are not shadowed by the app shell. Every other unknown
+# path does return the shell at HTTP 200; tickets 09 and 11 add real routes and will
+# need a 404 view behind them.
+#
+# Known and deliberately not fixed here: a MISSING /assets/* file also returns the shell
+# at 200 with Content-Type text/html. If a browser ever held a stale index.html pointing
+# at a purged bundle, the script fetch would get HTML, fail the nosniff MIME check, and
+# render a blank page that the <noscript> block does not cover. Netlify's deploys are
+# atomic and it does not long-cache HTML, so this is narrow — but a `/assets/* -> 404`
+# rule ahead of this one is the fix if it ever shows up. It is omitted because it cannot
+# be verified against real Netlify from here, and getting it wrong 404s every asset.
+# https://docs.netlify.com/manage/routing/redirects/rewrites-proxies/
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

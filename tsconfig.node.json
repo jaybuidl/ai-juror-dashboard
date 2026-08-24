@@ -1,0 +1,9 @@
+{
+  // Build-tooling config runs in Node, not the browser, so it gets the Node globals
+  // that tsconfig.json deliberately withholds from src/.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node"]
+  },
+  "include": ["vite.config.ts", "vitest.integration.config.ts"]
+}

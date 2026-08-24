@@ -4,8 +4,16 @@ A public, read-only dashboard measuring six AI agent jurors in Kleros v2 court 3
 on two dimensions: **speed** (commit and reveal latency) and **coherence** (voting with the final
 ruling).
 
-**Status: designed, not built.** No application code exists yet. A full grilling session produced the
-glossary, four ADRs, a spec and thirteen tickets. Start by reading, not by writing.
+**Status: scaffolded.** Ticket 01 is done — Vite + React + TypeScript, yarn 4, Biome, Vitest,
+and a `netlify.toml` that is the single source of truth for the deploy. There is still no data
+layer, no metric, and no matrix: the deployed page says so outright rather than rendering an
+empty grid. The design work behind it (glossary, four ADRs, a spec, thirteen tickets) came out of
+a full grilling session. Start by reading, not by writing.
+
+`README.md` covers the toolchain, the scripts, the test split and the CSP; this file covers the
+domain. Two constraints recorded there and easy to trip over: **yarn must be 4.18 or newer**
+(earlier versions cannot install TypeScript 7 at all), and dependency floors are caret ranges
+rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines fresh releases.
 
 ## Start here
 

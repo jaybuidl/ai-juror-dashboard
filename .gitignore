@@ -1,0 +1,28 @@
+node_modules/
+dist/
+coverage/
+
+# Yarn 4 with nodeLinker: node-modules — nothing under .yarn is vendored here,
+# the version comes from the packageManager field in package.json.
+.yarn/*
+!.yarn/patches
+!.yarn/plugins
+!.yarn/releases
+!.yarn/versions
+.pnp.*
+
+# Local overrides. Note that VITE_-prefixed values are baked into the bundle and
+# are public by construction — see README.md § Configuration. Nothing secret
+# belongs in any of these files.
+.env
+.env.*
+!.env.example
+
+.netlify/
+
+# Machine-local agent permissions. .claude/settings.json IS tracked; this one
+# must not be, and must not rely on a contributor's global gitignore to stay out.
+.claude/settings.local.json
+.vite/
+*.log
+.DS_Store
