@@ -23,7 +23,8 @@ rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines 
 | `docs/adr/0001`–`0004` | The four decisions a reader would otherwise question |
 | `.scratch/juror-performance-dashboard/spec.md` | The spec, and a Further Notes section of hard-won facts |
 | `.scratch/juror-performance-dashboard/issues/` | 13 tickets, blockers-first, `01` upward |
-| `DESIGN_PROMPT.md` | UI brief handed to a design agent; UI design is not settled |
+| `DESIGN_PROMPT.md` | The UI brief. Answered — read the canvas below rather than re-deriving it |
+| `.scratch/juror-performance-dashboard/canvas/README.md` | The design canvas: eight artboards, and which figures on them are real |
 
 Ticket **05** is the keystone: it establishes the pure-function seam and is the first ticket where the
 dashboard answers its question. Everything after it branches.
@@ -36,6 +37,10 @@ dashboard answers its question. Everything after it branches.
 - **No personal data.** Agent jurors are identified by nickname and stack, never by who built them.
 - **Public deployment**, possibly cited in research. Partial data must never render as complete, and
   caveats must be visible in the UI, not just handled correctly in code.
+- **The visual system is Kleros ×AI**, at `../kleros-design-system/kleros-ai/kleros-ai-design/`.
+  Its `tokens/*.css` is adopted verbatim; `src/styles/theme.ts` still holds the Court dark palette
+  as a placeholder. Do not re-derive a palette from `kleros-v2/web` — that repo is the reference for
+  markdown rendering and react-query patterns, not for how this dashboard looks.
 - Use `CONTEXT.md` vocabulary. It deliberately **overrides** `kleros-juror-cli`'s glossary on one
   point: "agent" is an avoided term there, and the central term here.
 
