@@ -284,6 +284,19 @@ Things that cost real effort to discover and are easy to get wrong again:
   Verify with an A/B against a local server sending the exact policy, collecting through a
   `report-uri` or a `securitypolicyviolation` listener registered at document start — the browser
   console does not carry violations to automation.
+- **`yarn test` reads the deploy's `VITE_` variables on Netlify and none on your machine.** The
+  build command is `yarn build:ci`, which runs lint, types *and the offline suite* inside the
+  deploy environment — so every variable configured for the site is set while the tests run, and
+  a green local suite says nothing about a test that reads `import.meta.env`. Production sets
+  `VITE_ARBITRUM_RPC_URL`; the moment `arbitrumSource()` made the failure banner name the endpoint
+  actually configured, two assertions expecting the literal `arb1.arbitrum.io` passed on every
+  developer machine and failed only in the deploy. The comment beside them even stated the
+  mechanism — "no `VITE_ARBITRUM_RPC_URL` is set under jsdom" — and drew the wrong conclusion from
+  it. Assert what the accessor returns (`arbitrumSource().name`), and pin what the *default*
+  derives to in one unit test that passes the URL explicitly. Before touching anything that reads
+  `import.meta.env`, run the suite both ways: `yarn test` and
+  `VITE_ARBITRUM_RPC_URL=… yarn test`. This applies to the other three overrides the moment
+  anything derives from them.
 - **The Kleros ×AI palette has never had its contrast measured, and misses its own stated target.**
   `tokens/themes.css` claims "accents darkened to hold 4.5:1 on white"; measured, `--cyan-600` is
   3.95, `--mint-600` 3.65 and `--amber-600` 4.10 — only `--rose-600` (5.08) clears. In the dark

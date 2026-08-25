@@ -1,5 +1,6 @@
 import { fireEvent, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
+import { arbitrumSource } from "../performance/arbitrum";
 import { formatLatencySeconds } from "../performance/latency";
 import { formatAgo } from "../read-failure";
 import { ROSTER } from "../roster/agent-jurors";
@@ -401,10 +402,15 @@ describe("the matrix view's footer", () => {
       renderAt("/", { performance: arbitrumFailed });
 
       expect(screen.queryByText(/period durations are still being read/i)).not.toBeInTheDocument();
-      // `arb1.arbitrum.io` is DERIVED here, not hardcoded: no `VITE_ARBITRUM_RPC_URL` is set
-      // under jsdom, so `arbitrumSource()` reads the default and yields its host. A deploy that
-      // overrides the endpoint prints that host instead, which is the whole point of it.
-      expect(within(screen.getByRole("alert")).getByText("arb1.arbitrum.io")).toBeInTheDocument();
+      // Asked of `arbitrumSource()` rather than of the literal `arb1.arbitrum.io`, because the
+      // banner names the endpoint *in use* and these tests run in whatever environment builds
+      // them. `yarn build:ci` runs this suite on Netlify with the deploy's own
+      // VITE_ARBITRUM_RPC_URL set, where the literal is the wrong answer — it failed there and
+      // passed on every developer machine. What the default derives to is pinned once, in
+      // `performance/arbitrum.test.ts`, which is where that belongs.
+      expect(
+        within(screen.getByRole("alert")).getByText(arbitrumSource().name),
+      ).toBeInTheDocument();
     });
 
     it("names the window history in the banner when it is the only Arbitrum read that failed", () => {
@@ -563,8 +569,8 @@ describe("the failure banner", () => {
 
     const banner = screen.getByRole("alert");
 
-    // Derived from the configured URL, as above — see `arbitrumSource`.
-    expect(within(banner).getByText("arb1.arbitrum.io")).toBeInTheDocument();
+    // The endpoint in use, not the default one — as above.
+    expect(within(banner).getByText(arbitrumSource().name)).toBeInTheDocument();
     expect(within(banner).getByText("No response")).toBeInTheDocument();
     expect(within(banner).queryByText(/HTTP 0/)).not.toBeInTheDocument();
   });
