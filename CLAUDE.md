@@ -41,8 +41,9 @@ rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines 
 
 Ticket **05** was the keystone, and it has landed: `src/performance/` holds the seam,
 `buildCourtPerformance(RawCourtData) → KlerosResult<CourtPerformance>`, which is where every
-derivation belongs. It touches no network and reads no clock. Tickets 06, 07, 08 and 12 extend
-`RawCourtData` and the model rather than fetching beside them; a metric computed in a component is
+derivation belongs. It touches no network and reads no clock. Tickets 06, 08 and 12 extend
+`RawCourtData` and the model rather than fetching beside them, exactly as ticket 07 did when it
+added `commits` — the first field on it that no subgraph fills; a metric computed in a component is
 the mistake this seam exists to prevent. Ticket 15 added the first **aggregate** on the far side of
 it — `CourtTotals` in `src/performance/totals.ts`, which the stat tiles and the latency strip are
 figures of — so a court-wide number goes there and not into the view that prints it. Ticket 06's

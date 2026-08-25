@@ -89,10 +89,9 @@ cannot perform: that each roster address still answers to the subname it claims,
 subgraph still returns the court's disputes and its draws in the shape the model parses, that the
 template subgraph still resolves what those disputes are about, and that Arbitrum still emits the
 `CommitCast` event this dashboard reads commit latency from — with the cross-check that every
-committed draw has a matching log run against the live reads rather than a snapshot of them. It
-runs on a daily cron and on
-`workflow_dispatch` only, and never gates a pull request: its failure mode there would be network
-flake, and a red that means nothing teaches people to ignore red.
+committed draw has a matching log run against the live reads rather than a snapshot of them. It runs
+on a daily cron and on `workflow_dispatch` only, and never gates a pull request: its failure mode
+there would be network flake, and a red that means nothing teaches people to ignore red.
 
 One constraint in that file resists being tidied. Yarn 4 is not vendored here, so `corepack enable`
 must run *after* `actions/setup-node` and *before* anything invokes `yarn`; Ubuntu runners ship Yarn
