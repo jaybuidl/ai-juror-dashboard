@@ -525,6 +525,17 @@ Things that cost real effort to discover and are easy to get wrong again:
   it has reasons to be empty, and each needs its own words.** Nothing caught it — 731 tests, lint,
   types and a green build — because every test asserted what the page *shows*, and what was wrong
   was a sentence about something it does not.
+  **The banner half is the same defect and is easier to miss**, because it is composed somewhere
+  else. `failuresOf` runs before a view's not-found branch returns, so an address that names
+  nothing gets the whole stack — and on ticket 11 every one of those sentences named the agent
+  juror the address had just failed to name ("no cumulative ETH figure below is a measurement" over
+  a page with no figures at all). The rule that settles it is ticket 13's own tiering read
+  literally: **a failure is loud because it costs a figure, so a page carrying no figure raises no
+  banner**, which is why `NotFoundPage` passes none. Compose the failures *after* the branch that
+  can return early. `DisputePage` still does it the other way round and is the milder version of
+  the same thing — its wording is generic, so it banners a page showing nothing rather than
+  banners it about the wrong dispute. Worth fixing the day that view is touched; recorded here
+  rather than changed inside ticket 11's branch.
 - **`flex-direction: column-reverse` lays a column out from the bottom, so items stop sharing a
   baseline the moment one of their labels wraps.** The house pattern of a value above its own key
   needs the `dt` first in the markup (a `dd` before its `dt` is invalid), and reversing is the
