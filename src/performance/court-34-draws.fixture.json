@@ -1,0 +1,1598 @@
+[
+  {
+    "id": "151-0-0",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "151"
+    },
+    "round": {
+      "id": "151-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787191875",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "151-0-1",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "151"
+    },
+    "round": {
+      "id": "151-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787191875",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "151-0-2",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "151"
+    },
+    "round": {
+      "id": "151-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787192010",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "152-0-0",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "152"
+    },
+    "round": {
+      "id": "152-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787239019",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "152-0-1",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "152"
+    },
+    "round": {
+      "id": "152-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787238939",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "152-0-2",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "152"
+    },
+    "round": {
+      "id": "152-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787238516",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "152-0-3",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "152"
+    },
+    "round": {
+      "id": "152-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787238571",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "152-0-4",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "152"
+    },
+    "round": {
+      "id": "152-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787238491",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "153-0-0",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "153"
+    },
+    "round": {
+      "id": "153-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787244382",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "153-0-1",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "153"
+    },
+    "round": {
+      "id": "153-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787244358",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "153-0-2",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "153"
+    },
+    "round": {
+      "id": "153-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787244382",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "153-0-3",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "153"
+    },
+    "round": {
+      "id": "153-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787244716",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "153-0-4",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "153"
+    },
+    "round": {
+      "id": "153-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787244285",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "154-0-0",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "154"
+    },
+    "round": {
+      "id": "154-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "0",
+      "justification": {
+        "timestamp": "1787251101",
+        "choice": "0"
+      }
+    }
+  },
+  {
+    "id": "154-0-1",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "154"
+    },
+    "round": {
+      "id": "154-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "0",
+      "justification": {
+        "timestamp": "1787251158",
+        "choice": "0"
+      }
+    }
+  },
+  {
+    "id": "154-0-2",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "154"
+    },
+    "round": {
+      "id": "154-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787251173",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "154-0-3",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "154"
+    },
+    "round": {
+      "id": "154-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "0",
+      "justification": {
+        "timestamp": "1787251060",
+        "choice": "0"
+      }
+    }
+  },
+  {
+    "id": "154-0-4",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "154"
+    },
+    "round": {
+      "id": "154-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787251173",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "155-0-0",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "155"
+    },
+    "round": {
+      "id": "155-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787297930",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "155-0-1",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "155"
+    },
+    "round": {
+      "id": "155-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787297930",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "155-0-2",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "155"
+    },
+    "round": {
+      "id": "155-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787297930",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "156-0-0",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "156"
+    },
+    "round": {
+      "id": "156-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787299395",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "156-0-1",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "156"
+    },
+    "round": {
+      "id": "156-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787299472",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "156-0-2",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "156"
+    },
+    "round": {
+      "id": "156-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787299386",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "156-0-3",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "156"
+    },
+    "round": {
+      "id": "156-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787299395",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "156-0-4",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "156"
+    },
+    "round": {
+      "id": "156-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "0",
+      "justification": {
+        "timestamp": "1787299438",
+        "choice": "0"
+      }
+    }
+  },
+  {
+    "id": "157-0-0",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "157"
+    },
+    "round": {
+      "id": "157-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787324661",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "157-0-1",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "157"
+    },
+    "round": {
+      "id": "157-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787324661",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "157-0-2",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "157"
+    },
+    "round": {
+      "id": "157-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787324691",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "157-0-3",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "157"
+    },
+    "round": {
+      "id": "157-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787324661",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "157-0-4",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "157"
+    },
+    "round": {
+      "id": "157-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787324691",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "158-0-0",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "158"
+    },
+    "round": {
+      "id": "158-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787324640",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "158-0-1",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "158"
+    },
+    "round": {
+      "id": "158-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787324701",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "158-0-2",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "158"
+    },
+    "round": {
+      "id": "158-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787324701",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "158-0-3",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "158"
+    },
+    "round": {
+      "id": "158-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787324701",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "158-0-4",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "158"
+    },
+    "round": {
+      "id": "158-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787324665",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "159-0-0",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "159"
+    },
+    "round": {
+      "id": "159-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787324669",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "159-0-1",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "159"
+    },
+    "round": {
+      "id": "159-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787324669",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "159-0-2",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "159"
+    },
+    "round": {
+      "id": "159-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787324612",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "159-0-3",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "159"
+    },
+    "round": {
+      "id": "159-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787324710",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "159-0-4",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "159"
+    },
+    "round": {
+      "id": "159-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787324875",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "160-0-0",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "160"
+    },
+    "round": {
+      "id": "160-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787330983",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "160-0-1",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "160"
+    },
+    "round": {
+      "id": "160-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787330980",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "160-0-2",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "160"
+    },
+    "round": {
+      "id": "160-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787330983",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "160-0-3",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "160"
+    },
+    "round": {
+      "id": "160-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787331033",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "160-0-4",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "160"
+    },
+    "round": {
+      "id": "160-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787330980",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "161-0-0",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "161"
+    },
+    "round": {
+      "id": "161-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787331313",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "161-0-1",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "161"
+    },
+    "round": {
+      "id": "161-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787331313",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "161-0-2",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "161"
+    },
+    "round": {
+      "id": "161-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787331661",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "161-0-3",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "161"
+    },
+    "round": {
+      "id": "161-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787331551",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "161-0-4",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "161"
+    },
+    "round": {
+      "id": "161-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787331313",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "162-0-0",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "162"
+    },
+    "round": {
+      "id": "162-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787331743",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "162-0-1",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "162"
+    },
+    "round": {
+      "id": "162-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787331630",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "162-0-2",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "162"
+    },
+    "round": {
+      "id": "162-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787331883",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "162-0-3",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "162"
+    },
+    "round": {
+      "id": "162-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787331754",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "162-0-4",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "162"
+    },
+    "round": {
+      "id": "162-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787331883",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "163-0-0",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "163"
+    },
+    "round": {
+      "id": "163-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787343444",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "163-0-1",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "163"
+    },
+    "round": {
+      "id": "163-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787343405",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "163-0-2",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "163"
+    },
+    "round": {
+      "id": "163-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787343682",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "163-0-3",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "163"
+    },
+    "round": {
+      "id": "163-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787343425",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "163-0-4",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "163"
+    },
+    "round": {
+      "id": "163-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787343465",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "164-0-0",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "164"
+    },
+    "round": {
+      "id": "164-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787604523",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "164-0-1",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "164"
+    },
+    "round": {
+      "id": "164-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787604529",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "164-0-2",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "164"
+    },
+    "round": {
+      "id": "164-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787604505",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "164-0-3",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "164"
+    },
+    "round": {
+      "id": "164-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787604591",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "164-0-4",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "164"
+    },
+    "round": {
+      "id": "164-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787604523",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "165-0-0",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "165"
+    },
+    "round": {
+      "id": "165-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787603141",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "165-0-1",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "165"
+    },
+    "round": {
+      "id": "165-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787603344",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "165-0-2",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "165"
+    },
+    "round": {
+      "id": "165-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787603090",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "165-0-3",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "165"
+    },
+    "round": {
+      "id": "165-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787603090",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "165-0-4",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "165"
+    },
+    "round": {
+      "id": "165-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "2",
+      "justification": {
+        "timestamp": "1787603105",
+        "choice": "2"
+      }
+    }
+  },
+  {
+    "id": "166-0-0",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "166"
+    },
+    "round": {
+      "id": "166-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787604360",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "166-0-1",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "166"
+    },
+    "round": {
+      "id": "166-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787604376",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "166-0-2",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "166"
+    },
+    "round": {
+      "id": "166-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787604610",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "166-0-3",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "166"
+    },
+    "round": {
+      "id": "166-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787604376",
+        "choice": "1"
+      }
+    }
+  },
+  {
+    "id": "166-0-4",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "166"
+    },
+    "round": {
+      "id": "166-0"
+    },
+    "vote": {
+      "commited": true,
+      "voted": true,
+      "choice": "1",
+      "justification": {
+        "timestamp": "1787604350",
+        "choice": "1"
+      }
+    }
+  }
+]

@@ -107,11 +107,11 @@ jobs:
   # anything teaches people to ignore red.
   #
   # `yarn test:integration` runs every `src/**/*.integration.test.ts`, so a suite joins by
-  # filename and this comment never has to count them. What they check today: ENS subnames
-  # resolved against mainnet and cross-checked against the addresses the roster has checked
-  # in by hand; the core subgraph still returning the shape the model parses; and the
-  # template subgraph still resolving what each dispute is about. A renamed field or a
-  # changed enum is exactly what a fixture cannot notice.
+  # filename and this comment never has to count them. What they cover today: ENS (all six
+  # subnames resolved against mainnet and cross-checked against the addresses the roster has
+  # checked in by hand), the core subgraph's disputes and its draws, and the template subgraph
+  # that says what each dispute is about. Each asserts that the endpoint still returns the shape
+  # the model parses — a renamed field or a changed enum is exactly what a fixture cannot notice.
   #
   # They hit ethereum-rpc.publicnode.com and api.goldsky.com from a shared runner IP and
   # may be rate-limited there in a way they never are from a laptop. If that starts biting,

@@ -10,12 +10,13 @@ dashboard's job.
 
 ## Status
 
-**The roster and the dispute list are live.** This repository contains the application shell, the
-deployment pipeline, the Kleros ×AI visual system, a page naming the six agent jurors and a list of
-every dispute court 34 has held, each row carrying what the dispute is actually about — but no
-metrics and no matrix. Everything the page shows is record, not measurement. It says so outright
-rather than rendering an empty grid, because a public page whose figures may be cited must never
-let "not built" look like "no results".
+**The matrix is live.** This repository contains the application shell, the deployment pipeline,
+the Kleros ×AI visual system, a page naming the six agent jurors, and the dispute matrix: one row
+per dispute — headed by what that dispute is actually about — one column per agent juror, and each
+cell carrying that draw's reveal latency and whether it voted with the dispute's final ruling. Two
+measures, and no more — commit latency, per-agent-juror summaries, rewards and the historical period
+windows are all still unread. The deployed page names each of those gaps outright, because a public
+page whose figures may be cited must never let "not built" look like "no results".
 
 Read [`CLAUDE.md`](CLAUDE.md) before writing code — in particular its **Traps** section, which
 records the things that cost real time to discover. The design that this scaffold serves lives in:
@@ -75,8 +76,8 @@ running lint, type-check, tests and build as four separate steps so a failure na
 **`live`** runs `yarn test:integration`, which is every `*.integration.test.ts` under `src/` — a
 suite joins by filename, so nothing here has to count them. They are the drift checks a fixture
 cannot perform: that each roster address still answers to the subname it claims, that the core
-subgraph still returns the court's disputes in the shape the model parses, and that the template
-subgraph still resolves what those disputes are about. It runs on a daily cron and on
+subgraph still returns the court's disputes and its draws in the shape the model parses, and that
+the template subgraph still resolves what those disputes are about. It runs on a daily cron and on
 `workflow_dispatch` only, and never gates a pull request: its failure mode there would be network
 flake, and a red that means nothing teaches people to ignore red.
 
@@ -124,13 +125,14 @@ say — and never reaches into which helper computed a value.
 
 Two kinds of test, split by filename:
 
-- `*.test.ts` — offline. The pure core is tested against fixtures captured from the real thirteen
-  disputes, with no network and no mocks. `yarn test` runs these.
+- `*.test.ts` — offline. The pure core is tested against fixtures captured from the real court,
+  with no network and no mocks. `yarn test` runs these.
 - `*.integration.test.ts` — live. The I/O readers are tested against Goldsky and a public RPC
   directly, via `yarn test:integration` and `vitest.integration.config.ts`. Held out of the
   default run so `yarn test` never depends on the network. This split is deliberate: the pure
   core gets fixtures, the fetchers get the real endpoint, and nothing in between is stubbed.
-  Those readers are ENS in `src/roster/`, and the Kleros v2 core subgraph in `src/disputes/`.
+  Those readers are ENS in `src/roster/`, and the Kleros v2 core subgraph in `src/disputes/`
+  (disputes and rounds) and `src/performance/` (draws, votes and justifications).
 
 **Components take what they render as props.** `App` is the composition root — providers, and the
 one place a hook reaches the network — while `Dashboard` and below are given their data. That is

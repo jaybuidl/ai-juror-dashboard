@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 import styled from "styled-components";
+import { type Tone, toneInk, toneLine } from "../styles/tones";
 import type { Dispute, Ruling } from "./disputes";
 
 /**
@@ -141,16 +142,25 @@ const Detail = styled.span`
   letter-spacing: 0.04em;
 `;
 
-const Pill = styled.span`
+/**
+ * The row's pill, and the only one: a caller fills the slot with content, never with a second
+ * pill. `$tone` is how a filled slot carries a state colour — an amber lone-panel flag is the
+ * same amber as an amber cell — and an untoned pill is the quiet default the panel size uses.
+ */
+export const Pill = styled.span<{ $tone?: Tone }>`
   display: inline-flex;
   align-items: center;
+  gap: 4px;
   padding: 3px 7px;
-  border: ${({ theme }) => theme.borderHairline};
+  border: 1px solid
+    ${({ theme, $tone }) =>
+      $tone === undefined ? theme.borderCardHoverColor : toneLine(theme, $tone)};
   border-radius: 6px;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 0.6875rem;
   letter-spacing: 0.08em;
   text-transform: uppercase;
+  color: ${({ theme, $tone }) => ($tone === undefined ? "inherit" : toneInk(theme, $tone))};
 `;
 
 const Empty = styled.p`
@@ -170,6 +180,10 @@ export type DisputeRowSlots = {
   category?: ReactNode;
   panel?: ReactNode;
   flag?: ReactNode;
+  /** The state colour the panel pill carries. Amber marks a panel of one. */
+  panelTone?: Tone;
+  /** The state colour the flag pill carries, where a flag applies. */
+  flagTone?: Tone;
 };
 
 /**
@@ -235,7 +249,23 @@ function isFilled(slot: ReactNode): boolean {
   return slot !== undefined && slot !== null && slot !== false && slot !== "";
 }
 
-function DisputeRow({ dispute, slots }: { dispute: Dispute; slots: DisputeRowSlots }) {
+/**
+ * One dispute's row header: the same block whether it leads a list or a matrix row.
+ *
+ * `as` exists because the matrix hangs its cells off this row, and a matrix row header is a
+ * table cell rather than a list item. The grid, the reserved slots and the separator logic
+ * belong to the row rather than to the list — restating them in `Matrix.tsx` is how the two
+ * would drift, and ticket 04 fills the same slots for both.
+ */
+export function DisputeRow({
+  dispute,
+  slots,
+  as = "li",
+}: {
+  dispute: Dispute;
+  slots: DisputeRowSlots;
+  as?: "li" | "div";
+}) {
   // Collected in the order the artboard puts them, then joined with separators, so an
   // unfilled slot takes its separator with it and leaves no trace.
   const details: { key: string; node: ReactNode }[] = [];
@@ -243,8 +273,12 @@ function DisputeRow({ dispute, slots }: { dispute: Dispute; slots: DisputeRowSlo
     details.push({ key: "category", node: <Detail>{slots.category}</Detail> });
   }
   details.push({ key: "ruling", node: <Detail>{rulingLabel(dispute.ruling)}</Detail> });
-  if (isFilled(slots.panel)) details.push({ key: "panel", node: <Pill>{slots.panel}</Pill> });
-  if (isFilled(slots.flag)) details.push({ key: "flag", node: <Pill>{slots.flag}</Pill> });
+  if (isFilled(slots.panel)) {
+    details.push({ key: "panel", node: <Pill $tone={slots.panelTone}>{slots.panel}</Pill> });
+  }
+  if (isFilled(slots.flag)) {
+    details.push({ key: "flag", node: <Pill $tone={slots.flagTone}>{slots.flag}</Pill> });
+  }
 
   // The clipped title is unreadable past the row's width, so the full text goes on the
   // element as well. Only when it is genuinely a string: the slot takes any ReactNode,
@@ -254,7 +288,7 @@ function DisputeRow({ dispute, slots }: { dispute: Dispute; slots: DisputeRowSlo
   const titleText = typeof slots.title === "string" ? slots.title : undefined;
 
   return (
-    <Row>
+    <Row as={as}>
       <DisputeId>{dispute.id}</DisputeId>
       {/* Always rendered, empty or not — see `Title`. An empty one holds the line so the
           row does not change height when a title arrives or fails to. */}

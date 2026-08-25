@@ -4,18 +4,18 @@ A public, read-only dashboard measuring six AI agent jurors in Kleros v2 court 3
 on two dimensions: **speed** (commit and reveal latency) and **coherence** (voting with the final
 ruling).
 
-**Status: the roster and the dispute list are live**, at <https://kleros-ai-jurors.netlify.app>.
-Tickets 01, 02, 03, 04 and 14 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a
-`netlify.toml` that is the single source of truth for the deploy, the Kleros ×AI tokens adopted and
-self-hosted webfonts, a page that names all six agent jurors by nickname and avatar, and a list of
-every dispute court 34 has held, each row headed by the dispute's own title and category. All of
-that is record, not measurement. CI exists too —
+**Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01, 02, 03, 04,
+05 and 14 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a `netlify.toml` that is the
+single source of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted webfonts, a
+page that names all six agent jurors by nickname and avatar, and the dispute matrix — one row per
+dispute, headed by that dispute's own title and category, one column per agent juror, each cell
+carrying that draw's reveal latency and whether it voted with the final ruling. CI exists too —
 `.github/workflows/ci.yml`, added as toolchain upkeep rather than as a ticket, so do not propose it
-again. There is still no metric and no matrix — the page says so outright rather than rendering an
-empty grid, and says it *below* the roster precisely because showing who the six are is the point at
-which a visitor could start reading the page as a result. The design work behind it (glossary, six
-ADRs, a spec, eighteen tickets) came out of a full grilling session and a later pass that rebuilt
-the tracker on the finished design. Start by reading, not by writing.
+again. Two measures are read and no more: commit latency (07), per-agent-juror marginals (06),
+rewards (10) and the historical windows (08) are all still unread, and the caveat the page carries
+above the roster says so outright rather than leaving a reader to infer it. The design work behind
+it (glossary, six ADRs, a spec, eighteen tickets) came out of a full grilling session and a later
+pass that rebuilt the tracker on the finished design. Start by reading, not by writing.
 
 `README.md` covers the toolchain, the scripts, the test split and the CSP; this file covers the
 domain. Two constraints recorded there and easy to trip over: **yarn must be 4.18 or newer**
@@ -33,10 +33,11 @@ rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines 
 | `DESIGN_PROMPT.md` | The UI brief. Answered — read the canvas below rather than re-deriving it |
 | `.scratch/juror-performance-dashboard/canvas/README.md` | The design canvas: eight artboards, and which figures on them are real |
 
-Ticket **05** is the keystone: it establishes the pure-function seam and is the first ticket where the
-dashboard answers its question. Everything after it branches. Ticket **14** had to land before it —
-adopting the Kleros ×AI tokens after 05 would mean restyling several views instead of styling them
-once — and it has, so 05 is styled against the tokens from its first line.
+Ticket **05** was the keystone, and it has landed: `src/performance/` holds the seam,
+`buildCourtPerformance(RawCourtData) → KlerosResult<CourtPerformance>`, which is where every
+derivation belongs. It touches no network and reads no clock. Tickets 06, 07, 08 and 12 extend
+`RawCourtData` and the model rather than fetching beside them; a metric computed in a component is
+the mistake this seam exists to prevent.
 Every ticket from `03` up carries a `**Design:**` line naming what it is built against — an artboard
 and its line range, or, for ticket 14, the design system itself.
 
@@ -73,6 +74,20 @@ Things that cost real effort to discover and are easy to get wrong again:
   44 draws. The subgraph's `totalCoherentVotes` / `coherenceScore` are per-vote *and* global across
   all courts — unusable here (ADR-0002). `ClassicJustification` is conveniently one per draw.
 - **Dispute 155 had a panel of one.** Coherence is tautological there. Any aggregate carries this.
+- **A green suite here proves the healthy path and nothing else.** Every fixture in this repo is
+  one successful read of a working court, so no test can contain a second read that failed, a
+  round that does not exist yet, or a court that is not this one. A review pass over ticket 05
+  found seven defects against 105 passing tests, five of them the same shape: a read that failed
+  rendering as a read that returned nothing — an empty payload builds a *successful* model with no
+  rows, and the page then states that the court has held no disputes. When adding to this seam,
+  write the failure case by hand; the fixtures will not hand it to you.
+- **A dispute in `appeal` has every vote in and no ruling.** Disputes 164–166 sat there with all
+  twelve draws revealed and `ruled: false`. That is a real state and not a transient one — the
+  appeal period runs ~18h — and it is none of the three the cell design first named: not coherent
+  or diverged (no ruling to compare against), not a missed vote (it voted), not awaiting or
+  committed (it revealed). The matrix words it `REVEALED`, a third stage of the live family. Any
+  aggregate must exclude these draws from coherence while still counting their latency, or it will
+  either undercount speed or invent a coherence figure out of a prediction.
 - **The matrix is sparse** — it was 44% empty over the first thirteen disputes, and one agent juror
   has never been drawn at all. A design that assumes a full grid will look broken.
 - **ENS reverse records are mostly unset.** Only three of the six addresses have one, because
@@ -149,14 +164,21 @@ Things that cost real effort to discover and are easy to get wrong again:
   not. The same string ordering is why dispute lists order on `disputeID` and not on `id`, and why
   ordering happens in the model rather than the query — **ordering by `period` is rejected outright**
   by The Graph on the `Dispute` type, so the obvious query is the broken one.
-- **Parallel ticket branches collide in the status prose, not in the code.** Tickets 03, 14 and a
+- **Parallel ticket branches collide in the status prose *and* in the code.** Tickets 03, 14 and a
   CI branch each touched this file's status paragraph and `README.md` § Status. Git auto-merged all
   three textually and produced claims true of every parent alone and false of the merge — "no
   dispute data" one commit after the dispute list landed, and a `live` CI job describing one
   integration suite after `yarn test:integration` had silently picked up a second. Lint, types and
-  tests passed on all of it. When integrating, re-read every sentence that counts what is done or
-  says how many of something there are; the sentences that raise a conflict marker are the easy
-  half.
+  tests passed on all of it. Tickets 04 and 05 then did it again in the source: both branches
+  independently generalised the *same* private `fetch` helper so a second reader could share it, in
+  different directions — `postSubgraphQuery` in a new `src/disputes/subgraph.ts` against an exported
+  `postCoreQuery` left in `court-subgraph.ts` — so what conflicted was a design choice, not a text
+  merge. Ticket 05's file records how that one was settled, under § Integrated with ticket 04.
+  When integrating, re-read every sentence that counts what is done or says how many of something
+  there are, and every helper both branches touched. Then look for what the merge newly connects
+  that neither parent could test: ticket 04's `slotsFor` only reaches ticket 05's matrix once both
+  are on the same branch, and on either branch alone that wire is `undefined`. The sentences and
+  hunks that raise a conflict marker are the easy half.
 
 ## Verified constants
 

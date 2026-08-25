@@ -162,3 +162,20 @@ ellipsis`, and the full text is reachable only through a `title` attribute. That
 — no keyboard access, inconsistent screen-reader handling, no touch equivalent — and it was left
 deliberately for this ticket rather than guessed at. The clipping itself is a fixed requirement from
 `Main.dc.html:162`, so the fix is a better disclosure, not unclipping the title.
+
+### From the ticket 04 + 05 integration, 2026-08-25 — the row header announces one run-on string
+
+In the matrix, a dispute's row header is a `rowheader` cell whose accessible name is the
+concatenation of its own contents, and nothing separates the dispute ID from the title that follows
+it: dispute 151 announces as **"151x402 escrow dispute Escrow · Ruling 1 · Panel 2"**. Visually the
+two sit in separate grid tracks with a `column-gap`, so the defect is invisible on the page and
+appears only in the accessibility tree.
+
+It exists only now that both tickets are on one branch — ticket 05 built the row header, ticket 04
+fills the title slot, and on either branch alone the slot was empty. `Matrix.test.tsx` had to locate
+rows by their title rather than by `^151\b` because of it, which is the tell left in the code.
+
+The fix is a decision this ticket owns, not a separator character: whether the row header carries an
+explicit `aria-label` reading as a sentence, or the ID and title are separated in the accessibility
+tree some other way. The same run-on affects `DisputeList`'s `li` rows, where it matters less
+because a list item is not announced as a header.

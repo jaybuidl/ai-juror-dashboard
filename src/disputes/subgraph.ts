@@ -55,6 +55,10 @@ export async function postSubgraphQuery<T>({
     throw new Error(`${source} rejected the query: ${body.errors[0]?.message}`);
   }
 
+  // The optional chain covers a null `data` as well as an absent field: a gateway that answers
+  // `{"data": null}` with no `errors` array is off-spec but real, and letting that through hands
+  // the caller a null it then reads a field off — a TypeError in place of the message the page
+  // was going to show.
   const selection = body.data?.[field];
   if (selection === undefined || selection === null) {
     throw new Error(`${source} returned no ${field} field`);

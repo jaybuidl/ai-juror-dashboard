@@ -41,3 +41,26 @@ live row's rail, tint and flag pill), `../canvas/Cell.dc.html:144-154` (the live
       blank means the agent juror was not drawn
 - [ ] A dispute that finalises while the page is open loses its live treatment on the next refresh,
       without a reload
+
+## Comments
+
+### From ticket 05, 2026-08-25 — the live flag has a slot waiting for it
+
+**`ROW_FLAGS` in `src/performance/Matrix.tsx` is the mechanism, with the precedence documented in
+place:** window (ticket 08), then lone panel (built), then live (yours). Each is one entry in that
+array — an object with `applies`, a glyph, a label and a tone — and the row renders the first that
+matches. Adding the live flag is an entry, not a change to the markup, and the commented
+placeholder is already on the line below the lone panel.
+
+**The live cell states are built and already occurring.** `awaiting`, `committed` and `revealed`
+are stages of `LiveStage` in `performance.ts`, driven entirely by the model: whether the vote
+period has opened, whether a commitment is recorded, whether a justification exists. Nothing waits
+on a refetch interval — disputes 164–166 render as live today from a single read.
+
+**`useCourtPerformance` holds a plain 60s staleTime and no interval**, matching `useDisputes`. Both
+read the same court and there is nothing to gain from one being fresher than the other, so if you
+give one a 5s interval, give both.
+
+**A finalised row is one whose dispute has a ruling, not one whose period is `execution`.** The
+matrix's own caption counts them that way (`ruling.state !== "pending"`), for the reason ticket 03
+recorded: the subgraph reports a `currentRuling` for a dispute still in its appeal period.

@@ -31,8 +31,17 @@ export const theme = {
   // CSS whose border-style defaults to none, so the mistake draws nothing and warns nothing.
   borderCardColor: "var(--border-card)",
   borderCardHoverColor: "var(--border-card-hover)",
+  // The state washes and lines, in the pairs ADR-0006 assigns: amber tints a draw that
+  // diverged, rose one that failed to act, mint one still acting. Cyan has no pair — the
+  // coherent cell is the quiet one, with no fill and no border of its own.
   lineAmber: "var(--line-amber)",
   washAmber: "var(--wash-amber)",
+  lineMint: "var(--line-mint)",
+  washMint: "var(--wash-mint)",
+  lineRose: "var(--line-rose)",
+  washRose: "var(--wash-rose)",
+  /* The heavier of the two hairlines: the rule under a table's column headers. */
+  lineStrongColor: "var(--line-2)",
 
   // Text ramp. `textPending` is a step not yet reached, not a disabled control.
   textHeading: "var(--text-heading)",
@@ -93,6 +102,8 @@ export const theme = {
   // The steps of the system's spacing scale this page uses, keyed by its own index so the
   // two stay legible against each other. The rest are added when a view needs them.
   space1: "var(--space-1)",
+  space2: "var(--space-2)",
+  space3: "var(--space-3)",
   space4: "var(--space-4)",
   space5: "var(--space-5)",
   space6: "var(--space-6)",

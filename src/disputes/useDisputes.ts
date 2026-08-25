@@ -7,11 +7,29 @@ import {
   templateIdsOf,
   toDisputeTemplates,
 } from "./dispute-templates";
-import { type Dispute, toDisputes } from "./disputes";
+import { type Dispute, type RawDispute, toDisputes } from "./disputes";
 import { fetchDisputeTemplates } from "./drt-subgraph";
+
+/**
+ * The court's disputes, as the list reads them and as the matrix is built from them.
+ *
+ * `raw` is the payload exactly as the core subgraph returned it, kept because
+ * `buildCourtPerformance` takes raw data and does every derivation itself — that is what the
+ * seam is. Handing it the already-modelled list would put half the derivation above the seam
+ * and half below it. One query feeds both, so the list and the matrix can never be looking at
+ * different courts.
+ *
+ * Titles are deliberately not in it: they come from a second endpoint, they are a property of
+ * a row rather than of a measurement, and nothing below the seam reads one.
+ */
+export type DisputesView = DisputeListView & {
+  raw: readonly RawDispute[];
+};
 
 /** What every dispute looks up against until the titles arrive, or if they never do. */
 const NO_TEMPLATES = new Map<number, DisputeTemplate>();
+const NO_DISPUTES: readonly RawDispute[] = [];
+const NO_MODEL: readonly Dispute[] = [];
 
 /**
  * The court's disputes, newest first, with what each one is about.
@@ -23,22 +41,28 @@ const NO_TEMPLATES = new Map<number, DisputeTemplate>();
  * a title arriving later moves nothing, and a title never arriving leaves a row that is
  * still identified by its core dispute ID.
  *
- * The fetches are the only things here that touch the network; ordering and every
- * derived value come from pure functions. Liveness — the 5s refetch and the persistence
- * of finalised disputes — is ticket 12's, so this holds plain staleTimes and no interval.
+ * The fetches are the only things here that touch the network; ordering and every derived
+ * value come from pure functions. `toDisputes` stays inside the query function rather than
+ * moving into a memo, because it throws on a payload it cannot read — inside, that is an
+ * error the page reports; outside, it is a render that fails.
+ *
+ * Liveness — the 5s refetch and the persistence of finalised disputes — is ticket 12's, so
+ * this holds plain staleTimes and no interval.
  */
-export function useDisputes(): DisputeListView {
+export function useDisputes(): DisputesView {
   const disputes = useQuery({
     queryKey: ["courtDisputes", COURT_ID],
-    queryFn: async ({ signal }): Promise<Dispute[]> =>
-      toDisputes(await fetchCourtDisputes({ signal })),
+    queryFn: async ({ signal }) => {
+      const raw = await fetchCourtDisputes({ signal });
+      return { raw, disputes: toDisputes(raw) };
+    },
     // New disputes arrive continually, but a minute-old list is not misleading — and
     // every row it holds carries its own period, so nothing here silently ages into a
     // claim that a dispute is finished.
     staleTime: 60 * 1000,
   });
 
-  const rows = disputes.data ?? [];
+  const rows = disputes.data?.disputes ?? NO_MODEL;
   const templateIds = templateIdsOf(rows);
 
   const templates = useQuery({
@@ -68,6 +92,7 @@ export function useDisputes(): DisputeListView {
   ).length;
 
   return {
+    raw: disputes.data?.raw ?? NO_DISPUTES,
     disputes: rows,
     isLoading: disputes.isPending,
     // Kept alongside whatever rows are already held: a failed refetch must not blank the

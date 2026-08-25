@@ -81,9 +81,37 @@ Two things this ticket inherits:
   unread *cell* correctly uses `?`. See `../canvas/README.md` § Known defects; do not copy the
   banner's glyph as drawn.
 
-**From ticket 04 (2026-08-25).** `DisputeList.tsx` now renders **two** notices from the same `Notice`
-component, not one, and they say different things on purpose: the disputes could not be read (the
-list may be partial), and the disputes' subjects could not be read (the list is whole, only titles
-are missing). The second carries a count — "3 of these 16 disputes" — because a lagging subgraph
-produces the partial case and "some" and "all" are different claims. Both need the designed failure
-state; neither should be collapsed into the other.
+### From ticket 04, 2026-08-25 — the list's second notice counts rather than catches
+
+`DisputeList.tsx` renders **two** notices from the same `Notice` component, not one, and they say
+different things on purpose: the disputes could not be read (the list may be partial), and the
+disputes' subjects could not be read (the list is whole, only titles are missing). The second
+carries a count — "3 of these 16 disputes" — because a lagging subgraph produces the partial case
+and "some" and "all" are different claims. Both need the designed failure state; neither should be
+collapsed into the other.
+
+### From ticket 05, 2026-08-25 — the placeholder notices to replace, and a word to watch
+
+**Four placeholder notices now exist across two files, and all four are yours to replace.**
+`DisputeList.tsx` holds the two ticket 04 describes above. `Dashboard.tsx` holds two more, styled
+the same way: one for a court that could not be *re*-read while a matrix is on screen, which must
+say the matrix may be stale rather than complete, and one for a matrix that could not be built at
+all — in that case the matrix is not rendered and the dispute list is shown in its place, because a
+matrix built without draws is a page of blank cells and a blank cell says an agent juror was not
+drawn. All four are marked in comments.
+
+**`Notice` is defined twice**, once in each file, because the two tickets that added them never met.
+Replacing them with the designed failure state is the moment to have one.
+
+**`buildCourtPerformance` returns a failure envelope, and today it is flattened into an `Error`.**
+`useCourtPerformance` turns `{ success: false, code, message, details }` into
+`new Error(`${code}: ${message}`)` because nothing above it can yet show more. The code and the
+details are the loud partial-read banner's content — `MALFORMED_COURT_DATA` and the draw id it
+names — and the flattening is the thing to undo.
+
+**Watch the word `Unknown`.** This ticket owns the rose `?` Unknown *cell state*, for a draw whose
+data could not be read. Ticket 05 already uses the bare word `Unknown` in pending ink for a
+different thing: a reveal that happened and left no timestamp behind, in a cell whose coherence is
+known. `revealFigureOf` in `cell.ts` is where it is worded. Two Unknowns on one page, one rose and
+one quiet, is exactly the confusion `Cell.dc.html:140` warns about — decide deliberately which one
+keeps the word.

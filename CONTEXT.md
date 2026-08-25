@@ -35,10 +35,17 @@ all six appear: an agent juror that has never staked or been drawn has no on-cha
 _Avoid_: panel, juror list
 
 **Panel**:
-The agent jurors drawn for one dispute — one per draw, however many vote IDs each holds.
-At most the size of the roster, and varies between disputes: dispute 155's panel was one agent juror
-holding all three votes, so its panel size is 1 and not 3.
-_Avoid_: jury, roster, counting it in vote IDs
+Everyone the court drew for one dispute — one per draw, however many vote IDs each holds. It varies
+between disputes: dispute 155's panel was one juror holding all three votes, so its panel size is 1
+and not 3.
+
+A fact about the court, not about the roster. Every panel in court 34 so far has been agent jurors
+and nothing else, so panel size has never exceeded the roster — but the two are different
+quantities, and conflating them makes the page assert something it has not measured. A panel of two
+holding one agent juror and one other would otherwise be reported as "a panel of one", and with it
+the claim that a lone juror is automatically the majority, which would then be false. The matrix has
+one column per agent juror and counts its panels in everyone drawn.
+_Avoid_: jury, roster, counting it in vote IDs, assuming a panel is all agent jurors
 
 ### The measures
 
