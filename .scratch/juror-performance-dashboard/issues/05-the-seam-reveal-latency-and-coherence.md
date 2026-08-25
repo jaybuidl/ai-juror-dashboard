@@ -196,3 +196,37 @@ failed rendering as a read that returned nothing.
 that is not this one, or a round that does not exist yet — states the fixtures cannot contain,
 because the fixtures are a healthy court read once. Worth knowing before trusting a green suite
 on the next ticket in this seam.
+
+### For whoever integrates this with ticket 04
+
+Both branches refactored the same two files, in different directions, and neither is wrong.
+
+**`src/disputes/court-subgraph.ts` — keep ticket 04's extraction, not this one.** Both branches
+pulled the private POST helper out so a second reader could share it. Ticket 04 moved it to a new
+`src/disputes/subgraph.ts` as `postSubgraphQuery`, parameterised by source and field so that "the
+template subgraph rejected the query" and "the core subgraph rejected the query" read differently;
+ticket 05 left it in place as an exported generic `postCoreQuery`. Ticket 04's is the more general
+of the two and serves three readers rather than two. Resolve by taking it, dropping
+`postCoreQuery`, and pointing `src/performance/draws-subgraph.ts` at `postSubgraphQuery` — it needs
+`{ draws?: RawDraw[] }` back and nothing else.
+
+Keep ticket 05's `body.data === undefined || body.data === null` guard wherever the helper ends up.
+A gateway answering `{"data": null}` with no `errors` array is off-spec and real, and the
+`undefined`-only check returns null into a field read — a TypeError in place of the message the
+page was going to show.
+
+**`src/disputes/useDisputes.ts` — the union of both, not either.** Ticket 04 adds a second query
+for titles and returns `slotsFor`; ticket 05 changes the first query to return
+`{ raw, disputes }` so that `buildCourtPerformance` gets the payload undivided and one request
+feeds both the list and the matrix. Take ticket 04's two-query structure, and inside its first
+`queryFn` keep the raw array alongside `toDisputes(raw)`. The matrix needs `raw`, `isLoading` and
+`error` on the returned view — see `RawDisputesView` in `useCourtPerformance.ts`.
+
+Keep `toDisputes` inside the query function either way. It throws on a payload it cannot read;
+inside, that is an error the page reports, and outside it is a render that fails.
+
+**`src/disputes/DisputeList.tsx` auto-merges, and should be read anyway.** Ticket 04 fills the
+title and category slots; ticket 05 exports `DisputeRow` so the matrix can hang cells off the same
+row header, and makes the row's `Pill` the only one, taking a `$tone`. The two do not overlap
+textually. What to check after merging is that ticket 04's slots still reach the matrix, which is
+the whole reason the row is shared: `Dashboard` passes `disputes.slotsFor` into `Matrix`.

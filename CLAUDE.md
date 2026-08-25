@@ -74,6 +74,13 @@ Things that cost real effort to discover and are easy to get wrong again:
   44 draws. The subgraph's `totalCoherentVotes` / `coherenceScore` are per-vote *and* global across
   all courts — unusable here (ADR-0002). `ClassicJustification` is conveniently one per draw.
 - **Dispute 155 had a panel of one.** Coherence is tautological there. Any aggregate carries this.
+- **A green suite here proves the healthy path and nothing else.** Every fixture in this repo is
+  one successful read of a working court, so no test can contain a second read that failed, a
+  round that does not exist yet, or a court that is not this one. A review pass over ticket 05
+  found seven defects against 105 passing tests, five of them the same shape: a read that failed
+  rendering as a read that returned nothing — an empty payload builds a *successful* model with no
+  rows, and the page then states that the court has held no disputes. When adding to this seam,
+  write the failure case by hand; the fixtures will not hand it to you.
 - **A dispute in `appeal` has every vote in and no ruling.** Disputes 164–166 sat there with all
   twelve draws revealed and `ruled: false`. That is a real state and not a transient one — the
   appeal period runs ~18h — and it is none of the three the cell design first named: not coherent
