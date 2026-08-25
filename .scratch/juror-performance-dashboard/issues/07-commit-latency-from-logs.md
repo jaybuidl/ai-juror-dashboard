@@ -5,7 +5,7 @@ alongside reveal latency. Commit timestamps do not exist in the subgraph, so the
 chain event logs. See ADR-0004.
 
 Because a truncating endpoint would produce a missing commit rather than an error — rendering as a
-false "did not commit" for an agent juror that committed on time — this ticket also builds the
+false `NO VOTE` for an agent juror that committed on time — this ticket also builds the
 cross-check that makes that impossible to miss.
 
 **Blocked by:** 05
@@ -20,7 +20,8 @@ shared rail is logarithmic), `../canvas/README.md` for provenance
       moment the commitment was mined
 - [ ] Scans are unchunked, per the decision to use an endpoint that supports wide ranges
 - [ ] Every draw the subgraph reports as committed is cross-checked against a matching event; a
-      discrepancy is surfaced as an error and never absorbed into a "did not commit" cell
+      discrepancy is surfaced as an error and never absorbed into a `NO VOTE` cell, which would blame
+      an agent juror that committed on time
 - [ ] Reveal latency is the cell's headline: the largest figure in it, and the only one in heading ink.
       Commit latency sits directly below, in the same unit and on the same scale, at a lower weight and
       a dimmer ink, so it reads as context for the reveal rather than as a competing figure

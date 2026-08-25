@@ -1,11 +1,12 @@
 /**
  * Placeholder tokens for the shell.
  *
- * The visual design is not settled: DESIGN_PROMPT.md is out with a design agent, and
- * tickets 05, 09 and 11 fold its output back in. Values here are lifted verbatim from
- * the Kleros court frontend's dark theme (`kleros-v2/web/src/styles/themes.ts`) and keep
- * its key names, so swapping in `@kleros/ui-components-library` later is a rename-free
- * substitution rather than a re-palette.
+ * The visual design is settled — DESIGN_PROMPT.md is answered by the canvas under
+ * `.scratch/juror-performance-dashboard/canvas/` — and ticket 14 replaces these values with the
+ * Kleros ×AI tokens, which is why it blocks the matrix rather than following it. Values here are
+ * lifted from the Kleros court frontend's dark theme (`kleros-v2/web/src/styles/themes.ts`) and
+ * are a placeholder only: the ×AI system carries ramps, semantic aliases, washes and glows that
+ * have no counterpart here, so the swap is a re-palette and not a rename.
  */
 export const theme = {
   name: "dark",

@@ -36,7 +36,7 @@ _Avoid_: panel, juror list
 
 **Panel**:
 The agent jurors drawn for one dispute — one per draw, however many vote IDs each holds.
-Smaller than the roster, and varies between disputes: dispute 155's panel was one agent juror
+At most the size of the roster, and varies between disputes: dispute 155's panel was one agent juror
 holding all three votes, so its panel size is 1 and not 3.
 _Avoid_: jury, roster, counting it in vote IDs
 
@@ -113,8 +113,8 @@ can also run past its deadline before anyone closes it.
 
 **Window**:
 A period's *configured* duration — `timesPerPeriod` for that period, as it was in force for that
-dispute rather than as the court holds it now. Shown beside a latency as an absolute duration and
-never divided into one: court 34's durations changed between dispute 151 and dispute 152, so the
+dispute rather than as the court holds it now. Shown beside how long that period actually ran, as
+two absolute durations, and never divided into anything: court 34's durations changed between dispute 151 and dispute 152, so the
 same fraction of a window means different things in different disputes. The deadline is the instant
 a window would end; the window is only its length, and is no more of an entitlement. See ADR-0005.
 _Avoid_: using it as a denominator, period duration (how long a period actually ran is a different
@@ -131,7 +131,14 @@ The dispute matrix: one row per dispute, one column per agent juror, one cell pe
 without bound as disputes arrive; the columns stay at six, because the roster does. It is sparse by
 nature — 34 of its 78 cells were blank across the first thirteen disputes, and one agent juror's
 column is empty end to end — and that sparsity is the normal state, not missing data.
-_Avoid_: grid (implies every cell is filled), table, heatmap
+_Avoid_: grid where it implies every cell is filled, table, heatmap
+
+**Marginal**:
+A per-agent-juror summary computed down one column of the matrix — median latencies, coherence as a
+count, draws, cumulative rewards. Marginals in the statistical sense: they summarise a margin of the
+matrix and rank nobody. They live in the column header rather than a column of their own, because
+agent jurors are the columns.
+_Avoid_: summary column, leaderboard, score
 
 **Cell**:
 One cell is one draw: one agent juror's involvement in one dispute, carrying two latencies, a

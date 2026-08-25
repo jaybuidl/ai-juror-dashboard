@@ -10,7 +10,7 @@ Ticket 05 builds the cell and its five renderable states, the live one among the
 the seam: everything here is supply — what refreshes, what counts as finalised, what persists — and
 the surfaces below are what that supply is required to change.
 
-**Blocked by:** 07
+**Blocked by:** 05, 07
 
 **Design:** `../canvas/Main.dc.html:131-133` (the finalised-versus-live count) and `:302-306` (the
 live row's rail, tint and flag pill), `../canvas/Cell.dc.html:144-154` (the live cell state),
@@ -30,7 +30,7 @@ live row's rail, tint and flag pill), `../canvas/Cell.dc.html:144-154` (the live
 - [ ] The flag pill names the period that is open and how long it has been open, so the row carries
       the elapsed time and not only the fact of being live
 - [ ] That elapsed time is computed above the seam, since the pure function of ticket 05 reads no clock
-- [ ] The matrix's corner cell says how many disputes are finalised and how many are live, so the
+- [ ] The corner of the matrix says how many disputes are finalised and how many are live, so the
       count is itself a liveness surface rather than a bare total
 - [ ] Every draw in an unfinalised dispute reaches the view marked live, so that the live cell state
       ticket 05 builds is the one that renders — this ticket supplies that state, it does not draw it

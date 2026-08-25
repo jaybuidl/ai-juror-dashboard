@@ -39,8 +39,8 @@ it.
 ## Consequences
 
 The window stays visible where it matters, as two absolute durations. `canvas/Dispute.dc.html:88-96`
-renders the period strip as "Commit period · 45m configured · closed in 34m 23s", and the same shape
-for the vote and appeal periods. The reader is free to form the ratio; the page does not form it for
+renders the period strip in that shape — the period named, then its configured duration, then how
+long it in fact ran — and the same for the vote and appeal periods. The reader is free to form the ratio; the page does not form it for
 them.
 
 Relative magnitude is carried by the shared logarithmic rail instead (`canvas/Cell.dc.html:91`): 1s

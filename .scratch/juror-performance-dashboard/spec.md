@@ -7,7 +7,7 @@
 Kleros is running an experiment in which six AI agent jurors, each an independent build on a
 different stack, vote in a single court (court 34, "Agentic Commerce Court", on Arbitrum One). The
 team has no way to see how they are performing. The interesting facts — how fast each agent juror
-acted once a period opened, whether it voted with the final ruling, and what reasoning it published
+acted once a period opened, whether it voted with the final ruling, and what justification it published
 — are spread across a subgraph, event logs, and ENS, and are visible today only by hand-querying.
 
 The comparison that makes the experiment meaningful is also invisible: a normal Kleros court runs
@@ -30,13 +30,13 @@ It reads directly from public endpoints in the browser. There is no backend and 
 3. As a Kleros team member, I want to see how long after the commit period opened each agent juror committed, so that I can compare their responsiveness.
 4. As a Kleros team member, I want the same for the reveal, so that I can tell whether an agent is fast at one step and slow at the other.
 5. As a Kleros team member, I want latencies shown in seconds when they are short and minutes when they are long, so that a 7-second reveal and a 54-minute commit are both readable.
-6. As a Kleros team member, I want to see whether each draw was coherent with the final ruling, so that I can weigh speed against correctness.
+6. As a Kleros team member, I want to see whether each draw was coherent with the final ruling, so that I can weigh speed against coherence.
 7. As a Kleros team member, I want a draw where the agent juror was not drawn to render blank, so that I never mistake absence for slowness.
 8. As a Kleros team member, I want a draw where the agent juror failed to commit or reveal to render distinctly, so that a real failure is visible and is not confused with absence.
 9. As a Kleros team member monitoring a live dispute, I want a draw whose period is still open to render as pending rather than blank, so that an agent juror that has not acted yet is not mistaken for one that was not drawn or one that failed to act.
 10. As a Kleros team member, I want a summary per agent juror — typical latency, coherence as a count, number of draws — so that I can see a pattern without ranking anyone.
 11. As a Kleros team member, I want the summary latency to be a median, so that one unusual dispute cannot distort it.
-12. As a Kleros team member, I want cumulative ETH and PNK rewards per agent juror, so that I have participation and correctness in economic terms.
+12. As a Kleros team member, I want cumulative ETH and PNK rewards per agent juror, so that I have participation and coherence in economic terms.
 13. As a Kleros team member, I want to open a dispute and read every panel member's justification side by side, so that I can compare how different stacks reasoned about identical evidence.
 14. As a Kleros team member, I want justifications rendered as Markdown, so that the ones with headings and structure are readable as written.
 15. As a Kleros team member, I want a justification that is absent to say so, so that I do not read an empty panel as a rendering bug.
@@ -72,8 +72,8 @@ See ADR-0003.
 **Latency.** Held in seconds, measured from the observed moment a period opened — the round
 timeline, not a scheduled deadline. See ADR-0001. Values under two minutes display in seconds and
 longer ones switch to minutes, because 3,236s is not a number anyone reads. No latency is ever shown
-as a fraction of a window, at any altitude — a window appears as an absolute duration beside an
-absolute latency, never as a denominator. See
+as a fraction of a window, at any altitude — a window appears beside how long its period actually
+ran, as two absolute durations, never as a denominator. See
 ADR-0005. Per-dispute period durations are still resolved from the `CourtModified` history, because
 court 34's parameters changed between dispute 151 and dispute 152, which is also why dispute 151
 must be visibly marked.
@@ -95,7 +95,10 @@ timestamps, `CourtModified` history), and an Ethereum mainnet RPC (ENS names and
 the only source for stack and the only place all six agent jurors appear. No operator names. ENS
 resolution happens above the seam; the pure core is keyed by address.
 
-**Views and routing.** Real routes: the matrix, a per-dispute view, a per-juror view.
+**Views and routing.** Real routes: the matrix, a per-dispute view, a per-juror view, and a method
+page. The last is new since this was written — the canvas's nav offers it and the dispute-151
+marker links into it, so ticket 15 builds the page and ticket 08 writes its window section.
+Whether the nav's disputes destination gains an index of its own is still open.
 
 **Liveness.** `@tanstack/react-query` with a 5000ms refetch interval. A dispute is finalised when its
 period is `execution`; finalised results are persisted to `localStorage` and not refetched.

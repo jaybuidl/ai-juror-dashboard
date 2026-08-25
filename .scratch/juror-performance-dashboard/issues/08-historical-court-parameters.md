@@ -8,7 +8,7 @@ counted. No latency is divided by a window at any altitude: a window appears bes
 absolute duration, never as a denominator. This dashboard is public and may be cited in research.
 See ADR-0005, which closes the question ADR-0001 left open.
 
-**Blocked by:** 07
+**Blocked by:** 07, 15
 
 **Design:** `../canvas/Errors.dc.html:168-218` (the dispute-151 marker, on the row and on every
 aggregate), `../canvas/Dispute.dc.html:88-96` (a configured window beside an elapsed one),
@@ -25,6 +25,9 @@ aggregate), `../canvas/Dispute.dc.html:88-96` (a configured window beside an ela
       strip uses: the period named, its configured duration, then how long it in fact ran
 - [ ] The dispute that ran under the pre-modification parameters is visibly marked in the matrix, with
       an explanation reachable from the marker
+- [ ] That explanation is the window section of the method page ticket 15 builds, reached at its own
+      fragment so the matrix footnote can link straight to it. This ticket writes the section's
+      content and 15 owns the page, its route and its anchors
 - [ ] That explanation names both regimes as absolute durations — the 8-hour commit window dispute 151
       ran under, against the 45 minutes configured from dispute 152 onward — which is what the resolved
       per-dispute durations are for

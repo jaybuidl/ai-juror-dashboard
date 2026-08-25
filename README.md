@@ -10,10 +10,10 @@ dashboard's job.
 
 ## Status
 
-**Scaffold only.** This repository currently contains the application shell and the deployment
-pipeline, and nothing else — no data layer, no metrics, no matrix. The deployed page says so
-outright rather than rendering an empty grid, because a public page whose figures may be cited
-must never let "not built" look like "no results".
+**The roster is live.** This repository contains the application shell, the deployment pipeline and
+a page naming the six agent jurors — but no data layer, no metrics and no matrix. The deployed page
+says so outright rather than rendering an empty grid, because a public page whose figures may be
+cited must never let "not built" look like "no results".
 
 Read [`CLAUDE.md`](CLAUDE.md) before writing code — in particular its **Traps** section, which
 records the things that cost real time to discover. The design that this scaffold serves lives in:
@@ -21,10 +21,11 @@ records the things that cost real time to discover. The design that this scaffol
 | Document | Contents |
 | --- | --- |
 | [`CONTEXT.md`](CONTEXT.md) | The glossary. Read before naming anything |
-| [`docs/adr/`](docs/adr/) | Four decisions a reader would otherwise question |
+| [`docs/adr/`](docs/adr/) | Six decisions a reader would otherwise question |
 | [`.scratch/juror-performance-dashboard/spec.md`](.scratch/juror-performance-dashboard/spec.md) | The spec, plus a Further Notes section of hard-won facts |
-| [`.scratch/juror-performance-dashboard/issues/`](.scratch/juror-performance-dashboard/issues/) | Thirteen tickets, blockers first |
-| [`DESIGN_PROMPT.md`](DESIGN_PROMPT.md) | The UI brief. The visual design is not settled |
+| [`.scratch/juror-performance-dashboard/issues/`](.scratch/juror-performance-dashboard/issues/) | Eighteen tickets, blockers first |
+| [`DESIGN_PROMPT.md`](DESIGN_PROMPT.md) | The UI brief. Answered — read the canvas rather than re-deriving it |
+| [`.scratch/juror-performance-dashboard/canvas/README.md`](.scratch/juror-performance-dashboard/canvas/README.md) | The design canvas: eight artboards, and which figures on them are real |
 
 ## Quick start
 
@@ -121,9 +122,9 @@ success. The Netlify build is the only other gate and it runs at deploy time, wh
 to be useful and long after the turn that caused the problem lost its context.
 
 **Styling** is styled-components with a theme in [`src/styles/theme.ts`](src/styles/theme.ts). Its
-values are lifted verbatim from the Kleros court frontend's dark theme and keep its key names, but
-they are placeholders: the visual design is out with a design agent and lands in tickets 05, 09
-and 11.
+values are lifted from the Kleros court frontend's dark theme and are placeholders: the visual
+system is Kleros ×AI, and ticket 14 adopts its tokens in their place. That ticket blocks the matrix,
+so the palette lands before anything is built on it rather than after.
 
 ## Deployment
 

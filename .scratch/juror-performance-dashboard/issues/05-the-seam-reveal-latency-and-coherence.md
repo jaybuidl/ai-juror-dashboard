@@ -14,9 +14,8 @@ near it. Respect ADR-0001 (latency in seconds), ADR-0002 (coherence per draw) an
 **Blocked by:** 02, 03, 14
 
 **Design:** `../canvas/Cell.dc.html:43-174` (the cell's anatomy and all five states),
-`../canvas/Main.dc.html:112-223` (the legend, the matrix grid, the row it hangs off and the
-footnote cards),
-`../canvas/README.md` for provenance
+`../canvas/Main.dc.html:112-223` (the legend, the matrix grid, the row it hangs off and the footnote
+cards), `../canvas/README.md` for provenance
 
 **Status:** ready-for-agent
 
@@ -38,9 +37,10 @@ footnote cards),
       legitimate outcome that costs PNK, not a malfunction
 - [ ] A draw whose period closed with nothing revealed renders a `∅` glyph and the words `NO VOTE` in
       rose, on a rose-tinted cell with a rose border, with the reveal figure reading `Missed` rather
-      than a number. Rose is reserved for this state and used nowhere else
-- [ ] A draw whose period is still open renders a `⋯` glyph in green on a green-tinted cell with a
-      green border, worded for the stage it has reached — `COMMITTED` once the commit is recorded,
+      than a number. Rose is shared with only one other state — the Unknown of ticket 13, for data that
+      could not be read — and glyph and word are what keep the two apart, never hue
+- [ ] A draw whose period is still open renders a `⋯` glyph in mint on a mint-tinted cell with a
+      mint border, worded for the point it has reached — `COMMITTED` once the commit is recorded,
       `AWAITING` before it — and whatever has not happened yet reads as a dash in pending ink, never
       as blank
 - [ ] A cell for an agent juror not drawn in that dispute renders as a single 3px dot: no tile, no
@@ -49,7 +49,9 @@ footnote cards),
 - [ ] `NO VOTE` and not-drawn share no glyph, no weight, no fill and no border — the loudest state on
       the page against the emptiest. This is the one confusion the design exists to prevent, because
       conflating them would attribute a failure to an agent juror that did nothing wrong
-- [ ] All five states stay distinguishable in greyscale, each carrying its own glyph and its own word
+- [ ] With hue removed the five states stay distinguishable by glyph, word, weight, fill and border
+      alone — five attributes, because not drawn has neither a glyph nor a word and is told apart by
+      the other three
 - [ ] The two states with no example in the data yet — `NO VOTE` and the live one — are built and
       renderable from a model that says so, not deferred until they occur
 - [ ] The live state is built here as a state of the cell driven by the model; ticket 12 wires the
@@ -58,10 +60,13 @@ footnote cards),
       vote ID shows nothing there, since `×1` would be noise on 44 cells
 - [ ] Every dispute row shows its panel size — the number of agent jurors drawn — because coherence
       cannot be read without it, and no cell repeats it
-- [ ] A dispute whose panel was a single agent juror is marked in amber on its row, since a lone juror
-      is automatically the majority and its coherence is tautological
+- [ ] A dispute whose panel was a single agent juror carries a `‡` glyph and a word on its row flag,
+      amber behind them and never instead of them, since a lone juror is automatically the majority
+      and its coherence is tautological
 - [ ] A legend names the five states by glyph, word and colour and keys the reveal and commit rails,
-      so a first-time reader can decode a cell without being told what the glyphs mean
+      so a first-time reader can decode a cell without being told what the glyphs mean. The legend
+      names the live state once, as a family; the cell is what words the stage a draw has reached
+      inside it, so the two carry different words on purpose
 - [ ] The matrix states in place that a blank cell is the normal case — agent jurors are drawn at
       random, so sparsity is what random selection looks like and not missing data — rather than
       leaving a reader to infer it from the emptiness

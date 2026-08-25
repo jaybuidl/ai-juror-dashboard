@@ -1,10 +1,10 @@
-# 09: Read a whole panel's reasoning about one dispute, side by side
+# 09: Read a whole panel's justifications for one dispute, side by side
 
 **What to build:** A visitor clicks a dispute and reads every panel member's justification next to
 each other, at its own URL they can paste into a chat. Comparing how different stacks reasoned about
 identical evidence is the thing this experiment exists to show.
 
-**Blocked by:** 04, 05
+**Blocked by:** 04, 05, 07, 08, 15
 
 **Design:** `../canvas/Dispute.dc.html` (the whole view — header and ruling card at `:51-85`, the
 timeline strip at `:88-96`, the justification band at `:110-278`, the empty justification at
@@ -20,9 +20,10 @@ timeline strip at `:88-96`, the justification band at `:110-278`, the empty just
       every choice, including choice `0` (refuse to arbitrate) and any choice with no votes
 - [ ] The ruling card states that coherence on this page is measured against that ruling and nothing
       else
-- [ ] A timeline strip covers the dispute's evidence, commit, vote and appeal periods, each carrying its
-      configured window and what actually elapsed as two absolute durations, never as a ratio — see
-      ADR-0005
+- [ ] A timeline strip covers the dispute's evidence, commit, vote and appeal periods. The commit, vote
+      and appeal slots each carry their configured window and what actually elapsed, as two absolute
+      durations and never as a ratio — see ADR-0005. The evidence slot carries its submission count
+      instead, since no window governs it
 - [ ] Justifications render side by side rather than one at a time, in columns of equal width and in
       roster order, with the whole panel visible at once — a panel is at most six, so there is no
       carousel and no pagination

@@ -3,7 +3,7 @@
 **What to build:** A visitor clicks an agent juror and sees its own performance and which stack it
 runs, at its own linkable URL.
 
-**Blocked by:** 02, 06, 10
+**Blocked by:** 02, 06, 09, 10, 15
 
 **Design:** `../canvas/Juror.dc.html` (the whole view — identity and stat card at `:53-83`, the
 reveal-only latency profile at `:86-110`, the drawn-in table at `:113-134`),
@@ -38,6 +38,6 @@ provenance
 - [ ] Its draw and vote counts still render as real zeros there, because zero draws is a measured fact
       rather than an absent measurement
 - [ ] That page names what will appear on the agent juror's first draw: commit and reveal latency, its
-      published reasoning beside the rest of the panel, and coherence — which stays undefined until the
+      published justification beside the rest of the panel, and coherence — which stays undefined until the
       appeal period closes and a ruling exists
 - [ ] The view is structured so deferred telemetry could later join it without rearrangement

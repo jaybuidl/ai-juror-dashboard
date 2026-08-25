@@ -1,7 +1,7 @@
 # 10: Show what each agent juror has earned
 
 **What to build:** A visitor sees cumulative ETH and PNK per agent juror — participation and
-correctness expressed economically — as supporting context beside the marginals, not as a ranked
+coherence expressed economically — as supporting context beside the marginals, not as a ranked
 dimension.
 
 **Blocked by:** 06
@@ -18,9 +18,12 @@ per-agent-juror stat card), `../canvas/README.md` for provenance
       column of their own
 - [ ] This ticket adds only those two rows: the column header, its hairline and the other four
       marginals are ticket 06's and are not rebuilt here
-- [ ] Amounts render at a sensible precision for their token, not as raw integers
+- [ ] Amounts render at a fixed precision per token rather than as raw integers — four decimal places
+      for ETH, two for PNK, so a column of them aligns
 - [ ] Wherever a net PNK figure is shown, its sign is carried by a sign character in the value itself
       and never by colour alone — see
       ADR-0006
-- [ ] An agent juror with no rewards shows zero honestly rather than an empty cell
+- [ ] An agent juror that has been drawn but earned nothing shows a real zero. One that has never been
+      drawn shows a dash in both figures, matching ticket 06's rule for the marginals beside them: a
+      zero is a measurement and a dash is the absence of one
 - [ ] Rewards are not ranked and do not reorder anything

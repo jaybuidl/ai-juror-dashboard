@@ -80,7 +80,7 @@ frame-ancestors 'none'"""
 # Must stay last: the redirect engine takes the first matching rule. Deliberately
 # unforced — Netlify serves a real file in preference to an unforced rewrite, so the
 # hashed bundles under /assets/ are not shadowed by the app shell. Every other unknown
-# path does return the shell at HTTP 200; tickets 09 and 11 add real routes and will
+# path does return the shell at HTTP 200; tickets 09, 11 and 15 add real routes and 15 will
 # need a 404 view behind them.
 #
 # Known and deliberately not fixed here: a MISSING /assets/* file also returns the shell

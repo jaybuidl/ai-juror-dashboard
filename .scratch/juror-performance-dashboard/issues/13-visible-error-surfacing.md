@@ -5,11 +5,11 @@ error saying so. Nobody should ever read a partly-loaded dashboard as fact — l
 public deployment whose numbers may be cited.
 
 `Errors.dc.html` is the specification for what "prominent" means here, and it carries one thing this
-ticket did not have: **unread is its own cell state**, a sixth alongside the five ticket 05 builds. A
+ticket did not have: **Unknown is its own cell state**, a sixth alongside the five ticket 05 builds. A
 dispute whose data could not be read is a gap, and a gap must never be readable as "not drawn" or as
 "failed to act" — the two states the cell design already exists to keep apart.
 
-**Blocked by:** 05
+**Blocked by:** 04, 05, 07
 
 **Design:** `../canvas/Errors.dc.html:43-162` (failure states), `../canvas/README.md` for provenance
 
@@ -27,15 +27,19 @@ dispute whose data could not be read is a gap, and a gap must never be readable 
       read was, and offers both a retry and an explanation of what a partial read means
 - [ ] An aggregate computed while a read has failed is labelled as partial everywhere it appears, and
       what could not be read counts as unknown — never as zero and never as absent
-- [ ] A dispute whose data could not be read renders as unread across its whole row: a question glyph
-      and the words "not read" in every slot where a figure belongs
-- [ ] The row header of an unread dispute carries an unread badge and says the row itself is unavailable
-- [ ] The unread state shares nothing with "not drawn" and nothing with "failed to act", so a reader
-      can tell at a glance which rows are evidence and which are a gap
+- [ ] A dispute whose data could not be read renders as Unknown across its whole row: a `?` glyph and
+      the words "not read" in every slot where a figure belongs
+- [ ] The row header of an Unknown dispute carries a not-read badge and says the row is unavailable
+- [ ] Unknown shares its rose with "failed to act" and is told apart from it by glyph and word alone —
+      `?` against `∅`, "not read" against `NO VOTE` — per ADR-0006, which records rose as carrying
+      exactly these two meanings. It shares nothing at all with "not drawn"
+- [ ] A reader can name which rows are evidence and which are a gap without consulting a legend, since
+      the words are in the cells
 - [ ] A failure of ENS resolution alone raises no banner: nicknames fall back to the roster and avatars
-      to initials, in a degraded-not-broken panel rather than a blocking one
-- [ ] The ENS fallback shows on the elements it affects — a chip on the fallen-back nickname and a
-      dashed avatar — and says that no measurement depends on ENS, so no figure on the page is partial
+      to initials, in a degraded-not-broken card rather than a blocking banner
+- [ ] The ENS fallback shows on the elements it affects — a "from roster" label beside the fallen-back
+      nickname and a dashed avatar — and says that no measurement depends on ENS, so no figure on the
+      page is partial
 - [ ] The commit cross-check discrepancy from ticket 07 surfaces through this same channel, and loudly,
       because it changes a number
 - [ ] Recovery needs no full page reload: retrying from the banner clears it once the source answers

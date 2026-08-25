@@ -10,8 +10,8 @@ of truth for the deploy, and a page that names all six agent jurors by nickname 
 is still no dispute data, no metric and no matrix — the page says so outright rather than rendering
 an empty grid, and says it *below* the roster precisely because showing who the six are is the
 point at which a visitor could start reading the page as a result. The design work behind it
-(glossary, four ADRs, a spec, thirteen tickets) came out of a full grilling session. Start by
-reading, not by writing.
+(glossary, six ADRs, a spec, eighteen tickets) came out of a full grilling session and a later pass
+that rebuilt the tracker on the finished design. Start by reading, not by writing.
 
 `README.md` covers the toolchain, the scripts, the test split and the CSP; this file covers the
 domain. Two constraints recorded there and easy to trip over: **yarn must be 4.18 or newer**
@@ -23,14 +23,17 @@ rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines 
 | Read | For |
 | --- | --- |
 | `CONTEXT.md` | The glossary. Read before naming anything |
-| `docs/adr/0001`–`0004` | The four decisions a reader would otherwise question |
+| `docs/adr/0001`–`0006` | The six decisions a reader would otherwise question |
 | `.scratch/juror-performance-dashboard/spec.md` | The spec, and a Further Notes section of hard-won facts |
-| `.scratch/juror-performance-dashboard/issues/` | 13 tickets, blockers-first, `01` upward |
+| `.scratch/juror-performance-dashboard/issues/` | 18 tickets, blockers-first, `01` upward |
 | `DESIGN_PROMPT.md` | The UI brief. Answered — read the canvas below rather than re-deriving it |
 | `.scratch/juror-performance-dashboard/canvas/README.md` | The design canvas: eight artboards, and which figures on them are real |
 
 Ticket **05** is the keystone: it establishes the pure-function seam and is the first ticket where the
-dashboard answers its question. Everything after it branches.
+dashboard answers its question. Everything after it branches. Ticket **14** must land before it —
+adopting the Kleros ×AI tokens after 05 means restyling several views instead of styling them once.
+Every ticket from `03` up carries a `**Design:**` line naming what it is built against — an artboard
+and its line range, or, for ticket 14, the design system itself.
 
 ## Invariants
 
@@ -79,6 +82,15 @@ Things that cost real effort to discover and are easy to get wrong again:
   would drag the Node-only path into the bundle.
 - Every appeal period ran ~18h against a 36h configured value. Unexplained, affects no metric here,
   but do not treat appeal duration as understood.
+- **Latency is never shown as a fraction of a window** — not in a cell, not in an aggregate, not on a
+  detail view. The court's durations changed mid-experiment, so the same ratio means different things
+  either side of dispute 152, and a percentage is false the moment it is quoted away from the page.
+  ADR-0005. Where the window matters it appears *beside* how long the period actually ran, as two absolute
+  durations.
+- **The CSP guard-rail comment in `netlify.toml` only covers `connect-src`.** It caught both of ticket
+  02's data hosts and would miss a font host entirely. Adopting the design system's webfonts touches
+  `style-src` and `font-src` — and Vite dev serves no CSP, so a missed edit looks perfect locally and
+  falls back to system fonts only in production.
 
 ## Verified constants
 
