@@ -80,3 +80,26 @@ Two things this ticket inherits:
   `Cell.dc.html:140` reserves for a draw that failed to act and says is "used nowhere else". The
   unread *cell* correctly uses `?`. See `../canvas/README.md` § Known defects; do not copy the
   banner's glyph as drawn.
+
+## Comments
+
+### From ticket 05, 2026-08-25 — two plain notices to replace, and a word to watch
+
+**Two placeholder notices now exist, and both are yours to replace.** `DisputeList.tsx` has the
+amber `Notice` for a failed dispute read that ticket 03 left you; `Dashboard.tsx` has a second one,
+styled the same way, for a failed *draw* read — in that case the matrix is not rendered at all and
+the dispute list is shown in its place, because a matrix built without draws is a page of blank
+cells and a blank cell says an agent juror was not drawn. Both are marked in comments.
+
+**`buildCourtPerformance` returns a failure envelope, and today it is flattened into an `Error`.**
+`useCourtPerformance` turns `{ success: false, code, message, details }` into
+`new Error(`${code}: ${message}`)` because nothing above it can yet show more. The code and the
+details are the loud partial-read banner's content — `MALFORMED_COURT_DATA` and the draw id it
+names — and the flattening is the thing to undo.
+
+**Watch the word `Unknown`.** This ticket owns the rose `?` Unknown *cell state*, for a draw whose
+data could not be read. Ticket 05 already uses the bare word `Unknown` in pending ink for a
+different thing: a reveal that happened and left no timestamp behind, in a cell whose coherence is
+known. `revealFigureOf` in `cell.ts` is where it is worded. Two Unknowns on one page, one rose and
+one quiet, is exactly the confusion `Cell.dc.html:140` warns about — decide deliberately which one
+keeps the word.

@@ -2,6 +2,7 @@ import { QueryClientProvider } from "@tanstack/react-query";
 import { ThemeProvider } from "styled-components";
 import { Dashboard } from "./Dashboard";
 import { useDisputes } from "./disputes/useDisputes";
+import { useCourtPerformance } from "./performance/useCourtPerformance";
 import { queryClient } from "./query-client";
 import { useRoster } from "./roster/useRoster";
 import { GlobalStyle } from "./styles/global";
@@ -26,5 +27,9 @@ export function App() {
 }
 
 function ConnectedDashboard() {
-  return <Dashboard roster={useRoster()} disputes={useDisputes()} />;
+  const roster = useRoster();
+  const disputes = useDisputes();
+  const performance = useCourtPerformance(disputes);
+
+  return <Dashboard roster={roster} disputes={disputes} performance={performance} />;
 }

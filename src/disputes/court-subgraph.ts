@@ -69,17 +69,23 @@ function disputesQuery(hasCursor: boolean): string {
   `;
 }
 
-type DisputesResponse = {
-  data?: { disputes?: RawDispute[] };
+type SubgraphResponse<T> = {
+  data?: T;
   errors?: { message: string }[];
 };
 
-async function postQuery(
+/**
+ * One request to the core subgraph, with the failures that arrive looking like successes.
+ *
+ * Shared with the draw reader in `src/performance/`: both talk to the same endpoint, and the
+ * ways it fails are a property of the endpoint rather than of what is being asked for.
+ */
+export async function postCoreQuery<T>(
   url: string,
   query: string,
   variables: Record<string, unknown>,
   signal?: AbortSignal,
-): Promise<RawDispute[]> {
+): Promise<T> {
   const response = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -91,18 +97,21 @@ async function postQuery(
     throw new Error(`Core subgraph returned HTTP ${response.status} ${response.statusText}`);
   }
 
-  const body = (await response.json()) as DisputesResponse;
+  const body = (await response.json()) as SubgraphResponse<T>;
 
   // A GraphQL error arrives inside a 200, so this is the only place a bad query or a
   // renamed field shows up. Absorbing it would leave the page reporting an empty court.
   if (body.errors?.length) {
     throw new Error(`Core subgraph rejected the query: ${body.errors[0]?.message}`);
   }
-  if (!body.data?.disputes) {
-    throw new Error("Core subgraph returned no disputes field");
+  // Null as well as absent: a gateway that answers `{"data": null}` with no `errors` array is
+  // off-spec but real, and letting that through returns null to a caller that then reads a field
+  // off it — a TypeError in place of the message the page was going to show.
+  if (body.data === undefined || body.data === null) {
+    throw new Error("Core subgraph returned no data");
   }
 
-  return body.data.disputes;
+  return body.data;
 }
 
 /**
@@ -126,7 +135,7 @@ export async function fetchCourtDisputes({
   // Cursor paging on disputeID, not `skip`: the cursor is strictly decreasing, so this
   // terminates even while new disputes are being created underneath it.
   for (;;) {
-    const page = await postQuery(
+    const body = await postCoreQuery<{ disputes?: RawDispute[] }>(
       url,
       disputesQuery(cursor !== undefined),
       cursor === undefined
@@ -135,6 +144,11 @@ export async function fetchCourtDisputes({
       signal,
     );
 
+    if (!body.disputes) {
+      throw new Error("Core subgraph returned no disputes field");
+    }
+
+    const page = body.disputes;
     all.push(...page);
 
     if (page.length < PAGE_SIZE) return all;

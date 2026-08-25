@@ -5,6 +5,9 @@ import { Dashboard } from "./Dashboard";
 import fixture from "./disputes/court-34.fixture.json" with { type: "json" };
 import type { DisputeListView } from "./disputes/DisputeList";
 import { type RawDispute, toDisputes } from "./disputes/disputes";
+import drawFixture from "./performance/court-34-draws.fixture.json" with { type: "json" };
+import { buildCourtPerformance, type RawDraw } from "./performance/performance";
+import type { CourtPerformanceView } from "./performance/useCourtPerformance";
 import { ROSTER } from "./roster/agent-jurors";
 import { rosterIdentity } from "./roster/ens";
 import type { RosterView } from "./roster/useRoster";
@@ -39,10 +42,35 @@ const disputes: DisputeListView = {
   error: null,
 };
 
-function renderDashboard(roster: RosterView, disputeList: DisputeListView = disputes) {
+const built = buildCourtPerformance({
+  disputes: fixture as RawDispute[],
+  draws: drawFixture as RawDraw[],
+  roster: ROSTER,
+});
+if (!built.success) throw new Error(`${built.code}: ${built.message}`);
+
+/** The matrix, measured from the same payload. */
+const measured: CourtPerformanceView = {
+  performance: built.data,
+  isLoading: false,
+  error: null,
+};
+
+/** What the page has when the draws could not be read at all. */
+const unmeasured: CourtPerformanceView = {
+  performance: null,
+  isLoading: false,
+  error: new Error("Core subgraph returned HTTP 503 Service Unavailable"),
+};
+
+function renderDashboard(
+  roster: RosterView,
+  performance: CourtPerformanceView = measured,
+  disputeList: DisputeListView = disputes,
+) {
   return render(
     <ThemeProvider theme={theme}>
-      <Dashboard roster={roster} disputes={disputeList} />
+      <Dashboard roster={roster} disputes={disputeList} performance={performance} />
     </ThemeProvider>,
   );
 }
@@ -54,19 +82,34 @@ describe("Dashboard", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("AI Juror Dashboard");
   });
 
-  it("states that it holds no measurements, rather than rendering an empty result", () => {
+  it("says what it has measured and, in the same breath, what it has not", () => {
     renderDashboard(resolved);
 
-    expect(screen.getByText(/nothing measured yet/i)).toBeInTheDocument();
+    expect(screen.getByText(/two measures, and what is missing from them/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/commit latency, per-agent-juror summaries and rewards/i),
+    ).toBeInTheDocument();
+  });
+
+  it("claims no measurement it has not made", () => {
+    // The page now holds two figures, so the old blanket caveat would be false. What has to
+    // survive is the half that still is true: everything it has not read, said outright.
+    renderDashboard(resolved);
+
+    expect(screen.queryByText(/nothing measured yet/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/no figure here is a fraction of a period's window/i),
+    ).toBeInTheDocument();
   });
 
   it("shows every agent juror by nickname, including the one never drawn", () => {
     renderDashboard(resolved);
 
     for (const agentJuror of ROSTER) {
-      expect(screen.getByText(agentJuror.nickname)).toBeInTheDocument();
+      // Twice over: once on the roster, once as a column of the matrix.
+      expect(screen.getAllByText(agentJuror.nickname).length).toBeGreaterThan(0);
     }
-    expect(screen.getByText("baskerville")).toBeInTheDocument();
+    expect(screen.getAllByText("baskerville").length).toBeGreaterThan(0);
   });
 
   it("shows each agent juror's stack", () => {
@@ -84,7 +127,7 @@ describe("Dashboard", () => {
     // correct and screen readers are not told the same thing twice.
     const avatars = screen.getAllByRole("presentation");
 
-    expect(avatars).toHaveLength(ROSTER.length);
+    expect(avatars).toHaveLength(ROSTER.length * 2);
     expect(avatars[0]).toHaveAttribute("src", expect.stringContaining("euc.li"));
   });
 
@@ -94,7 +137,7 @@ describe("Dashboard", () => {
     expect(screen.getByText(/ENS could not be reached/i)).toBeInTheDocument();
     expect(screen.queryAllByRole("presentation")).toHaveLength(0);
     for (const agentJuror of ROSTER) {
-      expect(screen.getByText(agentJuror.nickname)).toBeInTheDocument();
+      expect(screen.getAllByText(agentJuror.nickname).length).toBeGreaterThan(0);
     }
   });
 
@@ -104,22 +147,56 @@ describe("Dashboard", () => {
     expect(screen.queryByText(/ENS could not be reached/i)).not.toBeInTheDocument();
   });
 
-  it("lists the court's disputes alongside the roster", () => {
+  it("hangs the matrix off the court's disputes, newest first", () => {
     renderDashboard(resolved);
 
-    expect(screen.getByRole("heading", { name: /the disputes/i })).toBeInTheDocument();
-    expect(screen.getByText("151")).toBeInTheDocument();
-    expect(screen.getByText("166")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /the matrix/i })).toBeInTheDocument();
+
+    const rows = screen.getAllByRole("rowheader");
+
+    expect(rows[0]).toHaveTextContent("166");
+    expect(rows[rows.length - 1]).toHaveTextContent("151");
   });
 
-  it("still says it holds no measurement now that disputes are shown", () => {
-    // The caveat used to claim no dispute had been read, which this ticket made false.
-    // What must survive is the part that matters: the page holds no metric.
-    renderDashboard(resolved);
+  it("lists the disputes and says why, when the matrix cannot be built", () => {
+    // A matrix built from a partial read would be a page of blank cells, and a blank cell says
+    // an agent juror was not drawn. The record is shown instead, and the gap is stated.
+    renderDashboard(resolved, unmeasured);
 
-    expect(screen.getByText(/nothing measured yet/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/no draw, latency or coherence figure has been read/i),
+      screen.getByText(/the matrix could not be built from what was read/i),
     ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /the disputes/i })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /the matrix/i })).not.toBeInTheDocument();
+    expect(screen.getByText("151")).toBeInTheDocument();
+  });
+
+  it("does not describe cells and coherence above a page that is showing neither", () => {
+    // The caveat can overstate as easily as the matrix can. On the failure path it says what
+    // was not measured on this load, rather than how to read a matrix that is not there.
+    renderDashboard(resolved, unmeasured);
+
+    expect(screen.getByText(/nothing measured on this load/i)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/a blank cell means an agent juror was not drawn/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("says nothing about a failed read while the read is still out", () => {
+    renderDashboard(resolved, { performance: null, isLoading: true, error: null });
+
+    expect(screen.queryByText(/the matrix could not be built/i)).not.toBeInTheDocument();
+  });
+
+  it("says the matrix may be stale when the court could not be re-read", () => {
+    // react-query keeps the rows already held when a refetch fails, so the matrix rebuilds and
+    // stays on the page. Rendering it silently would show an hour-old court as the full record.
+    renderDashboard(resolved, measured, {
+      ...disputes,
+      error: new Error("Core subgraph returned HTTP 503 Service Unavailable"),
+    });
+
+    expect(screen.getByText(/this matrix may be incomplete or out of date/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /the matrix/i })).toBeInTheDocument();
   });
 });

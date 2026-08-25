@@ -33,3 +33,33 @@ shared rail is logarithmic), `../canvas/README.md` for provenance
       state is carried by a glyph and a word before it is carried by a colour, per ADR-0006
 - [ ] Tested against fixtures, including a case where a commit event is missing for a draw the subgraph
       reports as committed
+
+## Comments
+
+### From ticket 05, 2026-08-25 — what is already built and what it left you
+
+**The cell, the rail and the legend all exist; the commit line does not.** `src/performance/`
+holds the seam (`performance.ts`), the presentation table (`cell.ts`) and the view
+(`Matrix.tsx`). The reveal line is `Measure` / `MeasureKey` / `MeasureValue` / `Rail` in
+`Matrix.tsx`; the commit line is the same block with `theme.accentQuiet` on the fill and no
+heading ink. `railFraction` in `latency.ts` is already the shared log scale — 1s to 1h, floored at
+2% — so both measures ride it without a second function.
+
+**The legend deliberately keys only the reveal rail.** Ticket 05's criterion asked for both; a
+legend key for a rail no cell carries would name a measurement the page has not made. The comment
+marking where the commit key goes is in `Matrix.tsx`, in the legend's second `LegendGroup`.
+
+**`NO VOTE` is already conservative, which is the half of your cross-check the model gives you.**
+It is asserted only when the vote period has closed with nothing revealed — never from a missing
+commit. So a truncated log scan cannot turn into a false `NO VOTE` through the *state*; it can
+only turn into a missing commit figure. Your cross-check is about the figure, and the place to
+surface it is the failure envelope `buildCourtPerformance` already returns.
+
+**Add your logs to `RawCourtData`, not beside it.** The seam takes one value and derives
+everything; `RawCourtData` is where `CommitCast` logs belong, so the derivation stays in one pure
+function. Its result envelope is `KlerosResult`, and every rejection today is data that would
+otherwise produce a confident wrong number.
+
+**The live family has three stages, not two.** `awaiting`, `committed`, `revealed` — see
+`LiveStage` in `performance.ts`. A draw that has committed and not revealed is already worded
+`COMMITTED`, from the subgraph's boolean; your work adds *when*, not *whether*.

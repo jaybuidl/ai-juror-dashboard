@@ -1,5 +1,7 @@
 import styled from "styled-components";
 import { DisputeList, type DisputeListView } from "./disputes/DisputeList";
+import { Matrix } from "./performance/Matrix";
+import type { CourtPerformanceView } from "./performance/useCourtPerformance";
 import { Roster } from "./roster/Roster";
 import type { RosterView } from "./roster/useRoster";
 
@@ -74,6 +76,18 @@ const EmptyStateBody = styled.p`
   color: ${({ theme }) => theme.textBody};
 `;
 
+/* The plain notice a partial read gets until ticket 13 replaces it with the designed failure
+   state. Amber, because the page is degraded rather than broken: the record is still there. */
+const Notice = styled.p`
+  max-width: 68ch;
+  padding: ${({ theme }) => `${theme.space5} ${theme.space6}`};
+  border: 1px solid ${({ theme }) => theme.lineAmber};
+  border-radius: ${({ theme }) => theme.radiusTile};
+  background-color: ${({ theme }) => theme.washAmber};
+  font: ${({ theme }) => theme.typeBodySm};
+  color: ${({ theme }) => theme.textBody};
+`;
+
 const Footer = styled.footer`
   padding-top: ${({ theme }) => theme.space8};
   border-top: ${({ theme }) => theme.borderHairline};
@@ -81,7 +95,17 @@ const Footer = styled.footer`
   color: ${({ theme }) => theme.textMeta};
 `;
 
-export function Dashboard({ roster, disputes }: { roster: RosterView; disputes: DisputeListView }) {
+export function Dashboard({
+  roster,
+  disputes,
+  performance,
+}: {
+  roster: RosterView;
+  disputes: DisputeListView;
+  performance: CourtPerformanceView;
+}) {
+  const measured = performance.performance;
+
   return (
     <Page>
       <Header>
@@ -93,26 +117,71 @@ export function Dashboard({ roster, disputes }: { roster: RosterView; disputes: 
       </Header>
 
       <Main>
-        {/* The page now shows who the agent jurors are and which disputes the court has
-              held, which is exactly the point at which it could start to read as a
-              result. Both are records, not measurements, and on a public page that may
-              be cited it has to say so itself rather than leave an absence to be
-              interpreted. This text narrows as each measurement lands — it claimed no
-              dispute had been read until ticket 03 read them. */}
+        {/* This text narrows as each measurement lands: it claimed no dispute had been
+              read until ticket 03 read them, and it claimed nothing was measured until
+              ticket 05 measured two things. What it must keep doing is say what has *not*
+              been read, on a public page that may be cited — an absence a reader has to
+              infer is one they will infer wrongly.
+
+              Which is also why it has two forms. Describing cells and coherence above a
+              page that is showing neither, because the read failed, would be the same
+              mistake in the other direction. */}
         <EmptyState role="status">
-          <EmptyStateTitle>Nothing measured yet</EmptyStateTitle>
-          <EmptyStateBody>
-            Below are two records, and no measurement: who the six agent jurors are, and which
-            disputes court 34 has held. No draw, latency or coherence figure has been read, so none
-            appears — an agent juror shown here is not thereby reported as fast, slow, coherent or
-            incoherent, and no dispute is reported as anything beyond its own state. Nothing on this
-            page should be taken as a result.
-          </EmptyStateBody>
+          {measured ? (
+            <>
+              <EmptyStateTitle>Two measures, and what is missing from them</EmptyStateTitle>
+              <EmptyStateBody>
+                This page measures how long each agent juror took to reveal its vote, and whether
+                that vote matched the dispute's final ruling. It measures nothing else yet: commit
+                latency, per-agent-juror summaries and rewards have not been read, and no figure
+                here is a fraction of a period's window. Coherence is asserted only where the court
+                has ruled, a blank cell means an agent juror was not drawn rather than that it
+                failed to act, and a dispute decided by a panel of one is marked wherever it is
+                counted.
+              </EmptyStateBody>
+            </>
+          ) : (
+            <>
+              <EmptyStateTitle>Nothing measured on this load</EmptyStateTitle>
+              <EmptyStateBody>
+                This page measures how long each agent juror took to reveal its vote and whether
+                that vote matched the dispute's final ruling — but not on this load: what it needed
+                could not be read, and it shows what it did read rather than a matrix built from
+                part of it. Nothing below is a latency, a coherence or a draw.
+              </EmptyStateBody>
+            </>
+          )}
         </EmptyState>
 
         <Roster {...roster} />
 
-        <DisputeList {...disputes} />
+        {measured ? (
+          <>
+            {/* The matrix is built from rows already held while a refetch fails, which is the
+                right behaviour — and it must say so, or a court read an hour ago renders as the
+                complete record. Ticket 13 replaces this with the designed failure state. */}
+            {disputes.error !== null && (
+              <Notice role="status">
+                The court could not be re-read, so this matrix may be incomplete or out of date.
+                Nothing here should be taken as the full record.
+              </Notice>
+            )}
+            <Matrix performance={measured} roster={roster} slotsFor={disputes.slotsFor} />
+          </>
+        ) : (
+          <>
+            {!performance.isLoading && (
+              // Deliberately not "the draws could not be read": the matrix is also absent when
+              // the dispute read failed, and when the seam rejected the payload it was given.
+              <Notice role="status">
+                The matrix could not be built from what was read, so it is not shown. Below is the
+                record of which disputes the court has held — no latency, coherence or draw has been
+                measured from it.
+              </Notice>
+            )}
+            <DisputeList {...disputes} />
+          </>
+        )}
       </Main>
 
       <Footer>

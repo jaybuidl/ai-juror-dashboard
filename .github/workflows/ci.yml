@@ -106,12 +106,12 @@ jobs:
   # failure mode on a pull request would be network flake, and a red that does not mean
   # anything teaches people to ignore red.
   #
-  # Two suites run here, and `yarn test:integration` picks up any third by filename:
-  # `roster/ens.integration.test.ts` resolves all six ENS subnames against mainnet and
-  # cross-checks each against the address the roster has checked in by hand, and
-  # `disputes/court-subgraph.integration.test.ts` asserts the core subgraph still returns
-  # the shape the model parses — a renamed field or a changed enum is exactly what a
-  # fixture cannot notice.
+  # Every `*.integration.test.ts` under src/ runs here — the rule is the filename, so a
+  # suite added later needs no edit to this file. Today they cover ENS (all six subnames
+  # resolved against mainnet and cross-checked against the addresses the roster has checked
+  # in by hand), the core subgraph's disputes, and its draws — each asserting that the
+  # endpoint still returns the shape the model parses, which is exactly what a fixture
+  # cannot notice when a field is renamed or an enum changes.
   #
   # They hit ethereum-rpc.publicnode.com and api.goldsky.com from a shared runner IP and
   # may be rate-limited there in a way they never are from a laptop. If that starts biting,
