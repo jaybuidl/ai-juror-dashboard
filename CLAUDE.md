@@ -170,6 +170,29 @@ Things that cost real effort to discover and are easy to get wrong again:
   not. The same string ordering is why dispute lists order on `disputeID` and not on `id`, and why
   ordering happens in the model rather than the query — **ordering by `period` is rejected outright**
   by The Graph on the `Dispute` type, so the obvious query is the broken one.
+- **Two reads that failed at different moments render as one page that was read at the later one.**
+  react-query keeps what it already holds when a refetch fails, which is the right behaviour and is
+  why the matrix survives a flaky subgraph — but the dispute read and the draw read are separate
+  queries, so one can succeed while the other keeps hour-old data. The page then joins a fresh
+  dispute list to stale draws, and a dispute created since that draw read has *no cells* — which
+  this design defines as "not drawn", an unread state rendering as a fact about the court. Found by
+  review on ticket 15, where both the notice and the provenance footer keyed on `disputes.error`
+  alone and said nothing about `performance.error`. Every ticket that adds a read — 06, 07, 08, 10,
+  12 — adds another pair that can drift apart. Check *each* query's error, and say which half is
+  stale rather than that "the court" is.
+- **A flag that is false while a read is in flight is not a flag that the read failed.**
+  `RosterView.isResolvedFromEns` is false during the mainnet lookup *and* after it fails, so a
+  caveat keyed on it alone announces "ENS could not be reached" for the length of every cold load
+  and then retracts it — and a caveat that comes and goes teaches a reader to ignore caveats.
+  `isResolving` is the other half and both are required. This bit three call sites on ticket 15,
+  including one pre-dating it in `Roster.tsx`, and the fixture hid it by hard-coding
+  `isResolving: false` for a state whose own comment said it covered both. It applies to every
+  caveat any ticket writes from here on.
+- **A backtick inside a CSS comment ends the styled-components template.** This repo's house style
+  puts long prose comments inside `styled.x\`…\`` blocks, and the moment one of them quotes an
+  identifier the way the rest of the codebase does — around a filename, say — the template literal
+  closes there and the file fails to parse somewhere further down, with an error pointing at the
+  wrong line. Write those comments without backticks.
 - **Parallel ticket branches collide in the status prose *and* in the code.** Tickets 03, 14 and a
   CI branch each touched this file's status paragraph and `README.md` § Status. Git auto-merged all
   three textually and produced claims true of every parent alone and false of the merge — "no
