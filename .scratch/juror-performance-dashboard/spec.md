@@ -100,8 +100,15 @@ page. The last is new since this was written — the canvas's nav offers it and 
 marker links into it, so ticket 15 builds the page and ticket 08 writes its window section.
 Whether the nav's disputes destination gains an index of its own is still open.
 
-**Liveness.** `@tanstack/react-query` with a 5000ms refetch interval. A dispute is finalised when its
-period is `execution`; finalised results are persisted to `localStorage` and not refetched.
+**Liveness.** `@tanstack/react-query` with a 5000ms refetch interval, running only while the court
+holds something unfinalised. A dispute is finalised when **the court has ruled on it** — not when
+its period reaches `execution`, which this paragraph said until ticket 12 implemented it: disputes
+164–166 sat in `appeal` with every draw revealed and `ruled: false`, and entering `execution` is
+not the last thing that happens to a dispute either, so the period version both contradicts the
+matrix caption and caches a ruling the court has not reached. `src/disputes/liveness.ts` holds the
+predicate and the argument. Results are persisted to `localStorage` — payloads rather than derived
+figures, so a changed metric definition re-derives rather than serving a stale value — and the
+Arbitrum block-timestamp cache is what makes a repeated commit scan cheap enough to poll beside.
 
 **Stack.** Vite, React, TypeScript, yarn v4 with `nodeLinker: node-modules`, Biome, deployed on
 Netlify. `react-markdown` with `remark-gfm` and **raw HTML disabled** — deliberately stricter than

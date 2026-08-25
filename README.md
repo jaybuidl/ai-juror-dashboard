@@ -28,6 +28,14 @@ draw the subgraph calls committed is cross-checked against a matching log, and a
 stated on the page as a count — an endpoint that silently returns fewer logs must never render as
 an agent juror that failed to commit.
 
+**The page also moves.** While the court holds a dispute it has not ruled on, the disputes and the
+draws are re-read every five seconds, and those rows say so without being read: a mint rail down
+the left, a faint tint across the row, and a pill naming the period that is open and how long it
+has been open. When the court has ruled on everything, the polling stops entirely. Payloads are
+persisted to `localStorage`, so a return visit renders the finalised record before either endpoint
+answers — payloads rather than derived figures, so a changed metric definition recomputes instead
+of serving a stale number.
+
 Read [`CLAUDE.md`](CLAUDE.md) before writing code — in particular its **Traps** section, which
 records the things that cost real time to discover. The design that this scaffold serves lives in:
 

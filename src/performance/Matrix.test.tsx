@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { cleanup, render, screen, within } from "@testing-library/react";
 import { ThemeProvider } from "styled-components";
 import { describe, expect, it } from "vitest";
 import disputeFixture from "../disputes/court-34.fixture.json" with { type: "json" };
@@ -37,13 +37,22 @@ function build(raw: Partial<RawCourtData> = {}): CourtPerformance {
   return result.data;
 }
 
+/**
+ * A fixed present, so the live rows' elapsed figures are not a moving target.
+ *
+ * Dispute 166 entered its appeal period at 1787604932, which this puts 3m 12s in the past —
+ * the same figure the artboard's illustrative live row carries.
+ */
+const NOW = (1787604932 + 192) * 1000;
+
 function renderMatrix(
   performance: CourtPerformance = build(),
   slotsFor?: (dispute: Dispute) => DisputeRowSlots,
+  now: number = NOW,
 ) {
   return render(
     <ThemeProvider theme={theme}>
-      <Matrix performance={performance} roster={roster} slotsFor={slotsFor} />
+      <Matrix performance={performance} roster={roster} slotsFor={slotsFor} now={now} />
     </ThemeProvider>,
   );
 }
@@ -277,6 +286,140 @@ describe("Matrix", () => {
     expect(screen.getByText("—")).toBeInTheDocument();
     // The reveal is the dash; the commit already has a moment, and the cell shows both.
     expect(screen.getByText("50s")).toBeInTheDocument();
+  });
+
+  describe("the live rows", () => {
+    it("counts the court as finalised against live, not as a bare total", () => {
+      renderMatrix();
+
+      expect(screen.getByText(/13 finalised/)).toHaveTextContent("13 finalised · 3 live");
+    });
+
+    it("flags a live row with the period that is open and how long it has been open", () => {
+      renderMatrix();
+      const row = rowFor(166);
+      if (row === null) throw new Error("no row for dispute 166");
+
+      // Not only that it is live: a reader watching a commit period unfold needs the elapsed
+      // time, and a pill that said "Live" alone would be the same pill for an hour.
+      expect(within(row).getByText("Live · appeal 3m 12s")).toBeInTheDocument();
+    });
+
+    it("puts no live flag on a dispute the court has ruled on", () => {
+      renderMatrix();
+      const row = rowFor(163);
+      if (row === null) throw new Error("no row for dispute 163");
+
+      expect(within(row).queryByText(/live/i)).not.toBeInTheDocument();
+    });
+
+    it("marks a live row without a word, so it is distinguishable at a glance", () => {
+      renderMatrix();
+      const live = rowFor(166);
+      const finalised = rowFor(163);
+      if (live === null || finalised === null) throw new Error("missing a row");
+
+      const marked = getComputedStyle(live);
+      const plain = getComputedStyle(finalised);
+
+      // Asserted as a difference rather than as two colour literals: what the design requires
+      // is that the two rows do not look alike, and pinning the token here would make a
+      // palette change look like a regression.
+      expect(marked.backgroundColor).not.toBe(plain.backgroundColor);
+      expect(marked.boxShadow).not.toBe(plain.boxShadow);
+      expect(plain.boxShadow).toBe("");
+    });
+
+    it("rails a row in the colour of its flag, and tints it only if it is live", () => {
+      // The artboard keeps these two apart: `bg` is mint exactly when the dispute is live,
+      // `mark` is the colour of whichever flag the row wears. A finalised lone panel therefore
+      // has a rail and no tint, which is the case that shows the two are not the same question.
+      renderMatrix();
+      const lone = rowFor(155);
+      const plain = rowFor(163);
+      const live = rowFor(166);
+      if (lone === null || plain === null || live === null) throw new Error("missing a row");
+
+      expect(getComputedStyle(lone).boxShadow).not.toBe("");
+      expect(getComputedStyle(lone).backgroundColor).toBe(getComputedStyle(plain).backgroundColor);
+      // And the live row's rail is a different colour from the lone panel's.
+      expect(getComputedStyle(live).boxShadow).not.toBe(getComputedStyle(lone).boxShadow);
+    });
+
+    it("keeps the flag for a lone panel above the flag for a live dispute", () => {
+      // Both apply to dispute 900 here. The precedence is the point of `ROW_FLAGS`, and the
+      // lone panel is the one that changes how a figure should be read.
+      const both = build({
+        disputes: [
+          {
+            id: "900",
+            disputeID: "900",
+            period: "vote",
+            ruled: false,
+            currentRuling: "0",
+            createdAt: "100",
+            lastPeriodChange: "200",
+            currentRoundIndex: "0",
+            rounds: [{ id: "900-0", timeline: ["100", "200", "0", "0"] }],
+          },
+        ],
+        draws: [
+          {
+            id: "900-0-0",
+            juror: { id: ROSTER[3]?.address.toLowerCase() ?? "" },
+            dispute: { disputeID: "900" },
+            round: { id: "900-0" },
+            vote: { commited: true, voted: false, choice: null, justification: null },
+          },
+        ],
+        commits: [],
+      });
+      renderMatrix(both);
+      const row = rowFor(900);
+      if (row === null) throw new Error("no row for dispute 900");
+
+      expect(within(row).getByText("Lone panel")).toBeInTheDocument();
+      expect(within(row).queryByText(/live ·/i)).not.toBeInTheDocument();
+      // The row still carries the live treatment: the flag slot holds one pill, and the rail
+      // and tint are not the flag.
+      expect(getComputedStyle(row).boxShadow).not.toBe("");
+    });
+
+    it("drops the live treatment as soon as the dispute is ruled, without a reload", () => {
+      // The refetch replaces the payload and nothing else happens: no effect, no timer, no
+      // second source of truth about whether a row is live.
+      renderMatrix();
+      const before = rowFor(166);
+      if (before === null) throw new Error("no row for dispute 166");
+      expect(within(before).getByText(/live ·/i)).toBeInTheDocument();
+      cleanup();
+
+      const ruled = build({
+        disputes: (disputeFixture as RawDispute[]).map((dispute) =>
+          dispute.disputeID === "166" ? { ...dispute, ruled: true, currentRuling: "1" } : dispute,
+        ),
+      });
+      renderMatrix(ruled);
+      const row = rowFor(166);
+      if (row === null) throw new Error("no row for dispute 166");
+
+      expect(within(row).queryByText(/live ·/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/14 finalised/)).toHaveTextContent("14 finalised · 2 live");
+    });
+
+    it("says a live row is live without dating it when the moment is the epoch", () => {
+      // `lastPeriodChange` of 0 would otherwise read as a period open since 1970.
+      const undated = build({
+        disputes: (disputeFixture as RawDispute[]).map((dispute) =>
+          dispute.disputeID === "166" ? { ...dispute, lastPeriodChange: "0" } : dispute,
+        ),
+      });
+      renderMatrix(undated);
+      const row = rowFor(166);
+      if (row === null) throw new Error("no row for dispute 166");
+
+      expect(within(row).getByText("Live · appeal")).toBeInTheDocument();
+    });
   });
 
   describe("the commit line", () => {

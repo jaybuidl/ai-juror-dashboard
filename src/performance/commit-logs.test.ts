@@ -1,6 +1,7 @@
 import type { PublicClient } from "viem";
-import { describe, expect, it } from "vitest";
+import { beforeEach, describe, expect, it } from "vitest";
 import { ROSTER } from "../roster/agent-jurors";
+import { createBlockTimes } from "./block-times";
 import { DISPUTE_KIT_CLASSIC, fetchCommitCasts } from "./commit-logs";
 
 /**
@@ -47,6 +48,18 @@ function fakeClient(logs: FakeLog[], timestamps: Record<string, bigint> = {}) {
 
   return { client, asked, blocksRead };
 }
+
+/**
+ * The default `blockTimes` is the browser's, which outlives a test.
+ *
+ * Without this, a case that reads block 496,351,385 leaves it dated for every case after it,
+ * and the next assertion about which blocks were read passes or fails on file order. The cache
+ * working is exactly what makes that happen, so the isolation belongs here rather than in a
+ * cache that forgets on purpose.
+ */
+beforeEach(() => {
+  localStorage.clear();
+});
 
 function fakeLog(overrides: Partial<FakeLog> = {}): FakeLog {
   return {
@@ -126,6 +139,44 @@ describe("fetchCommitCasts", () => {
 
     expect(commits).toHaveLength(3);
     expect(blocksRead).toEqual([496_351_385n, 496_363_761n]);
+  });
+
+  it("does not read a block it has already dated", async () => {
+    // The read ticket 12 needs to be cheap enough to repeat: a five-second poll that re-dated
+    // every commitment in the court is one page hitting the endpoint's per-call rate limit.
+    const blockTimes = createBlockTimes(null);
+    const first = fakeClient([unstampedLog(), unstampedLog({ blockNumber: 496_363_761n })], {
+      "496351385": 1_787_188_232n,
+      "496363761": 1_787_191_342n,
+    });
+    await fetchCommitCasts({ client: first.client, blockTimes });
+
+    const second = fakeClient(
+      [
+        unstampedLog(),
+        unstampedLog({ blockNumber: 496_363_761n }),
+        unstampedLog({ blockNumber: 496_400_000n }),
+      ],
+      { "496400000": 1_787_200_000n },
+    );
+    const commits = await fetchCommitCasts({ client: second.client, blockTimes });
+
+    // Only the block it had never seen, and every commitment still carries its moment.
+    expect(second.blocksRead).toEqual([496_400_000n]);
+    expect(commits.map((commit) => commit.timestamp)).toEqual([
+      "1787188232",
+      "1787191342",
+      "1787200000",
+    ]);
+  });
+
+  it("reads every block again when nothing was remembered", async () => {
+    // The cache is an optimisation and never a source: with an empty one the scan is exactly
+    // what it was before this existed.
+    const { client, blocksRead } = fakeClient([unstampedLog()], { "496351385": 1_787_188_232n });
+    await fetchCommitCasts({ client, blockTimes: createBlockTimes(null) });
+
+    expect(blocksRead).toEqual([496_351_385n]);
   });
 
   it("fails rather than carrying half a commitment", async () => {

@@ -1,8 +1,18 @@
 import { QueryClientProvider } from "@tanstack/react-query";
+import { PersistQueryClientProvider } from "@tanstack/react-query-persist-client";
+import type { ReactNode } from "react";
 import { BrowserRouter } from "react-router";
 import { ThemeProvider } from "styled-components";
 import { useDisputes } from "./disputes/useDisputes";
 import { useCourtPerformance } from "./performance/useCourtPerformance";
+import {
+  dashboardPersister,
+  PERSISTED_MAX_AGE_MS,
+  PERSISTED_MODEL_VERSION,
+  rederive,
+  shouldPersistQuery,
+  stripDerived,
+} from "./persistence";
 import { queryClient } from "./query-client";
 import { useRoster } from "./roster/useRoster";
 import { DashboardRoutes } from "./routes";
@@ -23,14 +33,57 @@ import { theme } from "./styles/theme";
  */
 export function App() {
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryProviders>
       <ThemeProvider theme={theme}>
         <GlobalStyle />
         <BrowserRouter>
           <ConnectedDashboard />
         </BrowserRouter>
       </ThemeProvider>
-    </QueryClientProvider>
+    </QueryProviders>
+  );
+}
+
+/**
+ * The query client, with the court's finalised record restored from the last visit where the
+ * browser will hold it.
+ *
+ * Two providers rather than one because persistence is genuinely optional: a browser that will
+ * not store anything gets the plain client and re-reads the court, which is what every load did
+ * before ticket 12. Nothing downstream can tell the difference, and no state lives only in the
+ * cache — `persistence.ts` says what is kept and why it is safe to keep it.
+ */
+function QueryProviders({ children }: { children: ReactNode }) {
+  const persister = dashboardPersister();
+
+  if (persister === null) {
+    return <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>;
+  }
+
+  return (
+    <PersistQueryClientProvider
+      client={queryClient}
+      persistOptions={{
+        persister,
+        maxAge: PERSISTED_MAX_AGE_MS,
+        // Bumping this discards every restored entry, which is the point: it is how a change
+        // to a stored value's *shape* stops today's code reading yesterday's.
+        buster: PERSISTED_MODEL_VERSION,
+        dehydrateOptions: {
+          shouldDehydrateQuery: (query) =>
+            query.state.status === "success" && shouldPersistQuery(query.queryKey),
+          // Payloads go to storage; anything modelled from one does not. See `persistence.ts`.
+          serializeData: stripDerived,
+        },
+        hydrateOptions: {
+          // And it is rebuilt here by today's code, which is what keeps a changed derivation
+          // from being served out of a cache written under the old one.
+          defaultOptions: { deserializeData: rederive },
+        },
+      }}
+    >
+      {children}
+    </PersistQueryClientProvider>
   );
 }
 

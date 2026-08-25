@@ -1,6 +1,7 @@
 import { createPublicClient, http, type PublicClient, parseAbiItem } from "viem";
 import { arbitrum } from "viem/chains";
 import { type AgentJuror, ROSTER } from "../roster/agent-jurors";
+import { type BlockTimes, browserBlockTimes } from "./block-times";
 import type { RawCommitCast } from "./performance";
 
 /**
@@ -84,9 +85,19 @@ export function createArbitrumClient(
 export async function fetchCommitCasts({
   client = createArbitrumClient(),
   roster = ROSTER,
+  blockTimes = browserBlockTimes(),
 }: {
   client?: PublicClient;
   roster?: readonly AgentJuror[];
+  /**
+   * Blocks this browser has already dated, so a repeated scan pays only for the new ones.
+   *
+   * Ticket 12 is what makes this necessary: the court is re-read every five seconds while a
+   * dispute is live, and dating every commitment in it each time is the per-call rate limit
+   * ADR-0004 measured. A block's timestamp cannot change, so this cache has no staleness to
+   * reason about — see `block-times.ts`.
+   */
+  blockTimes?: BlockTimes;
 } = {}): Promise<RawCommitCast[]> {
   const logs = await client.getLogs({
     address: DISPUTE_KIT_CLASSIC,
@@ -109,13 +120,14 @@ export async function fetchCommitCasts({
   // the ceiling is real and arrives with roughly 200 more disputes. The fix then is the one
   // ADR-0004 already prefers on merit: put the timestamp in the subgraph upstream.
   const blockNumbers = [...new Set(logs.map((log) => log.blockNumber))];
-  const blocks = await Promise.all(
-    blockNumbers.map((blockNumber) => client.getBlock({ blockNumber })),
-  );
-  const timestampOf = new Map(blocks.map((block) => [block.number, block.timestamp]));
+  const unread = blockNumbers.filter((blockNumber) => blockTimes.get(blockNumber) === undefined);
+  const blocks = await Promise.all(unread.map((blockNumber) => client.getBlock({ blockNumber })));
+  for (const block of blocks) blockTimes.set(block.number, block.timestamp);
+  // One write per scan rather than one per commitment: the whole map is serialised each time.
+  blockTimes.flush();
 
   return logs.map((log) => {
-    const timestamp = timestampOf.get(log.blockNumber);
+    const timestamp = blockTimes.get(log.blockNumber);
     if (timestamp === undefined) {
       throw new Error(`No block ${log.blockNumber} for the commitment in ${log.transactionHash}`);
     }

@@ -42,6 +42,14 @@ read three times over inside a second returns HTTP 429. One page load is far fro
 ceiling arrives at roughly 200 more disputes — at which point the upstream subgraph change rejected
 above on schedule grounds becomes the fix on merit as well as on cleanliness.
 
+*Amended by ticket 12, 2026-08-25.* The ceiling moved, and the decision did not. `block-times.ts`
+remembers each block's timestamp in `localStorage`, which is sound in a way no other cache here
+would be — a mined block's timestamp cannot change, so there is nothing to invalidate. A *repeat*
+scan now costs one `eth_getLogs` plus only the blocks never seen before, which is what let ticket 12
+put the court on a five-second refetch at all. What is unchanged is the **cold** load: a browser
+with an empty cache still pays one `eth_getBlockByNumber` per commitment, so the first visit is
+still where the ceiling lies and the upstream subgraph change is still the fix on merit.
+
 **The endpoint offers a `blockTimestamp` on each log, and it is always `"0x0"`.** Not in the
 JSON-RPC spec, sent anyway, and formatted by viem into a well-typed `0n`. It looks exactly like the
 optimisation that would remove the per-commitment block read. Taking it dates every commitment to

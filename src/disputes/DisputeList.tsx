@@ -158,6 +158,12 @@ export const Pill = styled.span<{ $tone?: Tone }>`
   border-radius: 6px;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
   font-size: 0.6875rem;
+  /* Declared, not inherited. The family here is mono, so the figures should be the mono set —
+     but nothing above sets it: base.css puts the mono features on its own mono classes and the
+     numeric set on body, and this element matches neither. Inherited, the elapsed time in
+     ticket 12's live pill would render with a plain zero beside slashed ones everywhere else.
+     No font shorthand is used above, so this is the declaration rather than a re-declaration. */
+  font-feature-settings: ${({ theme }) => theme.featureMono};
   letter-spacing: 0.08em;
   text-transform: uppercase;
   color: ${({ theme, $tone }) => ($tone === undefined ? "inherit" : toneInk(theme, $tone))};

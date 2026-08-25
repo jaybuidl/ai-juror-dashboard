@@ -9,6 +9,7 @@ import {
 } from "./dispute-templates";
 import { type Dispute, type RawDispute, toDisputes } from "./disputes";
 import { fetchDisputeTemplates } from "./drt-subgraph";
+import { refetchIntervalFor } from "./liveness";
 
 /**
  * The court's disputes, as the list reads them and as the matrix is built from them.
@@ -55,8 +56,10 @@ const NO_MODEL: readonly Dispute[] = [];
  * moving into a memo, because it throws on a payload it cannot read — inside, that is an
  * error the page reports; outside, it is a render that fails.
  *
- * Liveness — the 5s refetch and the persistence of finalised disputes — is ticket 12's, so
- * this holds plain staleTimes and no interval.
+ * Liveness is ticket 12's, and it is here: the court is re-read every five seconds for as long
+ * as it holds a dispute the court has not ruled on, and not at all once it does not. Which
+ * disputes those are, and why the predicate is the ruling rather than the period, is in
+ * `liveness.ts`.
  */
 export function useDisputes(): DisputesView {
   const disputes = useQuery({
@@ -69,6 +72,19 @@ export function useDisputes(): DisputesView {
     // every row it holds carries its own period, so nothing here silently ages into a
     // claim that a dispute is finished.
     staleTime: 60 * 1000,
+    /**
+     * Five seconds while anything in the court is still being decided, and never otherwise.
+     *
+     * Read from what the last read returned rather than held in state, so the interval stops
+     * on its own the moment the last live dispute is ruled — that is the whole of "a dispute
+     * that finalises while the page is open loses its live treatment on the next refresh".
+     * There is no effect and no timer of this dashboard's own anywhere in it.
+     *
+     * react-query does not poll a hidden tab (`refetchIntervalInBackground` defaults to
+     * false), which is what makes the cost of the stricter finalised predicate acceptable:
+     * a dispute nobody ever executes is polled only while someone is actually looking at it.
+     */
+    refetchInterval: (query) => refetchIntervalFor(query.state.data?.raw),
   });
 
   const rows = disputes.data?.disputes ?? NO_MODEL;
