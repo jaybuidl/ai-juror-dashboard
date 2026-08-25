@@ -3,7 +3,9 @@ import { useMemo } from "react";
 import { COURT_ID } from "../disputes/court-subgraph";
 import type { RawDispute } from "../disputes/disputes";
 import { type AgentJuror, ROSTER } from "../roster/agent-jurors";
-import { createArbitrumClient, fetchCommitCasts } from "./commit-logs";
+import { createArbitrumClient } from "./arbitrum";
+import { fetchCommitCasts } from "./commit-logs";
+import { fetchCourtParameters } from "./court-parameters";
 import { fetchCourtDraws } from "./draws-subgraph";
 import { buildCourtPerformance, type CourtPerformance } from "./performance";
 
@@ -20,12 +22,29 @@ export type CourtPerformanceView = {
    * Why the commit log read failed, separately from `error`.
    *
    * Separate because `error` is the failure that leaves `performance` null, and this one must
-   * never do that: commit latency is the only figure read from Arbitrum, and folding an outage
-   * there into the blocking channel would blank sixteen rows of subgraph measurements that are
-   * entirely true. The matrix already states the shortfall in words; this is the reason behind
-   * it, for the banner ticket 13 builds.
+   * never do that: commit latency is read from Arbitrum and everything else in the matrix is
+   * not, so folding an outage there into the blocking channel would blank sixteen rows of
+   * subgraph measurements that are entirely true. The matrix already states the shortfall in
+   * words; this is the reason behind it, for the banner ticket 13 builds.
+   *
+   * It is also the half that tells a read still in flight from one that failed. Both leave
+   * `commitCoverage.read` false, and a page that keyed its wording on that flag alone would
+   * say "still being read" about a read that gave up minutes ago.
    */
   commitError: Error | null;
+  /**
+   * Why the court's parameter history could not be read, on the same terms.
+   *
+   * Non-blocking for the same reason: a history that never arrives costs the † marker and the
+   * windows on each row, and nothing else. Every latency and every coherence on the page is
+   * still true — what is missing is the note saying which of them are not comparable with which.
+   *
+   * A history that arrives *malformed* is a different path and does block, exactly as a
+   * malformed commit payload does: `buildCourtPerformance` refuses a payload it cannot believe
+   * rather than measuring against a fabricated window. This field is about the request failing,
+   * not about what a successful one carried.
+   */
+  parametersError: Error | null;
 };
 
 /**
@@ -118,6 +137,28 @@ export function useCourtPerformance(
 
   const commits = commitQuery.data;
 
+  /**
+   * The court's parameter history, from the same chain and a different contract (ticket 08).
+   *
+   * Keyed on the court alone and on nothing else, because unlike the commit scan this read is
+   * not a cross-check against anything: it is the court's own configuration, two logs deep,
+   * and it answers the same way whichever disputes have been read beside it.
+   *
+   * Not waited on, exactly like the commitments. An unread history costs the marker saying
+   * which rows are not comparable with which — worth stating, never worth a blank page.
+   */
+  const parametersQuery = useQuery({
+    queryKey: ["courtParameters", COURT_ID],
+    queryFn: ({ signal }) =>
+      fetchCourtParameters({ client: createArbitrumClient(undefined, signal) }),
+    // The same minute as everything else. A court is reconfigured roughly never, so this is
+    // about the endpoint's rate limit rather than about freshness: it counts a batch as its
+    // size, and this read is four calls on top of the commit scan's fifty-odd.
+    staleTime: 60 * 1000,
+  });
+
+  const parameters = parametersQuery.data;
+
   const result = useMemo(() => {
     if (draws === undefined || !hasReadableDisputes(disputes)) return null;
     return buildCourtPerformance({
@@ -127,19 +168,25 @@ export function useCourtPerformance(
       // matrix announce that every commitment in the court failed to read, on every cold load,
       // for as long as the chain takes to answer — a failure stated before it has happened.
       commits: commits ?? null,
+      // `null` for the same reason, and with a quieter consequence: an unread history marks
+      // nothing, where `[]` would assert that a court which has plainly been configured at
+      // least once never was.
+      parameters: parameters ?? null,
       roster: agentJurors,
     });
-  }, [disputes, draws, commits, agentJurors]);
+  }, [disputes, draws, commits, parameters, agentJurors]);
 
   return {
     performance: result?.success === true ? result.data : null,
-    // The commit read is deliberately absent from `isLoading`: the matrix renders as soon as
-    // the subgraph answers, and says separately that the commit column is not in yet.
+    // Both Arbitrum reads are deliberately absent from `isLoading`: the matrix renders as soon
+    // as the subgraph answers, and says separately that the commit column and the window
+    // marker are not in yet.
     isLoading: query.isPending || disputes.isLoading,
     error:
       query.error ??
       disputes.error ??
       (result?.success === false ? new Error(`${result.code}: ${result.message}`) : null),
     commitError: commitQuery.error,
+    parametersError: parametersQuery.error,
   };
 }

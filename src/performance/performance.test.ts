@@ -4,6 +4,7 @@ import type { RawDispute } from "../disputes/disputes";
 import { type AgentJuror, ROSTER } from "../roster/agent-jurors";
 import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
+import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import {
   buildCourtPerformance,
   type CourtPerformance,
@@ -11,6 +12,7 @@ import {
   type RawCourtData,
   type RawDraw,
 } from "./performance";
+import type { RawCourtParameters } from "./windows";
 
 /**
  * The real court, read from Goldsky on 2026-08-25 and captured beside the dispute payload
@@ -30,12 +32,14 @@ import {
 const rawDisputes = disputeFixture as RawDispute[];
 const rawDraws = drawFixture as RawDraw[];
 const rawCommits = commitFixture as RawCommitCast[];
+const rawParameters = parameterFixture as RawCourtParameters[];
 
 function courtData(overrides: Partial<RawCourtData> = {}): RawCourtData {
   return {
     disputes: rawDisputes,
     draws: rawDraws,
     commits: rawCommits,
+    parameters: rawParameters,
     roster: ROSTER,
     ...overrides,
   };
@@ -731,6 +735,93 @@ describe("buildCourtPerformance", () => {
       }));
 
       expect(rowFor(163, built(courtData({ roster: shouting }))).panelSize).toBe(5);
+    });
+  });
+
+  describe("the windows each dispute ran under", () => {
+    it("resolves dispute 151 to the eight-hour commit window and 152 onward to 45 minutes", () => {
+      // The court's whole parameter history, against the court's own captured disputes. This
+      // is the trap `CLAUDE.md` names first, in the one place it could still be made: reading
+      // the current 45 minutes back over dispute 151 would be wrong by a factor of ten.
+      expect(rowFor(151).windows).toEqual({
+        evidenceSeconds: 43_200,
+        commitSeconds: 28_800,
+        voteSeconds: 28_800,
+        appealSeconds: 129_600,
+      });
+
+      expect(rowFor(152).windows).toEqual({
+        evidenceSeconds: 2_700,
+        commitSeconds: 2_700,
+        voteSeconds: 1_800,
+        appealSeconds: 129_600,
+      });
+    });
+
+    it("marks dispute 151 and nothing else", () => {
+      const marked = built()
+        .rows.filter((row) => row.underEarlierWindows)
+        .map((row) => row.dispute.id);
+
+      expect(marked).toEqual([151]);
+    });
+
+    it("carries the court's history and what it holds now", () => {
+      const { parameters } = built();
+
+      expect(parameters.read).toBe(true);
+      expect(parameters.regimes).toHaveLength(2);
+      expect(parameters.current?.commitSeconds).toBe(2_700);
+    });
+
+    it("marks nothing at all while the history has not been read", () => {
+      // Every cold load, and the distinction that matters: not knowing which disputes ran
+      // under different rules is not the same as knowing that none did. An unread history
+      // resolves no window and marks no row, and `read` is what says which of those it is.
+      const unread = built(courtData({ parameters: null }));
+
+      expect(unread.parameters.read).toBe(false);
+      expect(unread.parameters.current).toBeNull();
+      expect(unread.rows.every((row) => row.windows === null)).toBe(true);
+      expect(unread.rows.some((row) => row.underEarlierWindows)).toBe(false);
+    });
+
+    it("marks nothing when a read comes back empty, and says the read happened", () => {
+      // `[]` and `null` are different states with the same consequence for the marker, and
+      // only `read` tells them apart. A court that has plainly been configured at least once
+      // returning no history is a read that came back short, which ticket 13's banner needs.
+      const empty = built(courtData({ parameters: [] }));
+
+      expect(empty.parameters.read).toBe(true);
+      expect(empty.parameters.regimes).toEqual([]);
+      expect(empty.rows.every((row) => !row.underEarlierWindows)).toBe(true);
+    });
+
+    it("refuses a history it cannot read rather than measuring against a fabricated window", () => {
+      const result = buildCourtPerformance(
+        courtData({ parameters: [{ at: "not-a-moment", timesPerPeriod: ["1", "2", "3", "4"] }] }),
+      );
+
+      expect(result.success).toBe(false);
+    });
+
+    it("marks a dispute whose commit window changed, and not one whose evidence window did", () => {
+      // The marker is about comparability: nothing on this page is measured from the evidence
+      // period, so a court that changed only that would mark every older dispute for a
+      // difference no figure reflects. A marker with no visible cause teaches a reader to
+      // ignore markers.
+      const evidenceOnly = built(
+        courtData({
+          disputes: [rawDispute()],
+          draws: [rawDraw()],
+          parameters: [
+            { at: "1000", timesPerPeriod: ["43200", "2700", "1800", "129600"] },
+            { at: "1787342000", timesPerPeriod: ["600", "2700", "1800", "129600"] },
+          ],
+        }),
+      );
+
+      expect(evidenceOnly.rows[0]?.underEarlierWindows).toBe(false);
     });
   });
 });

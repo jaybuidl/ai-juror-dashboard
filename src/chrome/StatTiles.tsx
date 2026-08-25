@@ -1,7 +1,7 @@
 import { Link } from "react-router";
 import styled from "styled-components";
-import { formatLatencySeconds } from "../performance/latency";
-import type { CourtTotals } from "../performance/totals";
+import { formatLatencySeconds, formatWindowSeconds } from "../performance/latency";
+import type { CourtTotals, WindowChange } from "../performance/totals";
 import { narrow } from "../styles/breakpoints";
 
 /**
@@ -22,10 +22,13 @@ import { narrow } from "../styles/breakpoints";
  * A caveat a figure carries.
  *
  * Ticket 06 sets the terms for the marginals and this follows them: the mark sits on the
- * figure, the reason sits under it in words, and the full account is one click away. Nothing
- * on today's four tiles takes one — the only caveat the model carries is the lone panel, which
- * qualifies coherence, and none of these four figures is a coherence figure. The mechanism is
- * here because ticket 06's marginals and ticket 08's window are both figures that will.
+ * figure, the reason sits under it in words, and the full account is one click away. Ticket 08
+ * is the first caveat to actually use it — the median reveal pools draws measured against two
+ * different vote windows, and `canvas/Errors.dc.html:200-208` puts the dagger on exactly that
+ * kind of number rather than only on the row it came from.
+ *
+ * The three counting tiles take none. A dispute's window changes what a duration means and
+ * changes nothing about how many disputes there were.
  */
 export type TileCaveat = {
   /** The marker, matching the one the matrix footnote uses for the same caveat. */
@@ -144,6 +147,7 @@ export function StatTiles({ totals }: { totals: CourtTotals | null }) {
   }
 
   const latency = totals.revealLatency;
+  const changed = totals.changedWindows;
 
   return (
     <Row>
@@ -169,7 +173,43 @@ export function StatTiles({ totals }: { totals: CourtTotals | null }) {
             ? "Median reveal · no draw has revealed"
             : `Median reveal · ${latency.seconds.length} draws`
         }
+        caveat={medianCaveatOf(latency, changed)}
       />
     </Row>
   );
+}
+
+/**
+ * Why the median reveal is qualified, when it is.
+ *
+ * The median pools every reveal in the read, and court 34 changed its vote window partway
+ * through — so some of those draws were racing a window ten times longer than the others'. The
+ * figure is still a true median of what happened; what the marker says is that the draws behind
+ * it were not all answering the same question.
+ *
+ * Counted from `revealedDraws` rather than from the number of disputes, because it is the draws
+ * that are in the distribution. Absent when none of them is, which includes every load before
+ * the parameter history comes back.
+ */
+function medianCaveatOf(
+  latency: CourtTotals["revealLatency"],
+  changed: readonly WindowChange[],
+): TileCaveat | undefined {
+  if (latency === null) return undefined;
+
+  const draws = changed.reduce((total, change) => total + change.revealedDraws, 0);
+  if (draws === 0) return undefined;
+
+  const only = changed.length === 1 ? changed[0] : undefined;
+
+  return {
+    // The same mark the row flag and the footnote under the matrix use for the same fact. A
+    // second glyph for one caveat would read as a second caveat.
+    mark: "†",
+    reason:
+      only === undefined
+        ? `${draws} of ${latency.seconds.length} draws ran under vote windows the court has since changed.`
+        : `${draws} of ${latency.seconds.length} draws ran under a vote window of ${formatWindowSeconds(only.windows.voteSeconds)}, which the court has since changed.`,
+    href: "/method#window",
+  };
 }

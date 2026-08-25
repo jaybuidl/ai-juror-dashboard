@@ -1,7 +1,8 @@
 import { beforeAll, describe, expect, it } from "vitest";
 import { fetchCourtDisputes } from "../disputes/court-subgraph";
 import { ROSTER } from "../roster/agent-jurors";
-import { createArbitrumClient, DEFAULT_ARBITRUM_RPC_URL, fetchCommitCasts } from "./commit-logs";
+import { createArbitrumClient, DEFAULT_ARBITRUM_RPC_URL } from "./arbitrum";
+import { fetchCommitCasts } from "./commit-logs";
 import { fetchCourtDraws } from "./draws-subgraph";
 import { buildCourtPerformance, type CourtPerformance, type RawCommitCast } from "./performance";
 
@@ -32,7 +33,16 @@ describe("fetchCommitCasts", () => {
     ]);
     commits = read;
 
-    const result = buildCourtPerformance({ disputes, draws, commits, roster: ROSTER });
+    // `parameters: null` on purpose: nothing this suite asserts is about a window, and reading
+    // the court's history here would be four more RPC calls against an endpoint that
+    // rate-limits per call. `court-parameters.integration.test.ts` is where it is read live.
+    const result = buildCourtPerformance({
+      disputes,
+      draws,
+      commits,
+      parameters: null,
+      roster: ROSTER,
+    });
     if (!result.success) throw new Error(`${result.code}: ${result.message}`);
     performance = result.data;
   }, 120_000);

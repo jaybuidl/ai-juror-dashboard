@@ -1,6 +1,14 @@
 import { type Dispute, type DisputeRound, type RawDispute, toDisputes } from "../disputes/disputes";
 import type { AgentJuror } from "../roster/agent-jurors";
 import { type CourtTotals, courtTotalsOf } from "./totals";
+import {
+  type ParameterRegime,
+  type PeriodWindows,
+  type RawCourtParameters,
+  sameMeasuredWindows,
+  toRegimes,
+  windowsFor,
+} from "./windows";
 
 /**
  * The seam.
@@ -83,8 +91,8 @@ export type RawCommitCast = {
 /**
  * Everything fetched, in one value.
  *
- * Ticket 08 adds a field here — the `CourtModified` parameter history — rather than a second
- * seam beside this one, exactly as ticket 07 added `commits`.
+ * Tickets 06, 10 and 12 add fields here rather than a second seam beside this one, exactly as
+ * tickets 07 and 08 added `commits` and `parameters`.
  */
 export type RawCourtData = {
   disputes: readonly RawDispute[];
@@ -100,6 +108,17 @@ export type RawCourtData = {
    * subgraph and the matrix deliberately does not wait for it.
    */
   commits: readonly RawCommitCast[] | null;
+  /**
+   * Every configuration the court has held, from `CourtCreated` and `CourtModified` — or
+   * `null` where that read has not come back yet. See `windows.ts`.
+   *
+   * `null` and `[]` are different for the same reason they are on `commits`, and the
+   * consequence here is quieter: an unread history leaves every row's windows unresolved and
+   * nothing marked, which is a page saying less than it knows rather than one saying something
+   * false. What it must never become is the court's *current* `timesPerPeriod` used as though
+   * it had always held — the read exists precisely to make that impossible.
+   */
+  parameters: readonly RawCourtParameters[] | null;
   /** The column set, and the only place all six agent jurors appear. */
   roster: readonly AgentJuror[];
 };
@@ -169,6 +188,23 @@ export type MatrixRow = {
   panelSize: number;
   /** One entry per agent juror, in roster order. `null` means not drawn, which is the common case. */
   cells: readonly (Draw | null)[];
+  /**
+   * The period durations that were in force while this dispute ran, resolved period by period
+   * from the court's own parameter history. `null` until that history has been read.
+   *
+   * Present so the window can be shown *beside* a latency as an absolute duration. Nothing may
+   * divide one by the other — ADR-0005 — and this is the field that would make it easy to.
+   */
+  windows: PeriodWindows | null;
+  /**
+   * Whether this dispute's commit and vote windows differ from the ones the court holds now.
+   *
+   * The † marker. It is a fact about comparability rather than about the dispute: the figures
+   * in this row were measured against different windows from the rows above it, so a reader
+   * scanning the column is not comparing like with like. False while the history is unread —
+   * an unknown is not a denial, and the provenance footer says which it is.
+   */
+  underEarlierWindows: boolean;
 };
 
 /**
@@ -199,6 +235,27 @@ export type CommitCoverage = {
   resolved: number;
 };
 
+/**
+ * What the court configured, and when.
+ *
+ * Carried on the model rather than looked up by whatever needs it, so the marker on a row, the
+ * footnote under the matrix and the account on the method page are three readings of one
+ * history instead of three chances to quote a different one.
+ */
+export type CourtParameters = {
+  /**
+   * Whether the parameter history has been read at all.
+   *
+   * False means the answer is not in yet, and nothing may be concluded from `regimes` — least
+   * of all that the court has always been configured the way it is now.
+   */
+  read: boolean;
+  /** Every configuration the court has held, oldest first. Empty until read. */
+  regimes: readonly ParameterRegime[];
+  /** What the court holds now — the windows an unmarked row ran under. `null` until read. */
+  current: PeriodWindows | null;
+};
+
 export type CourtPerformance = {
   /** The matrix columns, in roster order. Nothing may read rank into it. */
   agentJurors: readonly AgentJuror[];
@@ -217,6 +274,8 @@ export type CourtPerformance = {
   totals: CourtTotals;
   /** Whether every commitment the subgraph knows of was found on chain. */
   commitCoverage: CommitCoverage;
+  /** The court's own parameter history, and what it holds now. */
+  parameters: CourtParameters;
 };
 
 /** The one failure code this seam returns. Everything it rejects is a payload it cannot believe. */
@@ -542,6 +601,11 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
     const grouped = groupDraws(raw, disputes);
     const commits = commitsByDraw(raw);
 
+    // The court's own history, never its current configuration: what the court holds today is
+    // not a fact about a dispute that ran before it was reconfigured (`windows.ts`).
+    const regimes = toRegimes(raw.parameters ?? []);
+    const current = regimes[regimes.length - 1]?.windows ?? null;
+
     // The cross-check ADR-0004 requires, counted where every draw is already in hand rather
     // than by walking the model a second time.
     let expected = 0;
@@ -561,10 +625,17 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
         return draw;
       });
 
+      const windows = windowsFor(regimes, dispute);
+
       return {
         dispute,
         panelSize: drawn?.panel.size ?? 0,
         cells,
+        windows,
+        // Both halves have to be known before anything is marked. An unresolved dispute is one
+        // this dashboard cannot place, not one that ran under the current rules.
+        underEarlierWindows:
+          windows !== null && current !== null && !sameMeasuredWindows(windows, current),
       };
     });
 
@@ -575,6 +646,7 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
         rows,
         totals: courtTotalsOf(rows, raw.roster),
         commitCoverage: { read: raw.commits !== null, expected, resolved },
+        parameters: { read: raw.parameters !== null, regimes, current },
       },
     };
   } catch (cause) {

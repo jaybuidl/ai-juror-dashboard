@@ -17,9 +17,14 @@ import { COURT_ID } from "../disputes/court-subgraph";
  * matrix's window footnote goes to `#window` — so renaming one silently breaks a link that
  * still resolves to a page, just not to the part that answers the question.
  *
- * `#window` is the one section this ticket does not write: the two period regimes as absolute
- * durations are ticket 08's, from the court's own parameter history. Until that lands the
- * section says so outright, so the footnote's link never arrives at an empty anchor.
+ * `#window` is prose, and deliberately not read from the model the matrix is built from. It is
+ * the destination of the † marker's link, so it has to answer on a cold load, and a section
+ * that waited on an Arbitrum read would show a reader arriving from that link the very absence
+ * they came to have explained. What it states is history — court 34's first configuration is
+ * a fact from August 2026 and cannot change retroactively — and the guard against it drifting
+ * is `court-parameters.integration.test.ts`, which reads the same two configurations from
+ * chain nightly and fails if the court is ever reconfigured again. The *marker*, and the
+ * durations quoted beside the matrix, do come from that read.
  */
 
 const Header = styled.header`
@@ -84,12 +89,46 @@ const Term = styled.span`
   color: ${({ theme }) => theme.textHeading};
 `;
 
-/** The section that is not written yet: quiet, and explicit about why. */
-const Pending = styled.p`
-  padding: ${({ theme }) => `${theme.space5} ${theme.space6}`};
-  border-left: 2px solid ${({ theme }) => theme.stateIdle};
+/**
+ * The two configurations, side by side.
+ *
+ * The shape `canvas/Errors.dc.html:190-197` gives it, which is the shape the dispute
+ * timeline strip uses on `canvas/Dispute.dc.html:88-96`: the thing named, then its duration as
+ * an absolute figure. Two configured windows here; ticket 09's dispute view sets a configured
+ * window beside how long the period in fact ran, in the same two columns. Neither divides one
+ * by the other.
+ */
+const Regimes = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: ${({ theme }) => theme.space8};
+  padding: ${({ theme }) => `${theme.space6} ${theme.space7}`};
+  border: ${({ theme }) => theme.borderHairline};
+  border-radius: ${({ theme }) => theme.radiusTile};
   background-color: ${({ theme }) => theme.surfaceInset};
+`;
+
+const Regime = styled.div`
+  flex: 1 1 200px;
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.space3};
+`;
+
+const RegimeLabel = styled.span`
+  font: ${({ theme }) => theme.typeMonoSm};
+  font-feature-settings: ${({ theme }) => theme.featureMono};
+  letter-spacing: ${({ theme }) => theme.trackingMono};
+  text-transform: uppercase;
   color: ${({ theme }) => theme.textMeta};
+`;
+
+const RegimeWindows = styled.span`
+  font: ${({ theme }) => theme.typeMono};
+  /* TRAP: the shorthand above resets the tabular digits base.css puts on the body, and this
+     is a row of durations meant to line up against the row beside it. */
+  font-feature-settings: ${({ theme }) => theme.featureMono};
+  color: ${({ theme }) => theme.textHeading};
 `;
 
 const SECTIONS: readonly { id: string; label: string }[] = [
@@ -116,7 +155,10 @@ const provenance: Provenance = {
   read: null,
   readAt: null,
   caveats: [
-    "The account of the court's period durations is not written yet, and the section below says so rather than leaving the gap to be inferred.",
+    // The one thing on this page that could go stale: it states what court 34 was configured
+    // with, and the court could be reconfigured a third time. Saying which date the account is
+    // true as of is what lets a reader who finds a third configuration know this page missed it.
+    "The two configurations named under the window are court 34's as of 25 August 2026, read from its parameter history on that date. The matrix itself reads that history on every load; this account does not.",
   ],
   identifiesAgentJurors: false,
 };
@@ -203,11 +245,46 @@ export function MethodPage() {
           this dashboard is an absolute duration and never a percentage of the window it ran in: a
           fraction is false the moment it is quoted away from the page.
         </Body>
-        <Pending>
-          The two period regimes — which disputes ran under which, as absolute durations read from
-          the court's own parameter history — are not written here yet. That account is ticket 08's,
-          and until it lands this section says so rather than leaving you to infer what is missing.
-        </Pending>
+        <Body>
+          The court has been configured twice. It was created on 11 August 2026 with a 12-hour
+          evidence period, a commit window of 8 hours, a vote window of 8 hours and a 36-hour appeal
+          period. On 20 August 2026 it was reconfigured: 45 minutes of evidence, a commit window of
+          45 minutes, a vote window of 30 minutes, and the appeal period left as it was.
+        </Body>
+
+        <Regimes>
+          <Regime>
+            <RegimeLabel>Dispute 151</RegimeLabel>
+            <RegimeWindows>Commit 8h · vote 8h</RegimeWindows>
+          </Regime>
+          <Regime>
+            <RegimeLabel>152 onward</RegimeLabel>
+            <RegimeWindows>Commit 45m · vote 30m</RegimeWindows>
+          </Regime>
+        </Regimes>
+
+        <Body>
+          Dispute 151 is the only dispute that ran under the first configuration: the change was
+          mined 48 minutes before dispute 152 was created. So it is the one row of the matrix
+          carrying a <Term>†</Term>, and the marker travels with every figure it touches rather than
+          sitting on the row alone — an aggregate that counts that dispute is marked too.
+        </Body>
+
+        <Body>
+          Which configuration applies is read from the court's own history — the{" "}
+          <Term>CourtCreated</Term> and <Term>CourtModified</Term> events on Arbitrum — and never
+          from what the court is configured with today. It is resolved period by period rather than
+          once per dispute, because the court reads its own durations at the moment it passes a
+          period: a dispute created under one configuration and passed into its commit period under
+          the next ran the later commit window, whatever its creation date suggests.
+        </Body>
+
+        <Body>
+          A window appears on this dashboard only ever beside a duration, as two absolute figures. A
+          latency is never divided by one, in a cell, in a total, or anywhere else — a ratio is a
+          fact about a relationship whose second term changed midway through this dataset, and it
+          cannot carry that caveat into a screenshot.
+        </Body>
       </Section>
 
       <Section id="caveats" heading="Caveats carried by the figures">

@@ -36,6 +36,26 @@ export function formatLatencySeconds(seconds: number): string {
 }
 
 /**
+ * A configured window in words: `"45m"`, `"8h"`, `"1h 30m"`.
+ *
+ * Coarser than a latency on purpose, and a separate function rather than a mode of one. A
+ * latency is a measurement and reads to the second; a window is a number somebody typed into a
+ * governance transaction, and printing court 34's commit window as `"2700s"` beside a reveal
+ * of `"85s"` would invite exactly the division ADR-0005 forbids. They are different quantities
+ * and they are meant to look it.
+ */
+export function formatWindowSeconds(seconds: number): string {
+  if (seconds < 60) return `${seconds}s`;
+
+  const minutes = Math.round(seconds / 60);
+  if (minutes < 60) return `${minutes}m`;
+
+  const remainder = minutes % 60;
+  const hours = (minutes - remainder) / 60;
+  return remainder === 0 ? `${hours}h` : `${hours}h ${remainder}m`;
+}
+
+/**
  * Where a latency sits on the shared rail, as a fraction of its width.
  *
  * Decoration only: every value it carries is printed as a number beside it, so removing the

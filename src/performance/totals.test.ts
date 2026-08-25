@@ -3,8 +3,10 @@ import disputeFixture from "../disputes/court-34.fixture.json" with { type: "jso
 import type { RawDispute } from "../disputes/disputes";
 import { ROSTER } from "../roster/agent-jurors";
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
+import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import { buildCourtPerformance, type CourtPerformance, type RawDraw } from "./performance";
 import { courtTotalsOf } from "./totals";
+import type { RawCourtParameters } from "./windows";
 
 /**
  * The same captured court every other test in this folder reads, and the same reason: the
@@ -22,6 +24,7 @@ const built = ((): CourtPerformance => {
     // The totals are reveal-only by design, so the commitments are deliberately not read here:
     // every figure this suite pins must be the same whether or not the log scan came back.
     commits: null,
+    parameters: parameterFixture as RawCourtParameters[],
     roster: ROSTER,
   });
   if (!result.success) throw new Error(`${result.code}: ${result.message}`);
@@ -102,6 +105,69 @@ describe("courtTotalsOf", () => {
     expect(courtTotalsOf(built.rows, ROSTER).lonePanelDisputes).toEqual([155]);
   });
 
+  it("names the disputes that ran under windows the court has since changed", () => {
+    // The other half of the same obligation: a coherence figure has to disclose a panel of
+    // one, and a latency figure has to disclose a window change. Ticket 06's marginals are the
+    // first figures that will carry both markers.
+    const { changedWindows } = courtTotalsOf(built.rows, ROSTER);
+
+    expect(changedWindows).toHaveLength(1);
+    expect(changedWindows[0]?.disputes).toEqual([151]);
+    expect(changedWindows[0]?.windows.commitSeconds).toBe(28_800);
+  });
+
+  it("counts how many draws behind the median ran under the changed window", () => {
+    // What makes a dagger on a median mean something: the reader is told how much of the
+    // distribution is not comparable with the rest. Dispute 151's panel was two, both revealed.
+    const { changedWindows, revealLatency } = courtTotalsOf(built.rows, ROSTER);
+
+    expect(changedWindows[0]?.revealedDraws).toBe(2);
+    expect(revealLatency?.seconds.length).toBeGreaterThan(2);
+  });
+
+  it("gathers them by the windows they ran under rather than listing them flat", () => {
+    // A flat list could not say what the difference was, which is the whole content of the
+    // footnote. Two supersededconfigurations are two sentences, not one list of ids.
+    const rows = [
+      row(151, { commitSeconds: 28_800, voteSeconds: 28_800 }),
+      row(152, { commitSeconds: 28_800, voteSeconds: 28_800 }),
+      row(153, { commitSeconds: 600, voteSeconds: 600 }),
+    ];
+
+    // Ordered oldest group first, whatever order the rows arrive in — and rows arrive newest
+    // first, so insertion order would print the court's history backwards.
+    expect(courtTotalsOf([...rows].reverse(), ROSTER).changedWindows).toEqual([
+      {
+        disputes: [151, 152],
+        windows: { commitSeconds: 28_800, voteSeconds: 28_800 },
+        revealedDraws: 0,
+      },
+      { disputes: [153], windows: { commitSeconds: 600, voteSeconds: 600 }, revealedDraws: 0 },
+    ]);
+  });
+
+  it("reports none of them while the parameter history has not been read", () => {
+    expect(courtTotalsOf([row(151, null)], ROSTER).changedWindows).toEqual([]);
+  });
+
+  it("counts a dispute the history could not place, separately from one that matched", () => {
+    // The difference between "nothing ran under earlier windows" and "the history is too short
+    // to say" — which nothing else on the model can tell apart, and which a page reading
+    // `changedWindows` alone would render as a clean bill of health.
+    const totals = courtTotalsOf(
+      [row(151, null), row(152, { commitSeconds: 28_800, voteSeconds: 28_800 })],
+      ROSTER,
+    );
+
+    expect(totals.unplacedDisputes).toEqual([151]);
+    expect(totals.changedWindows).toHaveLength(1);
+    expect(totals.changedWindows[0]?.disputes).toEqual([152]);
+  });
+
+  it("places every dispute in the captured court, because the history reaches back far enough", () => {
+    expect(courtTotalsOf(built.rows, ROSTER).unplacedDisputes).toEqual([]);
+  });
+
   it("is the same model the matrix is built from", () => {
     // The tiles read `performance.totals` rather than reducing the rows themselves, and this
     // is the assertion that the seam actually hands them one.
@@ -109,11 +175,31 @@ describe("courtTotalsOf", () => {
   });
 });
 
+/**
+ * One row with nothing in it but the windows it ran under.
+ *
+ * Hand-built rather than captured: the court has been reconfigured once, so no fixture can
+ * hold two superseded configurations at the same time, and grouping is the thing being tested.
+ */
+function row(id: number, measured: { commitSeconds: number; voteSeconds: number } | null) {
+  return {
+    dispute: { id } as never,
+    panelSize: 2,
+    cells: [],
+    windows: measured === null ? null : { evidenceSeconds: 1, appealSeconds: 129_600, ...measured },
+    underEarlierWindows: measured !== null,
+  };
+}
+
 /** The median as `courtTotalsOf` computes it, reached through the only door it has. */
 function medianOfSeconds(seconds: readonly number[]): number | undefined {
   const rows = seconds.map((value, index) => ({
     dispute: { id: index } as never,
     panelSize: 2,
+    // No window resolved and nothing marked: the median must be the same figure whether or not
+    // the court's parameter history came back.
+    windows: null,
+    underEarlierWindows: false,
     cells: [
       {
         agentJuror: ROSTER[index % ROSTER.length] as never,

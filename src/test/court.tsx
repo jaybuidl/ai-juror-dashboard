@@ -6,12 +6,16 @@ import { type RawDispute, toDisputes } from "../disputes/disputes";
 import type { DisputesView } from "../disputes/useDisputes";
 import commitFixture from "../performance/court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "../performance/court-34-draws.fixture.json" with { type: "json" };
+import parameterFixture from "../performance/court-34-parameters.fixture.json" with {
+  type: "json",
+};
 import {
   buildCourtPerformance,
   type RawCommitCast,
   type RawDraw,
 } from "../performance/performance";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
+import type { RawCourtParameters } from "../performance/windows";
 import { ROSTER } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
@@ -82,6 +86,7 @@ const built = buildCourtPerformance({
   disputes: fixture as RawDispute[],
   draws: drawFixture as RawDraw[],
   commits: commitFixture as RawCommitCast[],
+  parameters: parameterFixture as RawCourtParameters[],
   roster: ROSTER,
 });
 if (!built.success) throw new Error(`${built.code}: ${built.message}`);
@@ -92,6 +97,7 @@ export const measured: CourtPerformanceView = {
   isLoading: false,
   error: null,
   commitError: null,
+  parametersError: null,
 };
 
 /** What the page has when the draws could not be read at all. */
@@ -100,6 +106,7 @@ export const unmeasured: CourtPerformanceView = {
   isLoading: false,
   error: new Error("Core subgraph returned HTTP 503 Service Unavailable"),
   commitError: null,
+  parametersError: null,
 };
 
 /**
@@ -115,16 +122,36 @@ const building = buildCourtPerformance({
   disputes: fixture as RawDispute[],
   draws: drawFixture as RawDraw[],
   commits: null,
+  parameters: null,
   roster: ROSTER,
 });
 if (!building.success) throw new Error(`${building.code}: ${building.message}`);
 
-/** What the page has before the commitments land: every other measure, and no commit latency. */
-export const commitsPending: CourtPerformanceView = {
+/**
+ * What the page has before either Arbitrum read lands: every subgraph measure, no commit
+ * latency, and nothing marked as having run under a window the court has since changed.
+ */
+export const arbitrumPending: CourtPerformanceView = {
   performance: building.data,
   isLoading: false,
   error: null,
   commitError: null,
+  parametersError: null,
+};
+
+/**
+ * The same court with both Arbitrum reads having failed rather than being in flight.
+ *
+ * A separate fixture and not a flag on the one above, for the reason `CLAUDE.md` records
+ * against `RosterView`: `read` is false while the chain is being asked *and* after it refused,
+ * so a caveat keyed on it alone announces a failure that has not happened on every cold load
+ * and then retracts it. Only the error tells the two apart, and only a fixture carrying one
+ * can prove the page does.
+ */
+export const arbitrumFailed: CourtPerformanceView = {
+  ...arbitrumPending,
+  commitError: new Error("HTTP request failed: 429 Too Many Requests"),
+  parametersError: new Error("HTTP request failed: 429 Too Many Requests"),
 };
 
 export const views: DashboardRoutesProps = {

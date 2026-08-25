@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatLatencySeconds, railFraction } from "./latency";
+import { formatLatencySeconds, formatWindowSeconds, railFraction } from "./latency";
 
 describe("formatLatencySeconds", () => {
   it("reads under two minutes in seconds", () => {
@@ -52,5 +52,31 @@ describe("railFraction", () => {
 
   it("never runs past the end for a latency longer than the scale", () => {
     expect(railFraction(86400)).toBe(1);
+  });
+});
+
+describe("formatWindowSeconds", () => {
+  it("reads court 34's two configurations the way the court configured them", () => {
+    expect(formatWindowSeconds(28_800)).toBe("8h");
+    expect(formatWindowSeconds(2_700)).toBe("45m");
+    expect(formatWindowSeconds(1_800)).toBe("30m");
+    expect(formatWindowSeconds(129_600)).toBe("36h");
+  });
+
+  it("keeps a window coarser than a latency, so the two never read as one quantity", () => {
+    // 2700 seconds printed beside a reveal of "85s" is an invitation to divide one by the
+    // other, which is the whole of what ADR-0005 forbids. A window is a figure somebody typed
+    // into a governance transaction; a latency is a measurement.
+    expect(formatWindowSeconds(2_700)).not.toBe(formatLatencySeconds(2_700));
+  });
+
+  it("says an hour and a half rather than ninety minutes", () => {
+    expect(formatWindowSeconds(5_400)).toBe("1h 30m");
+    expect(formatWindowSeconds(3_660)).toBe("1h 1m");
+  });
+
+  it("falls back to seconds below a minute, because a window can be configured that short", () => {
+    expect(formatWindowSeconds(30)).toBe("30s");
+    expect(formatWindowSeconds(0)).toBe("0s");
   });
 });

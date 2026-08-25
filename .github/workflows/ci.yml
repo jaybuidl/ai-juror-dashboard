@@ -110,10 +110,17 @@ jobs:
   # filename and this comment never has to count them. What they cover today: ENS (all six
   # subnames resolved against mainnet and cross-checked against the addresses the roster has
   # checked in by hand), the core subgraph's disputes and its draws, the template subgraph
-  # that says what each dispute is about, and Arbitrum's `CommitCast` logs — which also run
+  # that says what each dispute is about, Arbitrum's `CommitCast` logs — which also run
   # ADR-0004's cross-check live, asserting that every draw the subgraph calls committed has a
-  # matching event. Each asserts that the endpoint still returns the shape the model parses —
-  # a renamed field or a changed enum is exactly what a fixture cannot notice.
+  # matching event — and court 34's own parameter history. Each asserts that the endpoint still
+  # returns the shape the model parses — a renamed field or a changed enum is exactly what a
+  # fixture cannot notice.
+  #
+  # The parameter suite carries a second job, and it is the reason the nightly cadence matters:
+  # the method page's account of the court's two period regimes is prose, so that a reader
+  # arriving from the matrix's window footnote is answered on a cold load. That suite asserts
+  # the chain still reports exactly those two configurations, so a third one fails here before
+  # anybody reads a stale account of the second.
   #
   # They hit ethereum-rpc.publicnode.com, api.goldsky.com and arb1.arbitrum.io from a shared
   # runner IP and may be rate-limited there in a way they never are from a laptop. The Arbitrum

@@ -57,6 +57,12 @@
 # The matrix still renders, every commit slot reads Unknown, and the notice above it says all N
 # commitments went unread. Loud on the page, and easy to mistake for an endpoint outage.
 #
+# Ticket 08 reads a second thing from that same host and added no entry: the court's own
+# parameter history, from KlerosCore rather than from the dispute kit. It is non-blocking on
+# the same terms, and quieter — a blocked host costs the † marker and the windows on each row,
+# so the page loses the note saying which figures are not comparable with which rather than
+# losing a figure. The provenance footer is where that shows up.
+#
 # style-src and font-src are still 'self' after ticket 14 adopted the Kleros ×AI design
 # system, and that is a decision rather than an omission. The system's tokens/fonts.css
 # @imports Manrope and JetBrains Mono from fonts.googleapis.com; this repo self-hosts both

@@ -1,11 +1,13 @@
+import { Link } from "react-router";
 import styled from "styled-components";
 import { DisputeRow, type DisputeRowSlots } from "../disputes/DisputeList";
 import type { Dispute } from "../disputes/disputes";
 import type { RosterView } from "../roster/useRoster";
 import { type Tone, toneInk, toneLine, toneWash } from "../styles/tones";
 import { commitFigureOf, presentationOf, revealFigureOf } from "./cell";
-import { railFraction } from "./latency";
+import { formatWindowSeconds, railFraction } from "./latency";
 import type { CourtPerformance, Draw, MatrixRow } from "./performance";
+import type { PeriodWindows } from "./windows";
 
 /**
  * The dispute matrix: one row per dispute, one column per agent juror, one cell per draw.
@@ -25,28 +27,62 @@ import type { CourtPerformance, Draw, MatrixRow } from "./performance";
 /**
  * A row carries at most one flag, in this order.
  *
- * The precedence is the point of the list. Ticket 08 adds the changed-window flag above the
- * lone panel — dispute 151 is both, and the window is the one that makes its figures
- * incomparable — and ticket 12 adds the live flag below it. Each is one entry here, not a
- * second hard-coded pill in the markup.
+ * The precedence is the point of the list. The changed-window flag sits above the lone panel
+ * because the window is what makes a row's figures incomparable with the rows around it, where
+ * a lone panel only makes one of them uninformative; ticket 12 adds the live flag below them.
+ * Each is one entry here, not a second hard-coded pill in the markup.
+ *
+ * No row is both today — 151 is the marked one and 155 the lone panel — and one that was would
+ * still be marked as a lone panel, because `Panel 1` carries its own amber tone independently
+ * of this slot. The flag is the second mark on such a row, not the only one.
+ *
+ * `label` and `applies` take the court's current windows as well as the row, because the window
+ * flag names *which* window changed: `† 8h window` on dispute 151, read from what the court was
+ * configured with rather than typed in.
  */
 const ROW_FLAGS: readonly {
   key: string;
-  applies: (row: MatrixRow) => boolean;
+  applies: (row: MatrixRow, current: PeriodWindows | null) => boolean;
   glyph: string;
-  label: string;
+  label: (row: MatrixRow, current: PeriodWindows | null) => string;
   tone: Tone;
 }[] = [
-  // Ticket 08: { key: "window", applies: row => ranUnderTheOldParameters(row), … }
+  {
+    key: "window",
+    applies: (row) => row.underEarlierWindows,
+    glyph: "†",
+    label: windowFlagLabel,
+    tone: "work",
+  },
   {
     key: "lone-panel",
     applies: (row) => row.panelSize === 1,
     glyph: "‡",
-    label: "Lone panel",
+    label: () => "Lone panel",
     tone: "work",
   },
   // Ticket 12: { key: "live", applies: row => row.dispute.period !== "execution", … }
 ];
+
+/**
+ * The window flag's label: the one that actually differs.
+ *
+ * Naming the commit window unconditionally would be right for court 34's one reconfiguration
+ * and wrong for the next one. A court that changed only its vote window would put `† 45m
+ * window` on every older row — a duration identical to the one the court holds now, so the
+ * marker would read as if it had been placed in error.
+ *
+ * `windows` is non-null wherever `underEarlierWindows` is true, the seam setting one from the
+ * other; the fallback is here rather than a non-null assertion.
+ */
+function windowFlagLabel(row: MatrixRow, current: PeriodWindows | null): string {
+  if (row.windows === null) return "Earlier window";
+
+  const commitChanged = current === null || row.windows.commitSeconds !== current.commitSeconds;
+  return commitChanged
+    ? `${formatWindowSeconds(row.windows.commitSeconds)} window`
+    : `${formatWindowSeconds(row.windows.voteSeconds)} vote window`;
+}
 
 /* ─── layout ───────────────────────────────────────────────────────────────────────────── */
 
@@ -353,7 +389,14 @@ const Footnote = styled.p`
   display: flex;
   gap: ${({ theme }) => theme.space4};
   font: ${({ theme }) => theme.typeBodySm};
+  /* It names dispute ids and two configured durations, and the shorthand above resets the
+     tabular figures base.css puts on the body. */
+  font-feature-settings: ${({ theme }) => theme.featureNumeric};
   color: ${({ theme }) => theme.textBody};
+
+  a {
+    color: ${({ theme }) => theme.accent};
+  }
 `;
 
 const FootnoteMark = styled.span`
@@ -435,6 +478,85 @@ function listOf(ids: readonly number[]): string {
   return `${ids.slice(0, -1).join(", ")} and ${ids[ids.length - 1]}`;
 }
 
+/**
+ * The window footnote, in whichever of its three states the page is in.
+ *
+ * It is one footnote and not three, and it is always on the page, because the sentence it has
+ * to carry in every state is the same one: nothing here is a fraction of a window. What
+ * changes is how much it can say about which rows ran under what — a fact about the court that
+ * has to be read from the chain before it can be stated.
+ *
+ * Where the history is missing it says so as a fact about the read, and it distinguishes only
+ * what it can see: a scan that came back with no configuration at all is not the same as one
+ * that has not answered. Which of *those* two happened — still in flight, or refused — is the
+ * provenance footer's business, because a footnote that guessed would announce a failure on
+ * every cold load, the trap `CLAUDE.md` records against `RosterView`.
+ */
+function WindowFootnote({ performance }: { performance: CourtPerformance }) {
+  const { current, read } = performance.parameters;
+  const { changedWindows: changes, unplacedDisputes: unplaced } = performance.totals;
+
+  return (
+    <Footnote>
+      <FootnoteMark aria-hidden="true">†</FootnoteMark>
+      <span>
+        {current === null ? (
+          <>
+            Court 34's period durations changed partway through this experiment, and its parameter
+            history is not in hand on this load —{" "}
+            {read
+              ? "that read came back carrying no configuration at all"
+              : "it is still being read, or could not be"}
+            . So no row above is marked as having run under the earlier ones, and that is an unread
+            state rather than a finding.
+          </>
+        ) : changes.length === 0 && unplaced.length === 0 ? (
+          <>
+            Every dispute here ran under the period durations the court holds now: a commit window
+            of {formatWindowSeconds(current.commitSeconds)} and a vote window of{" "}
+            {formatWindowSeconds(current.voteSeconds)}.
+          </>
+        ) : changes.length === 0 ? (
+          // The claim above is the one that must never be made carelessly. A dispute the
+          // history could not place is not a dispute that ran under the current windows: a scan
+          // that dropped the court's oldest configuration leaves exactly this state, and saying
+          // "every dispute ran under 45m and 30m" over it would state the opposite of the truth
+          // with nothing on the page to contradict it.
+          <>
+            No dispute here is marked as having run under earlier period durations, but the
+            parameter history read on this load does not reach back far enough to place{" "}
+            {unplaced.length === 1 ? "dispute" : "disputes"} {listOf(unplaced)} — so that is not the
+            same as saying they ran under the {formatWindowSeconds(current.commitSeconds)} and{" "}
+            {formatWindowSeconds(current.voteSeconds)} windows the court holds now.
+          </>
+        ) : (
+          <>
+            {changes.map((change) => (
+              <span key={`${change.windows.commitSeconds}-${change.windows.voteSeconds}`}>
+                {change.disputes.length === 1 ? "Dispute" : "Disputes"} {listOf(change.disputes)}{" "}
+                ran with a commit window of {formatWindowSeconds(change.windows.commitSeconds)} and
+                a vote window of {formatWindowSeconds(change.windows.voteSeconds)}, against{" "}
+                {formatWindowSeconds(current.commitSeconds)} and{" "}
+                {formatWindowSeconds(current.voteSeconds)} configured now.{" "}
+              </span>
+            ))}
+            {unplaced.length > 0 && (
+              <>
+                {unplaced.length === 1 ? "Dispute" : "Disputes"} {listOf(unplaced)} the history read
+                on this load cannot place at all, so {unplaced.length === 1 ? "it is" : "they are"}{" "}
+                unmarked for want of anything to compare against rather than for having matched.{" "}
+              </>
+            )}
+          </>
+        )}{" "}
+        Latency is held and shown as an absolute duration everywhere on this page, and never as a
+        fraction of the window it ran in.{" "}
+        <Link to="/method#window">What that means for these figures</Link>.
+      </span>
+    </Footnote>
+  );
+}
+
 function DrawCell({ draw }: { draw: Draw }) {
   const presentation = presentationOf(draw.state);
   const figure = revealFigureOf(draw);
@@ -481,7 +603,7 @@ function DrawCell({ draw }: { draw: Draw }) {
 }
 
 export function Matrix({ performance, roster, slotsFor }: MatrixProps) {
-  const { agentJurors, rows, commitCoverage } = performance;
+  const { agentJurors, rows, commitCoverage, parameters } = performance;
   const unread = commitCoverage.expected - commitCoverage.resolved;
   const identityOf = new Map(
     roster.entries.map(({ agentJuror, identity }) => [agentJuror.address, identity]),
@@ -621,7 +743,9 @@ export function Matrix({ performance, roster, slotsFor }: MatrixProps) {
               </thead>
               <tbody>
                 {rows.map((row) => {
-                  const flag = ROW_FLAGS.find((candidate) => candidate.applies(row));
+                  const flag = ROW_FLAGS.find((candidate) =>
+                    candidate.applies(row, parameters.current),
+                  );
                   const lone = row.panelSize === 1;
 
                   return (
@@ -643,7 +767,7 @@ export function Matrix({ performance, roster, slotsFor }: MatrixProps) {
                             flag: flag && (
                               <>
                                 <span aria-hidden="true">{flag.glyph}</span>
-                                {flag.label}
+                                {flag.label(row, parameters.current)}
                               </>
                             ),
                             flagTone: flag?.tone,
@@ -671,6 +795,10 @@ export function Matrix({ performance, roster, slotsFor }: MatrixProps) {
           </TableScroll>
 
           <Footnotes>
+            {/* † before ‡, as the artboard orders them and as `ROW_FLAGS` ranks them: dispute
+                151 carries both, and the window is the one that makes its figures
+                incomparable rather than merely uninformative. */}
+            <WindowFootnote performance={performance} />
             {lonePanels.length > 0 && (
               <Footnote>
                 <FootnoteMark aria-hidden="true">‡</FootnoteMark>

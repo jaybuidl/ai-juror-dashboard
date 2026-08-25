@@ -1,9 +1,10 @@
-import { screen } from "@testing-library/react";
+import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
 import { formatLatencySeconds } from "../performance/latency";
 import { ROSTER } from "../roster/agent-jurors";
 import {
-  commitsPending,
+  arbitrumFailed,
+  arbitrumPending,
   disputes,
   measured,
   renderAt,
@@ -39,8 +40,14 @@ describe("the matrix view", () => {
     renderAt("/");
 
     expect(screen.getByText(/three measures, and what is missing from them/i)).toBeInTheDocument();
+    // Twice, in the two voices this page has: the caveat card above the matrix, and the
+    // provenance footer under it. The court's period durations left this list with ticket 08,
+    // which reads them — what remains unread is what remains named.
     expect(
-      screen.getByText(/per-agent-juror summaries and rewards have not been read/i),
+      screen.getByText(/it measures nothing else yet: per-agent-juror summaries and rewards/i),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(/per-agent-juror summaries and rewards have not been read at all\./i),
     ).toBeInTheDocument();
   });
 
@@ -99,7 +106,13 @@ describe("the matrix view", () => {
 
   it("says nothing about a failed read while the read is still out", () => {
     renderAt("/", {
-      performance: { performance: null, isLoading: true, error: null, commitError: null },
+      performance: {
+        performance: null,
+        isLoading: true,
+        error: null,
+        commitError: null,
+        parametersError: null,
+      },
     });
 
     expect(screen.queryByText(/the matrix could not be built/i)).not.toBeInTheDocument();
@@ -276,7 +289,7 @@ describe("the matrix view's footer", () => {
     // The commit read is a separate query the matrix does not wait on, so this is every cold
     // load — not an error, and it must not be worded as one. The footer would otherwise name a
     // measured record the reader is looking at a column of dashes for.
-    renderAt("/", { performance: commitsPending });
+    renderAt("/", { performance: arbitrumPending });
 
     expect(
       screen.getByText(/reveal latency and coherence are the measured record/i),
@@ -290,7 +303,7 @@ describe("the matrix view's footer", () => {
   it("never says commit latency has not been read at all, on any load", () => {
     // The sentence ticket 15 left behind. It was true when it was written and is false now, in
     // both directions: the commitments are either in, or in flight.
-    for (const performance of [measured, commitsPending]) {
+    for (const performance of [measured, arbitrumPending]) {
       const { unmount } = renderAt("/", { performance });
 
       expect(
@@ -306,5 +319,110 @@ describe("the matrix view's footer", () => {
     expect(
       screen.getByRole("link", { name: /what that means for these figures/i }),
     ).toHaveAttribute("href", "/method#window");
+  });
+
+  describe("the court's period durations", () => {
+    it("discloses the window change in the footer as well as on the row", () => {
+      // The tiles and the latency strip are court-wide and have no row to carry a marker on,
+      // so the footer is where a figure that counts dispute 151 admits what it counted.
+      renderAt("/");
+
+      expect(
+        screen.getByText(
+          /Dispute 151 ran under a commit window of 8h and a vote window of 8h, which the court has since changed/i,
+        ),
+      ).toBeInTheDocument();
+    });
+
+    it("puts the marker on the aggregate figure, not only on the row it came from", () => {
+      // `canvas/Errors.dc.html:200-208`: a dagger on the number, the reason one line below it,
+      // the full account one click away. The median reveal pools draws measured against two
+      // different vote windows, so it is the one tile of the four that takes one.
+      renderAt("/");
+
+      const reason = screen.getByText(/ran under a vote window of 8h/i);
+
+      expect(reason).toHaveTextContent(/2 of \d+ draws/i);
+      expect(within(reason).getByRole("link", { name: /the full account/i })).toHaveAttribute(
+        "href",
+        "/method#window",
+      );
+    });
+
+    it("leaves the counting tiles unmarked, because a window changes no count", () => {
+      renderAt("/");
+
+      // One dagger above the matrix and no more: a window changes what a duration means and
+      // changes nothing about how many disputes or draws there were.
+      expect(screen.getAllByText(/ran under a vote window/i)).toHaveLength(1);
+    });
+
+    it("marks no figure at all while the history is unread", () => {
+      renderAt("/", { performance: arbitrumPending });
+
+      expect(screen.queryByText(/ran under a vote window/i)).not.toBeInTheDocument();
+    });
+
+    it("no longer claims the period durations are unread, now that they are read", () => {
+      renderAt("/");
+
+      expect(
+        screen.queryByText(/historical period durations have not been read/i),
+      ).not.toBeInTheDocument();
+    });
+
+    it("says the history is still being read while it is still being read", () => {
+      renderAt("/", { performance: arbitrumPending });
+
+      expect(
+        screen.getByText(/the court's period durations are still being read/i),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/period durations could not be read/i)).not.toBeInTheDocument();
+    });
+
+    it("says the read failed once it has failed, rather than that it is still going", () => {
+      // The trap `CLAUDE.md` records against `RosterView`, in its second home: `read` is false
+      // in both states, and a caveat that announces "still being read" about a read that gave
+      // up minutes ago is a caveat a reader learns to ignore.
+      renderAt("/", { performance: arbitrumFailed });
+
+      expect(
+        screen.getByText(/the court's period durations could not be read/i),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/period durations are still being read/i)).not.toBeInTheDocument();
+    });
+
+    it("calls a parameter read that came back empty a short read, not an unstarted one", () => {
+      // The third state, and the one keying on `read` alone would silently swallow: the scan
+      // happened and returned no configuration for a court that has certainly had two.
+      const { performance } = arbitrumPending;
+      if (performance === null) throw new Error("no model to build the empty read from");
+
+      renderAt("/", {
+        performance: {
+          ...arbitrumPending,
+          performance: {
+            ...performance,
+            parameters: { read: true, regimes: [], current: null },
+          },
+        },
+      });
+
+      expect(
+        screen.getByText(/Arbitrum returned no parameter history for court 34/i),
+      ).toBeInTheDocument();
+    });
+
+    it("tells the same two states apart for the commitments", () => {
+      // The same defect, pre-dating this ticket by one: the commit caveat was worded for a
+      // read in flight and shown for a read that had failed.
+      const { unmount } = renderAt("/", { performance: arbitrumPending });
+      expect(screen.getByText(/the commitments are still being read/i)).toBeInTheDocument();
+      unmount();
+
+      renderAt("/", { performance: arbitrumFailed });
+      expect(screen.getByText(/the commitments could not be read/i)).toBeInTheDocument();
+      expect(screen.queryByText(/commitments are still being read/i)).not.toBeInTheDocument();
+    });
   });
 });

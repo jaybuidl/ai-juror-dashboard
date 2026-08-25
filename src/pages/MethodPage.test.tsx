@@ -48,21 +48,47 @@ describe("the method page", () => {
     ).toBeInTheDocument();
   });
 
-  it("says outright that the window account is not written yet", () => {
-    // Ticket 08 writes it. Until then the section exists and says so, so the matrix footnote
-    // never arrives at an empty anchor.
+  it("names both configurations as absolute durations", () => {
+    // The account the † marker's link exists to reach. Both regimes, in the units the court
+    // was configured in, and no ratio anywhere between them — ADR-0005.
     renderAt("/method");
 
-    expect(screen.getByText(/are not written here yet/i)).toBeInTheDocument();
+    const section = screen.getByRole("region", { name: /the window/i });
+
+    expect(section).toHaveTextContent(/commit window of 8 hours/i);
+    expect(section).toHaveTextContent(/commit window of 45 minutes/i);
+    expect(section).toHaveTextContent(/vote window of 30 minutes/i);
+    expect(section).toHaveTextContent(/Commit 8h · vote 8h/);
+    expect(section).toHaveTextContent(/Commit 45m · vote 30m/);
   });
 
-  it("does not duplicate ticket 08's half of the window section", () => {
+  it("says which disputes ran under which, and how that is decided", () => {
     renderAt("/method");
 
-    // The two period regimes as absolute durations are 08's to write. Quoting one here would
-    // be a second account of the court's parameters, free to disagree with the first.
-    expect(screen.queryByText(/45 minutes/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/8 hours/i)).not.toBeInTheDocument();
+    const section = screen.getByRole("region", { name: /the window/i });
+
+    expect(section).toHaveTextContent(/dispute 151 is the only dispute/i);
+    // Read from the court's history and never from what it holds now — the trap this whole
+    // section exists to keep a reader out of.
+    expect(section).toHaveTextContent(/CourtModified/);
+    expect(section).toHaveTextContent(/never from what the court is configured with today/i);
+  });
+
+  it("never turns a latency into a fraction of a window, and says so", () => {
+    renderAt("/method");
+
+    expect(
+      screen.getByText(/a latency is never divided by one, in a cell, in a total/i),
+    ).toBeInTheDocument();
+  });
+
+  it("dates the account, because the court could be reconfigured again", () => {
+    // The one sentence on this page that can go stale. It is prose so that a reader arriving
+    // from the matrix's footnote is answered on a cold load; saying what date it is true as of
+    // is what stops that convenience becoming a quiet falsehood.
+    renderAt("/method");
+
+    expect(screen.getByText(/as of 25 August 2026/i)).toBeInTheDocument();
   });
 
   it("carries no figure of its own, and says so", () => {

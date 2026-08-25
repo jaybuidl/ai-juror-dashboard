@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { ThemeProvider } from "styled-components";
 import { describe, expect, it } from "vitest";
 import disputeFixture from "../disputes/court-34.fixture.json" with { type: "json" };
@@ -10,6 +11,7 @@ import type { RosterView } from "../roster/useRoster";
 import { theme } from "../styles/theme";
 import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
+import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import { Matrix } from "./Matrix";
 import {
   buildCourtPerformance,
@@ -18,6 +20,7 @@ import {
   type RawCourtData,
   type RawDraw,
 } from "./performance";
+import type { RawCourtParameters } from "./windows";
 
 const roster: RosterView = {
   entries: ROSTER.map((agentJuror) => ({ agentJuror, identity: rosterIdentity(agentJuror) })),
@@ -30,6 +33,7 @@ function build(raw: Partial<RawCourtData> = {}): CourtPerformance {
     disputes: disputeFixture as RawDispute[],
     draws: drawFixture as RawDraw[],
     commits: commitFixture as RawCommitCast[],
+    parameters: parameterFixture as RawCourtParameters[],
     roster: ROSTER,
     ...raw,
   });
@@ -41,11 +45,37 @@ function renderMatrix(
   performance: CourtPerformance = build(),
   slotsFor?: (dispute: Dispute) => DisputeRowSlots,
 ) {
+  // Inside a router since ticket 08: the window footnote links to the method page's account of
+  // the two period regimes, which is a part of the matrix and not of the page around it.
   return render(
     <ThemeProvider theme={theme}>
-      <Matrix performance={performance} roster={roster} slotsFor={slotsFor} />
+      <MemoryRouter>
+        <Matrix performance={performance} roster={roster} slotsFor={slotsFor} />
+      </MemoryRouter>
     </ThemeProvider>,
   );
+}
+
+/**
+ * One dispute, for the cases the captured court cannot produce.
+ *
+ * The court has been reconfigured once and its oldest dispute is the one that reconfiguration
+ * marks, so no read of it can hold a dispute that is both older than 151 and placeable against
+ * the parameter history. That combination has to be built.
+ */
+function rawDispute(overrides: Partial<RawDispute>, timeline: readonly string[]): RawDispute {
+  return {
+    id: "163",
+    disputeID: "163",
+    period: "execution",
+    ruled: true,
+    currentRuling: "2",
+    createdAt: "1787340123",
+    lastPeriodChange: "1787409015",
+    currentRoundIndex: "0",
+    ...overrides,
+    rounds: [{ id: `${overrides.disputeID ?? "163"}-0`, timeline }],
+  };
 }
 
 /** The row of the matrix for one dispute, found the way a reader finds it. */
@@ -167,6 +197,184 @@ describe("Matrix", () => {
         within(header).queryAllByText(/lone panel|8h window|live/i).length,
       ).toBeLessThanOrEqual(1);
     }
+  });
+
+  describe("the window marker", () => {
+    it("marks the dispute that ran under a window the court has since changed", () => {
+      renderMatrix();
+      const row = rowFor(151);
+      if (row === null) throw new Error("no row for dispute 151");
+
+      // Named from what the court was configured with, not typed in: `† 8h window`, as the
+      // artboard draws it.
+      expect(within(row).getByText("8h window")).toBeInTheDocument();
+    });
+
+    it("marks that row and no other", () => {
+      renderMatrix();
+
+      const marked = screen
+        .getAllByRole("rowheader")
+        .filter((header) => within(header).queryByText(/window$/i) !== null);
+
+      expect(marked).toHaveLength(1);
+      expect(marked[0]?.textContent).toMatch(/^151[^\d]/);
+    });
+
+    it("takes precedence over the lone panel, because it is the one that breaks comparison", () => {
+      // Dispute 151 has a panel of two, so this is asserted where it can actually be seen:
+      // a row that is both marked and lone shows the window. Hand-built, because the court has
+      // never produced one.
+      const both = build({
+        disputes: [
+          {
+            id: "151",
+            disputeID: "151",
+            period: "execution",
+            ruled: true,
+            currentRuling: "1",
+            createdAt: "1787144365",
+            lastPeriodChange: "1787257250",
+            currentRoundIndex: "0",
+            rounds: [
+              { id: "151-0", timeline: ["1787188106", "1787191796", "1787192415", "1787257250"] },
+            ],
+          },
+        ],
+        draws: [
+          {
+            id: "151-0-0",
+            juror: { id: ROSTER[0]?.address.toLowerCase() as string },
+            dispute: { disputeID: "151" },
+            round: { id: "151-0" },
+            vote: {
+              commited: true,
+              voted: true,
+              choice: "1",
+              justification: { timestamp: "1787191900", choice: "1" },
+            },
+          },
+        ],
+      });
+      renderMatrix(both);
+      const row = rowFor(151);
+      if (row === null) throw new Error("no row for dispute 151");
+
+      expect(within(row).getByText("Panel 1")).toBeInTheDocument();
+      expect(within(row).getByText("8h window")).toBeInTheDocument();
+      expect(within(row).queryByText("Lone panel")).not.toBeInTheDocument();
+    });
+
+    it("sets the two configurations beside each other as absolute durations", () => {
+      renderMatrix();
+
+      const footnote = screen.getByText(/ran with a commit window of/i).closest("p");
+
+      expect(footnote).toHaveTextContent(
+        /Dispute 151 ran with a commit window of 8h and a vote window of 8h, against 45m and 30m configured now/i,
+      );
+      // ADR-0005, in the one place a reader would otherwise reach for a ratio.
+      expect(footnote).toHaveTextContent(/never as a fraction of the window it ran in/i);
+      expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+    });
+
+    it("links the footnote at the account of the change", () => {
+      renderMatrix();
+
+      expect(
+        screen.getByRole("link", { name: /what that means for these figures/i }),
+      ).toHaveAttribute("href", "/method#window");
+    });
+
+    it("marks nothing and claims nothing while the parameter history is out", () => {
+      // Every cold load. It must not read as "no dispute ran under different rules", which is
+      // a claim about the court, so it says the history has not been read instead.
+      renderMatrix(build({ parameters: null }));
+
+      expect(screen.queryByText(/8h window/)).not.toBeInTheDocument();
+      expect(screen.getByText(/is still being read, or could not be/i)).toBeInTheDocument();
+      expect(screen.getByText(/an unread state rather than a finding/i)).toBeInTheDocument();
+      expect(
+        screen.getByRole("link", { name: /what that means for these figures/i }),
+      ).toBeInTheDocument();
+    });
+
+    it("says a read that came back empty came back empty, not that it never happened", () => {
+      // `[]` is `read: true` with no configuration in it — a court that has plainly been
+      // configured returning none of them is a scan that came back short, and the two states
+      // are told apart here rather than collapsed into one sentence.
+      renderMatrix(build({ parameters: [] }));
+
+      expect(
+        screen.getByText(/that read came back carrying no configuration at all/i),
+      ).toBeInTheDocument();
+      expect(screen.queryByText(/is still being read, or could not be/i)).not.toBeInTheDocument();
+    });
+
+    it("says so plainly when every dispute read ran under the current windows", () => {
+      // One configuration, in force since before the court's first dispute — so every row is
+      // placed and none is marked. The footnote still carries the rule, because the rule is not
+      // conditional on anything having changed.
+      const current = build({
+        parameters: [{ at: "1786444490", timesPerPeriod: ["2700", "2700", "1800", "129600"] }],
+      });
+      renderMatrix(current);
+
+      expect(
+        screen.getByText(/every dispute here ran under the period durations/i),
+      ).toHaveTextContent(/commit window of 45m and a vote window of 30m/i);
+      expect(screen.queryByText(/8h window/)).not.toBeInTheDocument();
+    });
+
+    it("never calls a dispute it could not place a dispute that matched", () => {
+      // The failure a short scan produces, and the one this footnote must never absorb: a
+      // provider capping `eth_getLogs` drops the court's oldest configuration, dispute 151
+      // resolves to no window at all, and so nothing is marked. Saying "every dispute here ran
+      // under the durations the court holds now" over that states the opposite of the truth,
+      // with no error anywhere — the invariant that partial data must never render as complete.
+      const short = build({
+        parameters: [{ at: "1787230320", timesPerPeriod: ["2700", "2700", "1800", "129600"] }],
+      });
+      renderMatrix(short);
+
+      expect(
+        screen.queryByText(/every dispute here ran under the period durations/i),
+      ).not.toBeInTheDocument();
+      expect(screen.getByText(/does not reach back far enough to place/i)).toHaveTextContent(/151/);
+      expect(screen.queryByText(/8h window/)).not.toBeInTheDocument();
+    });
+
+    it("names the disputes it could not place even while it is marking others", () => {
+      // Both at once: one dispute marked against a superseded configuration, another older than
+      // anything the history reaches. The second must not be folded into the first's absence.
+      // Hand-built, because the captured court's oldest dispute is the marked one — there is no
+      // read of court 34 in which a dispute is both older than 151 and placeable.
+      const partial = build({
+        disputes: [
+          rawDispute({ id: "100", disputeID: "100", createdAt: "1000" }, [
+            "1100",
+            "1200",
+            "1300",
+            "1400",
+          ]),
+          rawDispute({ id: "151", disputeID: "151", createdAt: "1787144365" }, [
+            "1787188106",
+            "1787191796",
+            "1787192415",
+            "1787257250",
+          ]),
+        ],
+        draws: [],
+        parameters: [
+          { at: "1787144000", timesPerPeriod: ["43200", "28800", "28800", "129600"] },
+          { at: "1787230320", timesPerPeriod: ["2700", "2700", "1800", "129600"] },
+        ],
+      });
+      renderMatrix(partial);
+
+      expect(screen.getByText(/ran with a commit window of/i)).toHaveTextContent(/151/);
+      expect(screen.getByText(/cannot place at all/i)).toHaveTextContent(/100/);
+    });
   });
 
   it("draws a cell for an agent juror that was not drawn as nothing at all", () => {

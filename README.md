@@ -18,15 +18,21 @@ and whether it voted with the dispute's final ruling — plus the court's totals
 distribution above it, a dispute index at `/disputes`, the six agent jurors at `/agent-jurors`, how
 everything is measured at `/method`, and a 404 view behind them. Every view carries the same nav,
 the same read-only statement and a footer stating the provenance of what is above it. Three
-measures, and no more — per-agent-juror summaries, rewards and the historical period windows are all
-still unread. Each page names its own gaps outright, because a public page whose figures may be
-cited must never let "not built" look like "no results".
+measures, and no more — per-agent-juror summaries and rewards are still unread. Each page names its
+own gaps outright, because a public page whose figures may be cited must never let "not built" look
+like "no results".
 
 Commit latency is the one figure not read from a subgraph: it comes from `CommitCast` logs on an
 Arbitrum RPC, because the subgraph records only *whether* a juror committed and never *when*. Every
 draw the subgraph calls committed is cross-checked against a matching log, and any shortfall is
 stated on the page as a count — an endpoint that silently returns fewer logs must never render as
 an agent juror that failed to commit.
+
+Court 34's period durations changed partway through the experiment, so the windows each dispute ran
+under are read from the court's own `CourtCreated` and `CourtModified` events rather than from what
+it is configured with now. Dispute 151 ran an 8-hour commit window against the 45 minutes configured
+from dispute 152 onward, and it carries a marker wherever its figures are counted. No latency
+anywhere is divided by a window — see [ADR-0005](docs/adr/0005-latency-is-never-shown-as-a-fraction-of-a-window.md).
 
 Read [`CLAUDE.md`](CLAUDE.md) before writing code — in particular its **Traps** section, which
 records the things that cost real time to discover. The design that this scaffold serves lives in:
@@ -87,11 +93,13 @@ running lint, type-check, tests and build as four separate steps so a failure na
 suite joins by filename, so nothing here has to count them. They are the drift checks a fixture
 cannot perform: that each roster address still answers to the subname it claims, that the core
 subgraph still returns the court's disputes and its draws in the shape the model parses, that the
-template subgraph still resolves what those disputes are about, and that Arbitrum still emits the
+template subgraph still resolves what those disputes are about, that Arbitrum still emits the
 `CommitCast` event this dashboard reads commit latency from — with the cross-check that every
-committed draw has a matching log run against the live reads rather than a snapshot of them. It runs
-on a daily cron and on `workflow_dispatch` only, and never gates a pull request: its failure mode
-there would be network flake, and a red that means nothing teaches people to ignore red.
+committed draw has a matching log run against the live reads rather than a snapshot of them — and
+that court 34 still reports the two period configurations `/method` describes in prose, so a third
+one fails in CI before anybody reads a stale account of the second. It runs on a daily cron and on
+`workflow_dispatch` only, and never gates a pull request: its failure mode there would be network
+flake, and a red that means nothing teaches people to ignore red.
 
 One constraint in that file resists being tidied. Yarn 4 is not vendored here, so `corepack enable`
 must run *after* `actions/setup-node` and *before* anything invokes `yarn`; Ubuntu runners ship Yarn

@@ -5,7 +5,7 @@ on two dimensions: **speed** (commit and reveal latency) and **coherence** (voti
 ruling).
 
 **Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01, 02, 03, 04,
-05, 07, 14 and 15 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a `netlify.toml`
+05, 07, 08, 14 and 15 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a `netlify.toml`
 that is the single source of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted
 webfonts, and the dispute matrix — one row per dispute, headed by that dispute's own title and
 category, one column per agent juror, each cell carrying that draw's commit latency, its reveal
@@ -14,11 +14,15 @@ views under one shell — the matrix and the court's totals at `/`, a dispute in
 jurors by nickname and avatar at `/agent-jurors`, `/method`, and a 404 — each carrying the same nav,
 the same read-only statement, and a footer stating the provenance of what is above it. CI exists
 too — `.github/workflows/ci.yml`, added as toolchain upkeep rather than as a ticket, so do not
-propose it again. Three measures are read and no more: per-agent-juror marginals (06), rewards (10)
-and the historical windows (08) are all still unread, and the caveat the matrix view carries says so
-outright rather than leaving a reader to infer it. Ticket 07 also brought the first read that is not
+propose it again. Three measures are read and no more: per-agent-juror marginals (06) and rewards
+(10) are still unread, and the caveat the matrix view carries says so outright rather than leaving a
+reader to infer it. Ticket 07 also brought the first read that is not
 a subgraph — `CommitCast` logs from an Arbitrum RPC — and with it `CourtPerformance.commitCoverage`,
 the cross-check that turns a short log scan into a number the page states rather than an absence.
+Ticket 08 read the court's own parameter history from the same chain (`src/performance/windows.ts`,
+`court-parameters.ts`), so every dispute resolves the period windows that were in force while it
+ran, dispute 151 carries a `†` wherever its figures are counted, and no latency is a fraction of
+anything (ADR-0005).
 The design work behind it (glossary, six ADRs, a spec, eighteen tickets) came out of a full grilling
 session and a later pass that rebuilt the tracker on the finished design. Start by reading, not by
 writing.
@@ -41,13 +45,15 @@ rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines 
 
 Ticket **05** was the keystone, and it has landed: `src/performance/` holds the seam,
 `buildCourtPerformance(RawCourtData) → KlerosResult<CourtPerformance>`, which is where every
-derivation belongs. It touches no network and reads no clock. Tickets 06, 08 and 12 extend
-`RawCourtData` and the model rather than fetching beside them, exactly as ticket 07 did when it
-added `commits` — the first field on it that no subgraph fills; a metric computed in a component is
-the mistake this seam exists to prevent. Ticket 15 added the first **aggregate** on the far side of
-it — `CourtTotals` in `src/performance/totals.ts`, which the stat tiles and the latency strip are
-figures of — so a court-wide number goes there and not into the view that prints it. Ticket 06's
-marginals are the same aggregates sliced by column.
+derivation belongs. It touches no network and reads no clock. Tickets 06, 10 and 12 extend
+`RawCourtData` and the model rather than fetching beside them, exactly as tickets 07 and 08 did when
+they added `commits` and `parameters` — the two fields on it that no subgraph fills; a metric
+computed in a component is the mistake this seam exists to prevent. Ticket 15 added the first
+**aggregate** on the far side of it — `CourtTotals` in `src/performance/totals.ts`, which the stat
+tiles and the latency strip are figures of — so a court-wide number goes there and not into the view
+that prints it. Ticket 06's marginals are the same aggregates sliced by column, and they inherit
+`CourtTotals.changedWindows`: any aggregate over latency has to disclose the window change the way
+any aggregate over coherence has to disclose a panel of one.
 Every ticket from `03` up carries a `**Design:**` line naming what it is built against — an artboard
 and its line range, or, for ticket 14, the design system itself.
 
@@ -76,8 +82,18 @@ and its line range, or, for ticket 14, the design system itself.
 Things that cost real effort to discover and are easy to get wrong again:
 
 - **Court 34's parameters changed mid-experiment**, between dispute 151 and 152. Dispute 151 had an
-  8-hour commit window; everything after has 45 minutes. Never use the court's *current*
-  `timesPerPeriod` as a historical denominator. This is why latency is stored in seconds (ADR-0001).
+  8-hour commit window and an 8-hour vote window; everything after has 45 minutes and 30 minutes.
+  Never use the court's *current* `timesPerPeriod` as a historical denominator. This is why latency
+  is stored in seconds (ADR-0001). Ticket 08 read the history — `CourtCreated` and `CourtModified`
+  on KlerosCore, both of which carry `timesPerPeriod` in full, so no archive `eth_call` is needed —
+  and `src/performance/windows.ts` resolves it **per period**, not per dispute: the court reads its
+  own durations at the moment it passes a period, so a dispute created under one configuration and
+  passed into its commit period under the next ran the later commit window. Two further traps in
+  that read. The **deployed** event signatures are not the ones in `kleros-v2/contracts/src`, which
+  have since gained an `_eligibility` argument — a signature carrying it hashes to a different topic,
+  matches no log, and returns a court that was never configured, with no error and nothing marked.
+  And `canvas/Errors.dc.html` samples the new vote window as 45m; it is 30m on chain, which is why
+  the marker's durations are read rather than transcribed from the artboard.
 - **Commit timestamps do not exist in the subgraph.** `ClassicVote.commited` is a boolean. They come
   from `CommitCast` logs (ADR-0004). Reveal timestamps *are* in the subgraph, on the justification.
   Re-confirmed by introspection on 2026-08-25: `ClassicVote` is `id, coreDispute, localRound, juror,
@@ -97,6 +113,12 @@ Things that cost real effort to discover and are easy to get wrong again:
   disputes, and a *live test suite* hits it immediately — which is why `commit-logs.integration.test.ts`
   reads once in `beforeAll` and shares the result rather than reading per test. Ticket 12's
   persistence is the real fix; ADR-0004's preferred one is to put the timestamp in the subgraph.
+  Measured again on ticket 08: one whole `yarn test:integration` is ~130 Arbitrum calls and
+  passes, **two back to back inside a minute do not** — the second run's `draws-subgraph`
+  suite 429s. So a red live suite is worth re-running once after a pause before believing it,
+  and a new suite that reads this chain must justify its calls: ticket 08 dropped a fourth read
+  from `draws-subgraph.integration.test.ts` rather than add ~63 calls for something
+  `court-parameters.integration.test.ts` already covers.
 - **The unit is the draw, not the vote.** Across the first thirteen disputes, 61 votes collapsed to
   44 draws. The subgraph's `totalCoherentVotes` / `coherenceScore` are per-vote *and* global across
   all courts — unusable here (ADR-0002). `ClassicJustification` is conveniently one per draw.
@@ -258,6 +280,14 @@ Arbitrum RPC         https://arb1.arbitrum.io/rpc  — answers fromBlock 0 → l
                      filtered eth_getLogs in ~230ms, so the 8M-block figure understated it and
                      no start block need be maintained. Rate-limits per RPC *call* and counts a
                      batch as its size; see § Traps
+Court 34 windows     `timesPerPeriod` is `[evidence, commit, vote, appeal]` in seconds. Created
+                     2026-08-11 10:34:50 UTC with [43200, 28800, 28800, 129600] — 12h, 8h, 8h, 36h.
+                     Reconfigured once, 2026-08-20 12:52:00 UTC, to [2700, 2700, 1800, 129600] —
+                     45m, 45m, 30m, 36h. Two events in the court's whole life, from
+                     `CourtCreated`/`CourtModified` on KlerosCore; captured in
+                     `src/performance/court-34-parameters.fixture.json` and asserted live by
+                     `court-parameters.integration.test.ts`, which is what keeps `/method`'s prose
+                     account true
 CommitCast           CommitCast(uint256 indexed _coreDisputeID, address indexed _juror,
                      uint256[] _voteIDs, bytes32 _commit), on DisputeKitClassic. Dispute and
                      juror are indexed; the court is not, so the scan filters on the six roster
