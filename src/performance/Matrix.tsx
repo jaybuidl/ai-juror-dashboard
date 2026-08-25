@@ -5,6 +5,7 @@ import { DisputeRow, type DisputeRowSlots } from "../disputes/DisputeList";
 import type { Dispute } from "../disputes/disputes";
 import { isFinalised, periodOpenSeconds } from "../disputes/liveness";
 import type { RosterView } from "../roster/useRoster";
+import { VisuallyHidden } from "../styles/hidden";
 import { type Tone, toneInk, toneLine, toneWash } from "../styles/tones";
 import {
   commitFigureOf,
@@ -15,6 +16,7 @@ import {
   UNREAD_PRESENTATION,
 } from "./cell";
 import { formatElapsedSeconds, formatWindowSeconds, railFraction } from "./latency";
+import { Marginals } from "./Marginals";
 import type { CourtPerformance, Draw, MatrixRow } from "./performance";
 import type { PeriodWindows } from "./windows";
 
@@ -241,6 +243,10 @@ const CaptionBody = styled.div`
   color: ${({ theme }) => theme.textMeta};
 `;
 
+/* Top-aligned since the marginals landed underneath the identity, and it has to be: a column
+   carrying a marker's reason line is taller than the five beside it, and bottom alignment would
+   push that column's nickname and avatar down while the other five stayed put — six identity
+   blocks at five different heights, from one footnote. */
 const AgentColumn = styled.th`
   width: 148px;
   box-sizing: border-box;
@@ -248,7 +254,7 @@ const AgentColumn = styled.th`
   border-left: ${({ theme }) => theme.borderHairline};
   border-bottom: 1px solid ${({ theme }) => theme.lineStrongColor};
   text-align: left;
-  vertical-align: bottom;
+  vertical-align: top;
   font-weight: inherit;
 `;
 
@@ -539,20 +545,6 @@ const Empty = styled.p`
   color: ${({ theme }) => theme.textBody};
 `;
 
-/* Read by a screen reader, drawn for nobody: the keys and glyphs beside a figure are shorthand
-   for people who can see the legend a few lines above them. */
-const VisuallyHidden = styled.span`
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  margin: -1px;
-  padding: 0;
-  overflow: hidden;
-  clip-path: inset(50%);
-  white-space: nowrap;
-  border: 0;
-`;
-
 /* ─── the view ─────────────────────────────────────────────────────────────────────────── */
 
 export type MatrixProps = {
@@ -738,7 +730,7 @@ function DrawCell({ draw, scanned }: { draw: Draw; scanned: boolean }) {
 }
 
 export function Matrix({ performance, roster, slotsFor, now = Date.now() }: MatrixProps) {
-  const { agentJurors, rows, commitCoverage, parameters } = performance;
+  const { agentJurors, rows, totals, marginals, commitCoverage, parameters } = performance;
   const flagContext: RowFlagContext = { current: parameters.current, now };
   const unread = commitCoverage.expected - commitCoverage.resolved;
   const identityOf = new Map(
@@ -747,9 +739,6 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
   // `isResolving` as well as `isResolvedFromEns`: the second is false while the lookup is out
   // and after it fails, and a mark keyed on it alone would dash every avatar on every cold load.
   const fallenBack = !roster.isResolving && !roster.isResolvedFromEns;
-
-  const finalised = rows.filter((row) => isFinalised(row.dispute)).length;
-  const live = rows.length - finalised;
 
   // Every count below is about the part of the grid that was read. An unread row's cells are
   // null and would otherwise be counted as blank, which would fold a gap into the sparsity
@@ -866,8 +855,12 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
               <thead>
                 <tr>
                   <CaptionCell scope="col">
+                    {/* Read off the model rather than reduced here. It is a court-wide count,
+                        and those live on `CourtTotals` beside the ones the stat tiles print —
+                        a caption that reduced the rows itself would be a second definition of
+                        "finalised" sitting one component away from the first. */}
                     <CaptionCount>
-                      {finalised} finalised · {live} live
+                      {totals.finalised} finalised · {totals.live} live
                     </CaptionCount>
                     <CaptionBody>
                       Newest first. One row per dispute, one column per agent juror, one cell per
@@ -876,7 +869,21 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                   </CaptionCell>
                   {agentJurors.map((agentJuror, column) => {
                     const identity = identityOf.get(agentJuror.address);
-                    const drawn = rows.some((row) => row.cells[column] !== null);
+                    const marginal = marginals[column];
+                    // The column's own draw count, read off the model rather than scanned for
+                    // here a second time. It is the same question the marginal below already
+                    // answers, and two reductions of one fact are two chances to disagree about
+                    // which agent juror the court has never drawn.
+                    const drawn = (marginal?.draws ?? 0) > 0;
+                    // "Never drawn" is a claim about the whole record, and an unread row is not
+                    // part of the record — its cells are null because nobody asked. So it is
+                    // only sayable when every row was read, the same guard `emptyColumns` below
+                    // carries for the same reason. The case is not hypothetical: the draw read
+                    // and the dispute read are separate queries polled every five seconds, so a
+                    // newly-arrived dispute routinely sits unread beside a fresh dispute list —
+                    // and this dashboard exists partly to record the day baskerville is drawn
+                    // for the first time, which would land in exactly such a row.
+                    const neverDrawn = !drawn && unreadRows === 0;
 
                     return (
                       <AgentColumn key={agentJuror.address} scope="col">
@@ -898,10 +905,23 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                               {identity?.nickname ?? agentJuror.nickname}
                             </AgentNickname>
                             <AgentStack>
-                              {drawn ? agentJuror.stack.label : "Never drawn"}
+                              {neverDrawn ? "Never drawn" : agentJuror.stack.label}
                             </AgentStack>
                           </AgentNames>
                         </AgentIdentity>
+                        {/* The column's own summary, under a hairline and inside the column it
+                            is about. There is no seventh column and no margin of its own:
+                            agent jurors are the columns here. Keyed by position because the
+                            marginals are built over the roster in roster order, which is the
+                            same order these headers are — the seam guarantees one entry per
+                            agent juror, drawn or not. */}
+                        {marginal && (
+                          <Marginals
+                            marginals={marginal}
+                            scanned={commitCoverage.read}
+                            current={parameters.current}
+                          />
+                        )}
                       </AgentColumn>
                     );
                   })}

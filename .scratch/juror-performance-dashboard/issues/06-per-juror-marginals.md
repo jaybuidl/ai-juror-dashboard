@@ -12,35 +12,35 @@ is ranked — these are marginals on a matrix, not a leaderboard.
 header's identity block), `../canvas/JurorEmpty.dc.html:66-76` (a dash, never a zero),
 `../canvas/Errors.dc.html:201-217` (markers riding an aggregate), `../canvas/README.md` for provenance
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Marginals sit inside each agent juror's column header, separated from its identity block by a
+- [x] Marginals sit inside each agent juror's column header, separated from its identity block by a
       hairline. There is no seventh column: the grid stays one row-header column plus exactly six
       agent juror columns
-- [ ] This ticket fills four of the six figures in that block — median reveal latency, median commit
+- [x] This ticket fills four of the six figures in that block — median reveal latency, median commit
       latency, coherence as a count of coherent draws over resolved draws, and total draws
-- [ ] Cumulative ETH and PNK are ticket 10 and join the same block, so it is built to hold six figures
+- [x] Cumulative ETH and PNK are ticket 10 and join the same block, so it is built to hold six figures
       rather than four
-- [ ] Total draws is shown with the vote count beside it, since the two differ — 61 votes collapsed to
+- [x] Total draws is shown with the vote count beside it, since the two differ — 61 votes collapsed to
       44 draws across the first thirteen disputes
-- [ ] Typical latency is a median, not a mean, so a single unusual dispute cannot distort it
-- [ ] Marginals are computed inside the pure function, not in the view
-- [ ] The coherence count carries a `‡` marker when any draw behind it sat on a panel of one, because
+- [x] Typical latency is a median, not a mean, so a single unusual dispute cannot distort it
+- [x] Marginals are computed inside the pure function, not in the view
+- [x] The coherence count carries a `‡` marker when any draw behind it sat on a panel of one, because
       that draw's coherence is tautological. The marker rides the figure the caveat touches and not
       the other marginals, which a lone panel says nothing about
-- [ ] The median commit latency carries a `†` marker when any draw behind it ran under a different
+- [x] The median commit latency carries a `†` marker when any draw behind it ran under a different
       commit window — dispute 151 today. It rides that figure alone: the window change touches commit
       latency and nothing else, which is why the agent juror view plots reveal latency only
-- [ ] A marked aggregate names its reason on the line directly below the number, and that reason says
+- [x] A marked aggregate names its reason on the line directly below the number, and that reason says
       how many of the counted draws are affected rather than only that some are
-- [ ] The full account of either caveat is one click from the marker, and the marker never stands as
+- [x] The full account of either caveat is one click from the marker, and the marker never stands as
       the only mention of it
-- [ ] An agent juror with no draws shows a dash for every figure it cannot have, never a zero. A dash
+- [x] An agent juror with no draws shows a dash for every figure it cannot have, never a zero. A dash
       means no draws to measure; a figure that could not be read is ticket 13's Unknown, which is rose
       and carries a `?` and the words "not read"
-- [ ] Its draw count is the one figure that reads as a real zero, since zero draws is a measurement
+- [x] Its draw count is the one figure that reads as a real zero, since zero draws is a measurement
       rather than an absence
-- [ ] Tested against fixtures, including a case proving the median is not dragged by the dispute that
+- [x] Tested against fixtures, including a case proving the median is not dragged by the dispute that
       ran under different court parameters
 
 ## From ticket 15: the aggregate already has a home
@@ -124,3 +124,113 @@ labelled every stat tile partial over a missing dispute title, contradicting a n
 pixels below it. And per `CLAUDE.md`, a new read is another query that can drift out of step with
 the ones beside it — check its own error, and where a figure joins two reads, say which half is
 stale rather than that "the court" is.
+
+## What this ticket decided, 2026-08-25
+
+**This ticket added no read at all**, which is why none of ticket 13's three entries was needed. The
+marginals are the rows already on screen, reduced a second way; there is no endpoint behind them
+that the endpoints behind the matrix are not already behind, and a fourth voice per column for an
+outage the banner and the grid already state would be exactly the repetition ticket 13 forbade.
+
+**The `†` rides both latency medians, and one acceptance criterion above says it should not.**
+That criterion reads "It rides that figure alone: the window change touches commit latency and
+nothing else". It is false, and was written before the parameter history was read: court 34 changed
+its commit window from 8h to 45m **and** its vote window from 8h to 30m, in one `CourtModified`.
+Three things settle it against the criterion and with the "From ticket 08" section a few lines
+below it, which says outright that the median reveal is qualified too:
+
+- The court-wide median reveal tile already carries a `†` and has since ticket 08. A column median
+  left unmarked directly beneath a marked court median would have the page declining to compare and
+  comparing at once — which is the defect `canvas/README.md` records against `Juror.dc.html:73`,
+  reproduced rather than fixed.
+- The window is what makes a figure incomparable, and it is the *vote* window that governs a reveal.
+- Nothing is lost: a court that ever changes only one of the two gets the marker only on the median
+  that window governs, because `Marginals.tsx` compares each group against `CourtParameters.current`
+  per window rather than marking anything in a changed group. `windowFlagLabel` makes the same
+  comparison for the same reason. A test covers the commit-only court.
+
+**The unreadable commit median is rose and reads "Not read", and carries no `?`.** The criterion
+names both the glyph and the words, but the `?` belongs to `UNREAD_PRESENTATION` — the *cell's*
+state glyph — and a column header has no state slot to put one in. `commitFigureOf` already renders
+exactly "Not read" in rose with no glyph beside it, shipped that way by ticket 13, and the marginal
+matches it rather than inventing a second reading. What the criterion is protecting is that a read
+that came up short must not look like a dash, and it does not.
+
+**Coherence keeps a missed vote in its denominator.** `resolved` is every draw whose dispute the
+court has ruled on, `no-vote` included. A draw that let the vote period close was given the chance
+to vote with the ruling and did not; taking it out would hand an agent juror that never votes a
+perfect coherence figure, and the matrix already says which draws those are.
+
+**ETH and PNK are not rendered as em dashes.** The block is a list built to hold six figures and
+ticket 10 appends two entries to `slotsOf`. Rendering them now would print a dash, and this page's
+own dash means "no draws to measure" — a measurement, where the truth is that nobody has written
+the reader. What has not been read is said in words, in the provenance footer, which this ticket
+narrowed from "per-agent-juror summaries and rewards" to rewards alone.
+
+**The mark is the link.** `StatTiles` puts "The full account" in the reason line; a 148px column has
+no room for it, so the `†` and `‡` are themselves `<Link>`s, each with an `aria-label` naming whose
+figure it belongs to — six columns carrying the same three sentences need telling apart by ear. The
+criterion is met literally: the full account is one click from the marker.
+
+**`AgentColumn` became `vertical-align: top`.** A column carrying a reason line is taller than the
+five beside it, and bottom alignment put six identity blocks at five different heights.
+
+## What review caught, 2026-08-25
+
+Four findings, three fixed. None was a crash or a wrong figure on today's court; all three fixed
+ones are the same shape as the traps `CLAUDE.md` already records — a state nobody has reached yet
+rendering as a fact.
+
+**The marker had become two conventions, and the tile held the older one.** This ticket taught the
+column headers to compare each superseded group against `CourtParameters.current` per window, and
+left ticket 08's `medianCaveatOf` marking on group membership alone. Today both windows differ so
+the two agree by luck. The next reconfiguration that moves only the commit window would have the
+tile print "N of M draws ran under a vote window of 30m, which the court has since changed" over a
+court whose vote window is 30m, while every column header below it correctly showed no reveal
+marker — the page marking two different things about one court, and the specific "marker placed in
+error" failure `windowFlagLabel`'s own comment exists to prevent. Fixed by moving the filter into
+`markedWindows` in `totals.ts` and having both call it. `StatTiles` takes `current` for this. The
+new `StatTiles.test.tsx` pins the commit-only court; the tile could not be tested for it against
+the captured fixture, because court 34 changed both windows in one `CourtModified`.
+
+**A hidden label was inheriting an uppercase transform.** `VisuallyHidden` sat inside the mono
+`Key`, which is `text-transform: uppercase`, and some screen readers announce uppercased text
+letter by letter — so "Median reveal latency" came out spelled, from the element whose whole job is
+to say it properly, with no other route to it because the visible abbreviation is `aria-hidden`.
+Fixed on the shared component with `text-transform: none`, which is right for every use of it
+rather than only this one: nothing visually hidden is drawn, so no transform applies to it.
+
+**A column drawn only in unread disputes was calling itself never drawn.** `Never drawn` is a claim
+about the whole record, and an unread row is not part of the record. The failing case is pointed
+rather than theoretical: the dispute read and the draw read are separate queries polled every five
+seconds, so a new dispute routinely arrives unread beside a fresh dispute list — and the first
+dispute baskerville is ever drawn in would land in exactly such a row, with the column beneath it
+saying it has never been drawn. Now gated on `unreadRows === 0`, the same guard `emptyColumns`
+already carried a few lines below for the same reason, and the stack label stands in meanwhile: it
+is a fact about the build rather than about the court.
+
+**Declined: a partial commit shortfall does not qualify the column's median.** If nine of a
+column's ten commitments were dated and one log was missed, the header prints a median over nine
+with no mark, while the tenth draw's cell reads rose "Not read". That is deliberate and it is
+ticket 13's rule rather than an oversight: one failed source gets one banner line and is said
+exactly twice — in the banner, and where the figure would have been, which is the cell. The
+markers this ticket owns are about *comparability*, not about a read; giving a read failure a third
+voice in each of six column headers is what that rule exists to stop. The court-wide
+`commitCoverage` count above the grid names the shortfall as a number, as ADR-0004 asks.
+
+## For the tickets that follow
+
+- **Ticket 10** appends two entries to `slotsOf` in `Marginals.tsx` and two fields to
+  `AgentJurorMarginals` in `totals.ts`. The block was built for six. Its figures are the first on
+  this page that are neither a duration nor a count of draws, so decide what an unread reward reads
+  as before writing one: this ticket's em dash is taken and means "no draws to measure".
+- **Ticket 11**'s agent juror view is `CourtPerformance.marginals[n]` and needs no new reduction.
+  `revealLatency.seconds` and `commitLatency.seconds` are the whole distributions, ascending, which
+  is what a plot wants. Note that the "which is why the agent juror view plots reveal latency only"
+  clause in the criteria above rests on the same false premise the `†` decision does — both windows
+  changed, so a commit plot is exactly as markable as a reveal plot, and neither is unmarkable.
+- **Ticket 17**'s freeze is what keeps these on screen as the matrix scrolls. The header is now
+  ~330px tall on the widest column, which is a real cost of the reason lines and is the thing that
+  freeze has to carry.
+- **Ticket 18** should know the reason lines are 10px `--text-meta`, which is the ink that ticket
+  already owns for contrast.

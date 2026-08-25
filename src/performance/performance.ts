@@ -1,6 +1,11 @@
 import { type Dispute, type DisputeRound, type RawDispute, toDisputes } from "../disputes/disputes";
 import type { AgentJuror } from "../roster/agent-jurors";
-import { type CourtTotals, courtTotalsOf } from "./totals";
+import {
+  type AgentJurorMarginals,
+  agentJurorMarginalsOf,
+  type CourtTotals,
+  courtTotalsOf,
+} from "./totals";
 import {
   type ParameterRegime,
   type PeriodWindows,
@@ -297,9 +302,20 @@ export type CourtPerformance = {
    *
    * Reveal latency only, and named so on `CourtTotals` itself: the rows carry a commit latency
    * too, and an aggregate that silently averaged both would be the fraction-of-a-window mistake
-   * in another form. Ticket 06 decides what a commit aggregate is worth saying.
+   * in another form. The commit median is per agent juror, on `marginals` below — a column of
+   * one agent juror's draws is a set the median describes, where the court's whole commit
+   * distribution pooled across two commit windows is one the reader cannot use.
    */
   totals: CourtTotals;
+  /**
+   * The same rows sliced down each column: one summary per agent juror, in roster order.
+   *
+   * Beside `totals` rather than inside it because the two are different shapes of the same
+   * reduction — one number per court against one row per agent juror — and a marginal is not a
+   * field of a court-wide total. Both are computed here for the same reason: a column header
+   * that reduced the rows while rendering would be a second definition of "how many draws".
+   */
+  marginals: readonly AgentJurorMarginals[];
   /** Whether every commitment the subgraph knows of was found on chain. */
   commitCoverage: CommitCoverage;
   /** The court's own parameter history, and what it holds now. */
@@ -691,6 +707,7 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
         agentJurors: raw.roster,
         rows,
         totals: courtTotalsOf(rows, raw.roster),
+        marginals: agentJurorMarginalsOf(rows, raw.roster),
         commitCoverage: { read: raw.commits !== null, expected, resolved },
         parameters: { read: raw.parameters !== null, regimes, current },
       },

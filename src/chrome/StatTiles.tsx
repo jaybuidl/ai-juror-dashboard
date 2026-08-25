@@ -1,7 +1,8 @@
 import { Link } from "react-router";
 import styled from "styled-components";
 import { formatLatencySeconds, formatWindowSeconds } from "../performance/latency";
-import type { CourtTotals, WindowChange } from "../performance/totals";
+import { type CourtTotals, markedWindows, type WindowChange } from "../performance/totals";
+import type { PeriodWindows } from "../performance/windows";
 import { narrow } from "../styles/breakpoints";
 
 /**
@@ -152,9 +153,19 @@ function StatTile({
 
 export function StatTiles({
   totals,
+  current = null,
   partial = false,
 }: {
   totals: CourtTotals | null;
+  /**
+   * The windows the court is configured with today, against which a superseded one is named.
+   *
+   * Here for one figure — the median reveal's `†` — and required by it: a marker is placed by
+   * comparing what a group ran under against what the court holds now, and without this the tile
+   * can only mark on group membership. `null` while the parameter history is unread, which marks
+   * everything, which is correct: nothing is known to compare against.
+   */
+  current?: PeriodWindows | null;
   /** True when a read behind these figures failed. See `Partial`. */
   partial?: boolean;
 }) {
@@ -196,7 +207,7 @@ export function StatTiles({
             ? "Median reveal · no draw has revealed"
             : `Median reveal · ${latency.seconds.length} draws`
         }
-        caveat={medianCaveatOf(latency, changed)}
+        caveat={medianCaveatOf(latency, changed, current)}
       />
       {(partial || totals.unreadDisputes.length > 0) && (
         <Partial role="status">
@@ -223,13 +234,20 @@ export function StatTiles({
 function medianCaveatOf(
   latency: CourtTotals["revealLatency"],
   changed: readonly WindowChange[],
+  current: PeriodWindows | null,
 ): TileCaveat | undefined {
   if (latency === null) return undefined;
 
-  const draws = changed.reduce((total, change) => total + change.revealedDraws, 0);
-  if (draws === 0) return undefined;
+  // Through `markedWindows`, which is what the matrix's column headers mark on, so the tile and
+  // the six figures a few hundred pixels below it cannot mark different things about one court.
+  // Ticket 08 marked on group membership alone, which is right for a court that changed both
+  // windows at once and wrong for the next one that moves only its commit window: every group
+  // would then qualify this reveal median and the reason would name the vote window in force.
+  const marked = markedWindows(changed, current, "reveal");
+  if (marked.draws === 0) return undefined;
 
-  const only = changed.length === 1 ? changed[0] : undefined;
+  const draws = marked.draws;
+  const only = marked.changes.length === 1 ? marked.changes[0] : undefined;
 
   return {
     // The same mark the row flag and the footnote under the matrix use for the same fact. A

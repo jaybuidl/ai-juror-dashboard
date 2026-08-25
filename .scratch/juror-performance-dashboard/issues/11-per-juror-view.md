@@ -78,3 +78,28 @@ Your view shows a nickname and an avatar, so it takes the amber panel through `V
 prop and the per-element marks — a dashed avatar border and a "From roster" label — the way
 `Roster.tsx` and the matrix's column headers do. It raises no banner: ENS is the one documented
 exception, and no measurement depends on it.
+
+## From ticket 06, 2026-08-25 — every figure this view needs is already computed
+
+`CourtPerformance.marginals` is one `AgentJurorMarginals` per agent juror, in roster order, and it
+is what the matrix's column headers print. Your view is the same object at more space, so it needs
+no reduction of its own — and must not write one. `revealLatency.seconds` and `commitLatency.seconds`
+are the whole distributions, ascending, which is what a plot wants; `coherence` is
+`{ coherent, resolved, lonePanelDisputes }`; `changedWindows` is already sliced to this agent
+juror's own draws, so a column never drawn in dispute 151 carries nothing.
+
+**Two things ticket 06 found that change what this ticket was written expecting.**
+
+- **A commit plot is exactly as markable as a reveal plot.** This ticket and ticket 06's own
+  criteria both say "the agent juror view plots reveal latency only", on the premise that the window
+  change touched commit latency and nothing else. That premise is false: court 34 changed its commit
+  window from 8h to 45m *and* its vote window from 8h to 30m, in one `CourtModified`. Ticket 06
+  marks both medians for that reason, and `canvas/README.md` already records the artboard defect the
+  old premise produced (`Juror.dc.html:73` prints a median commit while `:108` excludes commit
+  latency from the chart below it as incomparable — the same page declining to compare and
+  comparing). Plot what you like; mark whichever window governs what you plotted.
+- **`JurorEmpty.dc.html`'s three-dashes-and-a-zero is implemented**, in `Marginals.tsx`. An agent
+  juror never drawn has `revealLatency` and `commitLatency` null, `coherence.resolved` 0 and `draws`
+  0 — dash, dash, dash, and a real zero. Reuse that reading rather than deriving a second one, and
+  keep the artboard's sentence: a dash means no draws to measure, never zero and never a failed
+  read.

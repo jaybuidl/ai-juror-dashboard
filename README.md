@@ -16,11 +16,12 @@ piece of chrome: the matrix at `/` — one row per dispute, headed by what that 
 about, one column per agent juror, each cell carrying that draw's commit latency, its reveal latency
 and whether it voted with the dispute's final ruling — plus the court's totals and latency
 distribution above it, a dispute index at `/disputes`, the six agent jurors at `/agent-jurors`, how
-everything is measured at `/method`, and a 404 view behind them. Every view carries the same nav,
-the same read-only statement and a footer stating the provenance of what is above it. Three
-measures, and no more — per-agent-juror summaries and rewards are still unread. Each page names its
-own gaps outright, because a public page whose figures may be cited must never let "not built" look
-like "no results".
+everything is measured at `/method`, and a 404 view behind them. Every column header carries that
+agent juror's own summary of the same three measures — median reveal, median commit, coherence as a
+count and how many times it was drawn. Every view carries the same nav, the same read-only statement
+and a footer stating the provenance of what is above it. Three measures, and no more — cumulative
+ETH and PNK rewards are still unread. Each page names its own gaps outright, because a public page
+whose figures may be cited must never let "not built" look like "no results".
 
 Commit latency is the one figure not read from a subgraph: it comes from `CommitCast` logs on an
 Arbitrum RPC, because the subgraph records only *whether* a juror committed and never *when*. Every

@@ -178,3 +178,18 @@ Two things that make it easier than it was:
   precedence-ordered entry rather than a second hard-coded pill.
 - Whatever you word it, it must not be rose and must not be Unknown. A court that has not drawn yet
   is not a read that failed, and ADR-0006 gives rose exactly two meanings — neither is this.
+
+## From ticket 06, 2026-08-25 — the header your freeze has to carry is now much taller
+
+The column headers hold each agent juror's summary since ticket 06: four figures under a hairline,
+plus a reason line under any figure carrying a `†` or a `‡`. On the live court today that is a
+header of roughly 330px, set by columbo — which carries all three markers, being both the column
+drawn in dispute 151 and the one that sat on the panel of one. It was ~90px before.
+
+That is the real cost of "a marked aggregate names its reason on the line directly below the
+number", and it was paid deliberately. What it hands you is a sticky header that is a third of a
+viewport on the widest column, and this ticket's density work is where that gets answered — by a
+compact density that trades the reason lines for the footnotes below the grid, by a header that
+collapses on scroll, or by something else. Two things not to do: drop the marker (it must not be
+the only mention, but it must be a mention), and let the six columns take five different heights,
+which is why `AgentColumn` is `vertical-align: top`.

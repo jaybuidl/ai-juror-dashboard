@@ -5,7 +5,7 @@ on two dimensions: **speed** (commit and reveal latency) and **coherence** (voti
 ruling).
 
 **Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01, 02, 03, 04,
-05, 07, 08, 12, 13, 14 and 15 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a
+05, 06, 07, 08, 12, 13, 14 and 15 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a
 `netlify.toml`
 that is the single source of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted
 webfonts, and the dispute matrix — one row per dispute, headed by that dispute's own title and
@@ -15,9 +15,11 @@ views under one shell — the matrix and the court's totals at `/`, a dispute in
 jurors by nickname and avatar at `/agent-jurors`, `/method`, and a 404 — each carrying the same nav,
 the same read-only statement, and a footer stating the provenance of what is above it. CI exists
 too — `.github/workflows/ci.yml`, added as toolchain upkeep rather than as a ticket, so do not
-propose it again. Three measures are read and no more: per-agent-juror marginals (06) and rewards
-(10) are still unread, and the caveat the matrix view carries says so outright rather than leaving a
-reader to infer it. Ticket 07 also brought the first read that is not
+propose it again. Three measures are read and no more: cumulative rewards (10) are still unread, and
+the caveat the matrix view carries says so outright rather than leaving a reader to infer it.
+Ticket 06 put the per-agent-juror marginals in the column headers — the same three measures sliced
+down each column, from `agentJurorMarginalsOf` in `totals.ts` — and with them the first figures on
+this page that carry a caveat marker of their own. Ticket 07 also brought the first read that is not
 a subgraph — `CommitCast` logs from an Arbitrum RPC — and with it `CourtPerformance.commitCoverage`,
 the cross-check that turns a short log scan into a number the page states rather than an absence.
 Ticket 08 read the court's own parameter history from the same chain (`src/performance/windows.ts`,
@@ -57,15 +59,19 @@ rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines 
 
 Ticket **05** was the keystone, and it has landed: `src/performance/` holds the seam,
 `buildCourtPerformance(RawCourtData) → KlerosResult<CourtPerformance>`, which is where every
-derivation belongs. It touches no network and reads no clock. Tickets 06 and 10 extend
+derivation belongs. It touches no network and reads no clock. Ticket 10 extends
 `RawCourtData` and the model rather than fetching beside them, exactly as tickets 07 and 08 did when
 they added `commits` and `parameters` — the two fields on it that no subgraph fills; a metric
 computed in a component is the mistake this seam exists to prevent. Ticket 15 added the first
 **aggregate** on the far side of it — `CourtTotals` in `src/performance/totals.ts`, which the stat
 tiles and the latency strip are figures of — so a court-wide number goes there and not into the view
-that prints it. Ticket 06's marginals are the same aggregates sliced by column, and they inherit
-`CourtTotals.changedWindows`: any aggregate over latency has to disclose the window change the way
-any aggregate over coherence has to disclose a panel of one. Ticket 13 added the seam's first input
+that prints it. Ticket 06 added the second, in the same file: `agentJurorMarginalsOf` →
+`CourtPerformance.marginals`, the same aggregates sliced by column, which the matrix's column
+headers print and `totals.test.ts` pins as summing back to the court-wide ones. It also moved the
+caption's `finalised`/`live` count out of `Matrix.tsx` and onto `CourtTotals`, which is where the
+rule always said it belonged. Any aggregate over latency has to disclose the window change the way
+any aggregate over coherence has to disclose a panel of one — `changedWindows` and
+`lonePanelDisputes` are carried per column for exactly that. Ticket 13 added the seam's first input
 that is about a *read* rather than about the court — `RawCourtData.drawsReadAt`, the moment the
 draws on screen were fetched — because whether a row's draws were read at all is a derivation and
 not a rendering decision. It still consults no clock: the moment arrives as data, exactly as the
@@ -110,6 +116,17 @@ Things that cost real effort to discover and are easy to get wrong again:
   matches no log, and returns a court that was never configured, with no error and nothing marked.
   And `canvas/Errors.dc.html` samples the new vote window as 45m; it is 30m on chain, which is why
   the marker's durations are read rather than transcribed from the artboard.
+- **Both windows changed, and three separate places in the design say only the commit one did.**
+  Tickets 06 and 11 and `Juror.dc.html` all rest on "the window change touches commit latency and
+  nothing else, which is why the agent juror view plots reveal latency only". It is false — commit
+  went 8h → 45m and vote went 8h → 30m in the same `CourtModified` — and the artboard shows what
+  believing it produces: `Juror.dc.html:73` prints a median commit while `:108` excludes commit
+  latency from the chart directly below it as incomparable, so one page both declines to compare and
+  compares (`canvas/README.md` § Known defects). Every latency aggregate is markable, and the marker
+  belongs on the median the window it names actually governs — reveal from the vote window, commit
+  from the commit window. `Marginals.tsx` and `windowFlagLabel` both compare per window against
+  `CourtParameters.current` rather than marking anything in a changed group, so a future court that
+  changes only one gets only one marker.
 - **Commit timestamps do not exist in the subgraph.** `ClassicVote.commited` is a boolean. They come
   from `CommitCast` logs (ADR-0004). Reveal timestamps *are* in the subgraph, on the justification.
   Re-confirmed by introspection on 2026-08-25: `ClassicVote` is `id, coreDispute, localRound, juror,

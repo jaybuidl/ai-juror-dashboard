@@ -48,14 +48,16 @@ describe("the matrix view", () => {
 
     expect(screen.getByText(/three measures, and what is missing from them/i)).toBeInTheDocument();
     // Twice, in the two voices this page has: the caveat card above the matrix, and the
-    // provenance footer under it. The court's period durations left this list with ticket 08,
-    // which reads them — what remains unread is what remains named.
+    // provenance footer under it. The court's period durations left this list with ticket 08 and
+    // the per-agent-juror summaries with ticket 06, both of which read them — what remains
+    // unread is what remains named, and a list that kept naming either would be false.
     expect(
-      screen.getByText(/it measures nothing else yet: per-agent-juror summaries and rewards/i),
+      screen.getByText(/it measures nothing else yet: cumulative eth and pnk rewards/i),
     ).toBeInTheDocument();
     expect(
-      screen.getByText(/per-agent-juror summaries and rewards have not been read at all\./i),
+      screen.getByText(/cumulative eth and pnk rewards per agent juror have not been read at all/i),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/per-agent-juror summaries.*not been read/i)).not.toBeInTheDocument();
   });
 
   it("claims no measurement it has not made", () => {
@@ -341,8 +343,13 @@ describe("the matrix view's footer", () => {
       // different vote windows, so it is the one tile of the four that takes one.
       renderAt("/");
 
-      const reason = screen.getByText(/ran under a vote window of 8h/i);
+      // Above the matrix specifically. The matrix's own column headers carry the same sentence
+      // over each column's draws since ticket 06, and this is the court-wide one — pooled over
+      // every reveal in the read, which is what makes it the tile's figure and not a column's.
+      const [reason, ...rest] = aboveTheMatrix(/ran under a vote window of 8h/i);
+      if (reason === undefined) throw new Error("The median reveal tile carries the marker");
 
+      expect(rest).toHaveLength(0);
       expect(reason).toHaveTextContent(/2 of \d+ draws/i);
       expect(within(reason).getByRole("link", { name: /the full account/i })).toHaveAttribute(
         "href",
@@ -355,7 +362,7 @@ describe("the matrix view's footer", () => {
 
       // One dagger above the matrix and no more: a window changes what a duration means and
       // changes nothing about how many disputes or draws there were.
-      expect(screen.getAllByText(/ran under a vote window/i)).toHaveLength(1);
+      expect(aboveTheMatrix(/ran under a vote window/i)).toHaveLength(1);
     });
 
     it("marks no figure at all while the history is unread", () => {
@@ -690,3 +697,16 @@ describe("the failure banner", () => {
     expect(screen.getAllByText(/do not cite these figures/i)).toHaveLength(1);
   });
 });
+
+/**
+ * What matches above the grid, which is where the court-wide figures are.
+ *
+ * The matrix's column headers carry marked figures of their own since ticket 06, worded from the
+ * same caveats in deliberately the same words — so a page-wide count of "how many things say
+ * this" now counts the columns too, and a test written before them silently changes its subject.
+ * These are the tiles' and the strip's, and the grid states its own beside the cells they qualify.
+ */
+function aboveTheMatrix(text: RegExp): HTMLElement[] {
+  const grid = screen.queryByRole("table");
+  return screen.getAllByText(text).filter((node) => grid === null || !grid.contains(node));
+}

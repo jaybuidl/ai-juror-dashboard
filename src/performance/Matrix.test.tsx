@@ -67,6 +67,20 @@ function renderMatrix(
 }
 
 /**
+ * The grid itself, without the column headers.
+ *
+ * The headers carry figures of their own since ticket 06 — a median reveal, a median commit and
+ * a coherence count per column — and those are drawn from the same draws the cells are, so a
+ * duration asserted page-wide now matches in two places. A cell assertion has to say it means a
+ * cell, or it passes on the marginal that summarises it.
+ */
+function grid() {
+  const [, body] = screen.getAllByRole("rowgroup");
+  if (body === undefined) throw new Error("The matrix has a body");
+  return within(body);
+}
+
+/**
  * One dispute, for the cases the captured court cannot produce.
  *
  * The court has been reconfigured once and its oldest dispute is the one that reconfiguration
@@ -458,9 +472,9 @@ describe("Matrix", () => {
 
     expect(screen.getAllByText("No vote").length).toBeGreaterThan(0);
     // The reveal figure reads as a miss, not as a number and not as a blank.
-    expect(screen.getByText("Missed")).toBeInTheDocument();
+    expect(grid().getByText("Missed")).toBeInTheDocument();
     // And the commit that did happen is still a figure: a draw can commit and never reveal.
-    expect(screen.getByText("60s")).toBeInTheDocument();
+    expect(grid().getByText("60s")).toBeInTheDocument();
   });
 
   it("reads a stage that has not happened yet as a dash, never as blank", () => {
@@ -492,9 +506,77 @@ describe("Matrix", () => {
     renderMatrix(acting);
 
     expect(screen.getByText("Committed")).toBeInTheDocument();
-    expect(screen.getByText("—")).toBeInTheDocument();
+    expect(grid().getByText("—")).toBeInTheDocument();
     // The reveal is the dash; the commit already has a moment, and the cell shows both.
-    expect(screen.getByText("50s")).toBeInTheDocument();
+    expect(grid().getByText("50s")).toBeInTheDocument();
+  });
+
+  describe("the column marginals", () => {
+    /** One agent juror's column header, by the nickname the roster keys it on. */
+    function header(nickname: string) {
+      const cell = screen.getByText(nickname).closest("th");
+      if (cell === null) throw new Error(`${nickname} has a column header`);
+      return within(cell);
+    }
+
+    it("puts each agent juror's summary inside that agent juror's own column", () => {
+      renderMatrix();
+
+      // 007's own draws, not the court's: ten draws holding thirteen vote IDs, a median reveal
+      // of 48s against the court's 85s, and coherence over the eight of them the court has
+      // ruled on.
+      expect(header("007").getByText("10 · 13v")).toBeInTheDocument();
+      expect(header("007").getByText("48s")).toBeInTheDocument();
+      expect(header("007").getByText("7/8")).toBeInTheDocument();
+    });
+
+    it("adds no seventh column: one row header and exactly six agent jurors", () => {
+      renderMatrix();
+
+      const [head] = screen.getAllByRole("rowgroup");
+      if (head === undefined) throw new Error("The matrix has a header");
+
+      expect(within(head).getAllByRole("columnheader")).toHaveLength(ROSTER.length + 1);
+    });
+
+    it("shows dashes and a real zero for the agent juror that has never been drawn", () => {
+      renderMatrix();
+
+      // baskerville is staked, listed and never asked. There is nothing to measure and no
+      // figure that could be shown without inventing it — but zero draws is a measurement.
+      expect(header("baskerville").getAllByText("—")).toHaveLength(3);
+      expect(header("baskerville").getByText("0 · 0v")).toBeInTheDocument();
+    });
+
+    it("marks the column drawn in dispute 151, and leaves the others unmarked", () => {
+      renderMatrix();
+
+      // Dispute 151 ran under 8-hour commit and vote windows; columbo and daemonhill are the
+      // two agent jurors the court drew for it. A column that was not there is comparable with
+      // the court as it stands and says nothing.
+      expect(header("columbo").getAllByText("†")).toHaveLength(2);
+      expect(header("007").queryByText("†")).not.toBeInTheDocument();
+    });
+
+    it("marks the coherence of the column that sat on the panel of one", () => {
+      renderMatrix();
+
+      // Dispute 155 was decided by columbo alone, where being the majority took no agreement.
+      expect(header("columbo").getByText("‡")).toBeInTheDocument();
+      expect(
+        header("columbo").getByText(/of \d+ draws sat on a panel of one/i),
+      ).toBeInTheDocument();
+      expect(header("blaise").queryByText("‡")).not.toBeInTheDocument();
+    });
+
+    it("leaves every commit median a dash until the log scan has come back", () => {
+      // The trap this repository has now hit four times: a flag that is false while a read is
+      // in flight is not a flag that the read failed. Six columns reading "Not read" for the
+      // length of every cold load is a failure announced before it has happened.
+      renderMatrix(build({ commits: null }));
+
+      expect(screen.queryByText("Not read")).not.toBeInTheDocument();
+    });
   });
 
   describe("the live rows", () => {
@@ -833,6 +915,24 @@ describe("Matrix", () => {
 
       renderDrifted();
       expect(screen.getAllByText("Unknown").length).toBeGreaterThan(0);
+    });
+
+    it("stops calling any column never drawn, because an unread row is not part of the record", () => {
+      // The claim the marginals made reachable, and the one this page must never make wrongly:
+      // baskerville reads "Never drawn · 0 · 0v" over a court that has been read whole, and the
+      // *first dispute it is ever drawn in* arrives in exactly the state this block describes —
+      // created since the draws were last read, cells null because nobody asked. Saying "never
+      // drawn" there is an unread state rendering as a fact about the court, over the single
+      // observation this dashboard was built to catch.
+      renderMatrix(build());
+      expect(screen.getByText("Never drawn")).toBeInTheDocument();
+
+      cleanup();
+      renderDrifted();
+      expect(screen.queryByText("Never drawn")).not.toBeInTheDocument();
+      // The stack is a fact about how the agent juror was built, not about the court, so it
+      // stands in — the column goes quiet about the record rather than blank about everything.
+      expect(screen.getAllByText(ROSTER[5]?.stack.label ?? "").length).toBeGreaterThan(0);
     });
   });
 });

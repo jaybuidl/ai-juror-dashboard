@@ -1,11 +1,18 @@
 import { describe, expect, it } from "vitest";
 import disputeFixture from "../disputes/court-34.fixture.json" with { type: "json" };
 import type { RawDispute } from "../disputes/disputes";
+import { isFinalised } from "../disputes/liveness";
 import { ROSTER } from "../roster/agent-jurors";
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
-import { buildCourtPerformance, type CourtPerformance, type RawDraw } from "./performance";
-import { courtTotalsOf } from "./totals";
+import {
+  buildCourtPerformance,
+  type CourtPerformance,
+  type Draw,
+  type MatrixRow,
+  type RawDraw,
+} from "./performance";
+import { agentJurorMarginalsOf, courtTotalsOf, markedWindows } from "./totals";
 import type { RawCourtParameters } from "./windows";
 
 /**
@@ -142,8 +149,14 @@ describe("courtTotalsOf", () => {
         disputes: [151, 152],
         windows: { commitSeconds: 28_800, voteSeconds: 28_800 },
         revealedDraws: 0,
+        committedDraws: 0,
       },
-      { disputes: [153], windows: { commitSeconds: 600, voteSeconds: 600 }, revealedDraws: 0 },
+      {
+        disputes: [153],
+        windows: { commitSeconds: 600, voteSeconds: 600 },
+        revealedDraws: 0,
+        committedDraws: 0,
+      },
     ]);
   });
 
@@ -184,7 +197,10 @@ describe("courtTotalsOf", () => {
  */
 function row(id: number, measured: { commitSeconds: number; voteSeconds: number } | null) {
   return {
-    dispute: { id } as never,
+    // Ruled, so `courtTotalsOf`'s finalised count has a ruling to read. It was `{ id }` alone
+    // until the caption's count moved onto the totals, and a dispute with no ruling at all is
+    // a shape the seam cannot produce.
+    dispute: { id, ruling: { state: "ruled", choice: 1 } } as never,
     panelSize: 2,
     cells: [],
     windows: measured === null ? null : { evidenceSeconds: 1, appealSeconds: 129_600, ...measured },
@@ -198,7 +214,7 @@ function row(id: number, measured: { commitSeconds: number; voteSeconds: number 
 /** The median as `courtTotalsOf` computes it, reached through the only door it has. */
 function medianOfSeconds(seconds: readonly number[]): number | undefined {
   const rows = seconds.map((value, index) => ({
-    dispute: { id: index } as never,
+    dispute: { id: index, ruling: { state: "ruled", choice: 1 } } as never,
     panelSize: 2,
     // No window resolved and nothing marked: the median must be the same figure whether or not
     // the court's parameter history came back.
@@ -219,4 +235,300 @@ function medianOfSeconds(seconds: readonly number[]): number | undefined {
   }));
 
   return courtTotalsOf(rows, ROSTER).revealLatency?.median;
+}
+
+describe("the court's own live and finalised counts", () => {
+  it("counts the disputes the court has ruled on, and the ones it is still deciding", () => {
+    // Moved out of `Matrix.tsx`, which derived both from the rows while rendering the caption
+    // above them. A court-wide number belongs to the model the matrix is one reading of.
+    const totals = courtTotalsOf(built.rows, ROSTER);
+
+    expect(totals.finalised).toBe(built.rows.filter((r) => isFinalised(r.dispute)).length);
+    expect(totals.finalised + totals.live).toBe(built.rows.length);
+    // The captured court holds both, which is what makes the caption worth printing at all.
+    expect(totals.finalised).toBeGreaterThan(0);
+    expect(totals.live).toBeGreaterThan(0);
+  });
+
+  it("keyed on the ruling and never on the period, like every other layer that asks", () => {
+    // ADR-0007. Disputes 164–166 sat in `appeal` with every draw revealed and no ruling, and
+    // every one of them is live: `execution` names neither end of the court's involvement.
+    const appealing = built.rows.filter((row) => row.dispute.period === "appeal");
+
+    expect(appealing.length).toBeGreaterThan(0);
+    expect(appealing.every((row) => !isFinalised(row.dispute))).toBe(true);
+  });
+});
+
+describe("agentJurorMarginalsOf", () => {
+  it("gives one entry per agent juror in roster order, including the one never drawn", () => {
+    const marginals = agentJurorMarginalsOf(built.rows, ROSTER);
+
+    expect(marginals.map((m) => m.agentJuror.nickname)).toEqual(ROSTER.map((a) => a.nickname));
+    // baskerville has never been drawn and is in the roster only because this repository says
+    // so. Marginals built from the draws rather than from the roster would show five columns.
+    expect(marginals.find((m) => m.agentJuror.nickname === "baskerville")?.draws).toBe(0);
+  });
+
+  it("slices the court's own totals down each column", () => {
+    // The whole claim a marginal makes: the same draws, counted a second way. If these ever
+    // disagree then one of the two is reducing the rows on terms of its own.
+    const totals = courtTotalsOf(built.rows, ROSTER);
+    const marginals = agentJurorMarginalsOf(built.rows, ROSTER);
+
+    expect(marginals.reduce((n, m) => n + m.draws, 0)).toBe(totals.draws);
+    expect(marginals.reduce((n, m) => n + m.votes, 0)).toBe(totals.votes);
+    expect(marginals.filter((m) => m.draws > 0)).toHaveLength(totals.agentJurorsDrawn);
+    expect(marginals.reduce((n, m) => n + (m.revealLatency?.seconds.length ?? 0), 0)).toBe(
+      totals.revealLatency?.seconds.length,
+    );
+  });
+
+  it("has nothing to measure for an agent juror never drawn, and a real zero for its draws", () => {
+    // `canvas/JurorEmpty.dc.html:66-76`. Every figure it cannot have is null so the view draws
+    // an em dash; the draw count is `0` because zero draws is a measurement and not an absence.
+    const never = agentJurorMarginalsOf(built.rows, ROSTER).find(
+      (m) => m.agentJuror.nickname === "baskerville",
+    );
+
+    expect(never?.draws).toBe(0);
+    expect(never?.votes).toBe(0);
+    expect(never?.revealLatency).toBeNull();
+    expect(never?.commitLatency).toBeNull();
+    expect(never?.coherence).toMatchObject({ coherent: 0, resolved: 0 });
+  });
+
+  it("counts coherence only over the draws the court has ruled on", () => {
+    // ADR-0007 and `CONTEXT.md`: a dispute in `appeal` has every vote in and no ruling, and a
+    // marginal counting those draws as incoherent would make a result out of a prediction.
+    const marginals = agentJurorMarginalsOf(built.rows, ROSTER);
+    const unruled = built.rows
+      .filter((row) => !isFinalised(row.dispute))
+      .flatMap((row) => row.cells)
+      .filter((cell) => cell !== null).length;
+
+    expect(unruled).toBeGreaterThan(0);
+    expect(marginals.reduce((n, m) => n + m.coherence.resolved, 0)).toBe(
+      marginals.reduce((n, m) => n + m.draws, 0) - unruled,
+    );
+  });
+
+  it("keeps a missed vote in the denominator, where it cost the agent juror its coherence", () => {
+    // A draw that let the vote period close is a draw that did not vote with the ruling. Taking
+    // it out of `resolved` would hand an agent juror that never voted a perfect figure.
+    const marginals = agentJurorMarginalsOf(
+      [
+        column({ id: 1, ruled: true, state: { kind: "coherent" } }),
+        column({ id: 2, ruled: true, state: { kind: "no-vote" }, revealLatencySeconds: null }),
+      ],
+      ROSTER,
+    );
+
+    expect(marginals[0]?.coherence).toMatchObject({ coherent: 1, resolved: 2 });
+  });
+
+  it("takes the median as the lower of two middles, exactly as every other figure here does", () => {
+    const rows = [10, 12, 14, 16].map((seconds, index) =>
+      column({ id: index, ruled: true, revealLatencySeconds: seconds }),
+    );
+
+    // 13 would be a latency no draw recorded, on a page that may be cited.
+    expect(agentJurorMarginalsOf(rows, ROSTER)[0]?.revealLatency?.median).toBe(12);
+  });
+
+  it("is not dragged by the dispute that ran under different court parameters", () => {
+    // Dispute 151 ran under an 8-hour commit window against 45 minutes now, and this court's
+    // commit latencies run to 3,236s because of it. A mean would report ~818s — a duration
+    // describing no draw and no window. The median names one the agent juror actually recorded,
+    // and the outlier is disclosed by the marker rather than dropped out of the count.
+    const rows = [
+      column({ id: 151, ruled: true, commitLatencySeconds: 3236, windows: EARLIER }),
+      column({ id: 152, ruled: true, commitLatencySeconds: 10 }),
+      column({ id: 153, ruled: true, commitLatencySeconds: 12 }),
+      column({ id: 154, ruled: true, commitLatencySeconds: 14 }),
+    ];
+    const marginal = agentJurorMarginalsOf(rows, ROSTER)[0];
+
+    expect(marginal?.commitLatency?.median).toBe(12);
+    expect(marginal?.commitLatency?.seconds).toHaveLength(4);
+    expect(marginal?.changedWindows).toHaveLength(1);
+    expect(marginal?.changedWindows[0]?.committedDraws).toBe(1);
+    expect(marginal?.changedWindows[0]?.revealedDraws).toBe(1);
+  });
+
+  it("marks a column only where that agent juror was itself drawn under the earlier windows", () => {
+    // The marker is a fact about the draws behind *this* number. A column never drawn in
+    // dispute 151 is comparable with the court as it stands and must not say otherwise.
+    const marginals = agentJurorMarginalsOf(
+      [column({ id: 151, ruled: true, windows: EARLIER, at: 0 })],
+      ROSTER,
+    );
+
+    expect(marginals[0]?.changedWindows).toHaveLength(1);
+    expect(marginals[1]?.changedWindows).toEqual([]);
+  });
+
+  it("names the lone panels behind a column's coherence, and only the ruled ones", () => {
+    // Dispute 155 was decided by a panel of one, where coherence is tautological — the ‡. A
+    // lone panel still being decided has no coherence figure to qualify yet.
+    const marginals = agentJurorMarginalsOf(
+      [
+        column({ id: 155, ruled: true, panelSize: 1 }),
+        column({ id: 156, ruled: false, panelSize: 1 }),
+        column({ id: 157, ruled: true, panelSize: 3 }),
+      ],
+      ROSTER,
+    );
+
+    expect(marginals[0]?.coherence.lonePanelDisputes).toEqual([155]);
+    expect(marginals[0]?.coherence.resolved).toBe(2);
+  });
+
+  it("finds the lone panel the captured court actually holds", () => {
+    const marked = agentJurorMarginalsOf(built.rows, ROSTER).filter(
+      (m) => m.coherence.lonePanelDisputes.length > 0,
+    );
+
+    // Exactly one agent juror sat on it, by the definition of a panel of one.
+    expect(marked).toHaveLength(1);
+    expect(marked[0]?.coherence.lonePanelDisputes).toEqual([155]);
+  });
+
+  it("counts a column's commit latencies separately from its reveal latencies", () => {
+    // Two measures on one page, measured from two different periods. An aggregate that pooled
+    // them would be ADR-0005's mistake in another form.
+    const marginal = agentJurorMarginalsOf(
+      [column({ id: 1, ruled: true, revealLatencySeconds: 90, commitLatencySeconds: 5 })],
+      ROSTER,
+    )[0];
+
+    expect(marginal?.revealLatency?.median).toBe(90);
+    expect(marginal?.commitLatency?.median).toBe(5);
+  });
+
+  it("has no commit latency to report when no commitment was dated", () => {
+    // Null and never 0: while the log scan is out every commit latency is null, and a `0` here
+    // would be an agent juror that committed the instant the period opened.
+    const rows = [column({ id: 1, ruled: true, commitLatencySeconds: null })];
+
+    expect(agentJurorMarginalsOf(rows, ROSTER)[0]?.commitLatency).toBeNull();
+  });
+
+  it("counts nothing from a row whose draws were never read", () => {
+    // Its cells are null because nobody asked, and ticket 13's rule is that what could not be
+    // read counts as unknown rather than as zero. A marginal has no way to say "unknown", so it
+    // stays the count that was taken — and `CourtTotals.unreadDisputes` is what discloses it.
+    const rows = [
+      { ...column({ id: 1, ruled: true }), read: false, cells: ROSTER.map(() => null) },
+    ];
+
+    expect(agentJurorMarginalsOf(rows, ROSTER)[0]?.draws).toBe(0);
+  });
+});
+
+describe("markedWindows", () => {
+  const CURRENT = {
+    evidenceSeconds: 2700,
+    commitSeconds: 2700,
+    voteSeconds: 1800,
+    appealSeconds: 129_600,
+  };
+
+  /** One superseded group, with both counts under the caller's control. */
+  function change(windows: { commitSeconds: number; voteSeconds: number }, drawn = 2) {
+    return { disputes: [151], windows, revealedDraws: drawn, committedDraws: drawn };
+  }
+
+  it("qualifies a median only through the window that median is measured from", () => {
+    // A court that moved its commit window and left its vote window alone. The reveal median is
+    // measured from the vote period, so nothing here says anything about it — and marking it
+    // would name a duration the court holds right now, which reads as a marker placed in error.
+    const superseded = [change({ commitSeconds: 28_800, voteSeconds: CURRENT.voteSeconds })];
+
+    expect(markedWindows(superseded, CURRENT, "commit").draws).toBe(2);
+    expect(markedWindows(superseded, CURRENT, "reveal").draws).toBe(0);
+    expect(markedWindows(superseded, CURRENT, "reveal").changes).toEqual([]);
+  });
+
+  it("qualifies both where the court changed both, which is court 34 today", () => {
+    const superseded = [change(EARLIER)];
+
+    expect(markedWindows(superseded, CURRENT, "commit").draws).toBe(2);
+    expect(markedWindows(superseded, CURRENT, "reveal").draws).toBe(2);
+  });
+
+  it("counts the draws of the measure asked for, not of the other one", () => {
+    // A draw that committed and never revealed is in one distribution and not the other, so a
+    // marker quoting the wrong count would say "2 of 1".
+    const superseded = [{ disputes: [151], windows: EARLIER, revealedDraws: 1, committedDraws: 2 }];
+
+    expect(markedWindows(superseded, CURRENT, "reveal").draws).toBe(1);
+    expect(markedWindows(superseded, CURRENT, "commit").draws).toBe(2);
+  });
+
+  it("drops a group that cost this median no draw at all", () => {
+    const superseded = [{ disputes: [151], windows: EARLIER, revealedDraws: 0, committedDraws: 2 }];
+
+    expect(markedWindows(superseded, CURRENT, "reveal").changes).toEqual([]);
+  });
+
+  it("qualifies everything while the parameter history is unread", () => {
+    // Nothing is known to compare against, so nothing may be declared comparable. The view says
+    // the history is unread in its own words; this must not quietly say the opposite.
+    expect(markedWindows([change(EARLIER)], null, "reveal").draws).toBe(2);
+  });
+});
+
+/** The windows court 34 ran under before it was reconfigured, as `windows.ts` resolves them. */
+const EARLIER = { commitSeconds: 28_800, voteSeconds: 28_800 };
+
+/**
+ * One row with one draw in one column, for the cases the captured court cannot produce.
+ *
+ * Hand-built for the reason `CLAUDE.md` gives: every fixture here is one successful read of a
+ * working court, so none of them holds a lone panel that is still live, a court reconfigured
+ * twice, or one column drawn under earlier windows while the column beside it was not.
+ */
+function column({
+  id,
+  ruled,
+  state = { kind: "coherent" },
+  revealLatencySeconds = 30,
+  commitLatencySeconds = 10,
+  panelSize = 2,
+  windows = null,
+  at = 0,
+}: {
+  id: number;
+  ruled: boolean;
+  state?: Draw["state"];
+  revealLatencySeconds?: number | null;
+  commitLatencySeconds?: number | null;
+  panelSize?: number;
+  windows?: { commitSeconds: number; voteSeconds: number } | null;
+  at?: number;
+}): MatrixRow {
+  return {
+    dispute: {
+      id,
+      period: ruled ? "execution" : "appeal",
+      ruling: ruled ? { state: "ruled", choice: 1 } : { state: "pending" },
+    } as never,
+    panelSize,
+    cells: ROSTER.map((agentJuror, column) =>
+      column === at
+        ? {
+            agentJuror,
+            state,
+            revealLatencySeconds,
+            commitLatencySeconds,
+            committed: commitLatencySeconds !== null,
+            voteCount: 1,
+          }
+        : null,
+    ),
+    windows: windows === null ? null : { evidenceSeconds: 1, appealSeconds: 129_600, ...windows },
+    underEarlierWindows: windows !== null,
+    read: true,
+  };
 }

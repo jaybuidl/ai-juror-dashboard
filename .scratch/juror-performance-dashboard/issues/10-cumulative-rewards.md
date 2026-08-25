@@ -67,3 +67,33 @@ labelled every stat tile partial over a missing dispute title, contradicting a n
 pixels below it. And per `CLAUDE.md`, a new read is another query that can drift out of step with
 the ones beside it — check its own error, and where a figure joins two reads, say which half is
 stale rather than that "the court" is.
+
+## From ticket 06, 2026-08-25 — the block you join is built and waiting for you
+
+The matrix's column headers now carry each agent juror's summary, and it was deliberately built to
+hold six figures rather than the four ticket 06 fills. Two edits put yours in it:
+
+- **`AgentJurorMarginals` in `src/performance/totals.ts`** gains your two fields, computed inside
+  `agentJurorMarginalsOf` over the same rows. That function is the whole reduction; nothing in a
+  view may add a third one beside it.
+- **`slotsOf` in `src/performance/Marginals.tsx`** gains two entries, after `draws`. Each is a
+  `label` (the artboard's abbreviation — `Eth`, `Pnk`), a `name` spelled out for a screen reader, a
+  `Figure` and an optional caveat. Nothing else changes.
+
+**Ticket 06 deliberately did not render your two slots as em dashes**, and this is the decision to
+inherit rather than reverse. A dash on this page means "no draws to measure" — `JurorEmpty.dc.html`
+says so in as many words — and printing one against a reward nobody has read would state a
+measurement where there has been no read at all. So the slots are simply absent until you fill
+them, and the provenance footer says "Cumulative ETH and PNK rewards per agent juror have not been
+read at all". **That sentence is yours to retire**, in `provenanceOf` in `MatrixPage.tsx` and in the
+caveat card above the matrix, both of which ticket 06 narrowed rather than removed. It is the last
+"not read" claim the matrix view makes about itself, and leaving it up over your figures would be
+the same falsehood in the other direction.
+
+Two more things ticket 06 settled that reach you. The `†`/`‡` markers ride the figure their caveat
+touches and no other, so ask what a superseded window and a panel of one actually say about a
+reward before marking one — a lone panel says nothing about ETH earned, and a changed window very
+possibly does, since the reward depends on the round. And `commitments` on the marginals is the
+model for "the subgraph says this happened and the second source has not confirmed it yet": if your
+read is a second source over the same draws, it needs the same in-flight gate rather than an
+emptiness test, which is `CLAUDE.md`'s fourth recurrence of that trap.

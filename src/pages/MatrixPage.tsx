@@ -307,7 +307,11 @@ function provenanceOf({ roster, disputes, performance }: MatrixPageProps): Prove
   caveats.push(
     "The comparison band on the latency strip is illustrative and measures no court; it is the only thing above that did not come from a read.",
   );
-  caveats.push("Per-agent-juror summaries and rewards have not been read at all.");
+  // Narrowed by ticket 06, which read the summaries: what each agent juror's column header now
+  // states is the same three measures aggregated down that column, over the same draws. Rewards
+  // are the half that is still unread, and naming the whole list would claim an absence that has
+  // stopped being one — the failure this sentence exists to prevent, in reverse.
+  caveats.push("Cumulative ETH and PNK rewards per agent juror have not been read at all.");
 
   // Announced here and nowhere else on this view, which is why it belongs in the footer at all.
   // A shortfall in the log scan is stated above the grid, where the figures it affects are, and
@@ -384,7 +388,11 @@ export function MatrixPage(props: MatrixPageProps) {
   return (
     <View provenance={provenanceOf(props)} failures={failures}>
       <Hero />
-      <StatTiles totals={measured?.totals ?? null} partial={partial} />
+      <StatTiles
+        totals={measured?.totals ?? null}
+        current={measured?.parameters.current ?? null}
+        partial={partial}
+      />
       <LatencyStrip latency={measured?.totals.revealLatency ?? null} partial={partial} />
 
       {/* This text narrows as each measurement lands: it claimed no dispute had been
@@ -405,11 +413,12 @@ export function MatrixPage(props: MatrixPageProps) {
               This page measures how long each agent juror took to commit its vote after the commit
               period opened, how long it took to reveal that vote after the vote period opened, and
               whether the vote matched the dispute's final ruling. Each latency is measured from its
-              own period, so the reveal figure is not the time since the commit. It measures nothing
-              else yet: per-agent-juror summaries and rewards have not been read, and no figure here
-              is a fraction of a period's window. Coherence is asserted only where the court has
-              ruled, a blank cell means an agent juror was not drawn rather than that it failed to
-              act, and a dispute decided by a panel of one is marked wherever it is counted.
+              own period, so the reveal figure is not the time since the commit. Each column header
+              summarises that agent juror's own draws in the same three measures. It measures
+              nothing else yet: cumulative ETH and PNK rewards have not been read, and no figure
+              here is a fraction of a period's window. Coherence is asserted only where the court
+              has ruled, a blank cell means an agent juror was not drawn rather than that it failed
+              to act, and a dispute decided by a panel of one is marked wherever it is counted.
             </CaveatBody>
           </>
         ) : (
