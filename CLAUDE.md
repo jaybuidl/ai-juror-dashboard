@@ -183,6 +183,16 @@ Things that cost real effort to discover and are easy to get wrong again:
   panel yet is still six blanks under a note saying every blank is random draw sparsity. That
   remains ticket 17's, and it is the reading a live court produces today.
 - **Dispute 155 had a panel of one.** Coherence is tautological there. Any aggregate carries this.
+- **The offline suite goes red under CPU contention, and it looks like a bug you just introduced.**
+  `yarn test` is ~450 tests across 27 files, many of them rendering the whole matrix, and vitest
+  runs the files in parallel against the default 5s timeout. Run it while something else is
+  saturating the machine — a `/code-review` subagent, another worktree session, a dev server — and
+  the run stretches several times its normal duration and a handful of tests time out. Measured on
+  ticket 06: one run took 40s against a normal 8.6s and failed four tests, and three subsequent
+  quiet runs were 449/449 with no other change. The tell is the **duration**, not the failure
+  count. So a red offline suite whose run took far longer than usual is worth re-running on a quiet
+  machine before believing it — the same advice § Traps already gives for a red *live* suite, for a
+  completely different reason.
 - **A green suite here proves the healthy path and nothing else.** Every fixture in this repo is
   one successful read of a working court, so no test can contain a second read that failed, a
   round that does not exist yet, or a court that is not this one. A review pass over ticket 05
