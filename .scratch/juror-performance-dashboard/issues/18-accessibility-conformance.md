@@ -156,3 +156,9 @@ The light theme in `tokens/themes.css` is vendored and wired to nothing — `col
 `dark`, there is no `data-theme` attribute anywhere, and `theme.test.ts` scopes its token scan to
 `:root` for exactly that reason. Fixing light-theme contrast is not in scope unless this ticket
 decides to ship the theme.
+
+**From ticket 04 (2026-08-25).** Dispute titles are clipped to one line with `text-overflow:
+ellipsis`, and the full text is reachable only through a `title` attribute. That is a weak affordance
+— no keyboard access, inconsistent screen-reader handling, no touch equivalent — and it was left
+deliberately for this ticket rather than guessed at. The clipping itself is a fixed requirement from
+`Main.dc.html:162`, so the fix is a better disclosure, not unclipping the title.

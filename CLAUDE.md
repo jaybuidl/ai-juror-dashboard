@@ -99,6 +99,14 @@ Things that cost real effort to discover and are easy to get wrong again:
   template ids are small: `id_gte: "161"` returns templates 2 and 17–28 as well. Ask for templates by
   exact `id_in`, never by range. An id with no template is not an error — it simply does not come
   back, which is the tolerance the row rendering assumes.
+- **A subgraph read that comes back short throws nothing.** A reindexing Goldsky deployment answers
+  HTTP 200 with `[]` and no GraphQL error; a lagging one returns some of the ids it was asked for and
+  not the rest. Both slip past every `response.ok` and `body.errors` check, and both render as an
+  absence that is indistinguishable from a fact — a dispute with no title, a juror never drawn, a
+  round with no votes. Where a read draws a **known set** of ids, compare what came back against what
+  was asked for and report the shortfall as a count, not as an error: `src/disputes/useDisputes.ts`
+  carries `{expected, resolved, isLoading}` and `DisputeList` names the number. A thrown error is then
+  just the case where the count is zero. This bites every ticket that fetches by id — 05, 07, 08, 10.
 - **`text-overflow: ellipsis` does nothing inside a `1fr` grid track.** A track's minimum is `auto`,
   which is its content's minimum, so the column grows to fit the longest title and the row overflows
   sideways instead of clipping — with nothing in the console. `minmax(0, 1fr)` on the track and

@@ -80,3 +80,10 @@ Two things this ticket inherits:
   `Cell.dc.html:140` reserves for a draw that failed to act and says is "used nowhere else". The
   unread *cell* correctly uses `?`. See `../canvas/README.md` § Known defects; do not copy the
   banner's glyph as drawn.
+
+**From ticket 04 (2026-08-25).** `DisputeList.tsx` now renders **two** notices from the same `Notice`
+component, not one, and they say different things on purpose: the disputes could not be read (the
+list may be partial), and the disputes' subjects could not be read (the list is whole, only titles
+are missing). The second carries a count — "3 of these 16 disputes" — because a lagging subgraph
+produces the partial case and "some" and "all" are different claims. Both need the designed failure
+state; neither should be collapsed into the other.

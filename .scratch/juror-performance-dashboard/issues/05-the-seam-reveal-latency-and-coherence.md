@@ -118,3 +118,16 @@ custom property as the inherited value and says nothing.
 
 **`--type-metric` (`800 34px … var(--font-mono)`) is the big-figure token, and its weight is
 self-hosted** even though the design system's own font import stops at 700. It will render as drawn.
+
+**From ticket 04 (2026-08-25).** Three things that changed under this ticket while it was in flight:
+
+- **`slotsFor` is already supplied.** `useDisputes` now returns it, filling `title` and `category`.
+  Extend the object it returns with `panel` and `flag`; do not introduce `slotsFor` as if it were new,
+  and do not replace it.
+- **`src/disputes/subgraph.ts` now exists** — `postSubgraphQuery({url, query, variables, signal,
+  source, field})`, which turns a GraphQL error inside an HTTP 200 into a throw. Use it for any new
+  endpoint rather than writing a fourth `fetch` wrapper.
+- **A read that comes back short does not throw.** The DRT read reports `{expected, resolved,
+  isLoading}` instead of an error, because a reindexing subgraph answers 200 with fewer rows than it
+  was asked for. Any read here that draws a fixed set of ids — draws, votes, justifications — has the
+  same failure mode, and a missing row is what a juror who was never drawn looks like.
