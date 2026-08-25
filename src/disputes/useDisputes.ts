@@ -33,6 +33,18 @@ export type DisputesView = DisputeListView & {
    * needs to see.
    */
   readAt: number | null;
+  /**
+   * Whether the dispute read is paused rather than failing.
+   *
+   * react-query's default `networkMode: "online"` pauses a query when the browser reports no
+   * connection: `isPending` stays true, `fetchStatus` becomes `paused`, and no error is ever
+   * thrown. Every failure notice in this repository keys on the error channel, so without this
+   * an offline visitor sees "Reading the court…" indefinitely — the one failure that is
+   * indistinguishable from a slow success. Found while writing ticket 03, surfaced by ticket 13.
+   */
+  isPaused: boolean;
+  /** Read the court again, for the banner's retry. Clears the notice by succeeding. */
+  retry: () => void;
 };
 
 /** What every dispute looks up against until the titles arrive, or if they never do. */
@@ -107,6 +119,12 @@ export function useDisputes(): DisputesView {
     // react-query reports 0 for a query that has never resolved; that is not the epoch, it is
     // an absence, and the footer must not print 1970 as the moment the court was read.
     readAt: disputes.dataUpdatedAt === 0 ? null : disputes.dataUpdatedAt,
+    // Both queries, because either can be the paused one and the visitor is offline for both.
+    isPaused: disputes.fetchStatus === "paused" || templates.fetchStatus === "paused",
+    retry: () => {
+      void disputes.refetch();
+      void templates.refetch();
+    },
     // Kept alongside whatever rows are already held: a failed refetch must not blank the
     // list, and an incomplete list must not read as the whole court. Ticket 13 replaces
     // the plain notice this feeds with the designed failure state.
@@ -127,6 +145,11 @@ export function useDisputes(): DisputesView {
       // after a new dispute changes the key, where the placeholder above is what is on
       // screen and the newcomer's title has legitimately not arrived yet.
       isLoading: templates.isPending || templates.isFetching,
+      // When the titles on screen landed, so a view whose failing half is the template read can
+      // date itself by that read rather than by the dispute read that worked. `null` where there
+      // was nothing to ask for: with no template ids the query never runs, and a zero here is an
+      // absence rather than 1970.
+      readAt: templates.dataUpdatedAt === 0 ? null : templates.dataUpdatedAt,
     },
     slotsFor: (dispute) => {
       const template = templateFor(templates.data ?? NO_TEMPLATES, dispute);

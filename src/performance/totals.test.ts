@@ -23,6 +23,7 @@ const built = ((): CourtPerformance => {
     // every figure this suite pins must be the same whether or not the log scan came back.
     commits: null,
     roster: ROSTER,
+    drawsReadAt: null,
   });
   if (!result.success) throw new Error(`${result.code}: ${result.message}`);
   return result.data;
@@ -125,6 +126,7 @@ function medianOfSeconds(seconds: readonly number[]): number | undefined {
         voteCount: 1,
       },
     ],
+    read: true,
   }));
 
   return courtTotalsOf(rows, ROSTER).revealLatency?.median;

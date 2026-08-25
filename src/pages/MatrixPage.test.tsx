@@ -1,13 +1,20 @@
-import { screen } from "@testing-library/react";
-import { describe, expect, it } from "vitest";
+import { fireEvent, screen, within } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
 import { formatLatencySeconds } from "../performance/latency";
+import { formatAgo } from "../read-failure";
 import { ROSTER } from "../roster/agent-jurors";
 import {
   commitsPending,
   disputes,
+  disputesWithNewcomer,
   measured,
+  pausedDisputes,
+  pausedPerformance,
+  READ_AT,
+  refused,
   renderAt,
   resolvingRoster,
+  staleDraws,
   unmeasured,
   unresolvedRoster,
 } from "../test/court";
@@ -99,7 +106,7 @@ describe("the matrix view", () => {
 
   it("says nothing about a failed read while the read is still out", () => {
     renderAt("/", {
-      performance: { performance: null, isLoading: true, error: null, commitError: null },
+      performance: { ...measured, performance: null, isLoading: true, error: null },
     });
 
     expect(screen.queryByText(/the matrix could not be built/i)).not.toBeInTheDocument();
@@ -306,5 +313,249 @@ describe("the matrix view's footer", () => {
     expect(
       screen.getByRole("link", { name: /what that means for these figures/i }),
     ).toHaveAttribute("href", "/method#window");
+  });
+});
+
+describe("the failure banner", () => {
+  /**
+   * Ticket 13's channel: a failure that changes a number is loud and blocking, a failure that
+   * changes only a label is quiet and local, and ENS is the one documented exception.
+   *
+   * Every fixture these lean on is hand-built, for the reason `CLAUDE.md` gives — every captured
+   * payload in this repository is a read that worked, so none can hand you one that did not, and
+   * a suite built only from fixtures would pass while proving nothing about failure.
+   */
+
+  it("says nothing at all when every read succeeded", () => {
+    renderAt("/");
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText(/do not cite these figures/i)).not.toBeInTheDocument();
+  });
+
+  it("names the source, the status and how long ago the last complete read was", () => {
+    renderAt("/", { performance: staleDraws });
+
+    const banner = screen.getByRole("alert");
+
+    expect(within(banner).getByText(/do not cite these figures/i)).toBeInTheDocument();
+    expect(within(banner).getByText("Incomplete")).toBeInTheDocument();
+    expect(within(banner).getByText("kleros-v2-coreneo")).toBeInTheDocument();
+    expect(within(banner).getByText("HTTP 502")).toBeInTheDocument();
+    expect(within(banner).getByText(/ago$/)).toBeInTheDocument();
+  });
+
+  it("dates the page by the staler of its two reads, not the fresher one", () => {
+    // The page is built from two queries that succeed at different moments, and the case this
+    // banner exists for is the one where they differ. Dating an incomplete page by the read that
+    // *did* work would hand a citing reader exactly the reassurance the banner is withholding.
+    renderAt("/", { performance: staleDraws });
+
+    const banner = screen.getByRole("alert");
+    const disputeRead = disputes.readAt;
+    const drawRead = staleDraws.readAt;
+    if (disputeRead === null || drawRead === null) throw new Error("both fixtures carry a moment");
+
+    expect(drawRead).toBeLessThan(disputeRead);
+    expect(within(banner).getByText(formatAgo(drawRead, Date.now()))).toBeInTheDocument();
+  });
+
+  it("says the page was never complete when one of its two reads never landed", () => {
+    renderAt("/", { performance: unmeasured });
+
+    expect(within(screen.getByRole("alert")).getByText("Never")).toBeInTheDocument();
+  });
+
+  it("offers a retry that re-reads rather than reloading the page", () => {
+    // Recovery needs no full page reload: the banner is computed from the queries' own state, so
+    // a refetch that succeeds clears it and there is no separate thing to dismiss.
+    const retry = vi.fn();
+    renderAt("/", { performance: { ...staleDraws, retry } });
+
+    fireEvent.click(screen.getByRole("button", { name: /retry/i }));
+
+    expect(retry).toHaveBeenCalledOnce();
+  });
+
+  it("sends a reader who has never seen a partial page somewhere that explains one", () => {
+    renderAt("/", { performance: staleDraws });
+
+    expect(screen.getByRole("link", { name: /what this means/i })).toHaveAttribute(
+      "href",
+      "/method#partial",
+    );
+  });
+
+  it("raises no banner when only ENS failed, because no figure depends on it", () => {
+    // The one documented exception, and the criterion most easily got wrong: a rose banner over
+    // a complete set of figures because some avatars are missing would teach a reader that the
+    // banner does not mean what it says.
+    renderAt("/", { roster: unresolvedRoster });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.getByText(/names are falling back to the roster/i)).toBeInTheDocument();
+  });
+
+  it("says nothing while the ENS lookup is merely still out", () => {
+    renderAt("/", { roster: resolvingRoster });
+
+    expect(screen.queryByText(/names are falling back to the roster/i)).not.toBeInTheDocument();
+  });
+
+  it("announces a paused read, which never arrives as an error at all", () => {
+    // react-query's default networkMode pauses rather than fails when the browser reports no
+    // connection: nothing is thrown, `isPending` stays true, and every notice in this repository
+    // keys on the error channel. Without this the offline visitor reads "Reading the court…"
+    // indefinitely — the one failure that looks exactly like a slow success.
+    renderAt("/", { disputes: pausedDisputes, performance: pausedPerformance });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/reports no network connection/i);
+  });
+
+  it("never invents a status for a failure that arrived without one", () => {
+    renderAt("/", {
+      performance: {
+        ...measured,
+        commitError: new Error("Cannot read properties of undefined (reading 'error')"),
+      },
+    });
+
+    const banner = screen.getByRole("alert");
+
+    expect(within(banner).getByText("arb1.arbitrum.io")).toBeInTheDocument();
+    expect(within(banner).getByText("No response")).toBeInTheDocument();
+    expect(within(banner).queryByText(/HTTP 0/)).not.toBeInTheDocument();
+  });
+
+  it("tells a payload the seam refused from an endpoint that never answered", () => {
+    // Not an outage: every endpoint replied and what came back was something this dashboard
+    // could not believe. Wording it as an outage would send a reader to check a service that is
+    // up. The code and the offending draw are the whole content of that distinction, and
+    // `useCourtPerformance` used to flatten both into one sentence.
+    renderAt("/", { performance: refused });
+
+    const banner = screen.getByRole("alert");
+
+    expect(within(banner).getByText("MALFORMED_COURT_DATA")).toBeInTheDocument();
+    expect(within(banner).getByText(/unreadable id/i)).toBeInTheDocument();
+    expect(within(banner).getByText(/every endpoint answered/i)).toBeInTheDocument();
+  });
+
+  it("names one fault once, however many channels carry it", () => {
+    // A refused payload arrives as both `failure` and a flattened `error`, and a failed dispute
+    // read propagates into `performance.error` too. Each would otherwise be listed twice, and
+    // two entries read as two things having gone wrong.
+    renderAt("/", { performance: refused });
+
+    expect(within(screen.getByRole("alert")).getAllByText("kleros-v2-coreneo")).toHaveLength(1);
+  });
+
+  it("raises the banner when two reads that both succeeded landed at different moments", () => {
+    // The case with no error anywhere. react-query holds the draws for a minute, so a dispute
+    // created between the two reads joins a fresh list to draws that could not have mentioned it.
+    // Nothing failed and part of the page still could not be read — and without this the rows go
+    // Unknown and the tiles say "Partial" while the top of the page stays silent.
+    renderAt("/", {
+      disputes: disputesWithNewcomer,
+      performance: { ...staleDraws, error: null },
+    });
+
+    const banner = screen.getByRole("alert");
+
+    expect(within(banner).getByText("Stale read")).toBeInTheDocument();
+    expect(
+      within(banner).getByText(/created after the draws on this page were last read/i),
+    ).toBeInTheDocument();
+  });
+
+  it("says the same failure twice: at the top of the page, and where the figures are", () => {
+    // The criterion, and the reason the banner is not enough by itself — a reader who has
+    // scrolled to the matrix has left it behind.
+    renderAt("/", { performance: staleDraws });
+
+    expect(screen.getByRole("alert")).toBeInTheDocument();
+    expect(screen.getByText(/this matrix may be incomplete or out of date/i)).toBeInTheDocument();
+  });
+
+  it("labels the aggregates partial rather than letting the numerals speak for a short read", () => {
+    renderAt("/", { disputes: disputesWithNewcomer, performance: staleDraws });
+
+    expect(screen.getByText(/^Partial\./)).toBeInTheDocument();
+    expect(screen.getByText(/never as zero/i)).toBeInTheDocument();
+    expect(
+      screen.getByRole("heading", { name: /reveal latency · .* · partial/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not call the totals partial over a source none of them reads", () => {
+    // The four tiles and the strip are read entirely from the core subgraph. A dispute whose
+    // template simply does not come back is normal and not an error, so labelling every figure
+    // partial over it would be a caveat that is plainly false — and a reader who checks one and
+    // finds it baseless stops checking the ones that are not. The banner still names the
+    // shortfall; the figures it does not touch stay unqualified.
+    renderAt("/", {
+      disputes: {
+        ...disputes,
+        titles: { expected: 16, resolved: 13, isLoading: false, readAt: READ_AT },
+      },
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/dispute subjects could not be read/i);
+    expect(screen.queryByText(/^Partial\./)).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /· partial/i })).not.toBeInTheDocument();
+  });
+
+  it("does not call a commit column measured a minute ago unmeasured", () => {
+    // react-query keeps the commitments it holds when a refetch fails, so an Arbitrum outage
+    // usually arrives over a full column of real figures — and CLAUDE.md says arb1 rate-limits
+    // and surfaces it as exactly this kind of opaque error. Saying "no commit latency below is a
+    // measurement" there is false about every one of them.
+    renderAt("/", {
+      performance: { ...measured, commitError: new Error("UnknownRpcError") },
+    });
+
+    const banner = screen.getByRole("alert");
+
+    expect(within(banner).getByText(/could not be re-read from arbitrum/i)).toBeInTheDocument();
+    expect(
+      within(banner).queryByText(/no commit latency below is a measurement/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("still says nothing is a measurement when the commit scan never landed", () => {
+    renderAt("/", {
+      performance: { ...commitsPending, commitError: new Error("UnknownRpcError") },
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /no commit latency below is a measurement/i,
+    );
+  });
+
+  it("keeps the banner off the views that carry no figure of their own", () => {
+    // The 404 in particular must never look like a failure state: Netlify answers every unknown
+    // path with the app shell at HTTP 200, so this view is the only thing that can tell a
+    // visitor the address is wrong — and it says outright that nothing failed to load.
+    const notFound = renderAt("/nope", { performance: staleDraws });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    notFound.unmount();
+
+    renderAt("/method", { performance: staleDraws });
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("keeps the banner off the agent-juror index, which reads nothing but ENS", () => {
+    renderAt("/agent-jurors", { roster: unresolvedRoster, performance: staleDraws });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("leaves the provenance footer out of it, so one failure has one voice", () => {
+    // Ticket 15's rule, which this ticket had to be careful not to break: the footer states what
+    // the figures rest on, the banner states what is missing from them, and a reader who meets
+    // the same sentence twice stops reading either.
+    renderAt("/", { performance: staleDraws });
+
+    expect(screen.getAllByText(/do not cite these figures/i)).toHaveLength(1);
   });
 });

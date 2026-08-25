@@ -1,3 +1,4 @@
+import { SOURCES } from "../read-failure";
 import type { RawDisputeTemplate } from "./dispute-templates";
 import { postSubgraphQuery } from "./subgraph";
 
@@ -66,7 +67,7 @@ export async function fetchDisputeTemplates({
       query: TEMPLATES_QUERY,
       variables: { first: batch.length, ids: batch.map(String) },
       signal,
-      source: "Template subgraph",
+      source: SOURCES.templates,
       field: "disputeTemplates",
     });
 

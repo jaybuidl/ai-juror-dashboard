@@ -54,7 +54,13 @@ describe("fetchCourtDraws", () => {
       fetchCourtDraws(),
       fetchCommitCasts(),
     ]);
-    const result = buildCourtPerformance({ disputes, draws, commits, roster: ROSTER });
+    const result = buildCourtPerformance({
+      disputes,
+      draws,
+      commits,
+      roster: ROSTER,
+      drawsReadAt: null,
+    });
 
     if (!result.success) throw new Error(`${result.code}: ${result.message}`);
 

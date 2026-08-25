@@ -12,6 +12,7 @@ import {
   type RawDraw,
 } from "../performance/performance";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
+import { ReadFailure, SOURCES } from "../read-failure";
 import { ROSTER } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
@@ -76,6 +77,8 @@ export const disputes: DisputesView = {
   isLoading: false,
   error: null,
   readAt: READ_AT,
+  isPaused: false,
+  retry: () => {},
 };
 
 const built = buildCourtPerformance({
@@ -83,6 +86,7 @@ const built = buildCourtPerformance({
   draws: drawFixture as RawDraw[],
   commits: commitFixture as RawCommitCast[],
   roster: ROSTER,
+  drawsReadAt: null,
 });
 if (!built.success) throw new Error(`${built.code}: ${built.message}`);
 
@@ -92,14 +96,27 @@ export const measured: CourtPerformanceView = {
   isLoading: false,
   error: null,
   commitError: null,
+  failure: null,
+  readAt: READ_AT,
+  isPaused: false,
+  retry: () => {},
 };
 
 /** What the page has when the draws could not be read at all. */
 export const unmeasured: CourtPerformanceView = {
   performance: null,
   isLoading: false,
-  error: new Error("Core subgraph returned HTTP 503 Service Unavailable"),
+  error: new ReadFailure("The core subgraph returned HTTP 503 Service Unavailable", {
+    source: SOURCES.core,
+    status: "HTTP 503",
+  }),
   commitError: null,
+  failure: null,
+  // The draws never landed at all, so this page has never been complete and the banner says
+  // "Never" rather than dating it to the dispute read that did succeed.
+  readAt: null,
+  isPaused: false,
+  retry: () => {},
 };
 
 /**
@@ -116,6 +133,7 @@ const building = buildCourtPerformance({
   draws: drawFixture as RawDraw[],
   commits: null,
   roster: ROSTER,
+  drawsReadAt: null,
 });
 if (!building.success) throw new Error(`${building.code}: ${building.message}`);
 
@@ -125,6 +143,103 @@ export const commitsPending: CourtPerformanceView = {
   isLoading: false,
   error: null,
   commitError: null,
+  failure: null,
+  readAt: READ_AT,
+  isPaused: false,
+  retry: () => {},
+};
+
+/**
+ * A dispute the draw read could not have seen, and the moment that read landed.
+ *
+ * Hand-built, because no fixture here can hold one: every fixture is a single successful read,
+ * and a payload captured in one moment cannot contain a dispute that post-dates it. This is the
+ * drift `CLAUDE.md` records — react-query keeps the draws it already holds when a refetch fails,
+ * so a fresh dispute list joins an old draw read and a dispute created since arrives with no
+ * cells at all. Without the read moment those six blanks would say "not drawn".
+ *
+ * Dispute 163 was created at unix 1787340123; this one ten minutes later, in `evidence` with an
+ * all-zero timeline — exactly how disputes 167–169 arrived on the day this was written.
+ */
+const DRAWS_READ_AT = 1787340123 * 1000;
+
+const newcomer: RawDispute = {
+  id: "170",
+  disputeID: "170",
+  period: "evidence",
+  ruled: false,
+  currentRuling: "0",
+  createdAt: String(DRAWS_READ_AT / 1000 + 600),
+  lastPeriodChange: String(DRAWS_READ_AT / 1000 + 600),
+  currentRoundIndex: "0",
+  rounds: [{ id: "170-0", timeline: ["0", "0", "0", "0"] }],
+  templateId: null,
+};
+
+const driftedDisputes = [newcomer, ...(fixture as RawDispute[])];
+
+/** The court as the dispute list holds it when one dispute is newer than the draw read. */
+export const disputesWithNewcomer: DisputesView = {
+  ...disputes,
+  raw: driftedDisputes,
+  disputes: toDisputes(driftedDisputes),
+};
+
+const drifted = buildCourtPerformance({
+  disputes: driftedDisputes,
+  draws: drawFixture as RawDraw[],
+  commits: commitFixture as RawCommitCast[],
+  roster: ROSTER,
+  drawsReadAt: DRAWS_READ_AT,
+});
+if (!drifted.success) throw new Error(`${drifted.code}: ${drifted.message}`);
+
+/**
+ * What the page has when the disputes were re-read and the draws were not.
+ *
+ * Carries the draw read's failure as well as the drifted model, because the two arrive together:
+ * the reason the draws are old is that re-reading them failed.
+ */
+export const staleDraws: CourtPerformanceView = {
+  performance: drifted.data,
+  isLoading: false,
+  error: new ReadFailure("The core subgraph returned HTTP 502 Bad Gateway", {
+    source: SOURCES.core,
+    status: "HTTP 502",
+  }),
+  commitError: null,
+  failure: null,
+  // An hour older than the dispute read beside it, which is the whole shape of the drift: the
+  // banner has to date the page to *this* moment and not to the fresh half.
+  readAt: READ_AT - 60 * 60 * 1000,
+  isPaused: false,
+  retry: () => {},
+};
+
+/** What every view has when the browser reports no connection: no error, and no read either. */
+export const pausedDisputes: DisputesView = { ...disputes, isPaused: true };
+export const pausedPerformance: CourtPerformanceView = { ...measured, isPaused: true };
+
+/**
+ * What the page has when every endpoint answered and the seam refused what they said.
+ *
+ * Distinct from `unmeasured`, and the distinction is the point: nothing failed to arrive, so a
+ * banner wording this as an outage would send a reader to check a service that is up. The code
+ * and the draw it names are what `useCourtPerformance` used to flatten into a sentence.
+ */
+export const refused: CourtPerformanceView = {
+  performance: null,
+  isLoading: false,
+  error: new Error('MALFORMED_COURT_DATA: Draw sits in a round with an unreadable id: "163-x"'),
+  commitError: null,
+  readAt: null,
+  failure: {
+    code: "MALFORMED_COURT_DATA",
+    message: 'Draw sits in a round with an unreadable id: "163-x"',
+    details: {},
+  },
+  isPaused: false,
+  retry: () => {},
 };
 
 export const views: DashboardRoutesProps = {

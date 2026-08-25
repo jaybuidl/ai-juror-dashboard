@@ -98,6 +98,22 @@ const Reason = styled.p`
   }
 `;
 
+/**
+ * What an aggregate says about itself when a read that feeds it failed.
+ *
+ * Ticket 13: a figure computed while a read has failed is labelled as partial everywhere it
+ * appears, and what could not be read counts as unknown rather than as zero. A total cannot say
+ * "unknown", so it stays the count that was actually taken and carries this — which is the only
+ * thing that stops four confident numerals reading as the whole court.
+ */
+const Partial = styled.p`
+  flex-basis: 100%;
+  max-width: 68ch;
+  font: ${({ theme }) => theme.typeBodySm};
+  font-feature-settings: ${({ theme }) => theme.featureNumeric};
+  color: ${({ theme }) => theme.stateFail};
+`;
+
 const Nothing = styled.p`
   max-width: 68ch;
   font: ${({ theme }) => theme.typeBodySm};
@@ -131,7 +147,14 @@ function StatTile({
   );
 }
 
-export function StatTiles({ totals }: { totals: CourtTotals | null }) {
+export function StatTiles({
+  totals,
+  partial = false,
+}: {
+  totals: CourtTotals | null;
+  /** True when a read behind these figures failed. See `Partial`. */
+  partial?: boolean;
+}) {
   if (totals === null) {
     // No zeros. A `0` here would be a claim about the court that nobody measured, and four of
     // them under a hero would read as a court that has held nothing.
@@ -170,6 +193,21 @@ export function StatTiles({ totals }: { totals: CourtTotals | null }) {
             : `Median reveal · ${latency.seconds.length} draws`
         }
       />
+      {(partial || totals.unreadDisputes.length > 0) && (
+        <Partial role="status">
+          Partial. {figuresMissing(totals)} These are counts of what was read, and what was not read
+          counts as unknown — never as zero.
+        </Partial>
+      )}
     </Row>
   );
+}
+
+/** Which half of the shortfall to name: the rows that are known missing, or the read at large. */
+function figuresMissing(totals: CourtTotals): string {
+  const unread = totals.unreadDisputes.length;
+  if (unread === 0) {
+    return "A source behind these figures could not be read, so every one of them is short by an amount nobody measured.";
+  }
+  return `${unread === 1 ? "Dispute" : "Disputes"} ${totals.unreadDisputes.join(", ")} ${unread === 1 ? "is" : "are"} not counted in any figure above: ${unread === 1 ? "its draws were" : "their draws were"} never read.`;
 }

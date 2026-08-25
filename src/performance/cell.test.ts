@@ -88,11 +88,15 @@ describe("revealFigureOf", () => {
     }
   });
 
-  it("reads a reveal with no moment recorded as unknown, not as missed and not as a dash", () => {
+  it("reads a reveal with no moment recorded as undated, not as missed and not as a dash", () => {
     // A draw that voted but whose justification is absent: it acted, and the record cannot say
     // when. Saying "Missed" would blame it; saying "—" would claim it has not acted yet.
+    //
+    // "Not dated" and not "Unknown": ticket 13 gave that word to the unread row, and this is a
+    // different thing — the chain's record is thin, not this dashboard's read. It keeps pending
+    // ink for the same reason, because nothing here failed.
     expect(revealFigureOf(draw({ revealLatencySeconds: null }))).toEqual({
-      text: "Unknown",
+      text: "Not dated",
       tone: "pending",
     });
   });
@@ -100,13 +104,14 @@ describe("revealFigureOf", () => {
 
 describe("commitFigureOf", () => {
   it("reads a measured latency as a figure, in the same unit as the reveal", () => {
-    expect(commitFigureOf(draw())).toEqual({ text: "6m 36s", tone: "value" });
+    expect(commitFigureOf(draw(), true)).toEqual({ text: "6m 36s", tone: "value" });
   });
 
   it("reads a commitment that never came as a miss once the window has closed", () => {
     expect(
       commitFigureOf(
         draw({ state: { kind: "no-vote" }, committed: false, commitLatencySeconds: null }),
+        true,
       ),
     ).toEqual({ text: "Missed", tone: "missed" });
   });
@@ -119,11 +124,12 @@ describe("commitFigureOf", () => {
           committed: false,
           commitLatencySeconds: null,
         }),
+        true,
       ),
     ).toEqual({ text: "—", tone: "pending" });
   });
 
-  it("reads a commitment the log scan did not find as unknown, never as a miss", () => {
+  it("reads a commitment the log scan did not find as unread, never as a miss", () => {
     // This is the cross-check's face in the cell, and the reason ADR-0004 asks for one: a
     // truncating endpoint drops the log, not the commitment. Wording it "Missed" would blame
     // an agent juror that committed on time, which is the failure the whole check exists for.
@@ -136,16 +142,31 @@ describe("commitFigureOf", () => {
     ];
 
     for (const state of states) {
-      expect(commitFigureOf(draw({ state, committed: true, commitLatencySeconds: null }))).toEqual({
-        text: "Unknown",
-        tone: "pending",
-      });
+      expect(
+        commitFigureOf(draw({ state, committed: true, commitLatencySeconds: null }), true),
+      ).toEqual({ text: "Not read", tone: "unread" });
     }
+  });
+
+  it("says a commitment is unread only once there has been a scan to come back short", () => {
+    // The trap ticket 07 found by review, one level down. Between the subgraph answering and
+    // the chain answering, every committed draw has no log — so without the scanned flag all
+    // 56 cells would come up rose reading "Not read" on every cold load, announcing a failure
+    // that has not happened. Unscanned is a step not reached, which is what a dash means.
+    const pending = draw({
+      state: { kind: "coherent" },
+      committed: true,
+      commitLatencySeconds: null,
+    });
+
+    expect(commitFigureOf(pending, false)).toEqual({ text: "—", tone: "pending" });
+    expect(commitFigureOf(pending, true)).toEqual({ text: "Not read", tone: "unread" });
   });
 
   it("never says Missed about a draw the subgraph reports as committed", () => {
     const missed = commitFigureOf(
       draw({ state: { kind: "no-vote" }, committed: true, commitLatencySeconds: null }),
+      true,
     );
 
     expect(missed.text).not.toBe("Missed");

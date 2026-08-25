@@ -9,6 +9,8 @@
  * `response.ok` check and would surface as an empty list rather than as a failure.
  */
 
+import { ReadFailure, type Source } from "../read-failure";
+
 type SubgraphResponse = {
   data?: Record<string, unknown>;
   errors?: { message: string }[];
@@ -17,9 +19,14 @@ type SubgraphResponse = {
 /**
  * One GraphQL request, with every way it can quietly succeed turned into a throw.
  *
- * `source` and `field` only shape the error messages, but they are what make a failure
- * legible: "the template subgraph rejected the query" and "the core subgraph rejected
- * the query" send whoever reads it to different places.
+ * `source` and `field` shape the error messages, and they are what make a failure legible:
+ * "the template subgraph rejected the query" and "the core subgraph rejected the query" send
+ * whoever reads it to different places.
+ *
+ * Every throw here is a `ReadFailure` rather than a plain `Error`, because ticket 13's banner
+ * has to print the source and the status separately from the sentence. The sentence stays
+ * exactly what it was — the two are the same facts, said once for a console and once for a
+ * reader who cannot open one.
  */
 export async function postSubgraphQuery<T>({
   url,
@@ -33,7 +40,7 @@ export async function postSubgraphQuery<T>({
   query: string;
   variables: Record<string, unknown>;
   signal?: AbortSignal;
-  source: string;
+  source: Source;
   field: string;
 }): Promise<T> {
   const response = await fetch(url, {
@@ -44,7 +51,10 @@ export async function postSubgraphQuery<T>({
   });
 
   if (!response.ok) {
-    throw new Error(`${source} returned HTTP ${response.status} ${response.statusText}`);
+    throw new ReadFailure(
+      `${source.label} returned HTTP ${response.status} ${response.statusText}`,
+      { source, status: `HTTP ${response.status}` },
+    );
   }
 
   const body = (await response.json()) as SubgraphResponse;
@@ -52,7 +62,13 @@ export async function postSubgraphQuery<T>({
   // A GraphQL error arrives inside a 200, so this is the only place a bad query or a
   // renamed field shows up. Absorbing it would leave the page reporting an empty read.
   if (body.errors?.length) {
-    throw new Error(`${source} rejected the query: ${body.errors[0]?.message}`);
+    throw new ReadFailure(`${source.label} rejected the query: ${body.errors[0]?.message}`, {
+      source,
+      // An HTTP 200 carrying a GraphQL error has no status worth printing — 200 is what it
+      // said, and printing it beside the words "could not be read" would read as a
+      // contradiction rather than as the trap it is.
+      status: "GraphQL error",
+    });
   }
 
   // The optional chain covers a null `data` as well as an absent field: a gateway that answers
@@ -61,7 +77,10 @@ export async function postSubgraphQuery<T>({
   // was going to show.
   const selection = body.data?.[field];
   if (selection === undefined || selection === null) {
-    throw new Error(`${source} returned no ${field} field`);
+    throw new ReadFailure(`${source.label} returned no ${field} field`, {
+      source,
+      status: `No ${field} field`,
+    });
   }
 
   return selection as T;

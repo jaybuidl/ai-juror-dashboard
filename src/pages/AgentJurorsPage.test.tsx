@@ -59,6 +59,32 @@ describe("the agent-juror index", () => {
     expect(screen.queryByText(/ENS could not be reached/i)).not.toBeInTheDocument();
   });
 
+  it("says outright that no figure anywhere depends on ENS", () => {
+    // The sentence the panel exists for. A reader who meets any caveat at all on a dashboard of
+    // measurements will assume the measurements are affected unless told they are not, and this
+    // is the one failure on this dashboard where they genuinely are not.
+    renderAt("/agent-jurors", { roster: unresolvedRoster });
+
+    expect(
+      screen.getByText(/no measurement on this dashboard depends on ens/i),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/degraded, not broken/i)).toBeInTheDocument();
+  });
+
+  it("marks the fallback on the elements it reached, not only in a panel above them", () => {
+    // The other half of the criterion: the panel says ENS is down once, and these say which
+    // names and which portraits are the consequence — on a card a reader is looking at directly.
+    renderAt("/agent-jurors", { roster: unresolvedRoster });
+
+    expect(screen.getAllByText(/from roster/i)).toHaveLength(ROSTER.length);
+  });
+
+  it("does not mark a card whose name came from ENS", () => {
+    renderAt("/agent-jurors");
+
+    expect(screen.queryByText(/from roster/i)).not.toBeInTheDocument();
+  });
+
   it("does not announce a failure while the ENS lookup is still out", () => {
     // `isResolvedFromEns` is false in both states. Keyed on that alone, every cold load
     // asserts that ENS failed for as long as mainnet takes to answer, then retracts it —
@@ -66,6 +92,10 @@ describe("the agent-juror index", () => {
     renderAt("/agent-jurors", { roster: resolvingRoster });
 
     expect(screen.queryByText(/ENS could not be reached/i)).not.toBeInTheDocument();
+    // Both channels, since ticket 13 added the second: a panel that stays quiet while the
+    // per-card marks appear would be the same premature claim in a smaller typeface.
+    expect(screen.queryByText(/degraded, not broken/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/from roster/i)).not.toBeInTheDocument();
     // The six are still there throughout: the roster is the value, not the fallback.
     for (const agentJuror of ROSTER) {
       expect(screen.getByText(agentJuror.nickname)).toBeInTheDocument();
