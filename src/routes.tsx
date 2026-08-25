@@ -2,6 +2,7 @@ import { Route, Routes } from "react-router";
 import { Shell } from "./chrome/Shell";
 import type { DisputesView } from "./disputes/useDisputes";
 import { AgentJurorsPage } from "./pages/AgentJurorsPage";
+import { DisputePage } from "./pages/DisputePage";
 import { DisputesPage } from "./pages/DisputesPage";
 import { MatrixPage } from "./pages/MatrixPage";
 import { MethodPage } from "./pages/MethodPage";
@@ -22,8 +23,9 @@ import type { RosterView } from "./roster/useRoster";
  * the three views rather than calling the hooks itself — a route table that fetched would put
  * a request behind every test that renders a link.
  *
- * Tickets 09 and 11 add `disputes/:disputeId` and `agent-jurors/:nickname` beneath the two
- * index routes, which is what the breadcrumb on those views points back to.
+ * Ticket 09 added `disputes/:disputeId` beneath the dispute index, which is what the breadcrumb
+ * on that view points back to and what keeps "Disputes" marked in the nav while you are on it.
+ * Ticket 11 adds `agent-jurors/:nickname` on the same terms.
  */
 
 export type DashboardRoutesProps = {
@@ -41,6 +43,13 @@ export function DashboardRoutes({ roster, disputes, performance }: DashboardRout
           element={<MatrixPage roster={roster} disputes={disputes} performance={performance} />}
         />
         <Route path="disputes" element={<DisputesPage disputes={disputes} />} />
+        {/* Nested under the index rather than beside it, so the breadcrumb's parent and the
+            URL's parent are the same thing. `DisputePage` reads the id from the path and does
+            its own per-dispute read; everything else it renders is already held above. */}
+        <Route
+          path="disputes/:disputeId"
+          element={<DisputePage roster={roster} disputes={disputes} performance={performance} />}
+        />
         <Route path="agent-jurors" element={<AgentJurorsPage roster={roster} />} />
         <Route path="method" element={<MethodPage />} />
         {/* Netlify answers every unknown path with the app shell at HTTP 200, so this is the

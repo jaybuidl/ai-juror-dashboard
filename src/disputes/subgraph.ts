@@ -19,30 +19,34 @@ type SubgraphResponse = {
 /**
  * One GraphQL request, with every way it can quietly succeed turned into a throw.
  *
- * `source` and `field` shape the error messages, and they are what make a failure legible:
- * "the template subgraph rejected the query" and "the core subgraph rejected the query" send
- * whoever reads it to different places.
+ * Returns the whole `data` object rather than one selection, which is what a document with
+ * several root fields needs — ticket 09's per-dispute read asks for the dispute, its evidence
+ * group and its draws at once, and each of those can legitimately be absent on its own. Use
+ * `postSubgraphQuery` for the ordinary single-selection case; it is this with the one check
+ * that field is present.
+ *
+ * `source` shapes the error messages, and it is what makes a failure legible: "the template
+ * subgraph rejected the query" and "the core subgraph rejected the query" send whoever reads
+ * it to different places.
  *
  * Every throw here is a `ReadFailure` rather than a plain `Error`, because ticket 13's banner
  * has to print the source and the status separately from the sentence. The sentence stays
  * exactly what it was — the two are the same facts, said once for a console and once for a
  * reader who cannot open one.
  */
-export async function postSubgraphQuery<T>({
+export async function postSubgraphDocument({
   url,
   query,
   variables,
   signal,
   source,
-  field,
 }: {
   url: string;
   query: string;
   variables: Record<string, unknown>;
   signal?: AbortSignal;
   source: Source;
-  field: string;
-}): Promise<T> {
+}): Promise<Record<string, unknown>> {
   const response = await fetch(url, {
     method: "POST",
     headers: { "content-type": "application/json" },
@@ -71,14 +75,40 @@ export async function postSubgraphQuery<T>({
     });
   }
 
-  // The optional chain covers a null `data` as well as an absent field: a gateway that answers
-  // `{"data": null}` with no `errors` array is off-spec but real, and letting that through hands
-  // the caller a null it then reads a field off — a TypeError in place of the message the page
-  // was going to show.
-  const selection = body.data?.[field];
+  // A gateway that answers `{"data": null}` with no `errors` array is off-spec but real, and
+  // letting that through hands the caller a null it then reads a field off — a TypeError in
+  // place of the message the page was going to show.
+  if (body.data === undefined || body.data === null) {
+    throw new ReadFailure(`${source.label} returned no data`, { source, status: "No data" });
+  }
+
+  return body.data;
+}
+
+/**
+ * One GraphQL request whose answer is a single selection, which is every read but ticket 09's.
+ *
+ * `field` is both what to return and what to complain about: a selection that came back
+ * `undefined` or `null` is a read that did not answer the question it was asked, and the
+ * message names it so the console says which.
+ */
+export async function postSubgraphQuery<T>({
+  field,
+  ...request
+}: {
+  url: string;
+  query: string;
+  variables: Record<string, unknown>;
+  signal?: AbortSignal;
+  source: Source;
+  field: string;
+}): Promise<T> {
+  const data = await postSubgraphDocument(request);
+
+  const selection = data[field];
   if (selection === undefined || selection === null) {
-    throw new ReadFailure(`${source.label} returned no ${field} field`, {
-      source,
+    throw new ReadFailure(`${request.source.label} returned no ${field} field`, {
+      source: request.source,
       status: `No ${field} field`,
     });
   }

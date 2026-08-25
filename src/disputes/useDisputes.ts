@@ -46,6 +46,15 @@ export type DisputesView = DisputeListView & {
   isPaused: boolean;
   /** Read the court again, for the banner's retry. Clears the notice by succeeding. */
   retry: () => void;
+  /**
+   * The whole template behind one dispute, or `undefined` where none resolved.
+   *
+   * Beside `slotsFor` rather than instead of it. `slotsFor` is the *row's* two fields and the
+   * list has no use for the rest; ticket 09's view needs the question the panel was asked and
+   * the names of the choices it could pick, and reconstructing a template from the two strings
+   * a row uses would quietly drop both — which is what the first cut of that view did.
+   */
+  templateFor: (dispute: Dispute) => DisputeTemplate | undefined;
 };
 
 /** What every dispute looks up against until the titles arrive, or if they never do. */
@@ -172,5 +181,6 @@ export function useDisputes(): DisputesView {
 
       return { title: template?.title, category: template?.category };
     },
+    templateFor: (dispute) => templateFor(templates.data ?? NO_TEMPLATES, dispute),
   };
 }

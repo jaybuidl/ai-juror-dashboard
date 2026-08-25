@@ -82,6 +82,15 @@ const PERSISTED_QUERIES: readonly string[] = [
   "courtDisputes",
   "courtDraws",
   "commitCasts",
+  // Ticket 09's `disputeDetail` is **not** here, and it answered for itself first. Its value
+  // is a raw payload that survives JSON, and a failed read of it is a failed query rather than
+  // a successful one — so it passes both of the questions above. It is left out on a third
+  // ground the others did not raise: **size**. It carries the justification prose, which is
+  // 124 KB across the court today and grows with every draw, and it is keyed per dispute, so
+  // persisting it would accumulate one entry per dispute a reader ever opened inside a cache
+  // that is rewritten whole every five seconds while the court is live. The read is one round
+  // trip against a keyless endpoint for one dispute; the cache is not the place for it.
+  //
   // Added when ticket 08 met this list, which is the question that list exists to be asked.
   // `RawCourtParameters[]` is a raw payload of plain numbers — no Map, no bigint, no Date — and
   // `toRegimes`/`windowsFor` re-derive from it inside the pure seam on every render, so it is

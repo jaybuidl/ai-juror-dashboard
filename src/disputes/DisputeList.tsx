@@ -1,4 +1,5 @@
 import { Fragment, type ReactNode } from "react";
+import { Link } from "react-router";
 import styled from "styled-components";
 import { Notice } from "../chrome/Failure";
 import { type Tone, toneInk, toneLine } from "../styles/tones";
@@ -70,7 +71,18 @@ const Row = styled.li`
   border-bottom: ${({ theme }) => theme.borderHairline};
 `;
 
-const DisputeId = styled.span`
+/*
+ * The row's identity, and the way into the dispute itself.
+ *
+ * A link on the ID rather than on the title, because every row has an ID and not every row has
+ * a title: a dispute whose template did not resolve, or never had one, would otherwise be the
+ * one row a reader could not open. Ticket 04 built a counted notice precisely so an untitled
+ * row stays a first-class row, and an unreachable one would undo that.
+ *
+ * One link per row. Making the title a second link to the same place would give a screen-reader
+ * user two indistinguishable destinations on every row of a list forty rows long.
+ */
+const DisputeId = styled(Link)`
   grid-column: 1;
   grid-row: 1;
   font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
@@ -78,7 +90,17 @@ const DisputeId = styled.span`
   /* Tabular figures so the column of IDs reads as a column, not as ragged text. */
   font-variant-numeric: tabular-nums;
   font-weight: 600;
-  color: ${({ theme }) => theme.textMeta};
+  color: ${({ theme }) => theme.accent};
+  text-decoration: none;
+
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.focusRing};
+    outline-offset: 3px;
+  }
 `;
 
 /*
@@ -293,7 +315,14 @@ export function DisputeRow({
 
   return (
     <Row as={as}>
-      <DisputeId>{dispute.id}</DisputeId>
+      {/* `title` and deliberately not `aria-label`. An `aria-label` here would be the link's
+          accessible name *and* the only thing it contributed to the name of the element around
+          it — which in the matrix is a `rowheader`, whose name is designed to start with the
+          dispute ID. Naming the link "Dispute 163" renamed 27 matrix rows as a side effect.
+          The text content is the name; the tooltip is the extra context. */}
+      <DisputeId to={`/disputes/${dispute.id}`} title={`Dispute ${dispute.id}`}>
+        {dispute.id}
+      </DisputeId>
       {/* Always rendered, empty or not — see `Title`. An empty one holds the line so the
           row does not change height when a title arrives or fails to. */}
       <Title title={titleText}>{isFilled(slots.title) ? slots.title : null}</Title>

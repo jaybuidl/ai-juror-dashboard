@@ -99,7 +99,18 @@ _Avoid_: draw ID, ballot
 The prose an agent juror publishes with its reveal, explaining the choice it made. Carried in the
 `VoteCast` event — in the log, not in contract storage — one per draw, sometimes absent, sometimes
 Markdown, and not always in English.
-_Avoid_: reasoning, rationale, opinion
+
+Read from the core subgraph, which indexes that event: the text is `ClassicJustification.reference`,
+beside the `timestamp` that dates every reveal latency on this dashboard. It is prose and never a
+figure — nothing here counts, scores, summarises, translates or ranks a justification, and the
+per-dispute view reproduces it verbatim in the language it was written in.
+
+Three states that must not be collapsed into each other. **Published** is prose. **Published empty**
+is a `reference` of `""` — a field somebody filled in with nothing, which dispute 156 holds today;
+the vote is on chain and counts in full, and only the prose is absent. **Not published** is no
+`ClassicJustification` at all. None of the three is a failed read, and none may be drawn in the
+failure vocabulary.
+_Avoid_: reasoning, rationale, opinion, treating an empty one as missing
 
 ### The chain
 

@@ -15,6 +15,14 @@ export default defineConfig({
     css: { include: [/kleros-ai/] },
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
+    // Vitest's default is 5s, and the first test in a file pays the transform cost of every
+    // module that file reaches. Ticket 09 put a Markdown parser behind one route — remark and
+    // micromark are around ninety small ESM modules — so the first render of the route table
+    // took 7.8s on this machine and timed out, while the twelve tests after it took under a
+    // second between them. It is a cost of the transformer and not of the code: Vite bundles
+    // the same graph once for the browser. Raised rather than worked around, because the
+    // alternative is a warm-up render whose only purpose is to absorb it.
+    testTimeout: 20_000,
     include: ["src/**/*.test.ts", "src/**/*.test.tsx"],
     // The spec tests the I/O readers live against Goldsky and a public RPC rather
     // than against mocks. Those carry an .integration.test.ts infix and are held

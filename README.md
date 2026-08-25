@@ -11,16 +11,27 @@ dashboard's job.
 ## Status
 
 **The matrix is live, and it now has a dashboard around it.** This repository contains the
-application shell, the deployment pipeline, the Kleros ×AI visual system, and five routes under one
+application shell, the deployment pipeline, the Kleros ×AI visual system, and six routes under one
 piece of chrome: the matrix at `/` — one row per dispute, headed by what that dispute is actually
 about, one column per agent juror, each cell carrying that draw's commit latency, its reveal latency
 and whether it voted with the dispute's final ruling — plus the court's totals and latency
-distribution above it, a dispute index at `/disputes`, the six agent jurors at `/agent-jurors`, how
-everything is measured at `/method`, and a 404 view behind them. Every view carries the same nav,
-the same read-only statement and a footer stating the provenance of what is above it. Three
-measures, and no more — per-agent-juror summaries and rewards are still unread. Each page names its
-own gaps outright, because a public page whose figures may be cited must never let "not built" look
-like "no results".
+distribution above it, a dispute index at `/disputes`, one dispute read whole at `/disputes/:id`,
+the six agent jurors at `/agent-jurors`, how everything is measured at `/method`, and a 404 view
+behind them. Every view carries the same nav, the same read-only statement and a footer stating the
+provenance of what is above it. Three measures, and no more — per-agent-juror summaries and rewards
+are still unread. Each page names its own gaps outright, because a public page whose figures may be
+cited must never let "not built" look like "no results".
+
+**A dispute's own page is where the experiment is legible.** It carries the question the panel was
+asked, a ruling card giving the vote count for every choice — including choice 0 and any choice
+nobody picked — a timeline of the four periods as a configured window beside how long each actually
+ran, and every panel member's published reasoning side by side, in roster order, at equal width.
+Coherence never reorders those columns: a diverged reading keeps its position and is never sorted
+last. Justifications are reproduced verbatim in the language they were written in, rendered as
+GitHub-flavoured Markdown with **raw HTML disabled at the parser** — deliberately stricter than the
+Kleros court frontend, which enables it and sanitises afterwards — and a link inside one warns
+before it takes you anywhere. A justification published empty says so in its own words and is never
+drawn as a failed read.
 
 Commit latency is the one figure not read from a subgraph: it comes from `CommitCast` logs on an
 Arbitrum RPC, because the subgraph records only *whether* a juror committed and never *when*. Every

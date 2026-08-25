@@ -213,6 +213,7 @@ function medianOfSeconds(seconds: readonly number[]): number | undefined {
         commitLatencySeconds: value * 2,
         committed: true,
         voteCount: 1,
+        choices: [1],
       },
     ],
     read: true,

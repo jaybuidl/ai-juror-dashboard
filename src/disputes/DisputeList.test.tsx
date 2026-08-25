@@ -1,4 +1,5 @@
 import { render, screen, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
 import { ThemeProvider } from "styled-components";
 import { describe, expect, it } from "vitest";
 import { theme } from "../styles/theme";
@@ -12,7 +13,11 @@ const disputes = toDisputes(fixture as RawDispute[]);
 function renderList(view: Partial<Parameters<typeof DisputeList>[0]> = {}) {
   return render(
     <ThemeProvider theme={theme}>
-      <DisputeList disputes={disputes} isLoading={false} error={null} {...view} />
+      {/* Ticket 09 made each row's ID a link into that dispute's own view, so the list now
+          needs a router in scope. It is the only reason one is here. */}
+      <MemoryRouter>
+        <DisputeList disputes={disputes} isLoading={false} error={null} {...view} />
+      </MemoryRouter>
     </ThemeProvider>,
   );
 }
@@ -104,17 +109,19 @@ describe("DisputeList", () => {
 
     render(
       <ThemeProvider theme={theme}>
-        <DisputeList
-          disputes={[dispute]}
-          isLoading={false}
-          error={null}
-          slotsFor={() => ({
-            title: "Missing Attribution in a Commissioned Illustration",
-            category: "Licensing",
-            panel: "Panel 4",
-            flag: "Lone panel",
-          })}
-        />
+        <MemoryRouter>
+          <DisputeList
+            disputes={[dispute]}
+            isLoading={false}
+            error={null}
+            slotsFor={() => ({
+              title: "Missing Attribution in a Commissioned Illustration",
+              category: "Licensing",
+              panel: "Panel 4",
+              flag: "Lone panel",
+            })}
+          />
+        </MemoryRouter>
       </ThemeProvider>,
     );
 
@@ -133,12 +140,14 @@ describe("DisputeList", () => {
 
     render(
       <ThemeProvider theme={theme}>
-        <DisputeList
-          disputes={[dispute]}
-          isLoading={false}
-          error={null}
-          slotsFor={() => ({ title: null, category: "", panel: undefined, flag: null })}
-        />
+        <MemoryRouter>
+          <DisputeList
+            disputes={[dispute]}
+            isLoading={false}
+            error={null}
+            slotsFor={() => ({ title: null, category: "", panel: undefined, flag: null })}
+          />
+        </MemoryRouter>
       </ThemeProvider>,
     );
 

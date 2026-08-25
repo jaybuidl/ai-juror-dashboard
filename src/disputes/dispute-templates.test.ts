@@ -18,6 +18,8 @@ describe("toDisputeTemplates", () => {
     expect(templates.get(161)).toEqual({
       title: "Wrong Artistic Style in AI-Generated Painting",
       category: "Image Generation",
+      question: "",
+      answers: [],
     });
   });
 
@@ -33,21 +35,38 @@ describe("toDisputeTemplates", () => {
     // Dispute 159's template does exactly this today: `category` is present and empty.
     const templates = toDisputeTemplates([raw("170", { title: "A title", category: "" })]);
 
-    expect(templates.get(170)).toEqual({ title: "A title", category: "" });
+    expect(templates.get(170)).toEqual({
+      title: "A title",
+      category: "",
+      question: "",
+      answers: [],
+    });
   });
 
   it("treats a missing field as absent rather than as the string 'undefined'", () => {
     const templates = toDisputeTemplates([raw("161", { title: "Only a title" })]);
 
-    expect(templates.get(161)).toEqual({ title: "Only a title", category: "" });
+    expect(templates.get(161)).toEqual({
+      title: "Only a title",
+      category: "",
+      question: "",
+      answers: [],
+    });
   });
 
   it("treats a field that is not a string as absent", () => {
     // Nothing validates templateData before it is published, so a number or an object
     // in either slot is a shape this has to survive rather than render.
-    const templates = toDisputeTemplates([raw("161", { title: 42, category: { name: "x" } })]);
+    const templates = toDisputeTemplates([
+      raw("161", { title: 42, category: { name: "x" }, question: [], answers: "0x1" }),
+    ]);
 
-    expect(templates.get(161)).toEqual({ title: "", category: "" });
+    expect(templates.get(161)).toEqual({
+      title: "",
+      category: "",
+      question: "",
+      answers: [],
+    });
   });
 
   it("collapses the whitespace inside a title to keep it one line", () => {
@@ -73,6 +92,93 @@ describe("toDisputeTemplates", () => {
     const templates = toDisputeTemplates([raw("161", null), raw("163", [1, 2]), raw("165", 42)]);
 
     expect(templates.size).toBe(0);
+  });
+
+  it("reads the question the panel was actually asked", () => {
+    const templates = toDisputeTemplates([
+      raw("163", {
+        title: "Alleged Plagiarism in an Original Commissioned Article",
+        question: "Did the seller's delivered work substantially comply?",
+      }),
+    ]);
+
+    expect(templates.get(163)?.question).toBe(
+      "Did the seller's delivered work substantially comply?",
+    );
+  });
+
+  it("reads the named choices, turning each hex id into its choice number", () => {
+    // The live shape, from template 163: the id is hex with the prefix, and the choice
+    // number is what the chain's `currentRuling` will be compared against.
+    const templates = toDisputeTemplates([
+      raw("163", {
+        answers: [
+          { id: "0x1", title: "Refund the buyer", description: "…" },
+          { id: "0x2", title: "Pay the seller", description: "…" },
+        ],
+      }),
+    ]);
+
+    expect(templates.get(163)?.answers).toEqual([
+      { choice: 1, title: "Refund the buyer" },
+      { choice: 2, title: "Pay the seller" },
+    ]);
+  });
+
+  it("orders the choices by number rather than by how the template listed them", () => {
+    const templates = toDisputeTemplates([
+      raw("163", {
+        answers: [
+          { id: "0x2", title: "Second" },
+          { id: "0xa", title: "Tenth" },
+          { id: "0x1", title: "First" },
+        ],
+      }),
+    ]);
+
+    expect(templates.get(163)?.answers.map((answer) => answer.choice)).toEqual([1, 2, 10]);
+  });
+
+  it("drops an answer whose id it cannot read, and keeps the rest", () => {
+    // A mis-parsed id would put one choice's name against another choice's votes, which is
+    // worse on a ruling card than no name at all. Nothing validates this data before it is
+    // published, so every one of these is a shape to survive.
+    const templates = toDisputeTemplates([
+      raw("163", {
+        answers: [
+          { id: "1", title: "Decimal" },
+          { id: 2, title: "Not a string" },
+          { id: "0xzz", title: "Not hex" },
+          { title: "No id at all" },
+          "not an object",
+          null,
+          { id: "0x3", title: "Kept" },
+        ],
+      }),
+    ]);
+
+    expect(templates.get(163)?.answers).toEqual([{ choice: 3, title: "Kept" }]);
+  });
+
+  it("keeps the first of two answers claiming the same choice", () => {
+    const templates = toDisputeTemplates([
+      raw("163", {
+        answers: [
+          { id: "0x1", title: "First" },
+          { id: "0x1", title: "Second" },
+        ],
+      }),
+    ]);
+
+    expect(templates.get(163)?.answers).toEqual([{ choice: 1, title: "First" }]);
+  });
+
+  it("reads an answer with no title as a choice that is named nothing", () => {
+    // Distinct from an answer that was dropped: this choice exists on the ballot and the
+    // ruling card must still list it and its votes. It simply has no words to print.
+    const templates = toDisputeTemplates([raw("163", { answers: [{ id: "0x1" }] })]);
+
+    expect(templates.get(163)?.answers).toEqual([{ choice: 1, title: "" }]);
   });
 
   it("skips a template whose id is not a canonical decimal", () => {

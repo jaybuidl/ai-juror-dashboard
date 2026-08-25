@@ -5,7 +5,7 @@ on two dimensions: **speed** (commit and reveal latency) and **coherence** (voti
 ruling).
 
 **Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01, 02, 03, 04,
-05, 07, 08, 12, 13, 14 and 15 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a
+05, 07, 08, 09, 12, 13, 14 and 15 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a
 `netlify.toml`
 that is the single source of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted
 webfonts, and the dispute matrix — one row per dispute, headed by that dispute's own title and
@@ -13,7 +13,12 @@ category, one column per agent juror, each cell carrying that draw's commit late
 latency and whether it voted with the final ruling. Ticket 15 put chrome and routes around it: five
 views under one shell — the matrix and the court's totals at `/`, a dispute index, the six agent
 jurors by nickname and avatar at `/agent-jurors`, `/method`, and a 404 — each carrying the same nav,
-the same read-only statement, and a footer stating the provenance of what is above it. CI exists
+the same read-only statement, and a footer stating the provenance of what is above it. Ticket 09
+added the sixth, at `/disputes/:id`: one dispute read whole — its question, its ruling card with a
+vote count for every choice including the ones nobody picked, a timeline of the four periods as two
+absolute durations each, and every panel member's published reasoning side by side in roster order,
+Markdown rendered with raw HTML off at the parser and a warning before any link in it takes you
+away. CI exists
 too — `.github/workflows/ci.yml`, added as toolchain upkeep rather than as a ticket, so do not
 propose it again. Three measures are read and no more: per-agent-juror marginals (06) and rewards
 (10) are still unread, and the caveat the matrix view carries says so outright rather than leaving a
@@ -33,7 +38,11 @@ reads somewhere to fail out loud: two tiers, decided by whether a failure costs 
 label, composed per view as `Failures` and rendered by `View` the way the footer is — a rose
 blocking banner naming the source, the status and how long ago the page was last read whole, and an
 amber degraded panel for ENS, the one documented exception. With it came the sixth cell state,
-`?` / **Unknown** / "Not read", for a dispute whose draws were never read at all.
+`?` / **Unknown** / "Not read", for a dispute whose draws were never read at all. Ticket 09 then
+added the first read scoped to *one* dispute rather than to the court (`dispute-detail.ts`, its
+subgraph reader and `useDisputeDetail`) — the ballot, the evidence count and the justification prose
+— and with it the three states a justification can be in, which `CONTEXT.md` now defines: published,
+published **empty**, and never published. None of the three is a failed read.
 The design work behind it (glossary, seven ADRs, a spec, eighteen tickets) came out of a full
 grilling session and a later pass that rebuilt the tracker on the finished design — ADR-0007 is the
 one that came from implementation rather than design, and it overrode the spec. Start by reading, not by
@@ -307,6 +316,60 @@ Things that cost real effort to discover and are easy to get wrong again:
   `PERSISTED_MODEL_VERSION` busts the cache and `src/persistence.test.ts` pins those three shapes
   so that changing one fails a test naming the constant to bump. It is only a guard if the shapes
   stay pinned.
+- **The deployed subgraph carries no link from a dispute to its evidence.** `Dispute` has no
+  `evidenceCount` and `ClassicEvidence` has no `dispute` — only an `evidenceGroup`, whose id is
+  whatever the arbitrable passed as `_evidenceGroupID`. The mapping in `kleros-v2/subgraph` today
+  *does* put `evidenceCount` on the dispute and `dispute` on the evidence; that is a later version
+  than the v0.17.2 deployment answering the query, which is the same shape as the `_eligibility`
+  trap — **the source in the monorepo is not what is answering**. So ticket 09's evidence count
+  rests on an assumption: that court 34's one arbitrable
+  (`0xb5526d022962a1fff6ed32c93e8b714c901f4323`) uses the core dispute id as its evidence group id.
+  Verified across all 31 disputes on 2026-08-25 — every one has a group, and all 33 submissions
+  fall inside their own dispute's evidence period — and guarded at runtime by comparing
+  `externalDisputeId` against `disputeID`, so a mismatch renders "Submissions not read" rather than
+  somebody else's count. `dispute-detail.integration.test.ts` re-checks both live. Also:
+  `nextEvidenceIndex` **is** the submission count despite its name, and is read in preference to
+  counting the entities because a counter cannot come back short and a paged list can.
+- **A disabled react-query query is `pending` for ever, and that is the fourth face of the
+  "flag that is false while a read is in flight" trap.** `useQuery({enabled: false})` leaves
+  `status: "pending"` with no data and never resolves, so `isPending` is true for the whole life
+  of a page whose read was never *started*. Ticket 09 hit it on `/disputes/latency`: the view
+  correctly said the address names nothing while the footer permanently claimed the ballot was
+  "still being read". `fetchStatus` is the half that tells them apart — `"idle"` for a query
+  nobody asked, `"fetching"` for one in flight — and the flag a view consumes must be
+  `isPending && fetchStatus !== "idle"`. As with `RosterView`, the fixture hid it by hard-coding
+  the flag.
+- **A dispute id is global across every court on the core subgraph.** `dispute(id: "50")` answers
+  for a dispute in some other court, so `/disputes/50` is a read that *succeeds* and finds
+  something this dashboard will never hold a row for. Two consequences ticket 09 met. The view
+  has to say "this is not court 34's" rather than falling through to "has not been read yet",
+  which would state an unread condition as a permanent fact about a read that worked. And the
+  per-dispute model runs on **whatever comes back**, before anything checks the court — so a
+  field like `numberOfChoices`, which is a `BigInt` from an arbitrable nobody here controls, is
+  attacker-influenced input in a way the court-wide reads are not. It is capped at
+  `MAX_CHOICES` for exactly that reason: filling a ballot from 0 to an eighty-digit number
+  hangs the tab with no error and nothing on screen.
+- **Deciding whether to clip and then clipping never clips.** `useIsClipped` measured
+  `scrollHeight > clientHeight` to decide whether to apply a `max-height` — and at the moment of
+  the test nothing had bounded the element, so the two were always equal and the answer was always
+  "it fits". The cap has to be applied *unconditionally* while collapsed, with the measurement
+  reporting whether the content exceeded it. Nothing failed and no test caught it: every offline
+  test runs in jsdom, where every height is zero and every branch of this is unreachable. It was
+  visible only in a browser, on dispute 154, whose 7,079-character justification ran five thousand
+  pixels down the page and stretched every column beside it. Any measure-then-constrain layout in
+  this repo has the same shape.
+- **A view that renders inside the shell cannot be tested by asserting the shell.**
+  `routes.test.tsx` checks the nav and the footer on every path in `ROUTES`, and the 404 renders
+  both — so adding `/disputes/156` to that list proved nothing about whether the route matched.
+  A route test has to assert something only that view says. This was found by opening the page,
+  not by the suite.
+- **`yarn preview` silently moves to another port when one is in use, and other worktrees are
+  using them.** Three checkouts of this repo can each be serving a `dist`, so `localhost:4173`
+  answers HTTP 200 with *a different branch's build* — the new route 404s, the bundle looks stale,
+  and it reads exactly like a routing bug. The tell is in the server's own output ("Port 4173 is in
+  use, trying another one…"), which is easy to miss when it is backgrounded. Read the port it
+  actually chose, and confirm by matching the `assets/index-*.js` hash the page requests against
+  the one on disk.
 - **A backtick inside a CSS comment ends the styled-components template.** This repo's house style
   puts long prose comments inside `styled.x\`…\`` blocks, and the moment one of them quotes an
   identifier the way the rest of the codebase does — around a filename, say — the template literal

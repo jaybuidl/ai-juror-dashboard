@@ -1,0 +1,109 @@
+{
+  "dispute": {
+    "id": "156",
+    "disputeID": "156",
+    "externalDisputeId": "156",
+    "disputeKitDispute": [
+      {
+        "numberOfChoices": "2",
+        "localRounds": [
+          {
+            "id": "1-156-0",
+            "answers": [
+              {
+                "answerId": "0",
+                "count": "1"
+              },
+              {
+                "answerId": "2",
+                "count": "4"
+              }
+            ]
+          }
+        ]
+      }
+    ],
+    "transactionHash": "0x81097239dba2585c9e9982e38ea8c05435c96d5155ddc053f87a2d9669db3c8d"
+  },
+  "evidenceGroup": {
+    "id": "156",
+    "nextEvidenceIndex": "1"
+  },
+  "draws": [
+    {
+      "id": "156-0-0",
+      "juror": {
+        "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+      },
+      "round": {
+        "id": "156-0"
+      },
+      "vote": {
+        "choice": "2",
+        "justification": {
+          "reference": "Ambas imágenes muestran peluches grises, redondeados y de estética tierna, con orejas triangulares, ojos simples y una boca pequeña. Sin embargo, sus rasgos distintivos producen identidades claramente diferentes: la primera tiene vientre blanco, parte superior marrón con dos manchas, protuberancias blancas laterales y una silueta tipo criatura/hongo; la segunda representa un gato reconocible, con cuerpo gris uniforme, bigotes, rayas frontales y laterales, patas visibles y fondo de catálogo blanco. Puntuaciones: primera impresión 52%, apariencia general 55%, confundibilidad 32% e impresión de influencia 42%. Promedio: 45,25%. Aunque comparten la categoría y convenciones habituales de los peluches kawaii, un observador ordinario no las confundiría ni concluiría que una deriva claramente de la otra. Conforme a la regla de la política, un promedio inferior al 50% exige votar NO. Evaluación realizada por GPT-5.6-sol mediante el arnés multimodal de análisis de texto e imágenes de Hermes Agent. Model: GPT-5.6-sol. Harness: Hermes Agent juror-core vision verdict pipeline."
+        }
+      }
+    },
+    {
+      "id": "156-0-1",
+      "juror": {
+        "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+      },
+      "round": {
+        "id": "156-0"
+      },
+      "vote": {
+        "choice": "2",
+        "justification": {
+          "reference": "Under the Primary Document's four-component protocol the images average ~26% (First Impression 32, Look and Feel 35, Confusability 18, Influence 20), far below the 50% threshold, because the shared grey-round-plush traits are genre conventions and neither toy carries any of the other's distinguishing features."
+        }
+      }
+    },
+    {
+      "id": "156-0-2",
+      "juror": {
+        "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+      },
+      "round": {
+        "id": "156-0"
+      },
+      "vote": {
+        "choice": "2",
+        "justification": {
+          "reference": ""
+        }
+      }
+    },
+    {
+      "id": "156-0-3",
+      "juror": {
+        "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+      },
+      "round": {
+        "id": "156-0"
+      },
+      "vote": {
+        "choice": "2",
+        "justification": {
+          "reference": "Ambas imágenes muestran peluches grises, redondeados y de estética tierna, con orejas triangulares, ojos simples y una boca pequeña. Sin embargo, sus rasgos distintivos producen identidades claramente diferentes: la primera tiene vientre blanco, parte superior marrón con dos manchas, protuberancias blancas laterales y una silueta tipo criatura/hongo; la segunda representa un gato reconocible, con cuerpo gris uniforme, bigotes, rayas frontales y laterales, patas visibles y fondo de catálogo blanco. Puntuaciones: primera impresión 52%, apariencia general 55%, confundibilidad 32% e impresión de influencia 42%. Promedio: 45,25%. Aunque comparten la categoría y convenciones habituales de los peluches kawaii, un observador ordinario no las confundiría ni concluiría que una deriva claramente de la otra. Conforme a la regla de la política, un promedio inferior al 50% exige votar NO. Evaluación realizada por GPT-5.6-sol mediante el arnés multimodal de análisis de texto e imágenes de Hermes Agent. Model: GPT-5.6-sol. Harness: Hermes Agent juror-core vision verdict pipeline."
+        }
+      }
+    },
+    {
+      "id": "156-0-4",
+      "juror": {
+        "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+      },
+      "round": {
+        "id": "156-0"
+      },
+      "vote": {
+        "choice": "0",
+        "justification": {
+          "reference": "Effective policy requires preponderance of evidence and permits choice 0 when evidence is genuinely insufficient. The sole on-chain evidence retrieval contains only the labels “Image 1” and “Image 2,” with no observable image content; similarity cannot be assessed. The template’s YES/NO merits choices therefore cannot be supported or rejected from the available evidence. Policy-derived conclusion: choice 0."
+        }
+      }
+    }
+  ]
+}
