@@ -77,3 +77,21 @@ cards), `../canvas/README.md` for provenance
       no mocks, covering: the vote-to-draw collapse, an absent justification, and an agent juror never drawn
 - [ ] Rows are disputes and columns are agent jurors, so the matrix grows downward as disputes
       accumulate — the density rules that take over past roughly forty rows are ticket 17, not this one
+
+## Comments
+
+**From ticket 03 (2026-08-25) — two things coherence has to agree with.**
+
+**Ruling 0 is a ruling.** Dispute 154 is genuinely `currentRuling: "0"` with `ruled: true` — refuse
+to arbitrate, which `CONTEXT.md` records as always a valid choice. It has real draws in it, and a
+juror that voted 0 there is *coherent*. Anything that treats the ruling as falsy, or filters
+disputes on a truthy `currentRuling`, will silently mark a whole panel incoherent or drop the
+dispute from the matrix. Ticket 03 words it "Refuse to arbitrate" rather than "Ruling 0"; the cell
+and any per-dispute view should agree.
+
+**A dispute has a ruling when `ruled` is true, not when its period is `execution`.** The subgraph
+reports a `currentRuling` for a dispute still in its appeal period — 164, 165 and 166 all read `1`
+while unruled — and `CONTEXT.md` is explicit that a round majority before the appeal period closes
+is a prediction, not coherence. Ticket 03's rows key on `ruled` for exactly that reason. The two
+tests agree on all 16 disputes today, so a divergence here would not show up in testing; it would
+show up as the list saying "Pending" beside a cell claiming coherence.

@@ -100,6 +100,16 @@ Things that cost real effort to discover and are easy to get wrong again:
   theme `--text-4` (`#5b5675`) is 2.68–2.91:1 across page, card and raised, and it inks the pending
   dash, the rail keys and the vote count at 9px. Consistent with the system's own readme, which
   says its values were matched by eye from screenshots. Ticket 18 owns fixing it.
+- **`Round.timeline` writes `0` for a period that has not opened yet** — and `0` is a real instant in
+  1970, one subtraction away from a latency of fifty-six years. Every dispute still in `appeal` has
+  it in the execution slot today. Parse it to null at the edge, as `src/disputes/disputes.ts` does,
+  rather than guarding at each use.
+- **Round ids are `<disputeID>-<n>` and The Graph orders `id` lexicographically**, so `151-10` sorts
+  above `151-9`. Read the index from the id suffix, never from the position a `rounds` selection
+  arrived in. Costless while every dispute has one round, and silently wrong the first time one does
+  not. The same string ordering is why dispute lists order on `disputeID` and not on `id`, and why
+  ordering happens in the model rather than the query — **ordering by `period` is rejected outright**
+  by The Graph on the `Dispute` type, so the obvious query is the broken one.
 
 ## Verified constants
 
