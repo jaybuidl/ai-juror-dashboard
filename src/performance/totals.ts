@@ -108,6 +108,44 @@ export type CourtTotals = {
    * place that prints it label itself partial.
    */
   unreadDisputes: readonly number[];
+  /**
+   * What the empty positions in the record amount to — the figures the sparsity note quotes.
+   *
+   * Here rather than reduced by whichever view is printing it, and ticket 16 is what makes that
+   * more than housekeeping: the matrix and the phone's card list are two renderings of one
+   * record, and each of them has to say that a blank means "not drawn" rather than "missing".
+   * Two reductions of one fact are two chances for a desktop and a phone to disagree about how
+   * sparse this court is, on a page that may be cited.
+   *
+   * Every figure is over the rows that were **read**. An unread row's positions are all `null`
+   * because nobody asked, and counting them as blank would fold a gap in this dashboard into the
+   * one number whose whole job is to say that blank is a fact about the court (ticket 13).
+   */
+  sparsity: Sparsity;
+};
+
+/**
+ * The empty half of the record, counted.
+ *
+ * "Position" rather than "cell" or "slot": the matrix draws one as a table cell and the phone
+ * draws it as a slot on a card, and the count is the same fact about the court either way. It is
+ * the word the design uses for the thing that stays put whichever way the record is laid out.
+ */
+export type Sparsity = {
+  /** Disputes whose draws were read. Every figure below is over these and no others. */
+  disputes: number;
+  /** One per agent juror per read dispute — what a full record would have filled. */
+  positions: number;
+  /** How many of those hold no draw. Sparsity is normal: the court draws at random. */
+  blank: number;
+  /**
+   * Agent jurors with no draw in any read dispute.
+   *
+   * A claim about the whole record, so it is `0` where there is no read row to say it about
+   * rather than six: `every` on an empty array is vacuously true, and without the guard a court
+   * whose every row was unread would report all six agent jurors as never drawn on no evidence.
+   */
+  emptyColumns: number;
 };
 
 /**
@@ -417,6 +455,27 @@ export function courtTotalsOf(
     // draws in hand for it.
     changedWindows: changedWindowsOf(rows),
     unplacedDisputes: unplacedDisputesOf(rows),
+    sparsity: sparsityOf(rows, agentJurors),
+  };
+}
+
+/** The empty positions, over the rows that were read. See `Sparsity`. */
+function sparsityOf(rows: readonly MatrixRow[], agentJurors: readonly AgentJuror[]): Sparsity {
+  const read = rows.filter((row) => row.read);
+  const positions = read.length * agentJurors.length;
+  const drawn = read.reduce(
+    (total, row) => total + row.cells.filter((cell) => cell !== null).length,
+    0,
+  );
+
+  return {
+    disputes: read.length,
+    positions,
+    blank: positions - drawn,
+    emptyColumns:
+      read.length === 0
+        ? 0
+        : agentJurors.filter((_, column) => read.every((row) => row.cells[column] === null)).length,
   };
 }
 

@@ -418,8 +418,13 @@ describe("Matrix", () => {
   it("says in the page that a blank cell is the normal case", () => {
     renderMatrix();
 
-    expect(screen.getByText(/sparsity is the normal state of this matrix/i)).toBeInTheDocument();
-    expect(screen.getByText(/one column is blank end to end/i)).toBeInTheDocument();
+    // Worded about the *record* rather than about the matrix since ticket 16, because the phone
+    // says the same sentence over a layout with no grid and no columns in it. What stays is the
+    // noun for the position itself: a cell here, a slot there, and one figure behind both.
+    expect(screen.getByText(/on the empty cells/i)).toBeInTheDocument();
+    expect(screen.getByText(/sparsity is the normal state of this record/i)).toBeInTheDocument();
+    expect(screen.getByText(/one agent juror is blank end to end/i)).toBeInTheDocument();
+    expect(screen.getByText(/cells here are blank/i)).toBeInTheDocument();
   });
 
   it("keys the legend so a first-time reader can decode a cell", () => {
@@ -896,7 +901,10 @@ describe("Matrix", () => {
       // this ticket exists to keep off a page that may be cited.
       const row = renderDrifted();
 
-      expect(within(row).getByText("Row unavailable")).toBeInTheDocument();
+      // "Draws not read" and not "Row unavailable" since ticket 16: the phone's card list
+      // fills the same slot, and a card has no row to be unavailable. It also names what is
+      // missing rather than the element that was going to hold it.
+      expect(within(row).getByText("Draws not read")).toBeInTheDocument();
       expect(within(row).queryByText(/Panel 0/)).not.toBeInTheDocument();
     });
 

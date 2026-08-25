@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ROSTER } from "../roster/agent-jurors";
-import { commitFigureOf, presentationOf, revealFigureOf } from "./cell";
+import { commitFigureOf, presentationOf, revealFigureOf, slotFigureOf } from "./cell";
 import type { Draw, DrawState } from "./performance";
 
 const AGENT_JUROR = ROSTER[0] as (typeof ROSTER)[number];
@@ -171,5 +171,67 @@ describe("commitFigureOf", () => {
     );
 
     expect(missed.text).not.toBe("Missed");
+  });
+});
+
+/**
+ * Ticket 16's one figure per slot: the latency of the most recent thing the draw did.
+ *
+ * The rule that matters is not "reveal, else commit" — it is that a reveal, once it exists,
+ * always outranks the commit, including where it is a word. These cases are the ones where
+ * those two rules give different answers.
+ */
+describe("slotFigureOf", () => {
+  it("shows the reveal on a draw that has revealed", () => {
+    expect(slotFigureOf(draw(), true)).toEqual({ text: "85s", tone: "value" });
+  });
+
+  it("shows the commit on a draw still awaiting its reveal", () => {
+    // The only case where the commit reaches a slot: a live dispute where no reveal exists yet.
+    const live = draw({ state: { kind: "live", stage: "committed" }, revealLatencySeconds: null });
+
+    expect(slotFigureOf(live, true)).toEqual({ text: "6m 36s", tone: "value" });
+  });
+
+  it("shows the reveal of a live draw that has already revealed", () => {
+    // Disputes 164–166 sat here: every vote in, no ruling, so the reveal is real and shown
+    // while coherence is not knowable. The commit would be the older of the two facts.
+    const revealed = draw({ state: { kind: "live", stage: "revealed" } });
+
+    expect(slotFigureOf(revealed, true)).toEqual({ text: "85s", tone: "value" });
+  });
+
+  it("says a draw that never revealed missed it, rather than quoting its commit", () => {
+    // The case the "reveal, else commit" reading gets wrong. This draw committed in 6m 36s and
+    // then never voted; printing that duration would report a failure to vote as an action.
+    const missed = draw({ state: { kind: "no-vote" }, revealLatencySeconds: null });
+
+    expect(slotFigureOf(missed, true)).toEqual({ text: "Missed", tone: "missed" });
+  });
+
+  it("shows a dash in pending ink for a draw that has not committed yet", () => {
+    const awaiting = draw({
+      state: { kind: "live", stage: "awaiting" },
+      revealLatencySeconds: null,
+      commitLatencySeconds: null,
+      committed: false,
+    });
+
+    // Never a blank: a blank position on a card means the agent juror was not drawn at all.
+    expect(slotFigureOf(awaiting, true)).toEqual({ text: "—", tone: "pending" });
+  });
+
+  it("does not call a commitment unread before the log scan has answered", () => {
+    const committed = draw({
+      state: { kind: "live", stage: "committed" },
+      revealLatencySeconds: null,
+      commitLatencySeconds: null,
+      committed: true,
+    });
+
+    // The `RosterView` trap, in its third form: an absence is only a failure once there has
+    // been an answer to fall short of. Unscanned is a step not reached.
+    expect(slotFigureOf(committed, false)).toEqual({ text: "—", tone: "pending" });
+    expect(slotFigureOf(committed, true)).toEqual({ text: "Not read", tone: "unread" });
   });
 });

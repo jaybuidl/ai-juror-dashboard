@@ -155,6 +155,7 @@ export function StatTiles({
   totals,
   current = null,
   partial = false,
+  narrow: isNarrow = false,
 }: {
   totals: CourtTotals | null;
   /**
@@ -168,6 +169,20 @@ export function StatTiles({
   current?: PeriodWindows | null;
   /** True when a read behind these figures failed. See `Partial`. */
   partial?: boolean;
+  /**
+   * Below the breakpoint: three tiles, not four, and the median reveal leads.
+   *
+   * `Mobile.dc.html:47-51` is the authority, and the canvas wins. A phone reader gets one
+   * glance, so the page's headline measure goes first, in the accent ink the desktop gives it,
+   * and the size of the record follows it — draws before disputes, because the draw is the unit
+   * (`CONTEXT.md`).
+   *
+   * The tile that gives way is the count of the roster that has been drawn. It is a fact about
+   * the roster rather than about the record, and `/agent-jurors` carries it in more detail than
+   * a tile can. The draws tile also drops the vote count from its label: the draw is the unit
+   * either way, and the vote count is context the desktop has the width for.
+   */
+  narrow?: boolean;
 }) {
   if (totals === null) {
     // No zeros. A `0` here would be a claim about the court that nobody measured, and four of
@@ -183,32 +198,48 @@ export function StatTiles({
   const latency = totals.revealLatency;
   const changed = totals.changedWindows;
 
+  // One definition of each tile, ordered rather than rewritten, so the phone and the desktop
+  // cannot come to print different figures under one label. Every one of them is read off the
+  // model: a literal here would still say 13 disputes a year from now, on a public page.
+  const median = (
+    <StatTile
+      key="median"
+      accent
+      figure={latency === null ? "—" : formatLatencySeconds(latency.median)}
+      label={
+        latency === null
+          ? "Median reveal · no draw has revealed"
+          : `Median reveal · ${latency.seconds.length} draws`
+      }
+      caveat={medianCaveatOf(latency, changed, current)}
+    />
+  );
+  const draws = (
+    <StatTile
+      key="draws"
+      figure={totals.draws}
+      label={
+        isNarrow ? "Draws" : `Draws · ${totals.votes} vote ${totals.votes === 1 ? "ID" : "IDs"}`
+      }
+    />
+  );
+  const disputes = <StatTile key="disputes" figure={totals.disputes} label="Disputes read" />;
+  const drawn = (
+    <StatTile
+      key="drawn"
+      figure={
+        <>
+          {totals.agentJurorsDrawn}
+          <Against>/{totals.agentJurors}</Against>
+        </>
+      }
+      label="Agent jurors drawn"
+    />
+  );
+
   return (
     <Row>
-      <StatTile figure={totals.disputes} label="Disputes read" />
-      <StatTile
-        figure={totals.draws}
-        label={`Draws · ${totals.votes} vote ${totals.votes === 1 ? "ID" : "IDs"}`}
-      />
-      <StatTile
-        figure={
-          <>
-            {totals.agentJurorsDrawn}
-            <Against>/{totals.agentJurors}</Against>
-          </>
-        }
-        label="Agent jurors drawn"
-      />
-      <StatTile
-        accent
-        figure={latency === null ? "—" : formatLatencySeconds(latency.median)}
-        label={
-          latency === null
-            ? "Median reveal · no draw has revealed"
-            : `Median reveal · ${latency.seconds.length} draws`
-        }
-        caveat={medianCaveatOf(latency, changed, current)}
-      />
+      {isNarrow ? [median, draws, disputes] : [disputes, draws, drawn, median]}
       {(partial || totals.unreadDisputes.length > 0) && (
         <Partial role="status">
           Partial. {figuresMissing(totals)} These are counts of what was read, and what was not read

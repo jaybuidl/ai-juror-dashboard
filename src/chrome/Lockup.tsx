@@ -1,5 +1,4 @@
 import styled from "styled-components";
-import { narrow } from "../styles/breakpoints";
 
 /**
  * The Kleros ×AI lockup, inline.
@@ -14,16 +13,27 @@ import { narrow } from "../styles/breakpoints";
  * this comment exists to prevent. It is somebody's trademark, not a decoration.
  */
 
-const Mark = styled.svg`
+/**
+ * The whole mark, and the wordmark alone.
+ *
+ * `Mobile.dc.html:34-36` folds the lockup to "KLEROS ×AI" without the diamond, and the naive way
+ * to do that is to set the word in Manrope. That is precisely what the comment above forbids:
+ * rebuilding somebody's trademark in type. The paths here already contain the wordmark — the
+ * first `d` is the diamond and the six after it are the letters — so the phone form is the same
+ * official artwork with the viewBox cropped to the lettering. Nothing is redrawn, retraced or
+ * reset, and the two forms cannot drift apart because there is one set of paths.
+ *
+ * The crop is generous by a few units on every side rather than tight to the glyph bounds: a
+ * viewBox that clipped the terminal of the S would be a defect nobody notices until it ships.
+ */
+const FULL_VIEW_BOX = "20.47 36.54 1353.9 346.5";
+const WORDMARK_VIEW_BOX = "488 130 894 162";
+
+const Mark = styled.svg<{ $wordmark: boolean }>`
   display: block;
   flex: none;
-  height: 26px;
-  width: 102px;
-
-  ${narrow} {
-    height: 22px;
-    width: 86px;
-  }
+  height: ${({ $wordmark }) => ($wordmark ? "15px" : "26px")};
+  width: ${({ $wordmark }) => ($wordmark ? "83px" : "102px")};
 `;
 
 /** The ×AI suffix: a dim multiplication sign and the violet AI, as the system sets it. */
@@ -45,16 +55,31 @@ const Times = styled.span`
 `;
 
 /**
- * The lockup as it sits in the nav.
+ * The lockup as it sits in the nav, whole or folded to its wordmark.
  *
- * `aria-label` carries "Kleros ×AI" and the SVG is hidden, because a screen reader announcing
- * the outline of a K is worse than one announcing nothing.
+ * `aria-label` on the wrapper carries "Kleros ×AI" and the SVG is hidden, because a screen
+ * reader announcing the outline of a K is worse than one announcing nothing. Which is also why
+ * the folded form needs no accessible treatment of its own: the name never came from the
+ * artwork.
+ *
+ * `wordmark` drops the diamond and keeps the official lettering. Below the breakpoint the nav
+ * has to fit on one line beside the read-only label and the menu button, and the diamond is the
+ * part of the mark that costs the most height for the least identification.
  */
-export function Lockup() {
+export function Lockup({ wordmark = false }: { wordmark?: boolean }) {
   return (
     <>
-      <Mark viewBox="20.47 36.54 1353.9 346.5" fill="currentColor" aria-hidden="true">
-        <path d="M134.59,36.54l195.76,8.74,79.52,176.31L298,382.58,101.16,370.15,20.47,179.08ZM278.36,138.18l-141.93,62,121.31,93.95ZM261.92,107,148.52,58.16,124.73,161ZM233.17,317.77,110,229.62l3,119.52Zm157-96.79-84-85.09L283.87,299.94ZM262,336.72,158.11,364.13,280.36,372ZM373.76,260l-91,67.76,18.11,35.38Zm-43-190.08-17.83,36.34,65.81,66.86ZM308.45,52.53,193,47.85l95.29,41.68ZM117.87,69.3,37,171.61l54.11,11.48ZM87.84,203,33.45,191.5,90,325.35Z" />
+      <Mark
+        $wordmark={wordmark}
+        viewBox={wordmark ? WORDMARK_VIEW_BOX : FULL_VIEW_BOX}
+        fill="currentColor"
+        aria-hidden="true"
+      >
+        {/* The diamond. Dropped from the wordmark rather than hidden, so the folded form is not
+            an invisible element occupying the space it was meant to save. */}
+        {!wordmark && (
+          <path d="M134.59,36.54l195.76,8.74,79.52,176.31L298,382.58,101.16,370.15,20.47,179.08ZM278.36,138.18l-141.93,62,121.31,93.95ZM261.92,107,148.52,58.16,124.73,161ZM233.17,317.77,110,229.62l3,119.52Zm157-96.79-84-85.09L283.87,299.94ZM262,336.72,158.11,364.13,280.36,372ZM373.76,260l-91,67.76,18.11,35.38Zm-43-190.08-17.83,36.34,65.81,66.86ZM308.45,52.53,193,47.85l95.29,41.68ZM117.87,69.3,37,171.61l54.11,11.48ZM87.84,203,33.45,191.5,90,325.35Z" />
+        )}
         <path d="M512,199.51h6.44L565,138.26l13.23,10.4L533.3,205.8l52.75,63.91-13.32,11.15-54.8-67H512v63.66H494.57V141.61H512Z" />
         <path d="M652.53,141.61h17.33V261.87h70.95v15.64H652.53Z" />
         <path d="M805,141.61h84.44v15.72h-67V198h55.34V213.6H822.46v48.27h67v15.64H805Z" />

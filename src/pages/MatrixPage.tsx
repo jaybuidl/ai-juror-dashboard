@@ -9,6 +9,7 @@ import { View } from "../chrome/View";
 import { DisputeList } from "../disputes/DisputeList";
 import type { DisputesView } from "../disputes/useDisputes";
 import { arbitrumSource } from "../performance/arbitrum";
+import { DisputeCards } from "../performance/DisputeCards";
 import { LatencyStrip } from "../performance/LatencyStrip";
 import { formatWindowSeconds } from "../performance/latency";
 import { Matrix } from "../performance/Matrix";
@@ -16,6 +17,7 @@ import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type FailedRead, failureOf, SOURCES } from "../read-failure";
 import { ensFallbackOf } from "../roster/ens-fallback";
 import type { RosterView } from "../roster/useRoster";
+import { narrow, useIsNarrow } from "../styles/breakpoints";
 
 /**
  * The landing view: the hero, what the court amounts to, and the matrix itself.
@@ -43,8 +45,11 @@ const Caveat = styled.section`
   box-shadow: ${({ theme }) => theme.shadowCard};
 
   /* The card's own padding sits inside the page's, so on a narrow screen the two
-     together were eating close to a third of the width. */
-  @media (max-width: 600px) {
+     together were eating close to a third of the width. At the breakpoint the whole layout
+     reduces at, since ticket 16: this was a 600px literal that pre-dated breakpoints.ts, and a
+     second number here is a second breakpoint the day either of them moves. No backticks in
+     this comment — one would close the styled template and break the file far below. */
+  ${narrow} {
     padding: ${({ theme }) => `${theme.space8} ${theme.space7}`};
   }
 `;
@@ -246,7 +251,10 @@ function failuresOf({ roster, disputes, performance }: MatrixPageProps): Failure
 }
 
 /** What this view says its figures rest on. Composed here, printed by `View`. */
-function provenanceOf({ roster, disputes, performance }: MatrixPageProps): Provenance {
+function provenanceOf(
+  { roster, disputes, performance }: MatrixPageProps,
+  narrow: boolean,
+): Provenance {
   const caveats: string[] = [];
   const measured = performance.performance;
 
@@ -308,9 +316,16 @@ function provenanceOf({ roster, disputes, performance }: MatrixPageProps): Prove
     );
   }
 
-  caveats.push(
-    "The comparison band on the latency strip is illustrative and measures no court; it is the only thing above that did not come from a read.",
-  );
+  // Only where the strip is on the page. Below the breakpoint it is not, and a footer stating the
+  // provenance of something the reader cannot see is worse than one that says nothing: this page
+  // may be cited, and the sentence would send a reader looking for a band that is not there. The
+  // strip is the only element this view drops whose absence changes what the footer may claim,
+  // because it is the only one that was never a read.
+  if (!narrow) {
+    caveats.push(
+      "The comparison band on the latency strip is illustrative and measures no court; it is the only thing above that did not come from a read.",
+    );
+  }
   // Narrowed by ticket 06, which read the summaries: what each agent juror's column header now
   // states is the same three measures aggregated down that column, over the same draws. Rewards
   // are the half that is still unread, and naming the whole list would claim an absence that has
@@ -382,6 +397,11 @@ export function MatrixPage(props: MatrixPageProps) {
   const { roster, disputes, performance } = props;
   const measured = performance.performance;
   const failures = failuresOf(props);
+  // Below the breakpoint the matrix is not rendered at all — not scaled, not scrolled sideways,
+  // not transposed into a narrower grid. `DisputeCards` replaces it, and only one of the two is
+  // ever in the DOM: a `display: none` table is still 168 cells of it on the device least able
+  // to afford them, and still there in a page a reader saves or prints.
+  const isNarrow = useIsNarrow();
   // Asked of the core subgraph specifically, because that is the only source the tiles and the
   // strip read: disputes, draws, votes and reveal latency all come from it, and none of them
   // touches the template subgraph or Arbitrum. Labelling them partial over a missing title would
@@ -390,14 +410,21 @@ export function MatrixPage(props: MatrixPageProps) {
   const partial = affects(failures, SOURCES.core);
 
   return (
-    <View provenance={provenanceOf(props)} failures={failures}>
-      <Hero />
+    <View provenance={provenanceOf(props, isNarrow)} failures={failures}>
+      <Hero narrow={isNarrow} />
       <StatTiles
         totals={measured?.totals ?? null}
         current={measured?.parameters.current ?? null}
         partial={partial}
+        narrow={isNarrow}
       />
-      <LatencyStrip latency={measured?.totals.revealLatency ?? null} partial={partial} />
+      {/* Absent below the breakpoint, and no measured figure leaves the page with it: the
+          strip's headline figure is the median reveal, which the tiles now lead with, and its
+          comparison band is illustrative by its own caption rather than a reading of any
+          court. The caveat naming that band goes with it — see `provenanceOf`. */}
+      {!isNarrow && (
+        <LatencyStrip latency={measured?.totals.revealLatency ?? null} partial={partial} />
+      )}
 
       {/* This text narrows as each measurement lands: it claimed no dispute had been
             read until ticket 03 read them, and it claimed nothing was measured until
@@ -417,12 +444,20 @@ export function MatrixPage(props: MatrixPageProps) {
               This page measures how long each agent juror took to commit its vote after the commit
               period opened, how long it took to reveal that vote after the vote period opened, and
               whether the vote matched the dispute's final ruling. Each latency is measured from its
-              own period, so the reveal figure is not the time since the commit. Each column header
-              summarises that agent juror's own draws in the same three measures. It measures
-              nothing else yet: cumulative ETH and PNK rewards have not been read, and no figure
-              here is a fraction of a period's window. Coherence is asserted only where the court
-              has ruled, a blank cell means an agent juror was not drawn rather than that it failed
-              to act, and a dispute decided by a panel of one is marked wherever it is counted.
+              own period, so the reveal figure is not the time since the commit.{" "}
+              {/* The column headers are the grid's furniture and the phone's card list has none —
+                  and a blank is a cell there and a slot here. Ticket 16's whole point was that the
+                  two layouts must not say different things about one court; a caveat card
+                  describing furniture the reader cannot see is that fault in the other
+                  direction. */}
+              {isNarrow
+                ? "Each card summarises one dispute, and each slot along its foot one agent juror's draw."
+                : "Each column header summarises that agent juror's own draws in the same three measures."}{" "}
+              It measures nothing else yet: cumulative ETH and PNK rewards have not been read, and
+              no figure here is a fraction of a period's window. Coherence is asserted only where
+              the court has ruled, a blank {isNarrow ? "slot" : "cell"} means an agent juror was not
+              drawn rather than that it failed to act, and a dispute decided by a panel of one is
+              marked wherever it is counted.
             </CaveatBody>
           </>
         ) : (
@@ -453,14 +488,19 @@ export function MatrixPage(props: MatrixPageProps) {
             // says so in the same colour. The two are the ticket's "twice" — once at the top of
             // the page, once where the missing figures are.
             <Notice $tone="rose" role="status">
-              The court could not be re-read, so this matrix may be incomplete or out of date.
+              The court could not be re-read, so{" "}
+              {isNarrow ? "these cards may be" : "this matrix may be"} incomplete or out of date.
               Nothing here should be taken as the full record.
             </Notice>
           )}
           {/* The window footnote moved inside the matrix with ticket 08, where the artboard
               puts it and where the ‡ footnote already was: it is now read from the court's own
               parameter history rather than written from what was true when ticket 15 landed. */}
-          <Matrix performance={measured} roster={roster} slotsFor={disputes.slotsFor} />
+          {isNarrow ? (
+            <DisputeCards performance={measured} roster={roster} slotsFor={disputes.slotsFor} />
+          ) : (
+            <Matrix performance={measured} roster={roster} slotsFor={disputes.slotsFor} />
+          )}
         </>
       ) : (
         <>

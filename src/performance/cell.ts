@@ -168,3 +168,28 @@ export function commitFigureOf(draw: Draw, scanned: boolean): Figure {
   if (draw.state.kind === "no-vote") return { text: "Missed", tone: "missed" };
   return { text: "—", tone: "pending" };
 }
+
+/**
+ * The one figure a phone's slot has room for: the latency of the most recent thing the draw did.
+ *
+ * A desktop cell shows both measures, one above the other. A 52pt slot shows one, so ticket 16
+ * has to choose which — and the choice is not "the reveal, falling back to the commit". It is
+ * the *last* thing that happened, which is the reveal wherever there is one and the commit only
+ * while the reveal is still ahead. On a finalised card the reveal always wins, including where
+ * it is a word rather than a duration: `Missed` is what a draw that never revealed did, and
+ * showing its commit latency instead would report an agent juror that failed to vote as one
+ * that acted in 41 seconds.
+ *
+ * Commit latency is not lost, only off the face: the card opens that dispute's own view, where
+ * ticket 09 prints both. ADR-0005 records the same move being made once already, on the agent
+ * juror's latency profile, and for the same reason — dispute 151's 8-hour commit window makes
+ * the commit the least comparable figure on the page.
+ *
+ * `scanned` is `commitCoverage.read`, and it matters here for the same reason it matters in the
+ * cell: between the subgraph's answer and Arbitrum's, every committed draw has no log yet, and
+ * a slot that read "Not read" on every cold load would announce a failure before it happened.
+ */
+export function slotFigureOf(draw: Draw, scanned: boolean): Figure {
+  const awaitingReveal = draw.state.kind === "live" && draw.state.stage !== "revealed";
+  return awaitingReveal ? commitFigureOf(draw, scanned) : revealFigureOf(draw);
+}
