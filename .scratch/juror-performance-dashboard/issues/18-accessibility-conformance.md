@@ -179,3 +179,20 @@ The fix is a decision this ticket owns, not a separator character: whether the r
 explicit `aria-label` reading as a sentence, or the ID and title are separated in the accessibility
 tree some other way. The same run-on affects `DisputeList`'s `li` rows, where it matters less
 because a list item is not announced as a header.
+
+### From ticket 13, 2026-08-25 — one live-region trap, and the loudest rose on the page
+
+**A `role="alert"` region containing anything that ticks is an accessibility bug**, and ticket 13
+shipped one before review caught it. The failure banner prints how long ago the page was last read
+whole, updating every second; `role="alert"` is assertive, so a screen-reader user on a partial page
+had that figure interrupt whatever else they were listening to, once a second, for as long as the
+banner was up. The fix is `aria-live="off"` on that subtree — the banner is still announced in full
+when it appears, and the tick is not. Anything this ticket adds inside an alert region wants the
+same check.
+
+**The banner is the largest block of rose on the dashboard**, and rose has never had its contrast
+measured — the palette misses its own stated target, which is this ticket's to fix. `--rose-600` at
+5.08 is the one accent that clears 4.5:1, so the banner may be fine; nothing has confirmed it. What
+is certainly worth measuring: `stateFail` on `washRose` for the "Not read" figures inside an unread
+cell, and the `FactKey` labels, which are `textPending` — the token measured at 2.68–2.91:1 in dark
+theme and already flagged here as inking the pending dash and the rail keys.

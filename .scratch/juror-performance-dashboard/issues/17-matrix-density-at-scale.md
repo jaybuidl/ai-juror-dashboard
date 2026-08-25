@@ -161,3 +161,20 @@ which loses the fact that the court is busy. The first is the smallest and proba
 
 Not a merge artifact and not new to the merge — `master` renders the same rows today. It surfaced
 here only because integration verification runs against the live court.
+
+### From ticket 13, 2026-08-25 — the empty-cells note is still half wrong, and now says so about less
+
+Ticket 13 fixed the neighbouring case and **not** yours. A dispute whose draws were never *read* is
+now drawn as Unknown, counted out of the sparsity figure, and named in the card's own words. A
+dispute that *was* read and genuinely has no panel yet — 167, 168 and 169 on the day this was
+written, sitting in `evidence` with nobody drawn — is still six blank cells under a note saying
+every blank is random draw sparsity. That claim is true of a dispute with a panel and false of one
+without: the draw has not happened, rather than not selected anyone.
+
+Two things that make it easier than it was:
+
+- The vocabulary now exists. `UNREAD_PRESENTATION` and `UNREAD_FIGURE` in `cell.ts` are the pattern
+  for a row-level state that is not a `DrawState`, and `ROW_FLAGS` in `Matrix.tsx` takes a
+  precedence-ordered entry rather than a second hard-coded pill.
+- Whatever you word it, it must not be rose and must not be Unknown. A court that has not drawn yet
+  is not a read that failed, and ADR-0006 gives rose exactly two meanings — neither is this.

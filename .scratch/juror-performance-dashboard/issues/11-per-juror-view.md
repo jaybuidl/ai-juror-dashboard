@@ -65,3 +65,16 @@ Three things to reuse rather than rebuild:
 The 404 catches anything the route table does not match, so a bad id in the path is *not* a 404 —
 it is a real route with an id that names nothing, and this view has to say so itself. Ticket 13 owns
 what a failed *read* looks like; an id that does not exist is neither that nor a wrong URL.
+
+### From ticket 13, 2026-08-25 — do not re-derive the ENS fallback
+
+`ensFallbackOf` in `src/roster/ens-fallback.ts` is the one place that decides whether ENS has fallen
+back and what to say about it. Call it; do not re-test the flags. It exists because the check is
+`!isResolving && !isResolvedFromEns` — both halves, always — and keying on `isResolvedFromEns` alone
+announces a failure for the length of every cold load and then retracts it. That bit three call
+sites on ticket 15 and a fourth on ticket 13, which is when it became a function.
+
+Your view shows a nickname and an avatar, so it takes the amber panel through `View`'s `failures`
+prop and the per-element marks — a dashed avatar border and a "From roster" label — the way
+`Roster.tsx` and the matrix's column headers do. It raises no banner: ENS is the one documented
+exception, and no measurement depends on it.
