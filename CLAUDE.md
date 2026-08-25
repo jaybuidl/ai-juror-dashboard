@@ -4,15 +4,16 @@ A public, read-only dashboard measuring six AI agent jurors in Kleros v2 court 3
 on two dimensions: **speed** (commit and reveal latency) and **coherence** (voting with the final
 ruling).
 
-**Status: the roster is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01, 02 and 14 are
-done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a `netlify.toml` that is the single source
-of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted webfonts, and a page that
-names all six agent jurors by nickname and avatar. There
-is still no dispute data, no metric and no matrix — the page says so outright rather than rendering
-an empty grid, and says it *below* the roster precisely because showing who the six are is the
-point at which a visitor could start reading the page as a result. The design work behind it
-(glossary, six ADRs, a spec, eighteen tickets) came out of a full grilling session and a later pass
-that rebuilt the tracker on the finished design. Start by reading, not by writing.
+**Status: the roster and the dispute list are live**, at <https://kleros-ai-jurors.netlify.app>.
+Tickets 01, 02, 03 and 14 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a
+`netlify.toml` that is the single source of truth for the deploy, the Kleros ×AI tokens adopted and
+self-hosted webfonts, a page that names all six agent jurors by nickname and avatar, and a list of
+every dispute court 34 has held. Both are records, not measurements. There is still no metric and no
+matrix — the page says so outright rather than rendering an empty grid, and says it *below* the
+roster precisely because showing who the six are is the point at which a visitor could start reading
+the page as a result. The design work behind it (glossary, six ADRs, a spec, eighteen tickets) came
+out of a full grilling session and a later pass that rebuilt the tracker on the finished design.
+Start by reading, not by writing.
 
 `README.md` covers the toolchain, the scripts, the test split and the CSP; this file covers the
 domain. Two constraints recorded there and easy to trip over: **yarn must be 4.18 or newer**
@@ -114,6 +115,16 @@ Things that cost real effort to discover and are easy to get wrong again:
   theme `--text-4` (`#5b5675`) is 2.68–2.91:1 across page, card and raised, and it inks the pending
   dash, the rail keys and the vote count at 9px. Consistent with the system's own readme, which
   says its values were matched by eye from screenshots. Ticket 18 owns fixing it.
+- **`Round.timeline` writes `0` for a period that has not opened yet** — and `0` is a real instant in
+  1970, one subtraction away from a latency of fifty-six years. Every dispute still in `appeal` has
+  it in the execution slot today. Parse it to null at the edge, as `src/disputes/disputes.ts` does,
+  rather than guarding at each use.
+- **Round ids are `<disputeID>-<n>` and The Graph orders `id` lexicographically**, so `151-10` sorts
+  above `151-9`. Read the index from the id suffix, never from the position a `rounds` selection
+  arrived in. Costless while every dispute has one round, and silently wrong the first time one does
+  not. The same string ordering is why dispute lists order on `disputeID` and not on `id`, and why
+  ordering happens in the model rather than the query — **ordering by `period` is rejected outright**
+  by The Graph on the `Dispute` type, so the obvious query is the broken one.
 
 ## Verified constants
 

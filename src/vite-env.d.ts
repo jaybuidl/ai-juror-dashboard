@@ -10,6 +10,13 @@ interface ImportMetaEnv {
    * `connect-src` in netlify.toml or the browser blocks the request before it is sent.
    */
   readonly VITE_MAINNET_RPC_URL?: string;
+
+  /**
+   * Kleros v2 core subgraph, read for the court's disputes and their round timelines.
+   * Optional: the default is keyless, and as with the RPC above, a host set here must
+   * also appear in `connect-src` in netlify.toml or the browser blocks the request.
+   */
+  readonly VITE_CORE_SUBGRAPH_URL?: string;
 }
 
 interface ImportMeta {

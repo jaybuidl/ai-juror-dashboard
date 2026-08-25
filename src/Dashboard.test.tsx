@@ -2,6 +2,9 @@ import { render, screen } from "@testing-library/react";
 import { ThemeProvider } from "styled-components";
 import { describe, expect, it } from "vitest";
 import { Dashboard } from "./Dashboard";
+import fixture from "./disputes/court-34.fixture.json" with { type: "json" };
+import type { DisputeListView } from "./disputes/DisputeList";
+import { type RawDispute, toDisputes } from "./disputes/disputes";
 import { ROSTER } from "./roster/agent-jurors";
 import { rosterIdentity } from "./roster/ens";
 import type { RosterView } from "./roster/useRoster";
@@ -29,10 +32,17 @@ const resolved: RosterView = {
   isResolvedFromEns: true,
 };
 
-function renderDashboard(roster: RosterView) {
+/** The court as the dashboard holds it, read from the captured payload. */
+const disputes: DisputeListView = {
+  disputes: toDisputes(fixture as RawDispute[]),
+  isLoading: false,
+  error: null,
+};
+
+function renderDashboard(roster: RosterView, disputeList: DisputeListView = disputes) {
   return render(
     <ThemeProvider theme={theme}>
-      <Dashboard roster={roster} />
+      <Dashboard roster={roster} disputes={disputeList} />
     </ThemeProvider>,
   );
 }
@@ -92,5 +102,24 @@ describe("Dashboard", () => {
     renderDashboard(resolved);
 
     expect(screen.queryByText(/ENS could not be reached/i)).not.toBeInTheDocument();
+  });
+
+  it("lists the court's disputes alongside the roster", () => {
+    renderDashboard(resolved);
+
+    expect(screen.getByRole("heading", { name: /the disputes/i })).toBeInTheDocument();
+    expect(screen.getByText("151")).toBeInTheDocument();
+    expect(screen.getByText("166")).toBeInTheDocument();
+  });
+
+  it("still says it holds no measurement now that disputes are shown", () => {
+    // The caveat used to claim no dispute had been read, which this ticket made false.
+    // What must survive is the part that matters: the page holds no metric.
+    renderDashboard(resolved);
+
+    expect(screen.getByText(/nothing measured yet/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/no draw, latency or coherence figure has been read/i),
+    ).toBeInTheDocument();
   });
 });

@@ -46,6 +46,20 @@ dispute whose data could not be read is a gap, and a gap must never be readable 
 
 ## Comments
 
+### From ticket 03, 2026-08-25 — the offline visitor never reaches any of the criteria above
+
+react-query's
+default `networkMode: "online"` *pauses* a query when the browser reports no connection: the status
+stays `pending`, `fetchStatus` becomes `paused`, and no error is ever thrown. Ticket 03's list
+therefore shows "Reading the court…" indefinitely with no failure notice, and would do the same for
+every reader this ticket touches, because a paused query is indistinguishable from a slow one unless
+`fetchStatus` is read explicitly.
+
+`isLoading` was chosen over `isPending` deliberately in `useDisputes.ts` — the alternative falls
+through to the empty state instead, which is worse — but neither surfaces the pause. Whatever this
+ticket builds should key on `fetchStatus === "paused"` (or `onlineManager`) rather than on the error
+channel alone, since a paused query has no error to surface.
+
 ### From ticket 14, 2026-08-25 — a degraded panel already exists
 
 The ENS-unreachable notice in `src/roster/Roster.tsx` is now built against

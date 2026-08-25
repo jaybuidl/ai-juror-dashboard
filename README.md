@@ -108,7 +108,7 @@ Two kinds of test, split by filename:
   directly, via `yarn test:integration` and `vitest.integration.config.ts`. Held out of the
   default run so `yarn test` never depends on the network. This split is deliberate: the pure
   core gets fixtures, the fetchers get the real endpoint, and nothing in between is stubbed.
-  The first of those readers is ENS, in `src/roster/`.
+  Those readers are ENS in `src/roster/`, and the Kleros v2 core subgraph in `src/disputes/`.
 
 **Components take what they render as props.** `App` is the composition root — providers, and the
 one place a hook reaches the network — while `Dashboard` and below are given their data. That is
