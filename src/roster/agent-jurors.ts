@@ -44,8 +44,11 @@ export type AgentJuror = {
  * must not arrive here — agent jurors are identified by nickname and stack, never by the
  * person who built them.
  *
- * Ordered by nickname so the roster's order is a property of the file rather than of
- * anything measured. Nothing downstream may read rank into it.
+ * Ordered by nickname, except `baskerville` last: its matrix column is empty end to end, and
+ * an empty column mid-grid reads as missing data rather than as the sparsity random draws
+ * produce. Every artboard draws it in this position. The order is still a property of this file
+ * — nothing sorts at runtime, the column does not move when it is finally drawn, and no rank may
+ * be read into it. Do not re-alphabetise.
  */
 export const ROSTER: readonly AgentJuror[] = [
   {
@@ -56,11 +59,6 @@ export const ROSTER: readonly AgentJuror[] = [
   {
     nickname: "aletheia",
     address: "0xD44Ca97bCd957b410a6e0A7109323cfD9ad814bE",
-    stack: { label: "Hermes" },
-  },
-  {
-    nickname: "baskerville",
-    address: "0x606D2DD4Ca178349b327Ed7ACacf68058bd748Bc",
     stack: { label: "Hermes" },
   },
   {
@@ -78,6 +76,11 @@ export const ROSTER: readonly AgentJuror[] = [
   {
     nickname: "daemonhill",
     address: "0xAC237740772093Fcc812A463050c43A275dd01E5",
+    stack: { label: "Hermes" },
+  },
+  {
+    nickname: "baskerville",
+    address: "0x606D2DD4Ca178349b327Ed7ACacf68058bd748Bc",
     stack: { label: "Hermes" },
   },
 ];

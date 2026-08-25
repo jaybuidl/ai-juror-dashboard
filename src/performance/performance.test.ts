@@ -123,13 +123,15 @@ describe("buildCourtPerformance", () => {
   it("puts one column on the matrix per agent juror, in roster order", () => {
     const performance = built();
 
+    // `baskerville` last is deliberate, not an alphabetisation that slipped: its column is empty
+    // end to end and sits at the edge rather than through the middle. See `ROSTER`.
     expect(performance.agentJurors.map((agentJuror) => agentJuror.nickname)).toEqual([
       "007",
       "aletheia",
-      "baskerville",
       "blaise",
       "columbo",
       "daemonhill",
+      "baskerville",
     ]);
     for (const row of performance.rows) {
       expect(row.cells).toHaveLength(6);
