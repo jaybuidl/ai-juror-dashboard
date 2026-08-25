@@ -48,3 +48,22 @@ before adding one, both learned the hard way:
 same file exist because `useDisputes` models inside its query function, so a cache could otherwise
 serve yesterday's definition of a ruling to today's code. If your query function shapes its result
 rather than returning the payload, extend those two rather than trusting the version constant.
+### From ticket 13, 2026-08-25 — a new read is three entries, not one
+
+Every read this ticket adds needs somewhere to fail out loud, and the plumbing exists:
+
+- **A name in `SOURCES`** (`src/read-failure.ts`) — the deployment or host a reader could go and
+  check, not a description of it. Throw a `ReadFailure` carrying it and the banner gets a status
+  line for free; anything else prints "No response", which is the honest answer rather than a gap.
+- **A tier in the view's `failuresOf`** — `blocking` if the failure costs a figure, `degraded` if it
+  costs only a label. ENS is the only documented exception, so a new read is almost certainly loud.
+- **A `what` sentence** saying what the reader loses. It is printed in the banner beside the source,
+  and it is the half a reader acts on.
+
+Then two things that are easy to miss. `affects(failures, source)` is what decides whether an
+aggregate is labelled partial, and it is **per source**: ask whether the endpoint behind *your*
+figure failed, never whether anything on the page did. A page-wide flag was the first cut and it
+labelled every stat tile partial over a missing dispute title, contradicting a notice a few hundred
+pixels below it. And per `CLAUDE.md`, a new read is another query that can drift out of step with
+the ones beside it — check its own error, and where a figure joins two reads, say which half is
+stale rather than that "the court" is.

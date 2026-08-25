@@ -42,6 +42,17 @@ persisted to `localStorage`, so a return visit renders the finalised record befo
 answers — payloads rather than derived figures, so a changed metric definition recomputes instead
 of serving a stale number.
 
+**And it fails out loud.** A read that costs a figure raises a blocking rose banner at the top of
+every view, naming the source, the status it returned and how long ago the page was last read
+whole, with a retry beside it — and says so a second time in the place where the missing figure
+would have been. A read that costs only a label is quiet and local: ENS is the one documented
+exception, so an unreachable mainnet falls back to the checked-in roster nicknames in a
+degraded-not-broken panel and raises nothing, because no measurement depends on it. A dispute whose
+draws could not be read at all is drawn as Unknown across its whole row — `?` and the words "not
+read" in every slot — which is deliberately not what an empty cell means. An empty cell means the
+agent juror was not drawn, and the difference between a gap in the record and a fact about the
+court is the one this dashboard exists to keep.
+
 Read [`CLAUDE.md`](CLAUDE.md) before writing code — in particular its **Traps** section, which
 records the things that cost real time to discover. The design that this scaffold serves lives in:
 

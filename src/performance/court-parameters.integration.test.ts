@@ -41,7 +41,9 @@ describe("fetchCourtParameters", () => {
       // call per commitment against an endpoint that counts them.
       commits: null,
       parameters: history,
+      // `drawsReadAt: null` — one live payload is one moment, so every row counts as read.
       roster: ROSTER,
+      drawsReadAt: null,
     });
     if (!result.success) throw new Error(`${result.code}: ${result.message}`);
     performance = result.data;

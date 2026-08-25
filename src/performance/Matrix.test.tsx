@@ -35,6 +35,7 @@ function build(raw: Partial<RawCourtData> = {}): CourtPerformance {
     commits: commitFixture as RawCommitCast[],
     parameters: parameterFixture as RawCourtParameters[],
     roster: ROSTER,
+    drawsReadAt: null,
     ...raw,
   });
   if (!result.success) throw new Error(`${result.code}: ${result.message}`);
@@ -688,7 +689,10 @@ describe("Matrix", () => {
       renderMatrix(short);
 
       expect(screen.getByText(/6 of the 56 commitments/i)).toBeInTheDocument();
-      expect(screen.getByText(/those cells read Unknown/i)).toBeInTheDocument();
+      // The words the cells actually carry. "Unknown" until ticket 13, which reassigned that word
+      // to the unread *row* — so a notice still saying it would send a reader looking for whole
+      // rows of Unknown and let them conclude the shortfall had blanked sixteen disputes.
+      expect(screen.getByText(/those cells read "Not read"/i)).toBeInTheDocument();
       expect(screen.getByText(/not an agent juror that failed to commit/i)).toBeInTheDocument();
     });
 
@@ -733,10 +737,102 @@ describe("Matrix", () => {
       const row = rowFor(163);
       if (row === null) throw new Error("no row for dispute 163");
 
-      // Five committed draws, five Unknown commit slots, and not one of them worded as a miss.
-      expect(within(row).getAllByText("Unknown")).toHaveLength(5);
+      // Five committed draws, five commit slots reading "Not read", and not one of them worded
+      // as a miss. The words were "Unknown" until ticket 13, which gave that word to the unread
+      // row and left this — a scan that came back short — saying what actually happened.
+      expect(within(row).getAllByText("Not read")).toHaveLength(5);
       expect(within(row).queryByText("Missed")).not.toBeInTheDocument();
       expect(within(row).queryByText("No vote")).not.toBeInTheDocument();
+    });
+  });
+
+  describe("a dispute whose draws were never read", () => {
+    /**
+     * The sixth cell state. It exists because a row with no cells and a row nobody asked about
+     * look identical, and the difference between them is the difference between a fact about
+     * the court and a gap in this dashboard.
+     *
+     * Built from a hand-made dispute rather than a fixture: every fixture is one successful
+     * read, so none can hold a dispute that post-dates the read that returned it.
+     */
+    const READ_AT = 1787340123 * 1000;
+
+    const newcomer = {
+      id: "170",
+      disputeID: "170",
+      period: "evidence",
+      ruled: false,
+      currentRuling: "0",
+      createdAt: String(READ_AT / 1000 + 600),
+      lastPeriodChange: String(READ_AT / 1000 + 600),
+      currentRoundIndex: "0",
+      rounds: [{ id: "170-0", timeline: ["0", "0", "0", "0"] }],
+      templateId: null,
+    } as RawDispute;
+
+    function renderDrifted() {
+      renderMatrix(
+        build({
+          disputes: [newcomer, ...(disputeFixture as RawDispute[])],
+          drawsReadAt: READ_AT,
+        }),
+      );
+      const row = rowFor(170);
+      if (row === null) throw new Error("no row for dispute 170");
+      return row;
+    }
+
+    it("says not read in every slot where a figure belongs, never leaving one blank", () => {
+      const row = renderDrifted();
+
+      // Twice per cell — once for the reveal, once for the commit — plus the row header's own
+      // not-read badge. The words are what let a reader name the row a gap without consulting
+      // the legend, which is the criterion; rose alone would not.
+      expect(within(row).getAllByText("Not read")).toHaveLength(ROSTER.length * 2 + 1);
+      expect(within(row).getAllByText("Unknown")).toHaveLength(ROSTER.length);
+    });
+
+    it("never draws an unread cell as not drawn", () => {
+      // The whole point. Its cells are all null, so a component testing for null first would
+      // draw six "not drawn" dots — an unread state rendering as a fact about the court.
+      const row = renderDrifted();
+
+      expect(within(row).queryByText("Not drawn")).not.toBeInTheDocument();
+    });
+
+    it("never blames the row on an agent juror", () => {
+      // Rose is shared with "no vote" and separated by glyph and word alone (ADR-0006). If the
+      // separation ever collapses, this is where it shows.
+      const row = renderDrifted();
+
+      expect(within(row).queryByText("No vote")).not.toBeInTheDocument();
+      expect(within(row).queryByText("Missed")).not.toBeInTheDocument();
+    });
+
+    it("says the row is unavailable rather than printing a panel of nobody", () => {
+      // Its panel size is 0 because nobody asked, and "Panel 0" is exactly the sort of zero
+      // this ticket exists to keep off a page that may be cited.
+      const row = renderDrifted();
+
+      expect(within(row).getByText("Row unavailable")).toBeInTheDocument();
+      expect(within(row).queryByText(/Panel 0/)).not.toBeInTheDocument();
+    });
+
+    it("keeps the gap out of the sparsity count, which is about draws and not about reads", () => {
+      renderDrifted();
+
+      // The sparsity card's claim — that every blank means an agent juror was not drawn — is
+      // true of the rows that were read and false of the one that was not. Folding the unread
+      // row's six nulls into that count would make the sentence false about six of them.
+      expect(screen.getByText(/not counted here at all/i, { selector: "p" })).toBeInTheDocument();
+    });
+
+    it("names Unknown in the legend only when the grid contains one", () => {
+      renderMatrix(build());
+      expect(screen.queryByText("Unknown")).not.toBeInTheDocument();
+
+      renderDrifted();
+      expect(screen.getAllByText("Unknown").length).toBeGreaterThan(0);
     });
   });
 });

@@ -5,7 +5,8 @@ on two dimensions: **speed** (commit and reveal latency) and **coherence** (voti
 ruling).
 
 **Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01, 02, 03, 04,
-05, 07, 08, 12, 14 and 15 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a `netlify.toml`
+05, 07, 08, 12, 13, 14 and 15 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a
+`netlify.toml`
 that is the single source of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted
 webfonts, and the dispute matrix — one row per dispute, headed by that dispute's own title and
 category, one column per agent juror, each cell carrying that draw's commit latency, its reveal
@@ -27,7 +28,12 @@ every five seconds for as long as anything in the court is unruled and not at al
 live rows carry a rail, a tint and a pill naming the open period and how long it has run, and the
 payloads are persisted to `localStorage` so a return visit renders before either endpoint answers.
 It also settled what "finalised" means — the court has ruled, never `period === "execution"` —
-which `CONTEXT.md` now defines and the spec was amended to match.
+which `CONTEXT.md` now defines and the spec was amended to match. Ticket 13 gave every one of those
+reads somewhere to fail out loud: two tiers, decided by whether a failure costs a figure or only a
+label, composed per view as `Failures` and rendered by `View` the way the footer is — a rose
+blocking banner naming the source, the status and how long ago the page was last read whole, and an
+amber degraded panel for ENS, the one documented exception. With it came the sixth cell state,
+`?` / **Unknown** / "Not read", for a dispute whose draws were never read at all.
 The design work behind it (glossary, seven ADRs, a spec, eighteen tickets) came out of a full
 grilling session and a later pass that rebuilt the tracker on the finished design — ADR-0007 is the
 one that came from implementation rather than design, and it overrode the spec. Start by reading, not by
@@ -59,7 +65,11 @@ computed in a component is the mistake this seam exists to prevent. Ticket 15 ad
 tiles and the latency strip are figures of — so a court-wide number goes there and not into the view
 that prints it. Ticket 06's marginals are the same aggregates sliced by column, and they inherit
 `CourtTotals.changedWindows`: any aggregate over latency has to disclose the window change the way
-any aggregate over coherence has to disclose a panel of one.
+any aggregate over coherence has to disclose a panel of one. Ticket 13 added the seam's first input
+that is about a *read* rather than about the court — `RawCourtData.drawsReadAt`, the moment the
+draws on screen were fetched — because whether a row's draws were read at all is a derivation and
+not a rendering decision. It still consults no clock: the moment arrives as data, exactly as the
+commit timestamps do.
 Every ticket from `03` up carries a `**Design:**` line naming what it is built against — an artboard
 and its line range, or, for ticket 14, the design system itself.
 
@@ -150,7 +160,11 @@ Things that cost real effort to discover and are easy to get wrong again:
   has not happened rather than not selected anyone. And `court-subgraph.integration.test.ts`
   asserted `commitOpenedAt > 0` for every dispute the court returns, which was true until it wasn't;
   it now asserts null for `evidence` and a moment for everything else. Any assertion quantified over
-  "every dispute the court holds" has this shape and will expire the same way.
+  "every dispute the court holds" has this shape and will expire the same way. Ticket 13 fixed the
+  neighbouring case and **not** this one: a dispute whose draws were never *read* is now drawn as
+  Unknown and counted out of the sparsity figure, but a dispute that was read and genuinely has no
+  panel yet is still six blanks under a note saying every blank is random draw sparsity. That
+  remains ticket 17's, and it is the reading a live court produces today.
 - **Dispute 155 had a panel of one.** Coherence is tautological there. Any aggregate carries this.
 - **A green suite here proves the healthy path and nothing else.** Every fixture in this repo is
   one successful read of a working court, so no test can contain a second read that failed, a
@@ -260,7 +274,18 @@ Things that cost real effort to discover and are easy to get wrong again:
   `isResolving` is the other half and both are required. This bit three call sites on ticket 15,
   including one pre-dating it in `Roster.tsx`, and the fixture hid it by hard-coding
   `isResolving: false` for a state whose own comment said it covered both. It applies to every
-  caveat any ticket writes from here on.
+  caveat any ticket writes from here on. It is the **same shape** as `commitCoverage.read` and as
+  `commitFigureOf`'s `scanned` argument: an absence only becomes a failure once there has been an
+  answer to fall short of, and every one of these three is a "the read has happened" flag guarding
+  a "the read came up empty" test. Ticket 13 reintroduced the bug a third time — converting the
+  commit slot to rose put "Not read" on all 56 cells for the length of every cold load — so assume
+  any new emptiness test needs its own gate and write the test for both directions. Ticket 08's
+  `parameters.read` is the fourth of them.
+- **`Thing.ts` and `Thing.tsx` differing only in case is a hard TypeScript error on macOS.**
+  `TS1149`, raised at whichever file imports the second one, and it names both paths rather than
+  saying "rename this". The house pattern of a pure model beside its component (`provenance.ts` +
+  `Footer.tsx`) is fine because those names differ; `failure.ts` + `Failure.tsx` is not, and
+  becomes `failures.ts` + `Failure.tsx`. Biome and Vite say nothing — only `yarn check-types` does.
 - **`JSON.stringify` turns a `Map` into `{}`, and the query cache is persisted as JSON.** Ticket
   12 persists react-query's cache to `localStorage`, and `useDisputes`'s templates query holds a
   `Map<number, DisputeTemplate>`. Persisted, it comes back as an object with no `get` on it,
@@ -269,7 +294,9 @@ Things that cost real effort to discover and are easy to get wrong again:
   counted notice to prevent. Nothing throws at write time or read time. This is why the persisted
   set in `src/persistence.ts` is an **allowlist** and not a filter: a query is not persisted until
   someone names it and answers whether its value survives a JSON round trip — no `Map`, no `Set`,
-  no `bigint`, no `Date`. Tickets 06, 08 and 10 each add a read, and two of them read a chain.
+  no `bigint`, no `Date` — and then whether a *failed* read of it succeeds, which is what kept the
+  ENS identities out. Ticket 08's `courtParameters` was admitted on those terms when the two
+  branches were merged; tickets 06 and 10 still have to answer for theirs.
 - **Persisting a *derived* value means today's code reads yesterday's shape.** The seam is pure and
   re-derives every figure on load, so persisting payloads needs no invalidation when the arithmetic
   changes — that is the whole safety argument for the cache. But three query functions store a

@@ -1,6 +1,8 @@
 import styled from "styled-components";
+import type { Failures } from "../chrome/failures";
 import type { Provenance } from "../chrome/provenance";
 import { View } from "../chrome/View";
+import { ensFallbackOf } from "../roster/ens-fallback";
 import { Roster } from "../roster/Roster";
 import type { RosterView } from "../roster/useRoster";
 
@@ -34,6 +36,25 @@ const Deck = styled.p`
   color: ${({ theme }) => theme.textBody};
 `;
 
+/**
+ * The one view where nothing can go loud.
+ *
+ * It reads a single source and that source is the documented exception: ENS carries nicknames
+ * and avatars, nothing on this page is a measurement, and there is therefore no state in which a
+ * blocking banner over it would be true. `blocking` is empty by construction rather than by
+ * accident, which is what "a failure of ENS resolution alone raises no banner" amounts to on the
+ * one page where ENS is all there is.
+ */
+function failuresOf(roster: RosterView): Failures {
+  return {
+    blocking: [],
+    degraded: [ensFallbackOf(roster)].filter((read) => read !== null),
+    offline: false,
+    lastCompleteRead: null,
+    retry: null,
+  };
+}
+
 function provenanceOf(roster: RosterView): Provenance {
   const caveats: string[] = [
     "The roster is this dashboard's own list, not a read of the court. An agent juror that has never staked or been drawn has no on-chain presence to read.",
@@ -61,7 +82,7 @@ function provenanceOf(roster: RosterView): Provenance {
 
 export function AgentJurorsPage({ roster }: { roster: RosterView }) {
   return (
-    <View provenance={provenanceOf(roster)}>
+    <View provenance={provenanceOf(roster)} failures={failuresOf(roster)}>
       <Header>
         <Title>Agent jurors</Title>
         {/* Deliberately not a second description of the roster — `Roster` carries its own, and

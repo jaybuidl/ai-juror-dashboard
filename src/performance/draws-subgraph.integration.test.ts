@@ -65,6 +65,7 @@ describe("fetchCourtDraws", () => {
       commits,
       parameters: null,
       roster: ROSTER,
+      drawsReadAt: null,
     });
 
     if (!result.success) throw new Error(`${result.code}: ${result.message}`);

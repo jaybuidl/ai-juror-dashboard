@@ -227,7 +227,9 @@ describe("DisputeList", () => {
   it("says when no title could be read, without claiming the list is incomplete", () => {
     // The distinction is the point: the disputes were read. Reusing the disputes-failed
     // notice here would tell a visitor the court's record is partial when it is whole.
-    renderList({ titles: { expected: 16, resolved: 0, isLoading: false } });
+    renderList({
+      titles: { expected: 16, resolved: 0, isLoading: false, readAt: 1_700_000_000_000 },
+    });
 
     const notice = screen.getByRole("status");
 
@@ -240,7 +242,9 @@ describe("DisputeList", () => {
     // The shape a lagging template subgraph produces: HTTP 200, no error, and some of
     // the ids simply absent. Saying "the titles could not be read" over thirteen that
     // were read would be as wrong as saying nothing.
-    renderList({ titles: { expected: 16, resolved: 13, isLoading: false } });
+    renderList({
+      titles: { expected: 16, resolved: 13, isLoading: false, readAt: 1_700_000_000_000 },
+    });
 
     expect(screen.getByRole("status")).toHaveTextContent(/3 of these 16 disputes/i);
   });
@@ -248,13 +252,17 @@ describe("DisputeList", () => {
   it("says nothing about missing titles while the read is still in flight", () => {
     // Every title is legitimately absent before the answer arrives. A notice here would
     // fire on every load, and on every refetch a new dispute triggers.
-    renderList({ titles: { expected: 16, resolved: 0, isLoading: true } });
+    renderList({
+      titles: { expected: 16, resolved: 0, isLoading: true, readAt: 1_700_000_000_000 },
+    });
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
 
   it("says nothing when every title that was expected came back", () => {
-    renderList({ titles: { expected: 16, resolved: 16, isLoading: false } });
+    renderList({
+      titles: { expected: 16, resolved: 16, isLoading: false, readAt: 1_700_000_000_000 },
+    });
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
@@ -262,7 +270,9 @@ describe("DisputeList", () => {
   it("does not count a dispute that has no template as a missing title", () => {
     // A dispute with no template id has no title to be missing. Counting it would leave
     // a notice on the page permanently, which trains people to ignore it.
-    renderList({ titles: { expected: 15, resolved: 15, isLoading: false } });
+    renderList({
+      titles: { expected: 15, resolved: 15, isLoading: false, readAt: 1_700_000_000_000 },
+    });
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
   });
@@ -270,7 +280,7 @@ describe("DisputeList", () => {
   it("reports a failed title read separately from a failed dispute read", () => {
     renderList({
       error: new Error("core down"),
-      titles: { expected: 16, resolved: 0, isLoading: false },
+      titles: { expected: 16, resolved: 0, isLoading: false, readAt: 1_700_000_000_000 },
     });
 
     const notices = screen.getAllByRole("status");

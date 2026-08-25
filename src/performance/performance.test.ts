@@ -41,6 +41,7 @@ function courtData(overrides: Partial<RawCourtData> = {}): RawCourtData {
     commits: rawCommits,
     parameters: rawParameters,
     roster: ROSTER,
+    drawsReadAt: null,
     ...overrides,
   };
 }
@@ -822,6 +823,87 @@ describe("buildCourtPerformance", () => {
       );
 
       expect(evidenceOnly.rows[0]?.underEarlierWindows).toBe(false);
+    });
+  });
+
+  describe("a row the draw read could not have seen", () => {
+    /**
+     * The drift `CLAUDE.md` records, at the level of one row.
+     *
+     * The disputes and the draws are two queries, and react-query keeps the draws it already
+     * holds when a refetch fails. A dispute created after that read then joins a fresh list to
+     * draws that could not have mentioned it, and arrives with no cells — which this design
+     * otherwise defines as "not drawn", a positive claim about a court nobody asked.
+     *
+     * No fixture can produce it: every one of them is a single successful read, and a payload
+     * captured in one moment cannot hold a dispute that post-dates it. Both halves are built by
+     * hand here — the newcomer with no draws, and the moment the draws were read.
+     */
+    const READ_AT_163 = 1787340123 * 1000;
+
+    /** A dispute created after the draw read, with no draws anywhere in the payload. */
+    const newcomer = rawDispute({
+      id: "170",
+      disputeID: "170",
+      period: "evidence",
+      ruled: false,
+      currentRuling: "0",
+      createdAt: String(READ_AT_163 / 1000 + 600),
+      rounds: [{ id: "170-0", timeline: ["0", "0", "0", "0"] }],
+    });
+
+    const drifted = () =>
+      built(courtData({ disputes: [newcomer, rawDispute()], drawsReadAt: READ_AT_163 }));
+
+    it("reads every row when the caller cannot say when the draws were read", () => {
+      // Which is every fixture, and the reason nothing else in this suite had to change: one
+      // captured payload is one moment, and a dispute cannot post-date the read that returned it.
+      expect(built(courtData({ drawsReadAt: null })).rows.every((row) => row.read)).toBe(true);
+    });
+
+    it("marks a dispute with no draws that post-dates the read as unread, not as undrawn", () => {
+      expect(rowFor(170, drifted()).read).toBe(false);
+      expect(rowFor(163, drifted()).read).toBe(true);
+    });
+
+    it("believes the payload over the moment when the two disagree", () => {
+      // The draws mention dispute 163, so the read plainly saw it however the timestamps
+      // compare. Anything else would let a skewed clock or an approximate read moment blank
+      // measurements that are actually in hand — losing true figures to protect against a
+      // claim that the payload itself already refutes.
+      const early = built(courtData({ disputes: [rawDispute()], drawsReadAt: 1 }));
+
+      expect(rowFor(163, early).read).toBe(true);
+    });
+
+    it("counts the boundary second as read, so a healthy load flags nothing", () => {
+      // The two queries go out together, so a dispute created in the same second as the read
+      // that returned it is what a healthy cold load looks like. Treating the boundary as unread
+      // would put a rose row on the newest dispute of every page load.
+      const born = { ...newcomer, createdAt: String(READ_AT_163 / 1000) };
+      const model = built(courtData({ disputes: [born, rawDispute()], drawsReadAt: READ_AT_163 }));
+
+      expect(rowFor(170, model).read).toBe(true);
+    });
+
+    it("keeps an unread dispute out of every total rather than counting it as zero", () => {
+      const model = drifted();
+
+      expect(model.totals.unreadDisputes).toEqual([170]);
+      // The dispute count is unchanged: dispute 170 *was* read, it is its draws that were not,
+      // and reporting a smaller court would be a second untruth on top of the first.
+      expect(model.totals.disputes).toBe(2);
+      expect(model.totals.draws).toBe(rowFor(163, model).cells.filter((c) => c !== null).length);
+    });
+
+    it("never calls an unread row a panel of one", () => {
+      // Its panel size is 0 because nobody asked, not because the court drew one juror — and the
+      // lone-panel list is the one aggregate where that gap would become a published claim about
+      // coherence being tautological.
+      const model = drifted();
+
+      expect(rowFor(170, model).panelSize).toBe(0);
+      expect(model.totals.lonePanelDisputes).not.toContain(170);
     });
   });
 });

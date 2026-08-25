@@ -169,7 +169,20 @@ function markBottom(stack: number): string {
   return `${31 + stack * 10}px`;
 }
 
-export function LatencyStrip({ latency }: { latency: LatencySummary | null }) {
+export function LatencyStrip({
+  latency,
+  partial = false,
+}: {
+  latency: LatencySummary | null;
+  /**
+   * True when a read behind this distribution failed.
+   *
+   * A distribution is the aggregate most easily misread as complete: it draws every draw it has
+   * as a mark, so a court read short looks exactly like a smaller court. The heading says so
+   * rather than leaving the marks to speak for a record that is missing some.
+   */
+  partial?: boolean;
+}) {
   if (latency === null) {
     // An empty plot with an axis and no marks reads as a court where nothing happened.
     return (
@@ -195,6 +208,7 @@ export function LatencyStrip({ latency }: { latency: LatencySummary | null }) {
         <Heading id="strip-heading">
           Reveal latency · {latency.seconds.length}{" "}
           {latency.seconds.length === 1 ? "draw" : "draws"}
+          {partial && " · partial"}
         </Heading>
         <Scale>Log scale</Scale>
       </Head>

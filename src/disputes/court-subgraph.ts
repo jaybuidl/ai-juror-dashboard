@@ -1,3 +1,4 @@
+import { SOURCES } from "../read-failure";
 import type { RawDispute } from "./disputes";
 import { postSubgraphQuery } from "./subgraph";
 
@@ -104,7 +105,7 @@ export async function fetchCourtDisputes({
           ? { first: PAGE_SIZE, court: courtId }
           : { first: PAGE_SIZE, court: courtId, disputeID_lt: cursor },
       signal,
-      source: "Core subgraph",
+      source: SOURCES.core,
       field: "disputes",
     });
 

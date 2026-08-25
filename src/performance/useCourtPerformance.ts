@@ -46,6 +46,30 @@ export type CourtPerformanceView = {
    * not about what a successful one carried.
    */
   parametersError: Error | null;
+  /**
+   * The seam's own rejection, unflattened.
+   *
+   * `buildCourtPerformance` returns `{success: false, code, message, details}` and this hook used
+   * to compress all of it into `new Error(code + ": " + message)`, because nothing above it could
+   * show more than a sentence. The banner can: the code is what kind of failure it was and the
+   * details name the draw that could not be read, and both are the difference between "the court
+   * could not be read" and a payload this dashboard refused. `null` whenever the model built.
+   */
+  failure: { code: string; message: string; details: Record<string, unknown> } | null;
+  /**
+   * When the draws on screen were read, in epoch milliseconds, or `null` before any land.
+   *
+   * Exposed because the banner has to print how long ago the page was last read *whole*, and
+   * this is the half a reader cannot otherwise see. `DisputesView.readAt` alone would be the
+   * wrong figure in exactly the case the banner exists for: a successful dispute re-read beside
+   * a failed draw re-read keeps that moment current while the page is incomplete, so the banner
+   * would announce a partial page and date it to a minute ago.
+   */
+  readAt: number | null;
+  /** Whether the reads are paused because the browser reports no connection. See `DisputesView`. */
+  isPaused: boolean;
+  /** Read the draws and the commitments again, for the banner's retry. */
+  retry: () => void;
 };
 
 /**
@@ -63,6 +87,10 @@ export type RawDisputesView = {
   raw: readonly RawDispute[];
   isLoading: boolean;
   error: Error | null;
+  /** Whether the browser reports no connection, so this read is paused rather than failing. */
+  isPaused: boolean;
+  /** Read the disputes again. The banner's retry has to reach both halves, not one. */
+  retry: () => void;
 };
 
 /**
@@ -77,7 +105,13 @@ export type RawDisputesView = {
  * the matrix rebuilds from them and the page says separately that it may be out of date. Showing
  * a stale court and saying so beats showing nothing.
  */
-export function hasReadableDisputes(disputes: RawDisputesView): boolean {
+export function hasReadableDisputes(
+  // The three fields it actually reads, rather than the whole view. Ticket 13 added a retry
+  // callback and a paused flag to `RawDisputesView`, neither of which this decision consults,
+  // and taking the wide type would have made every caller and every test hand over a function
+  // to answer a question about a payload.
+  disputes: Pick<RawDisputesView, "raw" | "isLoading" | "error">,
+): boolean {
   if (disputes.isLoading) return false;
   return disputes.raw.length > 0 || disputes.error === null;
 }
@@ -100,7 +134,18 @@ export function useCourtPerformance(
 ): CourtPerformanceView {
   const query = useQuery({
     queryKey: ["courtDraws", COURT_ID],
-    queryFn: ({ signal }) => fetchCourtDraws({ signal }),
+    queryFn: async ({ signal }) => {
+      // Stamped before the request goes out, not after it comes back, and this is the whole
+      // reason the query function is not a one-liner. What the moment has to answer is "could
+      // this read have seen that dispute?", and the answer for anything created while the
+      // request was in flight is no — the subgraph had already served it. Dating the read by
+      // react-query's `dataUpdatedAt`, which is when the answer *arrived*, would classify such
+      // a dispute as read, and it would then render as six blank "not drawn" cells: exactly the
+      // unread-state-as-fact misclassification `MatrixRow.read` exists to prevent, in the window
+      // of one subgraph round trip against Arbitrum's quarter-second blocks.
+      const requestedAt = Date.now();
+      return { draws: await fetchCourtDraws({ signal }), requestedAt };
+    },
     // The same minute the dispute list holds: the two are read together and there is nothing
     // to be gained from one of them being fresher than the other.
     staleTime: 60 * 1000,
@@ -119,7 +164,7 @@ export function useCourtPerformance(
     refetchInterval: () => refetchIntervalFor(disputes.raw),
   });
 
-  const draws = query.data;
+  const draws = query.data?.draws;
 
   /**
    * The commitments, read from Arbitrum rather than from the subgraph (ADR-0004).
@@ -189,12 +234,18 @@ export function useCourtPerformance(
   });
 
   const parameters = parametersQuery.data;
+  // The moment the draws on screen were *asked for*. This is what tells a row whose draws were
+  // read from a row created after the last read that could have seen it. react-query keeps what
+  // it holds when a refetch fails, so it can be an hour older than the dispute list beside it —
+  // which is exactly the drift it exists to make visible rather than to hide.
+  const drawsReadAt = query.data?.requestedAt ?? null;
 
   const result = useMemo(() => {
     if (draws === undefined || !hasReadableDisputes(disputes)) return null;
     return buildCourtPerformance({
       disputes: disputes.raw,
       draws,
+      drawsReadAt,
       // `null`, never `[]`: an unfinished read is not an empty one. `[]` here would have the
       // matrix announce that every commitment in the court failed to read, on every cold load,
       // for as long as the chain takes to answer — a failure stated before it has happened.
@@ -205,7 +256,9 @@ export function useCourtPerformance(
       parameters: parameters ?? null,
       roster: agentJurors,
     });
-  }, [disputes, draws, commits, parameters, agentJurors]);
+  }, [disputes, draws, commits, parameters, agentJurors, drawsReadAt]);
+
+  const failure = result?.success === false ? result : null;
 
   return {
     performance: result?.success === true ? result.data : null,
@@ -216,8 +269,21 @@ export function useCourtPerformance(
     error:
       query.error ??
       disputes.error ??
-      (result?.success === false ? new Error(`${result.code}: ${result.message}`) : null),
+      (failure !== null ? new Error(`${failure.code}: ${failure.message}`) : null),
     commitError: commitQuery.error,
     parametersError: parametersQuery.error,
+    readAt: drawsReadAt,
+    failure:
+      failure === null
+        ? null
+        : { code: failure.code, message: failure.message, details: failure.details },
+    // The commit query is deliberately not counted: it is the one read this page does not wait
+    // for, and an offline browser pauses it alongside the others anyway through the two below.
+    isPaused: query.fetchStatus === "paused" || disputes.isPaused,
+    retry: () => {
+      void query.refetch();
+      void commitQuery.refetch();
+      disputes.retry();
+    },
   };
 }

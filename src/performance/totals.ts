@@ -78,6 +78,17 @@ export type CourtTotals = {
    * renders as a clean bill of health.
    */
   unplacedDisputes: readonly number[];
+  /**
+   * Disputes whose draws were never read, by id — see `MatrixRow.read`.
+   *
+   * Every count above is missing theirs, and none of them is zero as a result: an unread
+   * dispute contributes no draws, no votes and no latency, so a total computed over them
+   * understates the court by an amount nobody measured. Ticket 13's rule is that what could not
+   * be read counts as unknown and never as zero, and a figure cannot say "unknown" — so the
+   * figure stays what was actually counted and carries this list, which is what lets every
+   * place that prints it label itself partial.
+   */
+  unreadDisputes: readonly number[];
 };
 
 /**
@@ -215,7 +226,19 @@ export function courtTotalsOf(
       fastest === undefined || slowest === undefined
         ? null
         : { seconds, fastest, median: medianOf(seconds), slowest },
-    lonePanelDisputes: rows.filter((row) => row.panelSize === 1).map((row) => row.dispute.id),
+    // A panel of one is a fact about a dispute that *was* read, so an unread row is not counted
+    // among them — its panel size is 0 because nobody asked, not because the court drew one
+    // juror. Filtering on `read` first is what keeps a gap out of a coherence caveat.
+    lonePanelDisputes: rows
+      .filter((row) => row.read && row.panelSize === 1)
+      .map((row) => row.dispute.id),
+    unreadDisputes: rows.filter((row) => !row.read).map((row) => row.dispute.id),
+    // Deliberately *not* filtered on `read`, unlike the panel above, because these two are
+    // facts about the dispute rather than about its draws. Which windows a dispute ran under
+    // comes from its own timeline and the court's parameter history — both read from sources
+    // that have nothing to do with the draw query — so an unread row still ran under what it
+    // ran under. What it contributes to `revealedDraws` is 0, which is the honest count of
+    // draws in hand for it.
     changedWindows: changedWindowsOf(rows),
     unplacedDisputes: unplacedDisputesOf(rows),
   };

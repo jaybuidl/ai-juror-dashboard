@@ -26,6 +26,7 @@ const built = ((): CourtPerformance => {
     commits: null,
     parameters: parameterFixture as RawCourtParameters[],
     roster: ROSTER,
+    drawsReadAt: null,
   });
   if (!result.success) throw new Error(`${result.code}: ${result.message}`);
   return result.data;
@@ -188,6 +189,9 @@ function row(id: number, measured: { commitSeconds: number; voteSeconds: number 
     cells: [],
     windows: measured === null ? null : { evidenceSeconds: 1, appealSeconds: 129_600, ...measured },
     underEarlierWindows: measured !== null,
+    // Read, so these rows reach every aggregate. What an *unread* row does to each of them is
+    // ticket 13's own suite; this one is about grouping windows.
+    read: true,
   };
 }
 
@@ -211,6 +215,7 @@ function medianOfSeconds(seconds: readonly number[]): number | undefined {
         voteCount: 1,
       },
     ],
+    read: true,
   }));
 
   return courtTotalsOf(rows, ROSTER).revealLatency?.median;

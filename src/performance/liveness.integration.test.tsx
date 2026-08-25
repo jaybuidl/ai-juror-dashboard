@@ -54,7 +54,9 @@ describe("the live treatment, against the court as it stands", () => {
       draws,
       commits: null,
       parameters: null,
+      // `drawsReadAt: null` — one live payload is one moment, so every row counts as read.
       roster: ROSTER,
+      drawsReadAt: null,
     });
     if (!built.success) throw new Error(`${built.code}: ${built.message}`);
 

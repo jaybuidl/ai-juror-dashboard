@@ -137,6 +137,7 @@ const SECTIONS: readonly { id: string; label: string }[] = [
   { id: "coherence", label: "Coherence" },
   { id: "window", label: "The window" },
   { id: "caveats", label: "Caveats" },
+  { id: "partial", label: "Partial reads" },
   { id: "sources", label: "Sources" },
 ];
 
@@ -302,6 +303,37 @@ export function MethodPage() {
           Nothing here is sampled or estimated. Where a figure could not be read it is absent and
           said to be absent, and where a source failed the page says so where the figure would have
           been.
+        </Body>
+      </Section>
+
+      {/* Where the failure banner's "What this means" arrives. It answers the question a reader
+          asks at the moment a rose banner appears over figures they were about to quote, which is
+          a different question from what any one figure means — hence its own section rather than
+          a paragraph under Caveats. */}
+      <Section id="partial" heading="Partial reads, and what a banner over these figures means">
+        <Body>
+          Every figure here is read live in your browser from four public endpoints, and any of them
+          can fail or answer short. When one does, this dashboard says so twice: in the place where
+          the missing figure would have been, and once in a banner across the top of the page. It
+          never fills the gap in — what could not be read is shown as unknown, never as zero and
+          never as nothing at all.
+        </Body>
+        <Body>
+          The distinction the banner draws is between a failure that changes a number and one that
+          changes only a label. The core subgraph, the template subgraph and the Arbitrum endpoint
+          carry figures, or the identity of the rows those figures sit in, so a failure of any of
+          them raises the banner and nothing on the page should be quoted. Ethereum mainnet carries
+          only the agent jurors' ENS nicknames and avatars, on which no measurement depends: when it
+          fails you get an amber note saying names have fallen back to this repository's own roster,
+          and every figure on the page is still whole.
+        </Body>
+        <Body>
+          A dispute whose draws could not be read is drawn as a row of <Term>Unknown</Term> cells —
+          a question mark and the words "not read" in every slot where a figure belongs — and is
+          left out of every total above it. That is deliberately as far as possible from a blank
+          cell, which means the opposite: an agent juror was not drawn for that dispute, which is
+          the ordinary state of a sparse matrix and not a gap in anything. Retrying from the banner
+          re-reads the failing source without a page reload, and the banner goes when it succeeds.
         </Body>
       </Section>
 

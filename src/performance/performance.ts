@@ -121,6 +121,22 @@ export type RawCourtData = {
   parameters: readonly RawCourtParameters[] | null;
   /** The column set, and the only place all six agent jurors appear. */
   roster: readonly AgentJuror[];
+  /**
+   * When `draws` was read, in epoch milliseconds, or `null` where the caller cannot say.
+   *
+   * The one input here that is about a *read* rather than about the court, and it is load-bearing
+   * for exactly one thing: telling a row whose draws were read from a row whose draws were never
+   * asked for. The disputes and the draws are two queries, react-query keeps what it already
+   * holds when a refetch fails, and a dispute created after the last successful draw read
+   * therefore joins a fresh list to draws that could not have mentioned it. Its cells come back
+   * empty — which this design defines as "not drawn", a positive claim about a court nobody read.
+   * Comparing the dispute's own `createdAt` against this moment is what keeps that claim honest.
+   *
+   * Not a clock read: the moment arrives as data, the same way the commit timestamps do. The
+   * seam still consults no clock of its own, and a fixture that supplies `null` gets exactly
+   * today's behaviour — every row read — which is true of a fixture, because it is one payload.
+   */
+  drawsReadAt: number | null;
 };
 
 /**
@@ -205,6 +221,18 @@ export type MatrixRow = {
    * an unknown is not a denial, and the provenance footer says which it is.
    */
   underEarlierWindows: boolean;
+  /**
+   * Whether the draw read this row was built from could have seen this dispute at all.
+   *
+   * False is not an error and not an empty panel: it is the absence of a read. The row's cells
+   * are all `null` in that state and mean nothing — "not drawn" would be a claim about a court
+   * nobody asked, so the matrix renders the whole row as Unknown instead (ticket 13, ADR-0006).
+   * `panelSize` is `0` there for the same reason and must not be printed.
+   *
+   * Every row is read whenever `drawsReadAt` is `null`, which is every fixture: one captured
+   * payload is one moment, and a dispute cannot post-date the read that returned it.
+   */
+  read: boolean;
 };
 
 /**
@@ -613,6 +641,23 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
 
     const rows = disputes.map((dispute) => {
       const drawn = grouped.get(dispute.id);
+
+      // Whether the draw read could have seen this dispute at all.
+      //
+      // The payload is the primary evidence and the moment only settles what the payload leaves
+      // ambiguous. If the draws mention this dispute then the read plainly saw it, whatever the
+      // timestamps say — so a skewed clock or an approximate read moment can never blank
+      // measurements that are actually in hand. Only a dispute with *no* draws is ambiguous, and
+      // there the moment is what separates "nobody was drawn yet" from "nobody asked".
+      //
+      // `createdAt` is unix seconds against a read moment in milliseconds. The boundary second
+      // counts as read: the two queries go out together, so a dispute created in the same second
+      // as the read that returned it is what a healthy cold load looks like, and treating it as
+      // unread would put a rose row on the newest dispute of every page load.
+      const read =
+        raw.drawsReadAt === null ||
+        drawn !== undefined ||
+        dispute.createdAt * 1000 <= raw.drawsReadAt;
       const cells = raw.roster.map((agentJuror) => {
         const group = currentDraw(drawn?.byAgentJuror.get(agentJuror.address.toLowerCase()));
         if (group === undefined) return null;
@@ -636,6 +681,7 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
         // this dashboard cannot place, not one that ran under the current rules.
         underEarlierWindows:
           windows !== null && current !== null && !sameMeasuredWindows(windows, current),
+        read,
       };
     });
 

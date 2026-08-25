@@ -1,6 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { disputes, renderAt } from "../test/court";
+import { formatAgo } from "../read-failure";
+import { disputes, READ_AT, renderAt } from "../test/court";
 
 /**
  * The dispute index: the destination the nav's disputes link now has, and the parent ticket
@@ -45,9 +46,39 @@ describe("the dispute index", () => {
 
   it("reports a shortfall in the titles read, rather than leaving rows silently untitled", () => {
     renderAt("/disputes", {
-      disputes: { ...disputes, titles: { expected: 16, resolved: 11, isLoading: false } },
+      disputes: {
+        ...disputes,
+        titles: { expected: 16, resolved: 11, isLoading: false, readAt: 1_700_000_000_000 },
+      },
     });
 
     expect(screen.getByText(/5 of 16 titles did not come back/i)).toBeInTheDocument();
+  });
+
+  it("dates an incomplete page by the read that fell short, not the one that worked", () => {
+    // The failing half here is the template read, and the dispute read beside it is fresh.
+    // Dating the page by that one would put "Last complete read: 3s ago" directly under "Part of
+    // this page could not be read" — precisely the reassurance the banner exists to withhold.
+    const titlesReadAt = READ_AT - 60 * 60 * 1000;
+    renderAt("/disputes", {
+      disputes: {
+        ...disputes,
+        titles: { expected: 16, resolved: 11, isLoading: false, readAt: titlesReadAt },
+      },
+    });
+
+    const banner = screen.getByRole("alert");
+
+    expect(within(banner).getByText(formatAgo(titlesReadAt, Date.now()))).toBeInTheDocument();
+    expect(within(banner).queryByText(formatAgo(READ_AT, Date.now()))).not.toBeInTheDocument();
+  });
+
+  it("dates a whole page by its own read, with no template shortfall to fold in", () => {
+    // The other direction, and the one that is easy to break while fixing the first: with every
+    // title in hand the template read is not a second condition on completeness, and reporting
+    // "Never" on a page that is entirely fine would be the same failure in reverse.
+    renderAt("/disputes");
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

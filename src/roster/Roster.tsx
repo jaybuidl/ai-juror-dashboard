@@ -18,40 +18,16 @@ const Lede = styled.p`
   color: ${({ theme }) => theme.textBody};
 `;
 
-/* The canvas draws this exact block — Errors.dc.html:142, the amber "Degraded, not broken"
-   panel, whose copy is all but ours. Amber here is not a cell state: ADR-0006 governs colour
-   inside the matrix, and its rule is that a glyph and a word carry the meaning before a colour
-   does, which is why the label below says what happened in words and the diamond is the canvas's
-   own mark for degraded. A caveat has to be visible in the UI to be a caveat at all, and the
-   first cut of this restyle — hairline on near-transparent fill — made it quieter than the prose
-   it interrupts. Ticket 13 owns the louder rose banner for a read that actually cost a figure;
-   nothing here did. */
-const Caveat = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.space5};
-  max-width: 68ch;
-  padding: ${({ theme }) => `${theme.space7} ${theme.space8}`};
-  border: 1px solid ${({ theme }) => theme.lineAmber};
-  border-radius: ${({ theme }) => theme.radiusCard};
-  background-color: ${({ theme }) => theme.washAmber};
-`;
+/* The amber "Degraded, not broken" panel this view used to declare for itself now lives in
+   chrome/Failure.tsx and is rendered by `View`, above whichever route is on screen. Ticket 14
+   built it here against Errors.dc.html:142 and recorded why it is amber rather than uncoloured;
+   ticket 13 lifted it out rather than reinventing it. It had to move: ticket 15 sent the roster
+   to its own route, so a panel that lived here was invisible on the matrix — which shows the
+   same six nicknames and the same six avatars as its column headers, and was therefore falling
+   back to the roster while saying nothing at all about it.
 
-const CaveatLabel = styled.p`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.space4};
-  font: ${({ theme }) => theme.typeMonoSm};
-  font-feature-settings: ${({ theme }) => theme.featureMono};
-  letter-spacing: ${({ theme }) => theme.trackingMono};
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.stateWork};
-`;
-
-const CaveatBody = styled.p`
-  font: ${({ theme }) => theme.typeBodySm};
-  color: ${({ theme }) => theme.textBody};
-`;
+   What stays here is what the panel cannot say: which elements the fallback actually reached.
+   That is the other half of the criterion, and it belongs on the elements themselves. */
 
 const Grid = styled.ul`
   display: grid;
@@ -88,8 +64,12 @@ const Avatar = styled.img`
    an invented image is indistinguishable from a real one at a glance, and this page has
    to keep what it was told apart from what it made up. Drawn as the system's glyph tile —
    inset fill, visible hairline, mono mark — which is how the canvas draws a thing that is
-   absent rather than broken. */
-const AvatarFallback = styled.span`
+   absent rather than broken.
+
+   Dashed rather than solid when the fallback is a *failure* to fetch, per Errors.dc.html:152:
+   a dashed edge is the system's mark for a placeholder, and it is what tells this apart from
+   an agent juror who simply has no avatar set. */
+const AvatarFallback = styled.span<{ $fallenBack?: boolean }>`
   display: flex;
   width: 44px;
   height: 44px;
@@ -97,12 +77,23 @@ const AvatarFallback = styled.span`
   align-items: center;
   justify-content: center;
   border-radius: ${({ theme }) => theme.radiusTile};
-  border: ${({ theme }) => theme.borderVisible};
+  border: ${({ theme, $fallenBack }) =>
+    $fallenBack === true ? `1px dashed ${theme.lineAmber}` : theme.borderVisible};
   background-color: ${({ theme }) => theme.surfaceInset};
   font: ${({ theme }) => theme.typeMono};
   font-feature-settings: ${({ theme }) => theme.featureMono};
   color: ${({ theme }) => theme.textMeta};
   text-transform: uppercase;
+`;
+
+/* Where the nickname came from, on the element it affects. The panel above says ENS is
+   unreachable once; this says which names are the consequence, so a reader looking at one card
+   does not have to carry the panel in their head. */
+const FromRoster = styled.span`
+  font: ${({ theme }) => theme.typeMonoSm};
+  letter-spacing: ${({ theme }) => theme.trackingMono};
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.stateWork};
 `;
 
 const Identity = styled.div`
@@ -134,6 +125,12 @@ const Description = styled.span`
 `;
 
 export function Roster({ entries, isResolving, isResolvedFromEns }: RosterView) {
+  // `isResolving` as well as `isResolvedFromEns`: the second is false while the mainnet lookup
+  // is still out *and* after it fails, so a caveat keyed on it alone claims a failure for the
+  // length of every cold load and then takes it back. A caveat that appears and disappears
+  // teaches a reader to ignore caveats.
+  const fallenBack = !isResolving && !isResolvedFromEns;
+
   return (
     <Section aria-labelledby="roster-heading">
       <Heading id="roster-heading">The roster</Heading>
@@ -143,34 +140,24 @@ export function Roster({ entries, isResolving, isResolvedFromEns }: RosterView) 
         at all, so the chain alone would show fewer than six.
       </Lede>
 
-      {/* `isResolving` as well as `isResolvedFromEns`: the second is false while the mainnet
-          lookup is still out, so on its own this panel claims a failure for the length of every
-          cold load and then takes it back. A caveat that appears and disappears teaches a reader
-          to ignore caveats. */}
-      {!isResolving && !isResolvedFromEns && (
-        <Caveat role="status">
-          <CaveatLabel>
-            <span aria-hidden="true">◇</span>
-            Degraded, not broken
-          </CaveatLabel>
-          <CaveatBody>
-            ENS could not be reached, so every nickname below is the one held in this repository and
-            no avatar is shown. Nothing else on this page depends on it.
-          </CaveatBody>
-        </Caveat>
-      )}
-
       <Grid>
         {entries.map(({ agentJuror, identity }) => (
           <Card key={agentJuror.address}>
             {identity.avatarUrl ? (
               <Avatar src={identity.avatarUrl} alt="" loading="lazy" />
             ) : (
-              <AvatarFallback aria-hidden="true">{identity.nickname.slice(0, 2)}</AvatarFallback>
+              <AvatarFallback aria-hidden="true" $fallenBack={fallenBack}>
+                {identity.nickname.slice(0, 2)}
+              </AvatarFallback>
             )}
             <Identity>
               <Nickname>{identity.nickname}</Nickname>
-              <StackLabel>{agentJuror.stack.label}</StackLabel>
+              {/* Beside the stack label, never instead of it: which stack an agent juror is
+                  built on is a fact about the roster and is still true when ENS is down. */}
+              <StackLabel>
+                {agentJuror.stack.label}
+                {fallenBack && <FromRoster> · From roster</FromRoster>}
+              </StackLabel>
               {agentJuror.description && <Description>{agentJuror.description}</Description>}
             </Identity>
           </Card>

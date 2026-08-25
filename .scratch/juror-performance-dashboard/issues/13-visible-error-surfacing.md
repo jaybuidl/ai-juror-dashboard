@@ -13,36 +13,36 @@ dispute whose data could not be read is a gap, and a gap must never be readable 
 
 **Design:** `../canvas/Errors.dc.html:43-162` (failure states), `../canvas/README.md` for provenance
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] A failure that changes a number is loud and blocking; a failure that changes only a label is
+- [x] A failure that changes a number is loud and blocking; a failure that changes only a label is
       quiet and local
-- [ ] By that rule the core subgraph, the template subgraph and the Arbitrum endpoint are loud; the
+- [x] By that rule the core subgraph, the template subgraph and the Arbitrum endpoint are loud; the
       Ethereum mainnet endpoint carries only ENS names and avatars and is the one documented exception
-- [ ] Every read that fails says so twice: in the place where the missing figure would have been, and
+- [x] Every read that fails says so twice: in the place where the missing figure would have been, and
       once in a banner at the top of the page
-- [ ] The banner heading — "Part of this page could not be read. Do not cite these figures." — tells
+- [x] The banner heading — "Part of this page could not be read. Do not cite these figures." — tells
       the reader what to do, and sits beside an "Incomplete" pill in a banner spanning the full width
-- [ ] The banner names the failing source, the status it returned, and how long ago the last complete
+- [x] The banner names the failing source, the status it returned, and how long ago the last complete
       read was, and offers both a retry and an explanation of what a partial read means
-- [ ] An aggregate computed while a read has failed is labelled as partial everywhere it appears, and
+- [x] An aggregate computed while a read has failed is labelled as partial everywhere it appears, and
       what could not be read counts as unknown — never as zero and never as absent
-- [ ] A dispute whose data could not be read renders as Unknown across its whole row: a `?` glyph and
+- [x] A dispute whose data could not be read renders as Unknown across its whole row: a `?` glyph and
       the words "not read" in every slot where a figure belongs
-- [ ] The row header of an Unknown dispute carries a not-read badge and says the row is unavailable
-- [ ] Unknown shares its rose with "failed to act" and is told apart from it by glyph and word alone —
+- [x] The row header of an Unknown dispute carries a not-read badge and says the row is unavailable
+- [x] Unknown shares its rose with "failed to act" and is told apart from it by glyph and word alone —
       `?` against `∅`, "not read" against `NO VOTE` — per ADR-0006, which records rose as carrying
       exactly these two meanings. It shares nothing at all with "not drawn"
-- [ ] A reader can name which rows are evidence and which are a gap without consulting a legend, since
+- [x] A reader can name which rows are evidence and which are a gap without consulting a legend, since
       the words are in the cells
-- [ ] A failure of ENS resolution alone raises no banner: nicknames fall back to the roster and avatars
+- [x] A failure of ENS resolution alone raises no banner: nicknames fall back to the roster and avatars
       to initials, in a degraded-not-broken card rather than a blocking banner
-- [ ] The ENS fallback shows on the elements it affects — a "from roster" label beside the fallen-back
+- [x] The ENS fallback shows on the elements it affects — a "from roster" label beside the fallen-back
       nickname and a dashed avatar — and says that no measurement depends on ENS, so no figure on the
       page is partial
-- [ ] The commit cross-check discrepancy from ticket 07 surfaces through this same channel, and loudly,
+- [x] The commit cross-check discrepancy from ticket 07 surfaces through this same channel, and loudly,
       because it changes a number
-- [ ] Recovery needs no full page reload: retrying from the banner clears it once the source answers
+- [x] Recovery needs no full page reload: retrying from the banner clears it once the source answers
 
 ## Comments
 
@@ -233,3 +233,104 @@ read and the draw read can fail at different moments and render as one page read
 That now happens *repeatedly* rather than once per load, so a notice that appears and retracts is a
 live risk: a transient failure on one poll will flash your banner and clear it five seconds later.
 Whatever you build should probably survive one failed poll before it says anything.
+## What this ticket decided, 2026-08-25
+
+**The three-way `Unknown` was settled by giving the word away twice.** The rose `?` row state
+keeps `Unknown`, as the canvas draws it. Ticket 07's commit slot — the subgraph says committed and
+no log was found — became **`Not read` in rose**, converted exactly as that ticket's note
+recommended, because it genuinely *is* a read that came back short and rose's second meaning
+(ADR-0006) is precisely that. Ticket 05's dateless reveal became **`Not dated` in pending ink**:
+the reveal happened and the chain's own record carries no moment for it, so wording it as unread
+would report a defect in this dashboard where the truth is a gap in the record. No two things on
+one page now share the word.
+
+**`commitFigureOf` had to learn whether the scan had happened.** Converting the commit slot to
+rose immediately reintroduced ticket 07's own reviewed-out bug one level down: between the
+subgraph answering and the chain answering, every committed draw has no log, so all 56 cells came
+up rose reading "Not read" on every cold load. It now takes a `scanned` argument — the same
+distinction `commitCoverage.read` exists for — and unscanned is a dash in pending ink. A test
+pins both directions.
+
+**The unread row is decided in the seam, from a read moment passed in as data.**
+`RawCourtData.drawsReadAt` and `MatrixRow.read`. The rule is: the payload is the primary evidence
+and the moment only settles what the payload leaves ambiguous — a dispute the draws mention was
+plainly seen, whatever the timestamps say, so a skewed clock can never blank measurements that
+are in hand. Only a dispute with *no* draws is ambiguous, and there the moment separates "not
+drawn yet" from "nobody asked". The boundary second counts as read, or the newest dispute of
+every healthy load would go rose. The seam still consults no clock: the moment arrives as data,
+exactly as the commit timestamps do.
+
+**The template subgraph is loud, and the ticket's own first criterion argues otherwise.** By "a
+failure that changes only a label is quiet", a missing title is quiet. By the second criterion
+("the core subgraph, the template subgraph and the Arbitrum endpoint are loud … the Ethereum
+mainnet endpoint … is the one documented exception") and by the canvas's rule panel, which draws a
+rose dot against "DRT subgraph", it is loud. Two sources against one reading, and `CLAUDE.md` says
+the canvas wins — so loud. The case for it: a row a reader cannot identify, on a page that may be
+cited, is a gap in the record even though no latency moved. Flagged rather than settled silently;
+if it proves noisy in practice this is the criterion to revisit.
+
+**The banner is mounted by `View`, like the footer.** "Once in a banner at the top of the page" is
+a claim about every view, so a view that failed to render one had to be impossible rather than
+merely unusual. `View` also renders the degraded tier, which is why `Roster`'s amber panel moved
+out of it — ticket 15 had sent the roster to its own route, so the matrix was falling back to the
+roster for its own column headers while saying nothing about it. `ensFallbackOf` is the one place
+that decision is made, for the three views that show a nickname.
+
+**"Last complete read" is the older of the two reads.** The dispute read alone is the wrong figure
+in exactly the case the banner exists for: a successful dispute re-read beside a failed draw
+re-read keeps that moment current while the page is incomplete, and would date an uncitable page
+to a minute ago. `CourtPerformanceView.readAt` exists to make the other half visible.
+
+**Two departures from the artboard**, both deliberate. The banner's badge is a rose dot, not the
+`∅` drawn at `Errors.dc.html:45` — that glyph is reserved for a draw that failed to act
+(`canvas/README.md` § Known defects). And the unread cell carries no rail, because a rail is a
+picture of a number and there is no number.
+
+**For the tickets that follow:** `Failures` in `src/chrome/failures.ts` is where a new read
+declares its tier, and `SOURCES` in `src/read-failure.ts` is where a new endpoint gets a name. A
+read that throws a `ReadFailure` gets a status line in the banner for free; anything else shows
+"No response", which is the honest answer and not a gap. Tickets 06, 08, 10 and 12 each add a read
+and therefore each add an entry — and, per `CLAUDE.md`, another pair of queries that can drift
+apart.
+
+### What review caught, 2026-08-25 — seven, and the shape they share
+
+All seven are the same mistake in different places: **a caveat that is false**. A reader who
+checks one and finds it baseless stops checking the ones that are not, so an over-broad caveat
+does more damage on this page than a missing one.
+
+- **The "Partial" label was page-wide when it should be per-source.** `isPartial(failures)` was
+  true for *any* blocking read, so a template shortfall — a dispute whose template simply does
+  not come back, which `CLAUDE.md` calls normal and not an error — labelled all four stat tiles
+  and the latency strip partial, although not one of them reads that endpoint. The Arbitrum case
+  was worse: the matrix's own notice a few hundred pixels below says reveal latency and coherence
+  are unaffected, so the page contradicted itself. Now `affects(failures, source)`, and the tiles
+  ask about the core subgraph specifically.
+- **The commit-shortfall notice pointed at a word the cells no longer use.** It said "those cells
+  read Unknown" after this ticket had moved that word to the unread *row*. A reader following it
+  would have looked for whole rose rows and concluded the shortfall blanked sixteen disputes.
+- **"No commit latency below is a measurement" was printed over real figures.** react-query keeps
+  the commitments it holds when a refetch fails — the key does not change across one — so an
+  Arbitrum outage usually arrives over a full column of earlier-read latencies. And it is the
+  likely case, not the exotic one: arb1 rate-limits and surfaces as `UnknownRpcError`. The branch
+  now words itself by whether commitments are held, and the error no longer swallows the
+  shortfall count silently.
+- **The banner's age was re-announced every second to screen readers.** `Ago` ticks inside a
+  `role="alert"` region, which is assertive. `aria-live="off"` on that subtree: the banner is
+  still announced in full when it appears, the tick is not.
+- **`emptyColumns` was vacuously six with no rows read.** `every` on an empty array is true, so a
+  court whose every row was unread would report all six agent jurors as never drawn, on no
+  evidence. Latent today; ticket 12's persistence makes it reachable. The sparsity card now says
+  it has nothing to count rather than counting to zero.
+- **`drawsReadAt` was the moment the request *resolved*.** A dispute created while the draws
+  request was in flight then counted as read, had no draws in the payload, and rendered as six
+  blank "not drawn" cells — the exact misclassification `MatrixRow.read` exists to prevent, in a
+  window of one subgraph round trip. Stamped at request time now.
+- **The dispute index dated an incomplete page by the read that worked.** Its failing half is
+  usually the template read, so "Last complete read: 3s ago" sat under "Part of this page could
+  not be read". `DisputeTitleRead.readAt` exists for this, and `olderOf` is shared with the
+  matrix.
+
+Verified against a live failing endpoint as well as in jsdom: `VITE_CORE_SUBGRAPH_URL` pointed at
+a 404 renders the banner with source `kleros-v2-coreneo`, status `HTTP 404` and "Never", says the
+failure again in the dispute list below, and leaves `/method` and the 404 view untouched.

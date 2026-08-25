@@ -1,5 +1,6 @@
 import { COURT_ID, coreSubgraphUrl } from "../disputes/court-subgraph";
 import { postSubgraphQuery } from "../disputes/subgraph";
+import { SOURCES } from "../read-failure";
 import type { RawDraw } from "./performance";
 
 /**
@@ -79,7 +80,7 @@ export async function fetchCourtDraws({
       query: DRAWS_QUERY,
       variables: { first: PAGE_SIZE, court: courtId, idGt: cursor },
       signal,
-      source: "Core subgraph",
+      source: SOURCES.core,
       field: "draws",
     });
 

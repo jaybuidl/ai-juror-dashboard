@@ -253,3 +253,29 @@ What that leaves unconfirmed is the *appearance* of the rail and tint (the row t
 The reasoning for the latter: `useDisputes` reads `dataUpdatedAt`, which react-query tracks, so
 every successful poll re-renders the tree and the pill re-reads the clock. It should be watched
 once on a real page before this is trusted.
+### From ticket 13, 2026-08-25 — three things persistence now has to carry
+
+**The draws query no longer returns a bare array.** It is
+`{ draws, requestedAt }`, and `requestedAt` is stamped *before* the request goes out. That is
+deliberate and it is the input to `RawCourtData.drawsReadAt`, which decides whether a row's draws
+were read at all (`MatrixRow.read`). Dating the read by react-query's `dataUpdatedAt` — when the
+answer arrived — classifies a dispute created *during* the request as read, and it then renders as
+six blank "not drawn" cells: an unread state rendering as a fact about the court. Whatever this
+ticket does to that query, the moment must stay the request's start.
+
+**Persisting a draws read across sessions makes two latent bugs live.** Both were found by review
+on ticket 13 and both are fixed, but they are fixed *because* this ticket is coming:
+
+- `emptyColumns` in `Matrix.tsx` used `readRows.every(...)`, which is vacuously true on an empty
+  array — a court whose every row was unread would have reported all six agent jurors as never
+  drawn, on no evidence at all. Guarded now. Restoring a day-old draws read beside a fresh dispute
+  list is the way to reach it.
+- The whole `MatrixRow.read` mechanism matters far more once a draws read can be hours old rather
+  than a minute. Today the drift window is one `staleTime`; after this ticket it is however long a
+  persisted read survives.
+
+**`retry` and `isPaused` are on both `DisputesView` and `CourtPerformanceView` now.** The retry
+refetches every query behind a view, and the banner is computed from their state — so it clears by
+the read succeeding, with nothing to dismiss. A refetch interval must not fight that: a banner that
+disappears on its own schedule rather than on a successful read is a caveat that comes and goes,
+which `CLAUDE.md` says teaches a reader to ignore caveats.

@@ -1,11 +1,19 @@
 import { Link } from "react-router";
 import styled, { css } from "styled-components";
+import { Notice } from "../chrome/Failure";
 import { DisputeRow, type DisputeRowSlots } from "../disputes/DisputeList";
 import type { Dispute } from "../disputes/disputes";
 import { isFinalised, periodOpenSeconds } from "../disputes/liveness";
 import type { RosterView } from "../roster/useRoster";
 import { type Tone, toneInk, toneLine, toneWash } from "../styles/tones";
-import { commitFigureOf, presentationOf, revealFigureOf } from "./cell";
+import {
+  commitFigureOf,
+  type Figure,
+  presentationOf,
+  revealFigureOf,
+  UNREAD_FIGURE,
+  UNREAD_PRESENTATION,
+} from "./cell";
 import { formatElapsedSeconds, formatWindowSeconds, railFraction } from "./latency";
 import type { CourtPerformance, Draw, MatrixRow } from "./performance";
 import type { PeriodWindows } from "./windows";
@@ -71,6 +79,19 @@ const ROW_FLAGS: readonly {
   label: (row: MatrixRow, context: RowFlagContext) => string;
   tone: Tone;
 }[] = [
+  // First, and above every flag any later ticket adds: a row whose draws were never read has
+  // nothing true to flag. Its panel size is 0 rather than 1, so the lone-panel flag below would
+  // not fire on it today — but ticket 08's window flag reads the dispute, which *was* read, and
+  // would happily label a row the matrix is about to draw as entirely unknown. That is not a
+  // hypothetical any more: the two tickets are on the same branch, and this entry is what keeps
+  // an unread row from being labelled "8h window" over six cells reading "not read".
+  {
+    key: "not-read",
+    applies: (row) => !row.read,
+    glyph: "?",
+    label: () => "Not read",
+    tone: "fail",
+  },
   {
     key: "window",
     applies: (row) => row.underEarlierWindows,
@@ -248,7 +269,10 @@ const Avatar = styled.img`
   background-color: ${({ theme }) => theme.page};
 `;
 
-const AvatarFallback = styled.span`
+/* Dashed when the initials stand in for a portrait ENS could not be fetched, matching the roster
+   card and Errors.dc.html:152. The panel above the page says ENS is unreachable once; this is
+   what says which elements it reached, on the elements themselves. */
+const AvatarFallback = styled.span<{ $fallenBack?: boolean }>`
   display: flex;
   width: 26px;
   height: 26px;
@@ -256,7 +280,8 @@ const AvatarFallback = styled.span`
   align-items: center;
   justify-content: center;
   border-radius: ${({ theme }) => theme.radiusChip};
-  border: ${({ theme }) => theme.borderVisible};
+  border: ${({ theme, $fallenBack }) =>
+    $fallenBack === true ? `1px dashed ${theme.lineAmber}` : theme.borderVisible};
   background-color: ${({ theme }) => theme.surfaceInset};
   font: ${({ theme }) => theme.typeMonoSm};
   font-feature-settings: ${({ theme }) => theme.featureMono};
@@ -399,17 +424,20 @@ const MeasureKey = styled.span`
   color: ${({ theme }) => theme.textPending};
 `;
 
-const MeasureValue = styled.span<{ $tone: "value" | "missed" | "pending" }>`
+const MeasureValue = styled.span<{ $tone: Figure["tone"] }>`
   flex: none;
-  width: 56px;
+  /* Wide enough for a duration; "Not read" and "Not dated" are wider, and a fixed width would
+     either clip them or set every latency column to the width of a word. */
+  min-width: 56px;
   font: ${({ theme }) => theme.typeMono};
   /* TRAP: the font shorthand above just reset font-feature-settings, and with it the tabular
      digits base.css puts on body. Without this line a column of latencies stops lining up and
      nothing anywhere says so. */
   font-feature-settings: ${({ theme }) => theme.featureMono};
   font-weight: 600;
+  white-space: nowrap;
   color: ${({ theme, $tone }) => {
-    if ($tone === "missed") return theme.stateFail;
+    if ($tone === "missed" || $tone === "unread") return theme.stateFail;
     return $tone === "pending" ? theme.textPending : theme.textHeading;
   }};
 `;
@@ -445,7 +473,7 @@ const CommitValue = styled(MeasureValue)`
   font-feature-settings: ${({ theme }) => theme.featureMono};
   font-weight: 600;
   color: ${({ theme, $tone }) => {
-    if ($tone === "missed") return theme.stateFail;
+    if ($tone === "missed" || $tone === "unread") return theme.stateFail;
     return $tone === "pending" ? theme.textPending : theme.textBody;
   }};
 `;
@@ -509,22 +537,6 @@ const SparsityBody = styled.p`
 const Empty = styled.p`
   max-width: 68ch;
   color: ${({ theme }) => theme.textBody};
-`;
-
-/* Rose rather than the amber the dispute list uses for a missing title, because this changes a
-   figure and that changes a label. ADR-0006 gives rose exactly two meanings, and ticket 13 adds
-   the second of them: a thing that failed to act, and a thing that could not be read.
-   Ticket 13 also owns folding this and the two other notices in this repo into one component and
-   raising it to the blocking banner the Arbitrum endpoint is classified as deserving. */
-const Shortfall = styled.p`
-  max-width: 68ch;
-  margin: 0;
-  padding: 12px 16px;
-  border: 1px solid ${({ theme }) => theme.lineRose};
-  border-radius: 8px;
-  background-color: ${({ theme }) => theme.washRose};
-  color: ${({ theme }) => theme.textBody};
-  font-size: 0.875rem;
 `;
 
 /* Read by a screen reader, drawn for nobody: the keys and glyphs beside a figure are shorthand
@@ -646,10 +658,44 @@ function WindowFootnote({ performance }: { performance: CourtPerformance }) {
   );
 }
 
-function DrawCell({ draw }: { draw: Draw }) {
+/**
+ * A cell in a row whose draws were never read.
+ *
+ * Every slot where a figure belongs says so in words, which is the criterion: a reader can name
+ * which rows are evidence and which are a gap without consulting the legend. It carries no rail,
+ * because a rail is a picture of a number and there is no number.
+ *
+ * Deliberately the same anatomy as `DrawCell` rather than a smaller, quieter tile. An unread
+ * row must be the loudest thing in the grid, not the emptiest — the emptiest thing here already
+ * means something else, and means it about an agent juror.
+ */
+function UnreadCell() {
+  return (
+    <CellBox $tone={UNREAD_PRESENTATION.tone} $filled={UNREAD_PRESENTATION.filled}>
+      <CellHead>
+        <Glyph $tone={UNREAD_PRESENTATION.tone} aria-hidden="true">
+          {UNREAD_PRESENTATION.glyph}
+        </Glyph>
+        <Verdict $tone={UNREAD_PRESENTATION.tone}>{UNREAD_PRESENTATION.word}</Verdict>
+      </CellHead>
+      <Measure>
+        <MeasureKey aria-hidden="true">R</MeasureKey>
+        <VisuallyHidden>Reveal latency</VisuallyHidden>
+        <MeasureValue $tone={UNREAD_FIGURE.tone}>{UNREAD_FIGURE.text}</MeasureValue>
+      </Measure>
+      <Measure $context>
+        <MeasureKey aria-hidden="true">C</MeasureKey>
+        <VisuallyHidden>Commit latency</VisuallyHidden>
+        <CommitValue $tone={UNREAD_FIGURE.tone}>{UNREAD_FIGURE.text}</CommitValue>
+      </Measure>
+    </CellBox>
+  );
+}
+
+function DrawCell({ draw, scanned }: { draw: Draw; scanned: boolean }) {
   const presentation = presentationOf(draw.state);
   const figure = revealFigureOf(draw);
-  const commit = commitFigureOf(draw);
+  const commit = commitFigureOf(draw, scanned);
 
   return (
     <CellBox $tone={presentation.tone} $filled={presentation.filled}>
@@ -698,18 +744,35 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
   const identityOf = new Map(
     roster.entries.map(({ agentJuror, identity }) => [agentJuror.address, identity]),
   );
+  // `isResolving` as well as `isResolvedFromEns`: the second is false while the lookup is out
+  // and after it fails, and a mark keyed on it alone would dash every avatar on every cold load.
+  const fallenBack = !roster.isResolving && !roster.isResolvedFromEns;
 
   const finalised = rows.filter((row) => isFinalised(row.dispute)).length;
   const live = rows.length - finalised;
-  const drawnCells = rows.reduce(
+
+  // Every count below is about the part of the grid that was read. An unread row's cells are
+  // null and would otherwise be counted as blank, which would fold a gap into the sparsity
+  // figure — the one number on this page whose whole job is to say that blank means "not drawn".
+  const readRows = rows.filter((row) => row.read);
+  const unreadRows = rows.length - readRows.length;
+  const drawnCells = readRows.reduce(
     (total, row) => total + row.cells.filter((cell) => cell !== null).length,
     0,
   );
-  const totalCells = rows.length * agentJurors.length;
-  const emptyColumns = agentJurors.filter((_, column) =>
-    rows.every((row) => row.cells[column] === null),
-  ).length;
-  const lonePanels = rows.filter((row) => row.panelSize === 1).map((row) => row.dispute.id);
+  const totalCells = readRows.length * agentJurors.length;
+  // "Never drawn" is a claim about the whole record, so a column is only empty end to end if
+  // every row that was actually read leaves it empty — and only if there is a read row to say it
+  // about. `every` on an empty array is vacuously true, so without the length guard a court whose
+  // every row was unread would report all six agent jurors as never drawn, on no evidence at all.
+  // Latent while a draw read covers everything it is joined to, and reachable the moment ticket
+  // 12 persists one across sessions.
+  const emptyColumns =
+    readRows.length === 0
+      ? 0
+      : agentJurors.filter((_, column) => readRows.every((row) => row.cells[column] === null))
+          .length;
+  const lonePanels = readRows.filter((row) => row.panelSize === 1).map((row) => row.dispute.id);
 
   return (
     <Section aria-labelledby="matrix-heading">
@@ -736,17 +799,22 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
               not happened — on every cold load, because the chain answers slower than the
               subgraph and this page deliberately does not wait for it. */}
           {commitCoverage.read && unread > 0 && (
-            <Shortfall role="status">
+            // Rose rather than the amber a missing title gets, because this changes a figure and
+            // that changes a label. The shared component is ticket 13's: what were three separate
+            // Notice definitions in three files, added by three tickets that never met, is now
+            // one. The banner above the page says the same failure the other way round — this is
+            // the half that sits where the missing figures are.
+            <Notice $tone="rose" role="status">
               {/* The cross-check ADR-0004 asks for, said in the one place a reader is looking
                   at the figures it affects. A truncating endpoint returns fewer logs and no
                   error, so without this sentence the page would simply show fewer commit
                   latencies — an absence indistinguishable from a fact. */}
               {commitCoverage.resolved === 0
                 ? `None of the ${commitCoverage.expected} commitments this court recorded could be read from Arbitrum, so no commit latency below is a measurement.`
-                : `${unread} of the ${commitCoverage.expected} commitments this court recorded could not be found on Arbitrum, and those cells read Unknown.`}{" "}
+                : `${unread} of the ${commitCoverage.expected} commitments this court recorded could not be found on Arbitrum, and those cells read "Not read".`}{" "}
               That is a read that came back short, not an agent juror that failed to commit. Reveal
               latency and coherence come from the subgraph and are unaffected.
-            </Shortfall>
+            </Notice>
           )}
 
           <Legend>
@@ -763,6 +831,14 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
               <LegendItem $tone="live">
                 <span aria-hidden="true">⋯</span>Acting
               </LegendItem>
+              {/* Named only when one is on screen. A legend entry for a state the grid does not
+                  contain teaches a reader to look for a failure that is not there — and this is
+                  the entry a reader would most readily mistake for one of the others. */}
+              {unreadRows > 0 && (
+                <LegendItem $tone="fail">
+                  <span aria-hidden="true">?</span>Unknown
+                </LegendItem>
+              )}
               <LegendItem>
                 <Dot aria-hidden="true" />
                 Not drawn
@@ -808,7 +884,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                           {identity?.avatarUrl ? (
                             <Avatar src={identity.avatarUrl} alt="" loading="lazy" />
                           ) : (
-                            <AvatarFallback aria-hidden="true">
+                            <AvatarFallback aria-hidden="true" $fallenBack={fallenBack}>
                               {agentJuror.nickname.slice(0, 2)}
                             </AvatarFallback>
                           )}
@@ -854,8 +930,12 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                             // Panel size lives on the row and never in a cell: coherence cannot
                             // be read without it, and repeating it in every cell would cost more
                             // than it tells.
-                            panel: `Panel ${row.panelSize}`,
-                            panelTone: lone ? "work" : undefined,
+                            //
+                            // An unread row's panel size is 0 because nobody asked, not because
+                            // the court drew nobody, and "Panel 0" is exactly the sort of zero
+                            // this ticket exists to keep off the page. It says what it knows.
+                            panel: row.read ? `Panel ${row.panelSize}` : "Row unavailable",
+                            panelTone: !row.read ? "fail" : lone ? "work" : undefined,
                             flag: flag && (
                               <>
                                 <span aria-hidden="true">{flag.glyph}</span>
@@ -870,13 +950,22 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                         const agentJuror = agentJurors[column];
                         if (agentJuror === undefined) return null;
 
+                        // Order matters, and this is the whole point of the row: an unread row's
+                        // cells are all null, so testing for null first would draw six "not
+                        // drawn" dots — an unread state rendering as a fact about the court.
+                        if (!row.read) return <UnreadCell key={agentJuror.address} />;
+
                         return cell === null ? (
                           <EmptyCell key={agentJuror.address}>
                             <Dot aria-hidden="true" />
                             <VisuallyHidden>Not drawn</VisuallyHidden>
                           </EmptyCell>
                         ) : (
-                          <DrawCell key={agentJuror.address} draw={cell} />
+                          <DrawCell
+                            key={agentJuror.address}
+                            draw={cell}
+                            scanned={commitCoverage.read}
+                          />
                         );
                       })}
                     </BodyRow>
@@ -906,12 +995,28 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
             <SparsityCard>
               <SparsityLabel>On the empty cells</SparsityLabel>
               <SparsityBody>
-                {totalCells - drawnCells} of the {totalCells} cells here are blank
-                {emptyColumns > 0 &&
-                  `, and ${emptyColumns === 1 ? "one column is" : `${emptyColumns} columns are`} blank end to end`}
-                . Agent jurors are drawn at random: sparsity is the normal state of this matrix, not
-                missing data. A blank cell is drawn as nothing at all, so it can never be read as a
-                failure to act.
+                {/* Every figure here is about the rows that were read, so with none of them read
+                    there is nothing to count and the card says that instead of counting to zero.
+                    "0 of the 0 cells here are blank" is not a smaller version of this claim; it
+                    is a different one, and it is false. */}
+                {readRows.length === 0 ? (
+                  "No dispute on this page had its draws read, so there is nothing here to count as blank or as drawn."
+                ) : (
+                  <>
+                    {totalCells - drawnCells} of the {totalCells} cells here are blank
+                    {emptyColumns > 0 &&
+                      `, and ${emptyColumns === 1 ? "one column is" : `${emptyColumns} columns are`} blank end to end`}
+                    . Agent jurors are drawn at random: sparsity is the normal state of this matrix,
+                    not missing data. A blank cell is drawn as nothing at all, so it can never be
+                    read as a failure to act.
+                  </>
+                )}
+                {/* The sentence above is true of a row that was read and false of one that was
+                    not, where a blank would mean the draw has not been read rather than not
+                    happened. Those rows are drawn as Unknown instead and counted out of the
+                    figures above, and this says so rather than leaving the count unexplained. */}
+                {unreadRows > 0 &&
+                  ` ${unreadRows === 1 ? "One further dispute is" : `A further ${unreadRows} disputes are`} not counted here at all: ${unreadRows === 1 ? "its draws were" : "their draws were"} never read, so ${unreadRows === 1 ? "that row is" : "those rows are"} marked Unknown rather than blank.`}
               </SparsityBody>
             </SparsityCard>
           </Footnotes>

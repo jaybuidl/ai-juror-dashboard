@@ -1,5 +1,6 @@
 import { Fragment, type ReactNode } from "react";
 import styled from "styled-components";
+import { Notice } from "../chrome/Failure";
 import { type Tone, toneInk, toneLine } from "../styles/tones";
 import type { Dispute, Ruling } from "./disputes";
 
@@ -29,17 +30,6 @@ const Lede = styled.p`
   margin: 0;
   max-width: 68ch;
   color: ${({ theme }) => theme.textBody};
-`;
-
-const Notice = styled.p`
-  margin: 0;
-  max-width: 68ch;
-  padding: 12px 16px;
-  border: 1px solid ${({ theme }) => theme.lineAmber};
-  border-radius: 8px;
-  background-color: ${({ theme }) => theme.washAmber};
-  color: ${({ theme }) => theme.textBody};
-  font-size: 0.875rem;
 `;
 
 const Rows = styled.ul`
@@ -207,6 +197,14 @@ export type DisputeTitleRead = {
   resolved: number;
   /** True while the read is in flight; nothing is missing until it settles. */
   isLoading: boolean;
+  /**
+   * When the titles on screen landed, in epoch milliseconds, or `null` before any have.
+   *
+   * So a view whose failing half is the template read can date itself by *that* read rather than
+   * by the dispute read that worked — the same reason the matrix takes the older of its two.
+   * `null` also covers having nothing to ask for: with no template ids the query never runs.
+   */
+  readAt: number | null;
 };
 
 export type DisputeListView = {
@@ -324,7 +322,8 @@ export function DisputeList({ disputes, isLoading, error, titles, slotsFor }: Di
       </Lede>
 
       {error !== null && (
-        <Notice role="status">
+        // Rose: the list may be short, which is a missing row rather than a missing label.
+        <Notice $tone="rose" role="status">
           The court's disputes could not be read, so this list may be incomplete or out of date.
           Nothing here should be taken as the full record.
         </Notice>
@@ -336,7 +335,11 @@ export function DisputeList({ disputes, isLoading, error, titles, slotsFor }: Di
           only what is missing — with the count, because "some" and "all" are different
           claims and the partial case is the one a lagging subgraph produces. */}
       {missingTitles > 0 && (
-        <Notice role="status">
+        // Rose too, and this is the one the two tiers argue over. Ticket 13's first criterion
+        // makes a missing title quiet — it changes a label, not a number — while the ticket's
+        // own source list and the canvas's rule panel both put the template subgraph in the loud
+        // set, with ENS as the single exception. Those two win, per CLAUDE.md on the canvas.
+        <Notice $tone="rose" role="status">
           {titles?.resolved === 0
             ? "What these disputes are about could not be read, so the rows below are identified by ID alone. The list itself is complete; only the titles are missing."
             : `${missingTitles} of these ${titles?.expected} disputes could not have their subject read, so those rows are identified by ID alone. The list itself is complete.`}
