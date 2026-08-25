@@ -124,3 +124,24 @@ labelled every stat tile partial over a missing dispute title, contradicting a n
 pixels below it. And per `CLAUDE.md`, a new read is another query that can drift out of step with
 the ones beside it — check its own error, and where a figure joins two reads, say which half is
 stale rather than that "the court" is.
+
+## From ticket 09: a new field on `Draw`, and a branch that will collide with yours
+
+`Draw` now carries **`choices: readonly number[]`** — every distinct choice that draw's vote IDs
+revealed, ascending, empty until it reveals. It is computed once in `drawOf` and handed to
+`stateOf`, which used to derive it a second time to decide coherence. A list rather than a number
+because the seam has always had to reckon with a draw whose vote IDs disagree, and a marginal that
+collapsed it would report a choice the draw did not make. No persistence bump: it is derived from
+the `courtDraws` payload the cache already holds, and the pure seam re-derives it on every load.
+
+**Both branches touch the same two files.** Ticket 09 changed `performance.ts` (the `Draw` type,
+`drawOf`, `stateOf`) and `useDisputes.ts` (a new `templateFor` on `DisputesView`, beside `slotsFor`
+rather than replacing it). Ticket 06 was in a parallel worktree while this was written. `CLAUDE.md`
+§ Traps is explicit about what that costs: resolve those hunks by hand, and afterwards diff the
+result against **both** parents for lines appearing more often than in either. The failure mode is
+not a conflict marker — it is a type field silently concatenated onto the wrong type, which parses.
+
+One rule ticket 09 met that ticket 06 will meet in aggregate form: a figure that is `0` and a
+figure that was not read are different, and the second must never be drawn as the first. The
+ruling card lists a choice with no votes as `0 votes` and a ballot that could not be read as
+nothing at all.

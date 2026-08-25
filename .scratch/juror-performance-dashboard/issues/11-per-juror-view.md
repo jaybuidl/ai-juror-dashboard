@@ -78,3 +78,31 @@ Your view shows a nickname and an avatar, so it takes the amber panel through `V
 prop and the per-element marks — a dashed avatar border and a "From roster" label — the way
 `Roster.tsx` and the matrix's column headers do. It raises no banner: ENS is the one documented
 exception, and no measurement depends on it.
+
+## From ticket 09: the detail-view pattern, built once and ready to copy
+
+Ticket 09 built the first detail view. Four things it settled are yours to reuse rather than
+re-decide:
+
+- **A route that reads something of its own splits in two.** `DisputePage` is a thin connected
+  wrapper — `useParams`, then the hook — and `DisputeView` is a pure component taking every read
+  as a prop. That is what keeps `yarn test` network-free: `App` cannot supply this read because
+  the thing being read is named by the URL. `src/test/court.tsx`'s `renderAt` now wraps the route
+  table in a `QueryClientProvider` whose queries are `enabled: false`, so rendering a route costs
+  no request; anything asserting on what a read *returned* renders the pure view directly.
+- **`Draw.choices`** is new and is what a column header prints as "Choice 2". See ticket 06's note.
+- **A disabled query is `pending` for ever.** `useDisputeDetail(null)` — for a path segment that is
+  not a number — leaves `isPending` true permanently, so a caveat keyed on it says "still being
+  read" about a read nobody started. The view flag must be `isPending && fetchStatus !== "idle"`.
+  Recorded in `CLAUDE.md` § Traps as the fourth face of the `RosterView.isResolving` trap. Ticket
+  11 has exactly the same shape: `/agent-jurors/<not-a-nickname>`.
+- **A bad id in the path is not a 404 and not a failed read.** It is a real route with an id that
+  names nothing, and the view says so itself. Ticket 09 distinguishes three cases and words each
+  differently: the segment is not a number, the subgraph holds no such dispute, and the dispute
+  exists but belongs to another court. Ticket 11's equivalent is a nickname that is not on the
+  roster — and the roster is local, so that one is decidable without a read at all.
+
+The breadcrumb takes the **roster** nickname and never the one ENS resolves, which is unchanged
+from ticket 15's note and is worth repeating because ticket 09's column headers deliberately do the
+opposite: they *display* `identity.nickname` ("Blaise") while everything keys on the roster
+("blaise").
