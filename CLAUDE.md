@@ -126,6 +126,14 @@ Things that cost real effort to discover and are easy to get wrong again:
   not. The same string ordering is why dispute lists order on `disputeID` and not on `id`, and why
   ordering happens in the model rather than the query — **ordering by `period` is rejected outright**
   by The Graph on the `Dispute` type, so the obvious query is the broken one.
+- **Parallel ticket branches collide in the status prose, not in the code.** Tickets 03, 14 and a
+  CI branch each touched this file's status paragraph and `README.md` § Status. Git auto-merged all
+  three textually and produced claims true of every parent alone and false of the merge — "no
+  dispute data" one commit after the dispute list landed, and a `live` CI job describing one
+  integration suite after `yarn test:integration` had silently picked up a second. Lint, types and
+  tests passed on all of it. When integrating, re-read every sentence that counts what is done or
+  says how many of something there are; the sentences that raise a conflict marker are the easy
+  half.
 
 ## Verified constants
 
