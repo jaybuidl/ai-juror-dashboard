@@ -25,7 +25,9 @@ describe("identity without ENS", () => {
 });
 
 describe("the mainnet endpoint", () => {
-  it("defaults to a keyless host that is present in netlify.toml's connect-src", () => {
+  // The connect-src half of this claim lives in `src/csp.test.ts`, which reads the policy out
+  // of netlify.toml. It was asserted in this title and nowhere in this body until then.
+  it("defaults to a keyless endpoint reached over https", () => {
     expect(mainnetRpcUrl()).toBe(DEFAULT_MAINNET_RPC_URL);
     expect(DEFAULT_MAINNET_RPC_URL).toMatch(/^https:\/\//);
   });

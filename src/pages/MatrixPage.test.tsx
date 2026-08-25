@@ -401,6 +401,9 @@ describe("the matrix view's footer", () => {
       renderAt("/", { performance: arbitrumFailed });
 
       expect(screen.queryByText(/period durations are still being read/i)).not.toBeInTheDocument();
+      // `arb1.arbitrum.io` is DERIVED here, not hardcoded: no `VITE_ARBITRUM_RPC_URL` is set
+      // under jsdom, so `arbitrumSource()` reads the default and yields its host. A deploy that
+      // overrides the endpoint prints that host instead, which is the whole point of it.
       expect(within(screen.getByRole("alert")).getByText("arb1.arbitrum.io")).toBeInTheDocument();
     });
 
@@ -560,6 +563,7 @@ describe("the failure banner", () => {
 
     const banner = screen.getByRole("alert");
 
+    // Derived from the configured URL, as above — see `arbitrumSource`.
     expect(within(banner).getByText("arb1.arbitrum.io")).toBeInTheDocument();
     expect(within(banner).getByText("No response")).toBeInTheDocument();
     expect(within(banner).queryByText(/HTTP 0/)).not.toBeInTheDocument();

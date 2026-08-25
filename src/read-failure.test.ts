@@ -20,7 +20,7 @@ describe("failureOf", () => {
       status: "HTTP 502",
     });
 
-    expect(failureOf(error, SOURCES.arbitrum, "The draws are missing.")).toEqual({
+    expect(failureOf(error, SOURCES.mainnet, "The draws are missing.")).toEqual({
       source: SOURCES.core,
       status: "HTTP 502",
       what: "The draws are missing.",
@@ -28,13 +28,15 @@ describe("failureOf", () => {
   });
 
   it("never invents a status for an error that arrived without one", () => {
-    // viem raises its own errors from inside the log scan and the ENS resolver, and a rate limit
+    // viem raises its own errors from inside the ENS resolver and the log scan, and a rate limit
     // on arb1 surfaces as `UnknownRpcError` with no status at all. "HTTP 0" or "Unknown error"
-    // would be a fact on a public page that nothing measured.
+    // would be a fact on a public page that nothing measured. Carried here by the mainnet
+    // source: the Arbitrum one is no longer a constant, because its name is derived from the
+    // URL actually configured — see `arbitrumSource`.
     const opaque = new Error("Cannot read properties of undefined (reading 'error')");
 
-    expect(failureOf(opaque, SOURCES.arbitrum, "…")).toEqual({
-      source: SOURCES.arbitrum,
+    expect(failureOf(opaque, SOURCES.mainnet, "…")).toEqual({
+      source: SOURCES.mainnet,
       status: null,
       what: "…",
     });

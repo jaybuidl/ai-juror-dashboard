@@ -8,6 +8,7 @@ import { StatTiles } from "../chrome/StatTiles";
 import { View } from "../chrome/View";
 import { DisputeList } from "../disputes/DisputeList";
 import type { DisputesView } from "../disputes/useDisputes";
+import { arbitrumSource } from "../performance/arbitrum";
 import { LatencyStrip } from "../performance/LatencyStrip";
 import { formatWindowSeconds } from "../performance/latency";
 import { Matrix } from "../performance/Matrix";
@@ -149,11 +150,14 @@ function coreFailureOf({
 function arbitrumFailureOf(performance: CourtPerformanceView): FailedRead | null {
   const measured = performance.performance;
   const coverage = measured?.commitCoverage;
+  // Once, for all three branches: they are the same endpoint, and the name is derived from the
+  // URL in use rather than being a constant. See `arbitrumSource`.
+  const source = arbitrumSource();
 
   if (performance.commitError !== null) {
     return failureOf(
       performance.commitError,
-      SOURCES.arbitrum,
+      source,
       coverage?.read === true
         ? "The commitments could not be re-read from Arbitrum, so every commit latency below comes from an earlier read and none of them accounts for a commitment made since."
         : "The commitments could not be read from Arbitrum, so no commit latency below is a measurement.",
@@ -165,7 +169,7 @@ function arbitrumFailureOf(performance: CourtPerformanceView): FailedRead | null
   // announce that all 56 failed on every cold load, before they had.
   if (coverage?.read === true && coverage.expected > coverage.resolved) {
     return {
-      source: SOURCES.arbitrum,
+      source: source,
       status: "Short read",
       what: `${coverage.expected - coverage.resolved} of ${coverage.expected} commitments could not be found on Arbitrum, so those commit latencies are unknown.`,
     };
@@ -179,7 +183,7 @@ function arbitrumFailureOf(performance: CourtPerformanceView): FailedRead | null
   if (performance.parametersError !== null) {
     return failureOf(
       performance.parametersError,
-      SOURCES.arbitrum,
+      source,
       "The court's period durations could not be read from its own parameter history on Arbitrum, so no dispute below is marked as having run under earlier ones. Court 34 was reconfigured partway through this experiment, and which rows that affects is not shown on this load.",
     );
   }

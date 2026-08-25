@@ -7,6 +7,7 @@ import { type Provenance, rangeOf } from "../chrome/provenance";
 import { View } from "../chrome/View";
 import { COURT_ID } from "../disputes/court-subgraph";
 import type { DisputesView } from "../disputes/useDisputes";
+import { arbitrumSource } from "../performance/arbitrum";
 import { DisputePanel } from "../performance/DisputePanel";
 import {
   buildDisputeReading,
@@ -386,13 +387,13 @@ function failuresOf({
       performance.commitError !== null
         ? failureOf(
             performance.commitError,
-            SOURCES.arbitrum,
+            arbitrumSource(),
             "The commitments could not be read from Arbitrum, so no commit latency in the columns below is a measurement.",
           )
         : performance.parametersError !== null
           ? failureOf(
               performance.parametersError,
-              SOURCES.arbitrum,
+              arbitrumSource(),
               "The court's period durations could not be read from its own parameter history, so the timeline below shows how long each period ran and not what it was configured to allow.",
             )
           : null,

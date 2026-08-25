@@ -25,11 +25,28 @@ export type Source = {
   label: string;
 };
 
-/** Every source a figure on this dashboard can rest on. */
+/**
+ * Every source a figure on this dashboard can rest on — except the one that cannot be a
+ * constant.
+ *
+ * **Arbitrum is deliberately absent.** Its name is `arbitrumSource()` in
+ * `performance/arbitrum.ts`, derived from the URL in use, because every endpoint here is
+ * overridable through a `VITE_` variable and a literal is then a claim about configuration
+ * that the code has no way to keep true. The literal that used to sit here named
+ * `arb1.arbitrum.io` on a deploy reading Alchemy, and reported an outage at an endpoint that
+ * had never been contacted. It is removed rather than left beside the accessor so that the
+ * wrong one cannot be reached for: this module is the first place anyone composing a failure
+ * looks.
+ *
+ * The three that remain are falsifiable in exactly the same way, and are still literals
+ * because nothing has overridden them yet — not because they are safe. The derivation is not
+ * uniform, which is why it lives beside each URL rather than here: a subgraph's name is the
+ * Goldsky deployment inside its *path*, where an RPC's is its host, and only the module that
+ * owns the URL knows which part of it a reader could go and check.
+ */
 export const SOURCES = {
   core: { name: "kleros-v2-coreneo", label: "The core subgraph" },
   templates: { name: "kleros-v2-drt", label: "The template subgraph" },
-  arbitrum: { name: "arb1.arbitrum.io", label: "The Arbitrum endpoint" },
   mainnet: { name: "ethereum-rpc.publicnode.com", label: "The Ethereum endpoint" },
 } as const satisfies Record<string, Source>;
 

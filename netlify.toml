@@ -52,16 +52,32 @@
 # arb1.arbitrum.io was listed from ticket 01 and unused until ticket 07, which reads
 # `CommitCast` logs from it for commit latency — the one figure on this page that no subgraph
 # carries (ADR-0004). VITE_ARBITRUM_RPC_URL is the override, and a substituted host must be
-# added here or the browser blocks it before the request leaves. Note what that failure looks
-# like: the commit read is deliberately non-blocking, so a blocked host does not break the page.
-# The matrix still renders, every commit slot reads Unknown, and the notice above it says all N
-# commitments went unread. Loud on the page, and easy to mistake for an endpoint outage.
+# added here or the browser blocks it before the request leaves.
 #
 # Ticket 08 reads a second thing from that same host and added no entry: the court's own
-# parameter history, from KlerosCore rather than from the dispute kit. It is non-blocking on
-# the same terms, and quieter — a blocked host costs the † marker and the windows on each row,
-# so the page loses the note saying which figures are not comparable with which rather than
-# losing a figure. The provenance footer is where that shows up.
+# parameter history, from KlerosCore rather than from the dispute kit. It is the quieter of the
+# two — a blocked host costs the † marker and the windows on each row, so the page loses the
+# note saying which figures are not comparable with which rather than losing a figure.
+#
+# Both paragraphs above got the prediction right and the consequence wrong, which cost a
+# session. They used to say these reads were non-blocking, so a blocked host would not break
+# the page: the matrix would render, every commit slot reading Unknown. That was true until
+# ticket 13, which put Arbitrum in the *blocking* tier. A blocked host now draws the rose
+# banner and "Do not cite these figures" across the whole page — a much louder thing to
+# mistake for an endpoint outage, and duly mistaken for one: the override was set, its host
+# was not added here, and the page reported an outage at an endpoint it had never contacted,
+# because the banner named a hardcoded arb1.arbitrum.io rather than the host it called.
+#
+# arb-mainnet.g.alchemy.com is that override, in production, today. It is listed here and not
+# derived, because this policy is a static header: Netlify cannot interpolate an environment
+# variable into it, so the host a deploy overrides to has to be committed. A deploy that
+# overrides to something else adds that host here the same way.
+#
+# Both halves of the failure are fixed. `arbitrumSource()` in src/performance/arbitrum.ts
+# derives the banner's SOURCE from the URL in use, so a CSP block on an override now names
+# that host rather than blaming the default — and src/csp.test.ts fails if a *default*
+# endpoint's host goes missing from this line. Neither can catch a host set only in Netlify's
+# UI, which never reaches this file. That one is caught by reading this paragraph.
 #
 # Ticket 09 added a whole view and no host, which is worth saying because it is the first one
 # that renders content this repository did not write: justification prose, published on chain by
@@ -112,7 +128,7 @@ script-src 'self'; \
 style-src 'self' 'unsafe-inline'; \
 img-src 'self' data: https:; \
 font-src 'self' data:; \
-connect-src 'self' https://api.goldsky.com https://arb1.arbitrum.io https://ethereum-rpc.publicnode.com https://euc.li; \
+connect-src 'self' https://api.goldsky.com https://arb-mainnet.g.alchemy.com https://arb1.arbitrum.io https://ethereum-rpc.publicnode.com https://euc.li; \
 base-uri 'self'; \
 form-action 'none'; \
 frame-ancestors 'none'"""

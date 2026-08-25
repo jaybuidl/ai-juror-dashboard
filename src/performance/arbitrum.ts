@@ -1,5 +1,7 @@
 import { createPublicClient, http, type PublicClient } from "viem";
 import { arbitrum } from "viem/chains";
+import { hostOf } from "../host";
+import type { Source } from "../read-failure";
 import type { BlockTimes } from "./block-times";
 
 /**
@@ -23,6 +25,36 @@ export const DEFAULT_ARBITRUM_RPC_URL = "https://arb1.arbitrum.io/rpc";
 
 export function arbitrumRpcUrl(): string {
   return import.meta.env.VITE_ARBITRUM_RPC_URL ?? DEFAULT_ARBITRUM_RPC_URL;
+}
+
+/**
+ * This endpoint as the failure banner names it: the host of the URL actually in use.
+ *
+ * Derived and not a constant, which is the whole point. `SOURCES` in `read-failure.ts` holds a
+ * literal for every other source, and the literal that used to sit there for this one said
+ * `arb1.arbitrum.io` whatever the deploy was configured to read. A production deploy overrode
+ * `VITE_ARBITRUM_RPC_URL`, forgot the `connect-src` entry, and the browser blocked every
+ * request — and the banner reported an outage at an endpoint the page had never contacted. A
+ * name that cannot be wrong about which endpoint failed is worth deriving.
+ *
+ * **The host, never the URL.** An override to a commercial provider carries its key in the
+ * path, and this string is rendered into a public page. `hostOf` drops the path and the
+ * userinfo, so `…/v2/<key>` and `…/v3/<key>` are both safe to derive from. The residual is a
+ * provider that puts the credential in the *hostname*; nothing here can strip that without
+ * destroying the checkability the name exists for, so `vite-env.d.ts` states it as a
+ * constraint on what may be configured.
+ *
+ * The sentinel, rather than falling back to the default host, for the same reason the whole
+ * function exists: an unparseable override is exactly when naming `arb1.arbitrum.io` would
+ * mislead most. Falling back to the raw string is the other wrong answer — that is the key.
+ * The branch is unreachable in the stock configuration, where the default is a literal that
+ * parses; only a misconfigured override reaches it, which is the reader who needs telling.
+ *
+ * Takes the URL the way `createArbitrumClient` below does, so a caller that passes an explicit
+ * URL to one can name it with the other, and so the tests need no environment.
+ */
+export function arbitrumSource(url: string = arbitrumRpcUrl()): Source {
+  return { name: hostOf(url) ?? "Not a host this page can read", label: "The Arbitrum endpoint" };
 }
 
 /**

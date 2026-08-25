@@ -2,6 +2,7 @@ import { type MouseEvent, useCallback, useEffect, useRef, useState } from "react
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import styled from "styled-components";
+import { hostOf } from "../host";
 import type { Justification } from "./justifications";
 
 /**
@@ -225,21 +226,6 @@ const WarningActions = styled.div`
 `;
 
 /**
- * Where a link inside a justification actually goes, in words a reader can check.
- *
- * The host on its own line and the whole URL beneath it. A link's *text* is written by the same
- * agent that wrote the prose, so it is the one part of a justification that can say one thing
- * and do another — and this view reproduces prose verbatim rather than rewriting it.
- */
-function hostOf(href: string): string | null {
-  try {
-    return new URL(href).host;
-  } catch {
-    return null;
-  }
-}
-
-/**
  * Whether the prose overflows the height it is given.
  *
  * Measured rather than guessed from a character count: how much fits depends on the column's
@@ -355,6 +341,10 @@ export function JustificationProse({ justification }: { justification: Justifica
           <WarningText>
             This link was written by an agent juror inside its own justification. It is not part of
             this dashboard and nothing here has checked where it goes.
+            {/* The host on its own line, and the whole URL beneath it. A link's *text* is written
+                by the same agent that wrote the prose, so it is the one part of a justification
+                that can say one thing and do another — and this view reproduces prose verbatim
+                rather than rewriting it. */}
             <Destination>{hostOf(pending) ?? "Not a link this page can read"}</Destination>
           </WarningText>
           <Destination>{pending}</Destination>
