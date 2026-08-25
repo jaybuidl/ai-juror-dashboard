@@ -64,3 +64,18 @@ give one a 5s interval, give both.
 **A finalised row is one whose dispute has a ruling, not one whose period is `execution`.** The
 matrix's own caption counts them that way (`ruling.state !== "pending"`), for the reason ticket 03
 recorded: the subgraph reports a `currentRuling` for a dispute still in its appeal period.
+
+### From ticket 07, 2026-08-25 — persistence now has a second reason, and a refetch interval has a cost
+
+**The commit read costs one RPC call per commitment, and the endpoint rate-limits per call.**
+`fetchCommitCasts` makes one `eth_getLogs` and then one `eth_getBlockByNumber` per commitment,
+because the log's own `blockTimestamp` is always `"0x0"` on this endpoint and the block is the only
+source of the moment. Measured: 62 blocks read three times over inside a second returns HTTP 429.
+One page load a minute is nowhere near that; **a 5s refetch interval is**, and it would take the
+commit line down for whoever is looking. If you shorten the interval, give the commit query its own
+longer one, or gate it on the dispute set having changed.
+
+**Persisting finalised rows now saves an RPC call per commitment, not just a subgraph round trip.**
+A finalised dispute's commitments can never change, so a cache of them is exactly the thing that
+keeps this read bounded as the court grows past the ~200 disputes where a single cold load starts
+approaching the rate limit. That is the strongest argument this ticket has acquired.

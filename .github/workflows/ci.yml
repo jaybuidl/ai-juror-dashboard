@@ -109,13 +109,17 @@ jobs:
   # `yarn test:integration` runs every `src/**/*.integration.test.ts`, so a suite joins by
   # filename and this comment never has to count them. What they cover today: ENS (all six
   # subnames resolved against mainnet and cross-checked against the addresses the roster has
-  # checked in by hand), the core subgraph's disputes and its draws, and the template subgraph
-  # that says what each dispute is about. Each asserts that the endpoint still returns the shape
-  # the model parses — a renamed field or a changed enum is exactly what a fixture cannot notice.
+  # checked in by hand), the core subgraph's disputes and its draws, the template subgraph
+  # that says what each dispute is about, and Arbitrum's `CommitCast` logs — which also run
+  # ADR-0004's cross-check live, asserting that every draw the subgraph calls committed has a
+  # matching event. Each asserts that the endpoint still returns the shape the model parses —
+  # a renamed field or a changed enum is exactly what a fixture cannot notice.
   #
-  # They hit ethereum-rpc.publicnode.com and api.goldsky.com from a shared runner IP and
-  # may be rate-limited there in a way they never are from a laptop. If that starts biting,
-  # lower the cadence rather than adding a retry loop — a retry would paper over a real
+  # They hit ethereum-rpc.publicnode.com, api.goldsky.com and arb1.arbitrum.io from a shared
+  # runner IP and may be rate-limited there in a way they never are from a laptop. The Arbitrum
+  # one is the most exposed: it costs one RPC call per commitment and that endpoint rate-limits
+  # per call, which is why its suite reads once in `beforeAll` and shares the result. If that
+  # starts biting, lower the cadence rather than adding a retry loop — a retry would paper over a real
   # endpoint change too.
   live:
     if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'

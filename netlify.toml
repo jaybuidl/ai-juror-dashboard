@@ -49,6 +49,14 @@
 # subgraph already put here. VITE_DRT_SUBGRAPH_URL is the override, and it is subject to
 # this list exactly as the two above are.
 #
+# arb1.arbitrum.io was listed from ticket 01 and unused until ticket 07, which reads
+# `CommitCast` logs from it for commit latency — the one figure on this page that no subgraph
+# carries (ADR-0004). VITE_ARBITRUM_RPC_URL is the override, and a substituted host must be
+# added here or the browser blocks it before the request leaves. Note what that failure looks
+# like: the commit read is deliberately non-blocking, so a blocked host does not break the page.
+# The matrix still renders, every commit slot reads Unknown, and the notice above it says all N
+# commitments went unread. Loud on the page, and easy to mistake for an endpoint outage.
+#
 # style-src and font-src are still 'self' after ticket 14 adopted the Kleros ×AI design
 # system, and that is a decision rather than an omission. The system's tokens/fonts.css
 # @imports Manrope and JetBrains Mono from fonts.googleapis.com; this repo self-hosts both

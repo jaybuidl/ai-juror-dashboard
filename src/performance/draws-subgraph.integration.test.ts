@@ -5,6 +5,7 @@ import {
   fetchCourtDisputes,
 } from "../disputes/court-subgraph";
 import { ROSTER } from "../roster/agent-jurors";
+import { fetchCommitCasts } from "./commit-logs";
 import { fetchCourtDraws } from "./draws-subgraph";
 import { buildCourtPerformance } from "./performance";
 
@@ -47,9 +48,13 @@ describe("fetchCourtDraws", () => {
     }
   }, 30_000);
 
-  it("builds a model out of what the two live reads return together", async () => {
-    const [disputes, draws] = await Promise.all([fetchCourtDisputes(), fetchCourtDraws()]);
-    const result = buildCourtPerformance({ disputes, draws, roster: ROSTER });
+  it("builds a model out of what the three live reads return together", async () => {
+    const [disputes, draws, commits] = await Promise.all([
+      fetchCourtDisputes(),
+      fetchCourtDraws(),
+      fetchCommitCasts(),
+    ]);
+    const result = buildCourtPerformance({ disputes, draws, commits, roster: ROSTER });
 
     if (!result.success) throw new Error(`${result.code}: ${result.message}`);
 

@@ -5,17 +5,20 @@ on two dimensions: **speed** (commit and reveal latency) and **coherence** (voti
 ruling).
 
 **Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01, 02, 03, 04,
-05 and 14 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a `netlify.toml` that is the
-single source of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted webfonts, a
+05, 07 and 14 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a `netlify.toml` that is
+the single source of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted webfonts, a
 page that names all six agent jurors by nickname and avatar, and the dispute matrix — one row per
 dispute, headed by that dispute's own title and category, one column per agent juror, each cell
-carrying that draw's reveal latency and whether it voted with the final ruling. CI exists too —
-`.github/workflows/ci.yml`, added as toolchain upkeep rather than as a ticket, so do not propose it
-again. Two measures are read and no more: commit latency (07), per-agent-juror marginals (06),
-rewards (10) and the historical windows (08) are all still unread, and the caveat the page carries
-above the roster says so outright rather than leaving a reader to infer it. The design work behind
-it (glossary, six ADRs, a spec, eighteen tickets) came out of a full grilling session and a later
-pass that rebuilt the tracker on the finished design. Start by reading, not by writing.
+carrying that draw's commit latency, its reveal latency and whether it voted with the final ruling.
+CI exists too — `.github/workflows/ci.yml`, added as toolchain upkeep rather than as a ticket, so do
+not propose it again. Three measures are read and no more: per-agent-juror marginals (06), rewards
+(10) and the historical windows (08) are all still unread, and the caveat the page carries above the
+roster says so outright rather than leaving a reader to infer it. Ticket 07 also brought the first
+read that is not a subgraph — `CommitCast` logs from an Arbitrum RPC — and with it
+`CourtPerformance.commitCoverage`, the cross-check that turns a short log scan into a number the
+page states rather than an absence. The design work behind it (glossary, six ADRs, a spec, eighteen
+tickets) came out of a full grilling session and a later pass that rebuilt the tracker on the
+finished design. Start by reading, not by writing.
 
 `README.md` covers the toolchain, the scripts, the test split and the CSP; this file covers the
 domain. Two constraints recorded there and easy to trip over: **yarn must be 4.18 or newer**
@@ -70,6 +73,23 @@ Things that cost real effort to discover and are easy to get wrong again:
   `timesPerPeriod` as a historical denominator. This is why latency is stored in seconds (ADR-0001).
 - **Commit timestamps do not exist in the subgraph.** `ClassicVote.commited` is a boolean. They come
   from `CommitCast` logs (ADR-0004). Reveal timestamps *are* in the subgraph, on the justification.
+  Re-confirmed by introspection on 2026-08-25: `ClassicVote` is `id, coreDispute, localRound, juror,
+  draw, commit, commited, choice, voted, justification` and carries no moment at all.
+- **`eth_getLogs` on arb1 returns `blockTimestamp: "0x0"` on every log.** The field is not in the
+  JSON-RPC spec, the endpoint sends it anyway, it is always zero, and viem dutifully formats it to a
+  well-typed `0n`. It is the perfect trap: present, correctly typed, and wrong. A reader that trusted
+  it would date every commitment to 1970, and because a commitment predating its own commit period is
+  dropped rather than shown, the whole court would render as an unread shortfall — no error, no
+  console warning, just a page saying nothing was found. The moment comes from `eth_getBlockByNumber`,
+  which is the only source that has it. `commit-logs.ts` carries the warning and a test pins it.
+- **The Arbitrum endpoint rate-limits per RPC call, and counts a batch as its size.** Reading one
+  block per commitment is 56 calls today; 62 blocks read three times over inside a second returns
+  HTTP 429 with a `text/plain` body, which viem surfaces as `UnknownRpcError: Cannot read properties
+  of undefined (reading 'error')` rather than as a rate limit. One page load is far from the ceiling
+  and react-query's minute of staleness keeps it that way, but it arrives with roughly 200 more
+  disputes, and a *live test suite* hits it immediately — which is why `commit-logs.integration.test.ts`
+  reads once in `beforeAll` and shares the result rather than reading per test. Ticket 12's
+  persistence is the real fix; ADR-0004's preferred one is to put the timestamp in the subgraph.
 - **The unit is the draw, not the vote.** Across the first thirteen disputes, 61 votes collapsed to
   44 draws. The subgraph's `totalCoherentVotes` / `coherenceScore` are per-vote *and* global across
   all courts — unusable here (ADR-0002). `ClassicJustification` is conveniently one per draw.
@@ -194,7 +214,16 @@ DisputeKitClassic    0x70B464be85A547144C72485eBa2577E5D3A45421
 Core subgraph        api.goldsky.com/api/public/project_cmgx9all3003atlp2bqha1zif/subgraphs/kleros-v2-coreneo/v0.17.2/gn
 DRT subgraph         …/subgraphs/kleros-v2-drt/v0.12.0/gn  — same host as the core subgraph, so
                      it added nothing to connect-src. Joined on the core dispute's templateId
-Arbitrum RPC         https://arb1.arbitrum.io/rpc  (accepts 8M-block eth_getLogs)
+Arbitrum RPC         https://arb1.arbitrum.io/rpc  — answers fromBlock 0 → latest for a topic-
+                     filtered eth_getLogs in ~230ms, so the 8M-block figure understated it and
+                     no start block need be maintained. Rate-limits per RPC *call* and counts a
+                     batch as its size; see § Traps
+CommitCast           CommitCast(uint256 indexed _coreDisputeID, address indexed _juror,
+                     uint256[] _voteIDs, bytes32 _commit), on DisputeKitClassic. Dispute and
+                     juror are indexed; the court is not, so the scan filters on the six roster
+                     addresses and the seam drops what belongs to another court. 56 of them
+                     across disputes 151–166 on 2026-08-25, one per committed draw, latency 14s
+                     to 3,236s
 Mainnet RPC          https://ethereum-rpc.publicnode.com  (ENS only; ankr needs a key now, and
                      cloudflare-eth reverts inside the ENS universal resolver)
 Nicknames            007, aletheia, baskerville, blaise, columbo, daemonhill — ENS subnames of

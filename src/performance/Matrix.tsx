@@ -3,7 +3,7 @@ import { DisputeRow, type DisputeRowSlots } from "../disputes/DisputeList";
 import type { Dispute } from "../disputes/disputes";
 import type { RosterView } from "../roster/useRoster";
 import { type Tone, toneInk, toneLine, toneWash } from "../styles/tones";
-import { presentationOf, revealFigureOf } from "./cell";
+import { commitFigureOf, presentationOf, revealFigureOf } from "./cell";
 import { railFraction } from "./latency";
 import type { CourtPerformance, Draw, MatrixRow } from "./performance";
 
@@ -266,11 +266,13 @@ const VoteCount = styled.span`
   color: ${({ theme }) => theme.textPending};
 `;
 
-const Measure = styled.div`
+const Measure = styled.div<{ $context?: boolean }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.space3};
-  margin-top: ${({ theme }) => theme.space4};
+  /* Tighter above the commit line than above the reveal, so the two read as one block with a
+     headline and its context rather than as two measurements of equal standing. */
+  margin-top: ${({ theme, $context }) => ($context ? theme.space2 : theme.space4)};
 `;
 
 const MeasureKey = styled.span`
@@ -314,6 +316,29 @@ const RailFill = styled.span`
   height: 3px;
   border-radius: 999px;
   background-color: ${({ theme }) => theme.accent};
+`;
+
+/* Reveal latency is the figure the experiment is about, so it is the largest thing in the cell
+   and the only one in heading ink. Commit latency sits below it in the same unit and on the same
+   rail, a step smaller and a step dimmer, so it reads as context for the reveal rather than as a
+   competing number. */
+const CommitValue = styled(MeasureValue)`
+  font: ${({ theme }) => theme.typeMonoSm};
+  /* TRAP: a second font shorthand, so a second reset of font-feature-settings. Without this the
+     commit line loses its tabular digits while the reveal above it keeps them, and a column of
+     cells stops lining up in a way nothing reports. */
+  font-feature-settings: ${({ theme }) => theme.featureMono};
+  font-weight: 600;
+  color: ${({ theme, $tone }) => {
+    if ($tone === "missed") return theme.stateFail;
+    return $tone === "pending" ? theme.textPending : theme.textBody;
+  }};
+`;
+
+/* The same rail, quieter: one scale shared by both measures is what lets a 7-second reveal and a
+   54-minute commit be compared by eye at all. */
+const CommitRailFill = styled(RailFill)`
+  background-color: ${({ theme }) => theme.accentQuiet};
 `;
 
 const Footnotes = styled.div`
@@ -364,6 +389,22 @@ const Empty = styled.p`
   color: ${({ theme }) => theme.textBody};
 `;
 
+/* Rose rather than the amber the dispute list uses for a missing title, because this changes a
+   figure and that changes a label. ADR-0006 gives rose exactly two meanings, and ticket 13 adds
+   the second of them: a thing that failed to act, and a thing that could not be read.
+   Ticket 13 also owns folding this and the two other notices in this repo into one component and
+   raising it to the blocking banner the Arbitrum endpoint is classified as deserving. */
+const Shortfall = styled.p`
+  max-width: 68ch;
+  margin: 0;
+  padding: 12px 16px;
+  border: 1px solid ${({ theme }) => theme.lineRose};
+  border-radius: 8px;
+  background-color: ${({ theme }) => theme.washRose};
+  color: ${({ theme }) => theme.textBody};
+  font-size: 0.875rem;
+`;
+
 /* Read by a screen reader, drawn for nobody: the keys and glyphs beside a figure are shorthand
    for people who can see the legend a few lines above them. */
 const VisuallyHidden = styled.span`
@@ -397,6 +438,7 @@ function listOf(ids: readonly number[]): string {
 function DrawCell({ draw }: { draw: Draw }) {
   const presentation = presentationOf(draw.state);
   const figure = revealFigureOf(draw);
+  const commit = commitFigureOf(draw);
 
   return (
     <CellBox $tone={presentation.tone} $filled={presentation.filled}>
@@ -422,12 +464,25 @@ function DrawCell({ draw }: { draw: Draw }) {
           </Rail>
         )}
       </Measure>
+      <Measure $context>
+        <MeasureKey aria-hidden="true">C</MeasureKey>
+        <VisuallyHidden>Commit latency</VisuallyHidden>
+        <CommitValue $tone={commit.tone}>{commit.text}</CommitValue>
+        {draw.commitLatencySeconds !== null && (
+          <Rail aria-hidden="true">
+            <CommitRailFill
+              style={{ width: `${railFraction(draw.commitLatencySeconds) * 100}%` }}
+            />
+          </Rail>
+        )}
+      </Measure>
     </CellBox>
   );
 }
 
 export function Matrix({ performance, roster, slotsFor }: MatrixProps) {
-  const { agentJurors, rows } = performance;
+  const { agentJurors, rows, commitCoverage } = performance;
+  const unread = commitCoverage.expected - commitCoverage.resolved;
   const identityOf = new Map(
     roster.entries.map(({ agentJuror, identity }) => [agentJuror.address, identity]),
   );
@@ -449,10 +504,12 @@ export function Matrix({ performance, roster, slotsFor }: MatrixProps) {
       <Heading id="matrix-heading">The matrix</Heading>
       <Lede>
         One row per dispute, one column per agent juror, one cell per draw. Each cell says how long
-        that agent juror took to reveal its vote after the vote period opened, and whether it voted
-        with the dispute's final ruling. Coherence is only asserted where the court has ruled: a
-        dispute still in its appeal period has votes in it and no ruling, and its cells say so
-        rather than reporting a majority as a result.
+        that agent juror took to reveal its vote after the vote period opened, how long it took to
+        commit after the commit period opened, and whether it voted with the dispute's final ruling.
+        Both durations are absolute and neither is a fraction of its window, because this court
+        changed its period lengths midway through the experiment. Coherence is only asserted where
+        the court has ruled: a dispute still in its appeal period has votes in it and no ruling, and
+        its cells say so rather than reporting a majority as a result.
       </Lede>
 
       {rows.length === 0 ? (
@@ -462,6 +519,24 @@ export function Matrix({ performance, roster, slotsFor }: MatrixProps) {
         </Empty>
       ) : (
         <>
+          {/* `read` gates this and not just the count: until the log scan has come back,
+              every commitment is unresolved and saying so would announce a failure that has
+              not happened — on every cold load, because the chain answers slower than the
+              subgraph and this page deliberately does not wait for it. */}
+          {commitCoverage.read && unread > 0 && (
+            <Shortfall role="status">
+              {/* The cross-check ADR-0004 asks for, said in the one place a reader is looking
+                  at the figures it affects. A truncating endpoint returns fewer logs and no
+                  error, so without this sentence the page would simply show fewer commit
+                  latencies — an absence indistinguishable from a fact. */}
+              {commitCoverage.resolved === 0
+                ? `None of the ${commitCoverage.expected} commitments this court recorded could be read from Arbitrum, so no commit latency below is a measurement.`
+                : `${unread} of the ${commitCoverage.expected} commitments this court recorded could not be found on Arbitrum, and those cells read Unknown.`}{" "}
+              That is a read that came back short, not an agent juror that failed to commit. Reveal
+              latency and coherence come from the subgraph and are unaffected.
+            </Shortfall>
+          )}
+
           <Legend>
             <LegendGroup>
               <LegendItem $tone="pass">
@@ -488,9 +563,12 @@ export function Matrix({ performance, roster, slotsFor }: MatrixProps) {
                   <RailFill style={{ width: "62%" }} />
                 </Rail>
               </LegendItem>
-              {/* Ticket 07 adds the commit key beside this one, once there is a commit rail
-                  for it to name. A legend that keyed a rail the cells do not carry would be
-                  describing a measurement this page has not made. */}
+              <LegendItem>
+                <span aria-hidden="true">C</span>Commit
+                <Rail aria-hidden="true">
+                  <CommitRailFill style={{ width: "71%" }} />
+                </Rail>
+              </LegendItem>
               <LegendItem>Rail: 1s — 1h, log</LegendItem>
             </LegendGroup>
           </Legend>

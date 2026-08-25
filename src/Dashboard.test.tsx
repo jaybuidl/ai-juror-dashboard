@@ -5,8 +5,9 @@ import { Dashboard } from "./Dashboard";
 import fixture from "./disputes/court-34.fixture.json" with { type: "json" };
 import type { DisputeListView } from "./disputes/DisputeList";
 import { type RawDispute, toDisputes } from "./disputes/disputes";
+import commitFixture from "./performance/court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./performance/court-34-draws.fixture.json" with { type: "json" };
-import { buildCourtPerformance, type RawDraw } from "./performance/performance";
+import { buildCourtPerformance, type RawCommitCast, type RawDraw } from "./performance/performance";
 import type { CourtPerformanceView } from "./performance/useCourtPerformance";
 import { ROSTER } from "./roster/agent-jurors";
 import { rosterIdentity } from "./roster/ens";
@@ -45,6 +46,7 @@ const disputes: DisputeListView = {
 const built = buildCourtPerformance({
   disputes: fixture as RawDispute[],
   draws: drawFixture as RawDraw[],
+  commits: commitFixture as RawCommitCast[],
   roster: ROSTER,
 });
 if (!built.success) throw new Error(`${built.code}: ${built.message}`);
@@ -52,6 +54,7 @@ if (!built.success) throw new Error(`${built.code}: ${built.message}`);
 /** The matrix, measured from the same payload. */
 const measured: CourtPerformanceView = {
   performance: built.data,
+  commitError: null,
   isLoading: false,
   error: null,
 };
@@ -61,6 +64,7 @@ const unmeasured: CourtPerformanceView = {
   performance: null,
   isLoading: false,
   error: new Error("Core subgraph returned HTTP 503 Service Unavailable"),
+  commitError: null,
 };
 
 function renderDashboard(
@@ -85,9 +89,9 @@ describe("Dashboard", () => {
   it("says what it has measured and, in the same breath, what it has not", () => {
     renderDashboard(resolved);
 
-    expect(screen.getByText(/two measures, and what is missing from them/i)).toBeInTheDocument();
+    expect(screen.getByText(/three measures, and what is missing from them/i)).toBeInTheDocument();
     expect(
-      screen.getByText(/commit latency, per-agent-juror summaries and rewards/i),
+      screen.getByText(/per-agent-juror summaries and rewards have not been read/i),
     ).toBeInTheDocument();
   });
 
@@ -183,7 +187,12 @@ describe("Dashboard", () => {
   });
 
   it("says nothing about a failed read while the read is still out", () => {
-    renderDashboard(resolved, { performance: null, isLoading: true, error: null });
+    renderDashboard(resolved, {
+      performance: null,
+      isLoading: true,
+      error: null,
+      commitError: null,
+    });
 
     expect(screen.queryByText(/the matrix could not be built/i)).not.toBeInTheDocument();
   });

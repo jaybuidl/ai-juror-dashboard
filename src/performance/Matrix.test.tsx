@@ -8,11 +8,13 @@ import { ROSTER } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
 import { theme } from "../styles/theme";
+import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import { Matrix } from "./Matrix";
 import {
   buildCourtPerformance,
   type CourtPerformance,
+  type RawCommitCast,
   type RawCourtData,
   type RawDraw,
 } from "./performance";
@@ -27,6 +29,7 @@ function build(raw: Partial<RawCourtData> = {}): CourtPerformance {
   const result = buildCourtPerformance({
     disputes: disputeFixture as RawDispute[],
     draws: drawFixture as RawDraw[],
+    commits: commitFixture as RawCommitCast[],
     roster: ROSTER,
     ...raw,
   });
@@ -231,12 +234,15 @@ describe("Matrix", () => {
           vote: { commited: true, voted: false, choice: null, justification: null },
         },
       ],
+      commits: [{ disputeID: "900", juror: ROSTER[3]?.address ?? "", timestamp: "160" }],
     });
     renderMatrix(missed);
 
     expect(screen.getAllByText("No vote").length).toBeGreaterThan(0);
     // The reveal figure reads as a miss, not as a number and not as a blank.
     expect(screen.getByText("Missed")).toBeInTheDocument();
+    // And the commit that did happen is still a figure: a draw can commit and never reveal.
+    expect(screen.getByText("60s")).toBeInTheDocument();
   });
 
   it("reads a stage that has not happened yet as a dash, never as blank", () => {
@@ -263,10 +269,123 @@ describe("Matrix", () => {
           vote: { commited: true, voted: false, choice: null, justification: null },
         },
       ],
+      commits: [{ disputeID: "900", juror: ROSTER[3]?.address ?? "", timestamp: "150" }],
     });
     renderMatrix(acting);
 
     expect(screen.getByText("Committed")).toBeInTheDocument();
     expect(screen.getByText("—")).toBeInTheDocument();
+    // The reveal is the dash; the commit already has a moment, and the cell shows both.
+    expect(screen.getByText("50s")).toBeInTheDocument();
+  });
+
+  describe("the commit line", () => {
+    it("shows both halves of the speed dimension in one cell", () => {
+      renderMatrix();
+      const row = rowFor(163);
+      if (row === null) throw new Error("no row for dispute 163");
+
+      // blaise revealed 46s after the vote period opened, and committed 24s after the commit
+      // period opened. Both figures, in the same unit, in the same cell.
+      expect(within(row).getByText("46s")).toBeInTheDocument();
+      expect(within(row).getByText("24s")).toBeInTheDocument();
+    });
+
+    it("names both measures for a reader who cannot see the legend", () => {
+      renderMatrix();
+      const row = rowFor(163);
+      if (row === null) throw new Error("no row for dispute 163");
+
+      // The keys beside the figures are `R` and `C` and are hidden from the accessibility
+      // tree; the words are what a screen reader gets, once per drawn cell.
+      expect(within(row).getAllByText("Reveal latency")).toHaveLength(5);
+      expect(within(row).getAllByText("Commit latency")).toHaveLength(5);
+    });
+
+    it("keys the commit rail in the legend, now that the cells carry one", () => {
+      renderMatrix();
+
+      expect(screen.getByText("Commit")).toBeInTheDocument();
+      expect(screen.getByText("Reveal")).toBeInTheDocument();
+      expect(screen.getByText(/rail: 1s — 1h, log/i)).toBeInTheDocument();
+    });
+
+    it("reproduces the range the rail was drawn for", () => {
+      renderMatrix();
+
+      // 2m 06s to 53m 56s, both in dispute 151 — the spread that made the rail logarithmic.
+      const row = rowFor(151);
+      if (row === null) throw new Error("no row for dispute 151");
+      expect(within(row).getByText("2m 06s")).toBeInTheDocument();
+      expect(within(row).getByText("53m 56s")).toBeInTheDocument();
+    });
+  });
+
+  describe("the commit cross-check", () => {
+    it("says nothing when every commitment was found", () => {
+      renderMatrix();
+
+      expect(screen.queryByText(/could not be found on Arbitrum/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/could be read from Arbitrum/i)).not.toBeInTheDocument();
+    });
+
+    it("names the shortfall as a count when the log scan came back short", () => {
+      // What a provider capping `eth_getLogs` produces: the subgraph still reports 56
+      // commitments and only some of them have a log. The page has to say so — otherwise the
+      // missing ones read as commitments that never happened.
+      const short = build({ commits: (commitFixture as RawCommitCast[]).slice(0, 50) });
+      renderMatrix(short);
+
+      expect(screen.getByText(/6 of the 56 commitments/i)).toBeInTheDocument();
+      expect(screen.getByText(/those cells read Unknown/i)).toBeInTheDocument();
+      expect(screen.getByText(/not an agent juror that failed to commit/i)).toBeInTheDocument();
+    });
+
+    it("says nothing at all while the log read is still out", () => {
+      // The load-order bug this guards: the chain answers slower than the subgraph and the
+      // matrix deliberately does not wait for it, so for the first second of every cold load
+      // no commitment is resolved. Counting that as a shortfall would put "none of the 56
+      // commitments could be read" on the public page on every single visit.
+      renderMatrix(build({ commits: null }));
+
+      expect(screen.queryByText(/could not be found on Arbitrum/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/None of the 56 commitments/i)).not.toBeInTheDocument();
+    });
+
+    it("tells a read still out from a read that came back empty", () => {
+      // Identical models but for one field, and the difference is a claim about an endpoint.
+      renderMatrix(build({ commits: [] }));
+
+      expect(screen.getByText(/None of the 56 commitments/i)).toBeInTheDocument();
+    });
+
+    it("says the whole read failed rather than counting when nothing came back at all", () => {
+      renderMatrix(build({ commits: [] }));
+
+      expect(screen.getByText(/None of the 56 commitments/i)).toBeInTheDocument();
+      expect(screen.getByText(/no commit latency below is a measurement/i)).toBeInTheDocument();
+    });
+
+    it("keeps the reveal and coherence figures when no commitment could be read", () => {
+      // The whole reason this degrades rather than blanks: an Arbitrum outage costs the commit
+      // line, and nothing else on this page is read from Arbitrum.
+      renderMatrix(build({ commits: [] }));
+      const row = rowFor(163);
+      if (row === null) throw new Error("no row for dispute 163");
+
+      expect(within(row).getAllByText("Coherent")).toHaveLength(5);
+      expect(within(row).getByText("46s")).toBeInTheDocument();
+    });
+
+    it("never blames an agent juror for a commitment it could not read", () => {
+      renderMatrix(build({ commits: [] }));
+      const row = rowFor(163);
+      if (row === null) throw new Error("no row for dispute 163");
+
+      // Five committed draws, five Unknown commit slots, and not one of them worded as a miss.
+      expect(within(row).getAllByText("Unknown")).toHaveLength(5);
+      expect(within(row).queryByText("Missed")).not.toBeInTheDocument();
+      expect(within(row).queryByText("No vote")).not.toBeInTheDocument();
+    });
   });
 });

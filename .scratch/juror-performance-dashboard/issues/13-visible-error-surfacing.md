@@ -115,3 +115,52 @@ different thing: a reveal that happened and left no timestamp behind, in a cell 
 known. `revealFigureOf` in `cell.ts` is where it is worded. Two Unknowns on one page, one rose and
 one quiet, is exactly the confusion `Cell.dc.html:140` warns about — decide deliberately which one
 keeps the word.
+
+### From ticket 07, 2026-08-25 — the cross-check is built, and it is a count
+
+**Your criterion "the commit cross-check discrepancy from ticket 07 surfaces through this same
+channel" now has something concrete to read.** `CourtPerformance.commitCoverage` is
+`{read, expected, resolved}`: whether the log scan has come back at all, every draw the subgraph
+reports as committed, and how many of those a `CommitCast` log was found for. `read && expected !==
+resolved` is a shortfall. It is a count rather than a thrown error deliberately — a truncating
+endpoint returns fewer logs and no error, and failing the whole model would blank sixteen rows of
+subgraph-read measurements that are unaffected. `Matrix.tsx` states the count in a rose notice
+today; raising it to the banner is yours.
+
+**`read` is load-bearing and was found by review, not by design.** The commit read is a separate
+query the matrix does not wait on, so between the subgraph answering and the chain answering, every
+commitment is unresolved. Without the flag the page announced "none of the 56 commitments could be
+read from Arbitrum" on every cold load, for as long as the RPC took — a failure stated before it
+happened, on a public page. `null` commits mean *not read*; `[]` means *read and empty*. Whatever
+you build on top of this must keep the two apart, and the banner must not fire on `read: false`.
+
+**The commit query is keyed on the draws it explains** (`draws?.length`), for the same reason: the
+count compares two reads and is only meaningful when both have seen the same court. A draws refetch
+that picks up a new commitment retires the commit read rather than being counted against it.
+
+**`CourtPerformanceView.commitError` is a separate field from `error`,** and nothing renders it yet
+— it is yours. `error` is the failure that leaves `performance` null; folding an Arbitrum outage
+into it would blank the matrix, which is exactly what the non-blocking design exists to avoid.
+
+**A fifth placeholder notice, and a third `Notice` component.** `Matrix.tsx` now defines
+`Shortfall`, rose rather than the amber the other two use, because this changes a figure and the
+others change a label. That makes three separately-defined notice components across three files.
+The comment on it points here.
+
+**A third `Unknown` now exists, and it is the one that most wants your rose `?`.** `commitFigureOf`
+words a draw as `Unknown` when the subgraph says it committed and no log was found — that is
+precisely "a thing that could not be read", the meaning this ticket gives the rose `?`. The other
+two are ticket 05's dateless reveal and yours. Deciding which keeps the bare word is now a
+three-way call, and the commit one is the strongest candidate to convert.
+
+**The Arbitrum endpoint degrades rather than blocks today, on purpose.** Your rule classifies it as
+loud, and it will be. Until then `useCourtPerformance` runs the commit read as a separate query
+that the matrix does not wait on: reveal latency and coherence come from the subgraph, so an
+Arbitrum outage costs the commit line and nothing else. Verified in a browser with the RPC blocked
+— every commit slot reads `Unknown`, the notice names all 56, and the rest of the matrix is intact.
+
+**One more thing that would change a number.** The commit read costs one RPC call per commitment
+and the public endpoint rate-limits per call: 62 blocks read three times over in a second returns
+HTTP 429. One page load is far from that, but the ceiling arrives with roughly 200 more disputes,
+and when it does the symptom is a *partial* commit read rather than a failed one — a shortfall
+count, which is exactly what this channel is for.

@@ -2,6 +2,19 @@ import { formatLatencySeconds } from "./latency";
 import type { Draw, DrawState, LiveStage } from "./performance";
 
 /**
+ * One measurement as a cell states it: a duration, or a word saying why there is not one.
+ *
+ * `value` is a figure; `missed` is an agent juror that did not act while it could; `pending`
+ * covers both a step not yet reached and a moment this dashboard could not read. The two
+ * measures share the type because they share the rail and the column, and a reader comparing
+ * them down a column is comparing like with like.
+ */
+export type Figure = {
+  text: string;
+  tone: "value" | "missed" | "pending";
+};
+
+/**
  * What a cell says, before any of it is drawn.
  *
  * Separate from `Matrix.tsx` because it is the part of the design that has to be checked rather
@@ -69,10 +82,7 @@ export function presentationOf(state: DrawState): Presentation {
  * timestamp lives only on the justification, so a reveal with none cannot be dated). Blank is
  * reserved for a cell with no draw in it at all.
  */
-export function revealFigureOf(draw: Draw): {
-  text: string;
-  tone: "value" | "missed" | "pending";
-} {
+export function revealFigureOf(draw: Draw): Figure {
   if (draw.revealLatencySeconds !== null) {
     return { text: formatLatencySeconds(draw.revealLatencySeconds), tone: "value" };
   }
@@ -81,4 +91,25 @@ export function revealFigureOf(draw: Draw): {
     return { text: "—", tone: "pending" };
   }
   return { text: "Unknown", tone: "pending" };
+}
+
+/**
+ * What the commit slot reads, and the one place a missing log must not become an accusation.
+ *
+ * The three absences again, told apart by the subgraph's boolean rather than by the state
+ * alone: a commitment that will not come now (`Missed`), one that has not come yet (`—`), and
+ * one that happened and whose log this dashboard did not find (`Unknown`).
+ *
+ * That last case is the whole reason ADR-0004 asks for a cross-check. A provider that caps
+ * `eth_getLogs` returns fewer logs and no error, so the draw arrives committed with no moment —
+ * and wording it `Missed` would blame an agent juror that committed on time. `commitCoverage`
+ * counts these; this is what one of them looks like in the cell it lands in.
+ */
+export function commitFigureOf(draw: Draw): Figure {
+  if (draw.commitLatencySeconds !== null) {
+    return { text: formatLatencySeconds(draw.commitLatencySeconds), tone: "value" };
+  }
+  if (draw.committed) return { text: "Unknown", tone: "pending" };
+  if (draw.state.kind === "no-vote") return { text: "Missed", tone: "missed" };
+  return { text: "—", tone: "pending" };
 }

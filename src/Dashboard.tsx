@@ -129,25 +129,28 @@ export function Dashboard({
         <EmptyState role="status">
           {measured ? (
             <>
-              <EmptyStateTitle>Two measures, and what is missing from them</EmptyStateTitle>
+              <EmptyStateTitle>Three measures, and what is missing from them</EmptyStateTitle>
               <EmptyStateBody>
-                This page measures how long each agent juror took to reveal its vote, and whether
-                that vote matched the dispute's final ruling. It measures nothing else yet: commit
-                latency, per-agent-juror summaries and rewards have not been read, and no figure
-                here is a fraction of a period's window. Coherence is asserted only where the court
-                has ruled, a blank cell means an agent juror was not drawn rather than that it
-                failed to act, and a dispute decided by a panel of one is marked wherever it is
-                counted.
+                This page measures how long each agent juror took to commit its vote after the
+                commit period opened, how long it took to reveal that vote after the vote period
+                opened, and whether the vote matched the dispute's final ruling. Each latency is
+                measured from its own period, so the reveal figure is not the time since the commit.
+                It measures nothing else yet: per-agent-juror summaries and rewards have not been
+                read, and no figure here is a fraction of a period's window. Coherence is asserted
+                only where the court has ruled, a blank cell means an agent juror was not drawn
+                rather than that it failed to act, and a dispute decided by a panel of one is marked
+                wherever it is counted.
               </EmptyStateBody>
             </>
           ) : (
             <>
               <EmptyStateTitle>Nothing measured on this load</EmptyStateTitle>
               <EmptyStateBody>
-                This page measures how long each agent juror took to reveal its vote and whether
-                that vote matched the dispute's final ruling — but not on this load: what it needed
-                could not be read, and it shows what it did read rather than a matrix built from
-                part of it. Nothing below is a latency, a coherence or a draw.
+                This page measures how long each agent juror took to commit its vote, how long it
+                took to reveal it, and whether that vote matched the dispute's final ruling — but
+                not on this load: what it needed could not be read, and it shows what it did read
+                rather than a matrix built from part of it. Nothing below is a latency, a coherence
+                or a draw.
               </EmptyStateBody>
             </>
           )}

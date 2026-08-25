@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { COURT_ID } from "../disputes/court-subgraph";
 import type { RawDispute } from "../disputes/disputes";
 import { type AgentJuror, ROSTER } from "../roster/agent-jurors";
+import { createArbitrumClient, fetchCommitCasts } from "./commit-logs";
 import { fetchCourtDraws } from "./draws-subgraph";
 import { buildCourtPerformance, type CourtPerformance } from "./performance";
 
@@ -15,6 +16,16 @@ export type CourtPerformanceView = {
   performance: CourtPerformance | null;
   isLoading: boolean;
   error: Error | null;
+  /**
+   * Why the commit log read failed, separately from `error`.
+   *
+   * Separate because `error` is the failure that leaves `performance` null, and this one must
+   * never do that: commit latency is the only figure read from Arbitrum, and folding an outage
+   * there into the blocking channel would blank sixteen rows of subgraph measurements that are
+   * entirely true. The matrix already states the shortfall in words; this is the reason behind
+   * it, for the banner ticket 13 builds.
+   */
+  commitError: Error | null;
 };
 
 /**
@@ -75,17 +86,60 @@ export function useCourtPerformance(
 
   const draws = query.data;
 
+  /**
+   * The commitments, read from Arbitrum rather than from the subgraph (ADR-0004).
+   *
+   * A separate query on purpose, and one the matrix does not wait on: reveal latency and
+   * coherence come from the subgraph and are unaffected by an Arbitrum outage, so a failure
+   * here costs the commit line and nothing else. Blanking sixteen rows of true measurements
+   * over an endpoint that carries half of one of them would be the worse lie.
+   *
+   * Keyed on the draws it has to explain, which is what keeps the cross-check honest. The count
+   * compares two reads, so it is only meaningful when both have seen the same court: were this
+   * keyed on the court alone, a draws refetch that picked up a newly committed draw would raise
+   * `expected` against a commit list read before it existed, and the page would report a
+   * shortfall that is an artefact of which request returned first. A changed draw set retires
+   * this read instead, and until the replacement lands the model is told the commits are not in.
+   */
+  const commitQuery = useQuery({
+    queryKey: [
+      "commitCasts",
+      COURT_ID,
+      agentJurors.map((agentJuror) => agentJuror.address),
+      draws?.length ?? 0,
+    ],
+    queryFn: ({ signal }) =>
+      fetchCommitCasts({ client: createArbitrumClient(undefined, signal), roster: agentJurors }),
+    // Nothing to read against until the draws are in, and a first read keyed on zero draws would
+    // be retired by the very next render.
+    enabled: draws !== undefined,
+    staleTime: 60 * 1000,
+  });
+
+  const commits = commitQuery.data;
+
   const result = useMemo(() => {
     if (draws === undefined || !hasReadableDisputes(disputes)) return null;
-    return buildCourtPerformance({ disputes: disputes.raw, draws, roster: agentJurors });
-  }, [disputes, draws, agentJurors]);
+    return buildCourtPerformance({
+      disputes: disputes.raw,
+      draws,
+      // `null`, never `[]`: an unfinished read is not an empty one. `[]` here would have the
+      // matrix announce that every commitment in the court failed to read, on every cold load,
+      // for as long as the chain takes to answer — a failure stated before it has happened.
+      commits: commits ?? null,
+      roster: agentJurors,
+    });
+  }, [disputes, draws, commits, agentJurors]);
 
   return {
     performance: result?.success === true ? result.data : null,
+    // The commit read is deliberately absent from `isLoading`: the matrix renders as soon as
+    // the subgraph answers, and says separately that the commit column is not in yet.
     isLoading: query.isPending || disputes.isLoading,
     error:
       query.error ??
       disputes.error ??
       (result?.success === false ? new Error(`${result.code}: ${result.message}`) : null),
+    commitError: commitQuery.error,
   };
 }

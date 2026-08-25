@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ROSTER } from "../roster/agent-jurors";
-import { presentationOf, revealFigureOf } from "./cell";
+import { commitFigureOf, presentationOf, revealFigureOf } from "./cell";
 import type { Draw, DrawState } from "./performance";
 
 const AGENT_JUROR = ROSTER[0] as (typeof ROSTER)[number];
@@ -10,6 +10,8 @@ function draw(overrides: Partial<Draw> = {}): Draw {
     agentJuror: AGENT_JUROR,
     state: { kind: "coherent" },
     revealLatencySeconds: 85,
+    commitLatencySeconds: 396,
+    committed: true,
     voteCount: 1,
     ...overrides,
   };
@@ -93,5 +95,59 @@ describe("revealFigureOf", () => {
       text: "Unknown",
       tone: "pending",
     });
+  });
+});
+
+describe("commitFigureOf", () => {
+  it("reads a measured latency as a figure, in the same unit as the reveal", () => {
+    expect(commitFigureOf(draw())).toEqual({ text: "6m 36s", tone: "value" });
+  });
+
+  it("reads a commitment that never came as a miss once the window has closed", () => {
+    expect(
+      commitFigureOf(
+        draw({ state: { kind: "no-vote" }, committed: false, commitLatencySeconds: null }),
+      ),
+    ).toEqual({ text: "Missed", tone: "missed" });
+  });
+
+  it("reads a commitment that has not come yet as a dash, never as blank", () => {
+    expect(
+      commitFigureOf(
+        draw({
+          state: { kind: "live", stage: "awaiting" },
+          committed: false,
+          commitLatencySeconds: null,
+        }),
+      ),
+    ).toEqual({ text: "—", tone: "pending" });
+  });
+
+  it("reads a commitment the log scan did not find as unknown, never as a miss", () => {
+    // This is the cross-check's face in the cell, and the reason ADR-0004 asks for one: a
+    // truncating endpoint drops the log, not the commitment. Wording it "Missed" would blame
+    // an agent juror that committed on time, which is the failure the whole check exists for.
+    const states: DrawState[] = [
+      { kind: "coherent" },
+      { kind: "diverged" },
+      { kind: "no-vote" },
+      { kind: "live", stage: "committed" },
+      { kind: "live", stage: "revealed" },
+    ];
+
+    for (const state of states) {
+      expect(commitFigureOf(draw({ state, committed: true, commitLatencySeconds: null }))).toEqual({
+        text: "Unknown",
+        tone: "pending",
+      });
+    }
+  });
+
+  it("never says Missed about a draw the subgraph reports as committed", () => {
+    const missed = commitFigureOf(
+      draw({ state: { kind: "no-vote" }, committed: true, commitLatencySeconds: null }),
+    );
+
+    expect(missed.text).not.toBe("Missed");
   });
 });

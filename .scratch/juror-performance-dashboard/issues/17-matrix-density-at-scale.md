@@ -118,3 +118,22 @@ conditional on the density flag), `../canvas/README.md` for provenance
       reductions above: every state keeps its glyph, every row is present in both, and no column moves
 - [ ] Tested at a row count either side of the threshold, so the switch itself is covered and not only
       the two layouts it switches between
+
+## Comments
+
+### From ticket 07, 2026-08-25 — the cell grew a line
+
+**Every drawn cell now carries two measures, not one.** Reveal on top in heading ink, commit below
+it a step smaller and dimmer, each with its own rail. That is roughly 14px of extra height on all
+56 drawn cells, and it lands before you compact anything — the comfortable density this ticket
+measures its reduction against is now the two-line cell.
+
+**The commit line is the obvious thing to drop at compact density, and dropping it is a decision
+rather than a saving.** It is the half of the speed dimension that ticket 07 exists to show, and
+`Cell.dc.html:87-92` calls it context for the reveal rather than a competing figure — which is an
+argument both ways. If it goes, the legend key for the commit rail has to go with it, or the page
+keys a rail no cell carries; `Matrix.tsx` has both in the legend's second `LegendGroup`.
+
+**`commitFigureOf` never returns blank**, exactly as `revealFigureOf` never does. A compact cell
+that drops the line must drop it entirely rather than render it empty, because an empty slot beside
+a full one reads as missing data.

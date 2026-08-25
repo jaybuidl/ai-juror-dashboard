@@ -13,10 +13,16 @@ dashboard's job.
 **The matrix is live.** This repository contains the application shell, the deployment pipeline,
 the Kleros ×AI visual system, a page naming the six agent jurors, and the dispute matrix: one row
 per dispute — headed by what that dispute is actually about — one column per agent juror, and each
-cell carrying that draw's reveal latency and whether it voted with the dispute's final ruling. Two
-measures, and no more — commit latency, per-agent-juror summaries, rewards and the historical period
-windows are all still unread. The deployed page names each of those gaps outright, because a public
-page whose figures may be cited must never let "not built" look like "no results".
+cell carrying that draw's commit latency, its reveal latency and whether it voted with the dispute's
+final ruling. Three measures, and no more — per-agent-juror summaries, rewards and the historical
+period windows are all still unread. The deployed page names each of those gaps outright, because a
+public page whose figures may be cited must never let "not built" look like "no results".
+
+Commit latency is the one figure not read from a subgraph: it comes from `CommitCast` logs on an
+Arbitrum RPC, because the subgraph records only *whether* a juror committed and never *when*. Every
+draw the subgraph calls committed is cross-checked against a matching log, and any shortfall is
+stated on the page as a count — an endpoint that silently returns fewer logs must never render as
+an agent juror that failed to commit.
 
 Read [`CLAUDE.md`](CLAUDE.md) before writing code — in particular its **Traps** section, which
 records the things that cost real time to discover. The design that this scaffold serves lives in:
@@ -76,8 +82,11 @@ running lint, type-check, tests and build as four separate steps so a failure na
 **`live`** runs `yarn test:integration`, which is every `*.integration.test.ts` under `src/` — a
 suite joins by filename, so nothing here has to count them. They are the drift checks a fixture
 cannot perform: that each roster address still answers to the subname it claims, that the core
-subgraph still returns the court's disputes and its draws in the shape the model parses, and that
-the template subgraph still resolves what those disputes are about. It runs on a daily cron and on
+subgraph still returns the court's disputes and its draws in the shape the model parses, that the
+template subgraph still resolves what those disputes are about, and that Arbitrum still emits the
+`CommitCast` event this dashboard reads commit latency from — with the cross-check that every
+committed draw has a matching log run against the live reads rather than a snapshot of them. It
+runs on a daily cron and on
 `workflow_dispatch` only, and never gates a pull request: its failure mode there would be network
 flake, and a red that means nothing teaches people to ignore red.
 

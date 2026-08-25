@@ -60,14 +60,45 @@ export type RawDraw = {
 };
 
 /**
+ * One `CommitCast` log, reduced to the three things a latency needs.
+ *
+ * The only value in this model that does not come from a subgraph: `ClassicVote.commited` is a
+ * boolean and nothing in the schema records when a commitment was published, so the moment is
+ * the timestamp of the block the log sits in (ADR-0004). Strings, like every other raw shape
+ * here, so the seam validates them itself and a captured payload stays plain JSON.
+ *
+ * There is no round on the event. An agent juror drawn twice in one dispute has two of these
+ * under one dispute-and-juror key, which is why `commitAt` selects by round rather than
+ * looking one up.
+ */
+export type RawCommitCast = {
+  disputeID: string;
+  /** Checksummed, as the chain returns it — never as The Graph lowercases it. */
+  juror: string;
+  /** Unix seconds, from the block the commitment was mined in. */
+  timestamp: string;
+};
+
+/**
  * Everything fetched, in one value.
  *
- * Tickets 07 and 08 add fields here — `CommitCast` logs and the `CourtModified` parameter
- * history — rather than a second seam beside this one.
+ * Ticket 08 adds a field here — the `CourtModified` parameter history — rather than a second
+ * seam beside this one, exactly as ticket 07 added `commits`.
  */
 export type RawCourtData = {
   disputes: readonly RawDispute[];
   draws: readonly RawDraw[];
+  /**
+   * Every commitment the roster has published, from the logs — or `null` where that read has
+   * not come back yet. See `RawCommitCast`.
+   *
+   * `null` and `[]` are emphatically not the same thing, which is why this is nullable rather
+   * than defaulted. `[]` is a read that returned nothing, and the page says so in the loudest
+   * terms it has. `null` is a read still in flight, and saying that would be announcing a
+   * failure that has not happened — on every cold load, because the chain is slower than the
+   * subgraph and the matrix deliberately does not wait for it.
+   */
+  commits: readonly RawCommitCast[] | null;
   /** The column set, and the only place all six agent jurors appear. */
   roster: readonly AgentJuror[];
 };
@@ -106,6 +137,22 @@ export type Draw = {
    * with no justification to date it. Never a fraction of a window — ADR-0005.
    */
   revealLatencySeconds: number | null;
+  /**
+   * Seconds from the moment the commit period opened to the moment the commitment was mined,
+   * per ADR-0001 and on the same scale as the reveal. `null` where no log matched this draw's
+   * round — which is either a draw that has not committed, or the shortfall `commitCoverage`
+   * counts. Never a fraction of a window, and never negative — ADR-0005.
+   */
+  commitLatencySeconds: number | null;
+  /**
+   * Whether the subgraph recorded a commitment, whatever the log scan found.
+   *
+   * Kept beside the latency because the cell's wording turns on the difference the two of them
+   * make together: committed with no moment is a *log* this dashboard failed to read, and not
+   * committed with the window closed is an agent juror that failed to act. Collapsing them
+   * would put "Missed" under a commitment that happened.
+   */
+  committed: boolean;
   /** How many vote IDs this one draw holds. `1` for most of them. */
   voteCount: number;
 };
@@ -123,11 +170,41 @@ export type MatrixRow = {
   cells: readonly (Draw | null)[];
 };
 
+/**
+ * Whether the commit half of the speed dimension was read whole.
+ *
+ * A count and not an error, because the failure it exists for throws nothing: an endpoint that
+ * caps `eth_getLogs` answers with fewer logs and no complaint, and every draw it dropped then
+ * renders as a commitment that never happened (ADR-0004). Comparing what came back against the
+ * known set — every draw the subgraph reports as committed — turns that silence into a number,
+ * the same shape ticket 04 uses for dispute titles that did not resolve.
+ *
+ * It is deliberately not a reason to fail: reveal latency and coherence are read from the
+ * subgraph and are unaffected by an Arbitrum outage, so a matrix that blanked itself over a
+ * missing commitment would hide sixteen rows of measurements that are perfectly true. Ticket 13
+ * lifts this count into the blocking banner it deserves.
+ */
+export type CommitCoverage = {
+  /**
+   * Whether the log read has happened at all.
+   *
+   * False means the answer is not in yet, and nothing may be concluded from `resolved` — least
+   * of all out loud. A shortfall is only a shortfall once there is a read to have fallen short.
+   */
+  read: boolean;
+  /** Draws the subgraph reports as committed — what a whole read would account for. */
+  expected: number;
+  /** How many of those a log was found for. Equal to `expected` when the scan was whole. */
+  resolved: number;
+};
+
 export type CourtPerformance = {
   /** The matrix columns, in roster order. Nothing may read rank into it. */
   agentJurors: readonly AgentJuror[];
   /** The matrix rows, newest dispute first. */
   rows: readonly MatrixRow[];
+  /** Whether every commitment the subgraph knows of was found on chain. */
+  commitCoverage: CommitCoverage;
 };
 
 /** The one failure code this seam returns. Everything it rejects is a payload it cannot believe. */
@@ -212,7 +289,49 @@ function rulingChoiceOf(dispute: Dispute): number | null {
   }
 }
 
-function drawOf(group: DrawGroup, dispute: Dispute): Draw {
+/**
+ * Every commitment the roster published, keyed by dispute and lowercased address.
+ *
+ * The chain checksums an address and The Graph lowercases it, so the join is on the lowercased
+ * form — the same join, and the same reason, as the roster's. Several timestamps can share one
+ * key: the event carries no round, and an agent juror drawn again on appeal commits again.
+ * They are sorted so `commitAt` can pick the one belonging to a round.
+ */
+function commitsByDraw(raw: RawCourtData): Map<string, number[]> {
+  const commits = new Map<string, number[]>();
+
+  for (const commit of raw.commits ?? []) {
+    const disputeId = toNumber(commit.disputeID, "Commitment names a bad dispute");
+    const timestamp = toNumber(commit.timestamp, "Commitment carries a bad timestamp");
+    const key = `${disputeId}/${commit.juror.toLowerCase()}`;
+
+    const timestamps = commits.get(key);
+    if (timestamps === undefined) commits.set(key, [timestamp]);
+    else timestamps.push(timestamp);
+  }
+
+  for (const timestamps of commits.values()) timestamps.sort((a, b) => a - b);
+  return commits;
+}
+
+/**
+ * When this draw committed, out of every commitment its agent juror published in the dispute.
+ *
+ * The earliest one at or after this round's commit period opened. A juror commits at most once
+ * per round and a later round opens later, so that is this round's commitment and no other —
+ * and choosing this way makes a negative latency structurally impossible rather than something
+ * to detect afterwards. A commitment that predates the round is an earlier round's, which is
+ * why this returns null instead of failing the way the reveal path does: the reveal has one
+ * justification and no round to choose between, and this has neither of those luxuries.
+ */
+function commitAt(timestamps: readonly number[] | undefined, round: DisputeRound): number | null {
+  if (timestamps === undefined || round.commitOpenedAt === null) return null;
+
+  const opened = round.commitOpenedAt;
+  return timestamps.find((timestamp) => timestamp >= opened) ?? null;
+}
+
+function drawOf(group: DrawGroup, dispute: Dispute, commits: Map<string, number[]>): Draw {
   const revealed = group.votes.some((vote) => vote.voted);
   const committed = group.votes.some((vote) => vote.commited);
   const revealedTimestamp = revealed ? revealedAt(group.votes) : null;
@@ -228,10 +347,22 @@ function drawOf(group: DrawGroup, dispute: Dispute): Draw {
     }
   }
 
+  // Read from the log whether or not the subgraph has caught up: a commitment that is on chain
+  // and not yet indexed is a moment this page can state, and the *state* stays whatever the
+  // subgraph supports — which keeps `NO VOTE` as conservative as ticket 05 left it.
+  const committedAt = commitAt(
+    commits.get(`${dispute.id}/${group.agentJuror.address.toLowerCase()}`),
+    group.round,
+  );
+  const commitOpenedAt = group.round.commitOpenedAt;
+
   return {
     agentJuror: group.agentJuror,
     state: stateOf({ group, dispute, revealed, committed }),
     revealLatencySeconds,
+    commitLatencySeconds:
+      committedAt === null || commitOpenedAt === null ? null : committedAt - commitOpenedAt,
+    committed,
     voteCount: group.voteCount,
   };
 }
@@ -397,12 +528,25 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
   try {
     const disputes = toDisputes(raw.disputes);
     const grouped = groupDraws(raw, disputes);
+    const commits = commitsByDraw(raw);
+
+    // The cross-check ADR-0004 requires, counted where every draw is already in hand rather
+    // than by walking the model a second time.
+    let expected = 0;
+    let resolved = 0;
 
     const rows = disputes.map((dispute) => {
       const drawn = grouped.get(dispute.id);
       const cells = raw.roster.map((agentJuror) => {
         const group = currentDraw(drawn?.byAgentJuror.get(agentJuror.address.toLowerCase()));
-        return group === undefined ? null : drawOf(group, dispute);
+        if (group === undefined) return null;
+
+        const draw = drawOf(group, dispute, commits);
+        if (group.votes.some((vote) => vote.commited)) {
+          expected += 1;
+          if (draw.commitLatencySeconds !== null) resolved += 1;
+        }
+        return draw;
       });
 
       return {
@@ -412,7 +556,14 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
       };
     });
 
-    return { success: true, data: { agentJurors: raw.roster, rows } };
+    return {
+      success: true,
+      data: {
+        agentJurors: raw.roster,
+        rows,
+        commitCoverage: { read: raw.commits !== null, expected, resolved },
+      },
+    };
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : String(cause);
     return { success: false, code: MALFORMED, message, details: { cause } };

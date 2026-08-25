@@ -1,0 +1,282 @@
+[
+  {
+    "disputeID": "151",
+    "juror": "0x70239816581Afff150814B46C831e2e5F9E3bF4C",
+    "timestamp": "1787188232"
+  },
+  {
+    "disputeID": "151",
+    "juror": "0xAC237740772093Fcc812A463050c43A275dd01E5",
+    "timestamp": "1787191342"
+  },
+  {
+    "disputeID": "152",
+    "juror": "0x245314a76FC9b8e48Fea7Abb3B9B07E34E13d8C6",
+    "timestamp": "1787236241"
+  },
+  {
+    "disputeID": "152",
+    "juror": "0xD44Ca97bCd957b410a6e0A7109323cfD9ad814bE",
+    "timestamp": "1787236348"
+  },
+  {
+    "disputeID": "152",
+    "juror": "0x70239816581Afff150814B46C831e2e5F9E3bF4C",
+    "timestamp": "1787236380"
+  },
+  {
+    "disputeID": "152",
+    "juror": "0xAC237740772093Fcc812A463050c43A275dd01E5",
+    "timestamp": "1787236430"
+  },
+  {
+    "disputeID": "152",
+    "juror": "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea",
+    "timestamp": "1787238453"
+  },
+  {
+    "disputeID": "153",
+    "juror": "0x245314a76FC9b8e48Fea7Abb3B9B07E34E13d8C6",
+    "timestamp": "1787243789"
+  },
+  {
+    "disputeID": "153",
+    "juror": "0xD44Ca97bCd957b410a6e0A7109323cfD9ad814bE",
+    "timestamp": "1787243962"
+  },
+  {
+    "disputeID": "153",
+    "juror": "0x70239816581Afff150814B46C831e2e5F9E3bF4C",
+    "timestamp": "1787243977"
+  },
+  {
+    "disputeID": "153",
+    "juror": "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea",
+    "timestamp": "1787244247"
+  },
+  {
+    "disputeID": "154",
+    "juror": "0xAC237740772093Fcc812A463050c43A275dd01E5",
+    "timestamp": "1787250542"
+  },
+  {
+    "disputeID": "154",
+    "juror": "0xD44Ca97bCd957b410a6e0A7109323cfD9ad814bE",
+    "timestamp": "1787250713"
+  },
+  {
+    "disputeID": "154",
+    "juror": "0x70239816581Afff150814B46C831e2e5F9E3bF4C",
+    "timestamp": "1787250849"
+  },
+  {
+    "disputeID": "154",
+    "juror": "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea",
+    "timestamp": "1787250900"
+  },
+  {
+    "disputeID": "155",
+    "juror": "0x70239816581Afff150814B46C831e2e5F9E3bF4C",
+    "timestamp": "1787297308"
+  },
+  {
+    "disputeID": "156",
+    "juror": "0xAC237740772093Fcc812A463050c43A275dd01E5",
+    "timestamp": "1787298223"
+  },
+  {
+    "disputeID": "156",
+    "juror": "0x245314a76FC9b8e48Fea7Abb3B9B07E34E13d8C6",
+    "timestamp": "1787298252"
+  },
+  {
+    "disputeID": "156",
+    "juror": "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea",
+    "timestamp": "1787298443"
+  },
+  {
+    "disputeID": "156",
+    "juror": "0x70239816581Afff150814B46C831e2e5F9E3bF4C",
+    "timestamp": "1787298857"
+  },
+  {
+    "disputeID": "158",
+    "juror": "0xAC237740772093Fcc812A463050c43A275dd01E5",
+    "timestamp": "1787322427"
+  },
+  {
+    "disputeID": "157",
+    "juror": "0xD44Ca97bCd957b410a6e0A7109323cfD9ad814bE",
+    "timestamp": "1787322561"
+  },
+  {
+    "disputeID": "158",
+    "juror": "0xD44Ca97bCd957b410a6e0A7109323cfD9ad814bE",
+    "timestamp": "1787322564"
+  },
+  {
+    "disputeID": "159",
+    "juror": "0xD44Ca97bCd957b410a6e0A7109323cfD9ad814bE",
+    "timestamp": "1787322568"
+  },
+  {
+    "disputeID": "159",
+    "juror": "0x245314a76FC9b8e48Fea7Abb3B9B07E34E13d8C6",
+    "timestamp": "1787322574"
+  },
+  {
+    "disputeID": "159",
+    "juror": "0x70239816581Afff150814B46C831e2e5F9E3bF4C",
+    "timestamp": "1787323040"
+  },
+  {
+    "disputeID": "157",
+    "juror": "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea",
+    "timestamp": "1787324303"
+  },
+  {
+    "disputeID": "158",
+    "juror": "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea",
+    "timestamp": "1787324315"
+  },
+  {
+    "disputeID": "159",
+    "juror": "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea",
+    "timestamp": "1787324326"
+  },
+  {
+    "disputeID": "160",
+    "juror": "0xAC237740772093Fcc812A463050c43A275dd01E5",
+    "timestamp": "1787330816"
+  },
+  {
+    "disputeID": "160",
+    "juror": "0xD44Ca97bCd957b410a6e0A7109323cfD9ad814bE",
+    "timestamp": "1787330879"
+  },
+  {
+    "disputeID": "161",
+    "juror": "0xD44Ca97bCd957b410a6e0A7109323cfD9ad814bE",
+    "timestamp": "1787330883"
+  },
+  {
+    "disputeID": "160",
+    "juror": "0x245314a76FC9b8e48Fea7Abb3B9B07E34E13d8C6",
+    "timestamp": "1787330903"
+  },
+  {
+    "disputeID": "162",
+    "juror": "0xAC237740772093Fcc812A463050c43A275dd01E5",
+    "timestamp": "1787330914"
+  },
+  {
+    "disputeID": "162",
+    "juror": "0xD44Ca97bCd957b410a6e0A7109323cfD9ad814bE",
+    "timestamp": "1787331038"
+  },
+  {
+    "disputeID": "161",
+    "juror": "0x245314a76FC9b8e48Fea7Abb3B9B07E34E13d8C6",
+    "timestamp": "1787331164"
+  },
+  {
+    "disputeID": "161",
+    "juror": "0x70239816581Afff150814B46C831e2e5F9E3bF4C",
+    "timestamp": "1787331243"
+  },
+  {
+    "disputeID": "162",
+    "juror": "0x245314a76FC9b8e48Fea7Abb3B9B07E34E13d8C6",
+    "timestamp": "1787331447"
+  },
+  {
+    "disputeID": "162",
+    "juror": "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea",
+    "timestamp": "1787331461"
+  },
+  {
+    "disputeID": "163",
+    "juror": "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea",
+    "timestamp": "1787342880"
+  },
+  {
+    "disputeID": "163",
+    "juror": "0xD44Ca97bCd957b410a6e0A7109323cfD9ad814bE",
+    "timestamp": "1787343037"
+  },
+  {
+    "disputeID": "163",
+    "juror": "0xAC237740772093Fcc812A463050c43A275dd01E5",
+    "timestamp": "1787343081"
+  },
+  {
+    "disputeID": "163",
+    "juror": "0x245314a76FC9b8e48Fea7Abb3B9B07E34E13d8C6",
+    "timestamp": "1787343178"
+  },
+  {
+    "disputeID": "163",
+    "juror": "0x70239816581Afff150814B46C831e2e5F9E3bF4C",
+    "timestamp": "1787343371"
+  },
+  {
+    "disputeID": "164",
+    "juror": "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea",
+    "timestamp": "1787601857"
+  },
+  {
+    "disputeID": "165",
+    "juror": "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea",
+    "timestamp": "1787601862"
+  },
+  {
+    "disputeID": "166",
+    "juror": "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea",
+    "timestamp": "1787602040"
+  },
+  {
+    "disputeID": "164",
+    "juror": "0xAC237740772093Fcc812A463050c43A275dd01E5",
+    "timestamp": "1787602174"
+  },
+  {
+    "disputeID": "164",
+    "juror": "0x70239816581Afff150814B46C831e2e5F9E3bF4C",
+    "timestamp": "1787602382"
+  },
+  {
+    "disputeID": "165",
+    "juror": "0xAC237740772093Fcc812A463050c43A275dd01E5",
+    "timestamp": "1787602391"
+  },
+  {
+    "disputeID": "165",
+    "juror": "0xD44Ca97bCd957b410a6e0A7109323cfD9ad814bE",
+    "timestamp": "1787602405"
+  },
+  {
+    "disputeID": "166",
+    "juror": "0xAC237740772093Fcc812A463050c43A275dd01E5",
+    "timestamp": "1787602623"
+  },
+  {
+    "disputeID": "165",
+    "juror": "0x70239816581Afff150814B46C831e2e5F9E3bF4C",
+    "timestamp": "1787602704"
+  },
+  {
+    "disputeID": "166",
+    "juror": "0x70239816581Afff150814B46C831e2e5F9E3bF4C",
+    "timestamp": "1787603352"
+  },
+  {
+    "disputeID": "166",
+    "juror": "0x245314a76FC9b8e48Fea7Abb3B9B07E34E13d8C6",
+    "timestamp": "1787603922"
+  },
+  {
+    "disputeID": "164",
+    "juror": "0x245314a76FC9b8e48Fea7Abb3B9B07E34E13d8C6",
+    "timestamp": "1787604396"
+  }
+]
