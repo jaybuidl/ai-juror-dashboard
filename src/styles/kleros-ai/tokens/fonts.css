@@ -1,0 +1,15 @@
+/* Manrope is confirmed by the site owner. The monospace on the live site was not
+   readable from source (no repo access); JetBrains Mono is the closest Google match
+   for its grotesque proportions and slashed zero. Flagged in readme.md. */
+/* VENDORED EDIT — the only one in this directory. The system's @import of
+   fonts.googleapis.com is removed here: this repo self-hosts both families from
+   ../webfonts.ts instead, which is why netlify.toml's style-src and font-src stay
+   'self'. Ticket 14. The stacks below are the system's, unchanged. */
+
+:root {
+  --font-sans: "Manrope", ui-sans-serif, system-ui, -apple-system, "Segoe UI", sans-serif;
+  --font-mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  /* slashed zero + tabular figures: the site's numerals (2.40, 08, 96) read as data */
+  --font-feature-mono: "zero" 1, "tnum" 1, "ss01" 1;
+  --font-feature-numeric: "tnum" 1;
+}

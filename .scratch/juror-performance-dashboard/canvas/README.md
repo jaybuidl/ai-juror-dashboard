@@ -46,10 +46,16 @@ and open the `.dc.html` directly. Both that copy and the seeded output are gitig
 ## The visual system is not this repo's
 
 Colours, type and component anatomy come from
-`kleros-design-system/kleros-ai/kleros-ai-design/`. Its `tokens/*.css` is meant to be
-adopted verbatim; `src/styles/theme.ts` currently holds the Kleros Court dark palette as a
-placeholder instead. Swapping it in also means widening `style-src` and `font-src` in
-`netlify.toml` for Google Fonts, as the comment in `src/styles/global.ts` warns.
+`kleros-design-system/kleros-ai/kleros-ai-design/`. Ticket 14 adopted it: the eight token
+files are vendored verbatim under `src/styles/kleros-ai/` and `src/styles/theme.ts` is now
+`var(--token)` aliases over them, where it used to hold the Kleros Court dark palette as a
+placeholder.
+
+This paragraph used to say the swap would also mean widening `style-src` and `font-src` in
+`netlify.toml` for Google Fonts. It did not: ticket 14 self-hosted Manrope and JetBrains
+Mono instead, and the policy is unchanged. The artboards still `@import` from Google Fonts
+because they render standalone in a browser, under no policy at all — that is a property of
+the canvas, not of the dashboard.
 
 ## Known defects, unfixed
 

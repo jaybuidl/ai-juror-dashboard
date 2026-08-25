@@ -257,6 +257,20 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@fontsource/jetbrains-mono@npm:^5.3.0":
+  version: 5.3.0
+  resolution: "@fontsource/jetbrains-mono@npm:5.3.0"
+  checksum: 10c0/1351b2350e893f5da39559ed90ff0e5e60bcc876b1f40531ad081ad4bf2f3cda3fa9e8940364aef5a7430ae3140685c9cd4819c36d8ad62bcd3fa37e3cc66b1d
+  languageName: node
+  linkType: hard
+
+"@fontsource/manrope@npm:^5.3.0":
+  version: 5.3.0
+  resolution: "@fontsource/manrope@npm:5.3.0"
+  checksum: 10c0/e0e16f37b953ae5cb164d7dbea3c8a3ae30d0ede291c9f774ad5b3266abeb4b9b5efec11148afe90b6a9cd8e3d141f2e02d70a813dfb524f1d7577ab393f3528
+  languageName: node
+  linkType: hard
+
 "@isaacs/fs-minipass@npm:^4.0.0":
   version: 4.0.1
   resolution: "@isaacs/fs-minipass@npm:4.0.1"
@@ -278,6 +292,8 @@ __metadata:
   resolution: "@kleros/ai-juror-dashboard@workspace:."
   dependencies:
     "@biomejs/biome": "npm:^2.5.0"
+    "@fontsource/jetbrains-mono": "npm:^5.3.0"
+    "@fontsource/manrope": "npm:^5.3.0"
     "@tanstack/react-query": "npm:^5.102.0"
     "@testing-library/dom": "npm:^10.4.0"
     "@testing-library/jest-dom": "npm:^7.0.0"

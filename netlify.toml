@@ -27,11 +27,27 @@
 # intended — `default-src 'none'` and `form-action 'none'` mean a page that started
 # submitting anything would break loudly.
 #
-# connect-src is an allowlist of the endpoints the dashboard is permitted to read.
-# EVERY TICKET THAT ADDS A DATA SOURCE MUST ADD ITS HOST HERE, including any host
-# substituted through a VITE_ override. Ticket 02 added ethereum-rpc.publicnode.com for
-# ENS; it is the default behind VITE_MAINNET_RPC_URL, and overriding that variable with a
-# host absent from this list blocks ENS at the browser rather than at the endpoint.
+# EVERY TICKET THAT ADDS A HOST TO THIS PAGE MUST ADD IT HERE, IN THE DIRECTIVE THAT
+# GOVERNS IT — not only a data source on connect-src. A stylesheet is style-src, a webfont
+# is font-src, a script is script-src, an image is img-src, and default-src 'none' blocks
+# whatever is not listed. This warning was scoped to data sources until ticket 14 and would
+# have said nothing about a font host. Vite's dev server sends no policy at all, so a missed
+# edit here looks perfect under `yarn dev` and `yarn preview` and surfaces only in
+# production — as a silent fall back, not as an error.
+#
+# connect-src is an allowlist of the endpoints the dashboard is permitted to read,
+# including any host substituted through a VITE_ override. Ticket 02 added
+# ethereum-rpc.publicnode.com for ENS; it is the default behind VITE_MAINNET_RPC_URL, and
+# overriding that variable with a host absent from this list blocks ENS at the browser
+# rather than at the endpoint.
+#
+# style-src and font-src are still 'self' after ticket 14 adopted the Kleros ×AI design
+# system, and that is a decision rather than an omission. The system's tokens/fonts.css
+# @imports Manrope and JetBrains Mono from fonts.googleapis.com; this repo self-hosts both
+# instead (src/styles/webfonts.ts), so the policy did not widen by two hosts to render two
+# typefaces. A ticket that reintroduces a remote font needs fonts.googleapis.com on
+# style-src AND fonts.gstatic.com on font-src: the stylesheet and the woff2 files it goes on
+# to fetch are governed by different directives, and listing only one fails silently.
 #
 # img-src allows arbitrary https hosts because ENS avatars for the six agent jurors
 # resolve to URLs this repo does not control.

@@ -1,0 +1,29 @@
+:root {
+  /* Display — Manrope 800, tight. Sentence case, always ends in a period on the site. */
+  --type-display-1: 800 clamp(40px, 6vw, 76px) / 1.02 var(--font-sans);
+  --type-display-2: 800 clamp(32px, 4.4vw, 54px) / 1.06 var(--font-sans);
+  --type-display-3: 700 clamp(24px, 2.6vw, 34px) / 1.14 var(--font-sans);
+  --tracking-display: -0.028em;
+
+  /* Headings inside cards / features */
+  --type-title-1: 700 24px / 1.25 var(--font-sans);
+  --type-title-2: 700 18px / 1.35 var(--font-sans);
+  --type-title-3: 600 16px / 1.4 var(--font-sans);
+  --tracking-title: -0.015em;
+
+  /* Body */
+  --type-body-lg: 400 19px / 1.6 var(--font-sans);
+  --type-body: 400 16px / 1.62 var(--font-sans);
+  --type-body-sm: 400 14px / 1.55 var(--font-sans);
+
+  /* Mono — labels, pills, values, terminal. Uppercase + wide tracking. */
+  --type-mono-lg: 500 15px / 1.3 var(--font-mono);
+  --type-mono: 500 13px / 1.3 var(--font-mono);
+  --type-mono-sm: 500 11px / 1.2 var(--font-mono);
+  --tracking-mono: 0.12em;
+  --tracking-mono-tight: 0.06em;
+
+  /* Numeric display — the big score / price figures */
+  --type-metric: 800 34px / 1 var(--font-mono);
+  --type-metric-sm: 700 20px / 1 var(--font-mono);
+}

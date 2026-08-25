@@ -121,10 +121,23 @@ agent finishes and refuses the stop — feeding Biome's output back — if it fa
 success. The Netlify build is the only other gate and it runs at deploy time, which is too late
 to be useful and long after the turn that caused the problem lost its context.
 
-**Styling** is styled-components with a theme in [`src/styles/theme.ts`](src/styles/theme.ts). Its
-values are lifted from the Kleros court frontend's dark theme and are placeholders: the visual
-system is Kleros ×AI, and ticket 14 adopts its tokens in their place. That ticket blocks the matrix,
-so the palette lands before anything is built on it rather than after.
+**Styling** is styled-components over the Kleros ×AI design system. The system's eight token files
+are vendored verbatim under [`src/styles/kleros-ai/`](src/styles/kleros-ai/) and entered through its
+own `styles.css`; [`src/styles/theme.ts`](src/styles/theme.ts) is nothing but `var(--token)` aliases
+over them, so a value can only be edited in one place. Two consequences worth knowing before
+touching either:
+
+- **The vendored directory is excluded from Biome**, the way `.scratch` is, because its formatter
+  rewrites the files — it prints `rgba(18, 10, 47, 0.10)` as `0.1` and explodes the gradients. The
+  exclusion is what keeps re-copying the system a whitespace diff instead of a merge.
+- **`tokens/base.css` is the reset and owns the page**: `box-sizing`, the `body` background, colour,
+  font and smoothing, `h1`–`h4`, `p`, `a`, `button`, `code, kbd, samp, pre`, `:focus-visible` and
+  `::selection`. [`src/styles/global.ts`](src/styles/global.ts) declares only what the system has no
+  opinion on. Restating a rule there would win on load order today and go on winning silently the
+  day the system changed its mind.
+
+Values in the system are matched by eye from screenshots — its own readme says so — so they are the
+authority on this repo's palette without being authoritative to the pixel.
 
 ## Deployment
 
@@ -151,9 +164,22 @@ The policy in `netlify.toml` is enforcing, not report-only, and is written to ma
 invariant structurally true rather than merely intended: `default-src 'none'` and
 `form-action 'none'` mean a page that started submitting anything would break loudly.
 
-`connect-src` is an allowlist of the endpoints the dashboard may read. **Every ticket that adds a
-data source must add its host there.** A blocked fetch reports itself in the browser console as a
-CSP violation, which is the intended failure mode: loud, and never mistakable for missing data.
+**Every ticket that adds a host to the page must add it there, under the directive that governs
+it** — not only a data source. A stylesheet is `style-src`, a webfont is `font-src`, a script is
+`script-src`, an image is `img-src`; `default-src 'none'` blocks whatever is not listed. A blocked
+fetch reports itself in the browser console as a CSP violation, which is the intended failure mode:
+loud, and never mistakable for missing data. Vite's dev server sends no policy at all, so a missed
+entry looks perfect under `yarn dev` and `yarn preview` and appears only in production.
+
+`connect-src` is the allowlist of endpoints the dashboard may read, including any host substituted
+through a `VITE_` override.
+
+`style-src` and `font-src` are still `'self'` after ticket 14 adopted the Kleros ×AI design system.
+That system's `tokens/fonts.css` `@import`s Manrope and JetBrains Mono from Google Fonts; this repo
+self-hosts both from [`src/styles/webfonts.ts`](src/styles/webfonts.ts) instead, so adopting the
+system cost the policy nothing. Reintroducing a remote font would need `fonts.googleapis.com` on
+`style-src` **and** `fonts.gstatic.com` on `font-src` — two directives, and listing only one fails
+quietly.
 
 One entry is there for a reason worth knowing before you touch it. `euc.li` serves the agent
 jurors' ENS avatars, which are images — so it looks like `img-src` alone should cover it. It does

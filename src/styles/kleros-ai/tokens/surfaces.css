@@ -1,0 +1,25 @@
+:root {
+  --radius-1: 4px;
+  --radius-2: 6px;
+  --radius-3: 8px;     /* pills, chips, small tiles */
+  --radius-4: 12px;    /* glyph tiles, inner panels */
+  --radius-5: 16px;    /* cards */
+  --radius-6: 20px;    /* browser frames, big demo panels */
+  --radius-full: 999px;
+
+  --border-hairline: 1px solid var(--line-1);
+  --border-visible: 1px solid var(--line-2);
+
+  /* Cards get an inset top highlight, never a heavy drop shadow */
+  --shadow-card: inset 0 1px 0 rgba(255, 255, 255, 0.045), 0 24px 60px -28px rgba(0, 0, 0, 0.75);
+  --shadow-raised: inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 32px 80px -30px rgba(0, 0, 0, 0.8);
+  --shadow-hover: inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 28px 70px -26px rgba(0, 0, 0, 0.8);
+  --shadow-cta: inset 0 1px 0 rgba(255, 255, 255, 0.14), 0 18px 44px -20px rgba(74, 46, 194, 0.85);
+  --glow-pass: 0 0 0 1px var(--line-cyan), 0 0 22px -6px rgba(77, 223, 216, 0.5);
+  --glow-fail: 0 0 0 1px var(--line-rose), 0 0 22px -6px rgba(242, 85, 122, 0.45);
+  --glow-live: 0 0 0 1px var(--line-mint), 0 0 22px -6px rgba(62, 224, 141, 0.45);
+  --ring-focus: 0 0 0 2px var(--page), 0 0 0 4px var(--focus-ring);
+
+  --blur-panel: blur(14px);
+  --blur-nav: blur(18px);
+}

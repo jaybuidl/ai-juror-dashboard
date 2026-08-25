@@ -1,0 +1,96 @@
+:root {
+  /* ---- Base: near-black ink, cooled toward violet ---- */
+  --ink-1000: #050409;
+  --ink-950:  #08060f;
+  --ink-900:  #0b0912;
+  --ink-850:  #0f0c1c;
+  --ink-800:  #141026;
+  --ink-700:  #1b1533;
+  --ink-600:  #241c44;
+
+  /* ---- Violet: hero atmosphere, primary CTA body ---- */
+  --violet-950: #120a2f;
+  --violet-900: #1b1046;
+  --violet-800: #2a1a63;
+  --violet-700: #3b2585;
+  --violet-600: #4a2ec2;
+  --violet-500: #6d55e8;
+  --violet-400: #7c6bf0;
+
+  /* ---- Accents. One chroma family per meaning, never decorative ---- */
+  --cyan-200: #b8f5f1;
+  --cyan-300: #7ceee8;
+  --cyan-400: #4ddfd8;   /* primary accent: values, verified, focus */
+  --cyan-500: #2bbfba;
+  --cyan-600: #0f8f8b;
+
+  --mint-300: #86efb8;
+  --mint-400: #3ee08d;   /* live / granted / success terminal state */
+  --mint-500: #22c46f;
+  --mint-600: #12995f;
+
+  --amber-300: #f3c583;
+  --amber-400: #e8a441;  /* prototype / in-progress / caution label */
+  --amber-600: #b06f10;
+
+  --rose-300: #f79ab0;
+  --rose-400: #f2557a;   /* fail / dispute / recovery */
+  --rose-600: #d02a52;
+
+  /* ---- Text ramp ---- */
+  --text-1: #f2f0f7;     /* headings */
+  --text-2: #b9b5cc;     /* body */
+  --text-3: #8681a0;     /* mono labels, captions */
+  --text-4: #5b5675;     /* pending / not-yet-reached step */
+  --text-5: #3d3952;     /* disabled */
+
+  /* ---- Hairlines. The whole system is 1px rgba white ---- */
+  --line-1: rgba(255, 255, 255, 0.07);
+  --line-2: rgba(255, 255, 255, 0.12);
+  --line-3: rgba(255, 255, 255, 0.18);
+  --line-cyan: rgba(77, 223, 216, 0.45);
+  --line-mint: rgba(62, 224, 141, 0.45);
+  --line-amber: rgba(232, 164, 65, 0.45);
+  --line-rose: rgba(242, 85, 122, 0.45);
+
+  /* ---- Washes: translucent fills used instead of solid tints ---- */
+  --wash-1: rgba(255, 255, 255, 0.02);
+  --wash-2: rgba(255, 255, 255, 0.04);
+  --wash-3: rgba(255, 255, 255, 0.07);
+  --wash-cyan: rgba(77, 223, 216, 0.10);
+  --wash-mint: rgba(62, 224, 141, 0.10);
+  --wash-amber: rgba(232, 164, 65, 0.10);
+  --wash-rose: rgba(242, 85, 122, 0.10);
+  --wash-violet: rgba(124, 107, 240, 0.14);
+
+  /* ---- Semantic aliases (use these in components) ---- */
+  --page: var(--ink-950);
+  --page-hero: var(--violet-950);
+  --surface-card: var(--ink-850);
+  --surface-raised: var(--ink-800);
+  --surface-inset: var(--wash-1);
+  --border-card: var(--line-1);
+  --border-card-hover: var(--line-2);
+  --text-heading: var(--text-1);
+  --text-body: var(--text-2);
+  --text-meta: var(--text-3);
+  --text-pending: var(--text-4);
+  --accent: var(--cyan-400);
+  --accent-quiet: var(--cyan-600);
+
+  /* ---- Lockup: the ×AI tail of the Kleros ×AI mark. Logo only ---- */
+  --brand-ai: #bdaaff;
+  --brand-x: #5e5383;
+  --state-pass: var(--cyan-400);
+  --state-live: var(--mint-400);
+  --state-work: var(--amber-400);
+  --state-fail: var(--rose-400);
+  --state-idle: var(--text-4);
+  --focus-ring: rgba(77, 223, 216, 0.55);
+
+  /* ---- Atmosphere: the two glows and the orbit line ---- */
+  --glow-violet: radial-gradient(60% 60% at 50% 0%, rgba(96, 62, 214, 0.45) 0%, rgba(18, 10, 47, 0) 70%);
+  --glow-cyan: radial-gradient(50% 50% at 50% 50%, rgba(77, 223, 216, 0.18) 0%, rgba(77, 223, 216, 0) 70%);
+  --orbit-line: rgba(139, 121, 255, 0.16);
+  --grain-opacity: 0.035;
+}

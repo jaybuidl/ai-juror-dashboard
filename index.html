@@ -11,15 +11,18 @@
     />
     <link
       rel="icon"
-      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%231B003F'/%3E%3Cpath d='M16 6v20M9 11h14M11 11l-3 7h6zM21 11l-3 7h6z' stroke='%23BB72FF' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%2308060F'/%3E%3Cpath d='M16 6v20M9 11h14M11 11l-3 7h6zM21 11l-3 7h6z' stroke='%234DDFD8' stroke-width='2' stroke-linecap='round' stroke-linejoin='round' fill='none'/%3E%3C/svg%3E"
     />
     <style>
       /* Painted before the bundle is fetched, so the page does not flash white on
-         every load. These two values mirror lightBackground and primaryText in
-         src/styles/theme.ts, which owns the palette. */
+         every load. These two values mirror --page and --text-body in
+         src/styles/kleros-ai/tokens/colors.css, which owns the palette — theme.ts
+         only aliases it. They are the one place a token value is copied rather
+         than referenced, because nothing has loaded yet that could resolve a var().
+         The favicon above holds --page and --cyan-400 for the same reason. */
       html {
-        background-color: #1b003f;
-        color: #daf0ff;
+        background-color: #08060f;
+        color: #b9b5cc;
       }
       .noscript {
         max-width: 62ch;
@@ -27,6 +30,17 @@
         padding: 0 24px;
         font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
         line-height: 1.6;
+      }
+      /* The design system's reset zeroes the margin on h1 and p, and its stylesheet is a
+         static <link> in the built page — so it applies here even with JavaScript off,
+         where this block is the only thing rendered. Without these the heading and the
+         paragraph sit flush against each other. `yarn dev` cannot show this: with JS off
+         it serves no CSS at all. */
+      .noscript h1 {
+        margin: 0 0 16px;
+      }
+      .noscript p {
+        margin: 0;
       }
     </style>
   </head>

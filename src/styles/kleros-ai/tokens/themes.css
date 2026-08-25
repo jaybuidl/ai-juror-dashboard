@@ -1,0 +1,56 @@
+/* Dark is the product. Light exists for docs, print, and embeds —
+   same hairline logic, same mono labels, warmer paper, accents darkened
+   to hold 4.5:1 on white. Set data-theme="light" on <html> or any wrapper. */
+[data-theme="light"] {
+  --page: #f7f6fa;
+  --page-hero: #efedf6;
+  --surface-card: #ffffff;
+  --surface-raised: #ffffff;
+  --surface-inset: rgba(18, 10, 47, 0.03);
+
+  --text-1: #100c1f;
+  --text-2: #443e5c;
+  --text-3: #6c6685;
+  --text-4: #9a94ac;
+  --text-5: #bdb8c9;
+  --text-heading: var(--text-1);
+  --text-body: var(--text-2);
+  --text-meta: var(--text-3);
+  --text-pending: #9d97ae;
+
+  --line-1: rgba(18, 10, 47, 0.10);
+  --line-2: rgba(18, 10, 47, 0.16);
+  --line-3: rgba(18, 10, 47, 0.24);
+  --line-cyan: rgba(15, 143, 139, 0.45);
+  --line-mint: rgba(18, 153, 95, 0.45);
+  --line-amber: rgba(176, 111, 16, 0.45);
+  --line-rose: rgba(208, 42, 82, 0.45);
+
+  --wash-1: rgba(18, 10, 47, 0.02);
+  --wash-2: rgba(18, 10, 47, 0.04);
+  --wash-3: rgba(18, 10, 47, 0.07);
+  --wash-cyan: rgba(15, 143, 139, 0.09);
+  --wash-mint: rgba(18, 153, 95, 0.09);
+  --wash-amber: rgba(176, 111, 16, 0.09);
+  --wash-rose: rgba(208, 42, 82, 0.09);
+  --wash-violet: rgba(74, 46, 194, 0.09);
+
+  --accent: var(--cyan-600);
+  --brand-ai: #5b3fd6;
+  --brand-x: #9a94ac;
+  --state-pass: var(--cyan-600);
+  --state-live: var(--mint-600);
+  --state-work: var(--amber-600);
+  --state-fail: var(--rose-600);
+  --state-idle: #9d97ae;
+
+  --shadow-card: 0 1px 2px rgba(18, 10, 47, 0.06), 0 18px 40px -28px rgba(18, 10, 47, 0.28);
+  --shadow-raised: 0 2px 4px rgba(18, 10, 47, 0.07), 0 26px 60px -30px rgba(18, 10, 47, 0.3);
+  --shadow-hover: 0 2px 6px rgba(18, 10, 47, 0.09), 0 22px 50px -26px rgba(18, 10, 47, 0.32);
+  --shadow-cta: 0 10px 26px -14px rgba(74, 46, 194, 0.6);
+
+  --glow-violet: radial-gradient(60% 60% at 50% 0%, rgba(124, 107, 240, 0.16) 0%, rgba(239, 237, 246, 0) 70%);
+  --glow-cyan: radial-gradient(50% 50% at 50% 50%, rgba(15, 143, 139, 0.10) 0%, rgba(15, 143, 139, 0) 70%);
+  --orbit-line: rgba(74, 46, 194, 0.12);
+  --grain-opacity: 0.02;
+}

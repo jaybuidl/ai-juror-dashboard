@@ -4,9 +4,10 @@ A public, read-only dashboard measuring six AI agent jurors in Kleros v2 court 3
 on two dimensions: **speed** (commit and reveal latency) and **coherence** (voting with the final
 ruling).
 
-**Status: the roster is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01 and 02 are
+**Status: the roster is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01, 02 and 14 are
 done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a `netlify.toml` that is the single source
-of truth for the deploy, and a page that names all six agent jurors by nickname and avatar. There
+of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted webfonts, and a page that
+names all six agent jurors by nickname and avatar. There
 is still no dispute data, no metric and no matrix — the page says so outright rather than rendering
 an empty grid, and says it *below* the roster precisely because showing who the six are is the
 point at which a visitor could start reading the page as a result. The design work behind it
@@ -30,8 +31,9 @@ rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines 
 | `.scratch/juror-performance-dashboard/canvas/README.md` | The design canvas: eight artboards, and which figures on them are real |
 
 Ticket **05** is the keystone: it establishes the pure-function seam and is the first ticket where the
-dashboard answers its question. Everything after it branches. Ticket **14** must land before it —
-adopting the Kleros ×AI tokens after 05 means restyling several views instead of styling them once.
+dashboard answers its question. Everything after it branches. Ticket **14** had to land before it —
+adopting the Kleros ×AI tokens after 05 would mean restyling several views instead of styling them
+once — and it has, so 05 is styled against the tokens from its first line.
 Every ticket from `03` up carries a `**Design:**` line naming what it is built against — an artboard
 and its line range, or, for ticket 14, the design system itself.
 
@@ -44,9 +46,11 @@ and its line range, or, for ticket 14, the design system itself.
 - **Public deployment**, possibly cited in research. Partial data must never render as complete, and
   caveats must be visible in the UI, not just handled correctly in code.
 - **The visual system is Kleros ×AI**, at `../kleros-design-system/kleros-ai/kleros-ai-design/`.
-  Its `tokens/*.css` is adopted verbatim; `src/styles/theme.ts` still holds the Court dark palette
-  as a placeholder. Do not re-derive a palette from `kleros-v2/web` — that repo is the reference for
-  markdown rendering and react-query patterns, not for how this dashboard looks.
+  Ticket 14 adopted it: the eight token files are vendored verbatim under `src/styles/kleros-ai/`,
+  entered through the system's own `styles.css`, and `src/styles/theme.ts` is `var(--token)` aliases
+  over them and holds no value of its own. Do not re-derive a palette from `kleros-v2/web` — that
+  repo is the reference for markdown rendering and react-query patterns, not for how this dashboard
+  looks.
 - **Where the canvas and a ticket disagree, the canvas wins.** Ruled 2026-08-25, resolving three
   conflicts at once; the tickets were amended, not the artboards. Two of those resolutions are now
   ADR-0005 and ADR-0006. This does not extend to the canvas's *data*, which is largely sampled.
@@ -90,10 +94,13 @@ Things that cost real effort to discover and are easy to get wrong again:
   either side of dispute 152, and a percentage is false the moment it is quoted away from the page.
   ADR-0005. Where the window matters it appears *beside* how long the period actually ran, as two absolute
   durations.
-- **The CSP guard-rail comment in `netlify.toml` only covers `connect-src`.** It caught both of ticket
-  02's data hosts and would miss a font host entirely. Adopting the design system's webfonts touches
-  `style-src` and `font-src` — and Vite dev serves no CSP, so a missed edit looks perfect locally and
-  falls back to system fonts only in production.
+- **Vite dev and `yarn preview` send no CSP at all**, so a missing host in `netlify.toml` looks
+  perfect locally and fails only in production — for a font or a stylesheet, as a silent fall back
+  rather than an error. The guard-rail comment there covered only `connect-src` until ticket 14 and
+  would have missed a font host entirely; it now covers any host, in the directive that governs it.
+  Verify with an A/B against a local server sending the exact policy, collecting through a
+  `report-uri` or a `securitypolicyviolation` listener registered at document start — the browser
+  console does not carry violations to automation.
 - **The Kleros ×AI palette has never had its contrast measured, and misses its own stated target.**
   `tokens/themes.css` claims "accents darkened to hold 4.5:1 on white"; measured, `--cyan-600` is
   3.95, `--mint-600` 3.65 and `--amber-600` 4.10 — only `--rose-600` (5.08) clears. In the dark

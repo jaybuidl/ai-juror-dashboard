@@ -1,0 +1,29 @@
+:root {
+  --space-0: 0px;
+  --space-1: 2px;
+  --space-2: 4px;
+  --space-3: 6px;
+  --space-4: 8px;
+  --space-5: 12px;
+  --space-6: 16px;
+  --space-7: 20px;
+  --space-8: 24px;
+  --space-9: 32px;
+  --space-10: 40px;
+  --space-11: 48px;
+  --space-12: 64px;
+  --space-13: 80px;
+  --space-14: 96px;
+  --space-15: 120px;
+  --space-16: 160px;
+
+  /* Layout */
+  --container: 1200px;
+  --container-narrow: 760px;
+  --gutter: clamp(20px, 4vw, 48px);
+  --section-y: clamp(72px, 9vw, 140px);
+  --card-pad: 24px;
+  --card-pad-lg: 32px;
+  --row-y: 18px;           /* lifecycle row vertical padding */
+  --nav-h: 68px;
+}
