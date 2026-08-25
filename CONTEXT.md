@@ -35,8 +35,10 @@ all six appear: an agent juror that has never staked or been drawn has no on-cha
 _Avoid_: panel, juror list
 
 **Panel**:
-The votes drawn for one dispute. Smaller than the roster, and varies between disputes.
-_Avoid_: jury, roster
+The agent jurors drawn for one dispute — one per draw, however many vote IDs each holds.
+Smaller than the roster, and varies between disputes: dispute 155's panel was one agent juror
+holding all three votes, so its panel size is 1 and not 3.
+_Avoid_: jury, roster, counting it in vote IDs
 
 ### The measures
 
@@ -109,6 +111,32 @@ _Avoid_: phase, stage
 vote periods end early once every juror has acted, and `passPeriod` is permissionless, so a period
 can also run past its deadline before anyone closes it.
 
+**Window**:
+A period's *configured* duration — `timesPerPeriod` for that period, as it was in force for that
+dispute rather than as the court holds it now. Shown beside a latency as an absolute duration and
+never divided into one: court 34's durations changed between dispute 151 and dispute 152, so the
+same fraction of a window means different things in different disputes. The deadline is the instant
+a window would end; the window is only its length, and is no more of an entitlement. See ADR-0005.
+_Avoid_: using it as a denominator, period duration (how long a period actually ran is a different
+quantity), allowance
+
 **Round index**:
 The zero-based index of an appeal round within a dispute. Every dispute in this experiment so far
 has exactly one round.
+
+### The display
+
+**Matrix**:
+The dispute matrix: one row per dispute, one column per agent juror, one cell per draw. Rows grow
+without bound as disputes arrive; the columns stay at six, because the roster does. It is sparse by
+nature — 34 of its 78 cells were blank across the first thirteen disputes, and one agent juror's
+column is empty end to end — and that sparsity is the normal state, not missing data.
+_Avoid_: grid (implies every cell is filled), table, heatmap
+
+**Cell**:
+One cell is one draw: one agent juror's involvement in one dispute, carrying two latencies, a
+coherence state and the number of vote IDs it holds. Panel size is not among them — it lives on the
+row, because coherence is meaningless without it and repeating it in every cell would cost more than
+it tells. A blank cell means the agent juror was not drawn, and must never be readable as a failure
+to act.
+_Avoid_: tile, square (both name something drawn — a blank cell is still a cell), data point

@@ -5,11 +5,39 @@ runs, at its own linkable URL.
 
 **Blocked by:** 02, 06, 10
 
+**Design:** `../canvas/Juror.dc.html` (the whole view — identity and stat card at `:53-83`, the
+reveal-only latency profile at `:86-110`, the drawn-in table at `:113-134`),
+`../canvas/JurorEmpty.dc.html:56-97` (the agent juror never drawn), `../canvas/README.md` for
+provenance
+
 **Status:** ready-for-agent
 
-- [ ] Each agent juror has its own route, linkable and reloadable
+- [ ] Each agent juror has its own route, linkable and reloadable, keyed on the roster nickname and not
+      on the one ENS resolves, so a `name` text record cannot change the URL
 - [ ] The view shows nickname, avatar, address and stack, with the one-line description where present
-- [ ] It shows that agent juror's own metrics: latencies, coherence, draws and cumulative rewards
+- [ ] It shows that agent juror's own metrics: latencies, coherence, draws and cumulative rewards, with
+      the vote count beside the draw count, since one draw may hold several vote IDs
 - [ ] It lists the disputes that agent juror was drawn in, each linking to the dispute view
-- [ ] The agent juror that has never been drawn renders with an honest empty state rather than an error
+- [ ] Every coherence mark on the view is accompanied by the panel size of the dispute it came from — a
+      standing requirement of `spec.md` § Further Notes, because coherence in a panel of one is
+      tautological
+- [ ] That list of disputes carries a `Panel` column alongside its coherence column
+- [ ] The aggregate coherence figure says whether any panel behind it held a single agent juror, so a
+      count that includes a tautological draw cannot be read as if it did not
+- [ ] The comparison of this agent juror's draws against the whole court plots reveal latency only, and
+      says on the chart why: commit latency is not comparable across dispute 151, which ran an 8-hour
+      commit window
+- [ ] Commit latency is excluded from that comparison rather than normalised into it — see
+      ADR-0005
+- [ ] The agent juror that has never been drawn renders an honest empty state rather than an error: it
+      says draws are random and weighted by stake, that this agent juror has not come up, and that
+      there is nothing here to measure
+- [ ] On that page every unmeasurable figure is a dash, and the page says a dash means "no draws to
+      measure" — never zero, and never a failed read, which is loud and looks nothing like this state
+      (ticket 13)
+- [ ] Its draw and vote counts still render as real zeros there, because zero draws is a measured fact
+      rather than an absent measurement
+- [ ] That page names what will appear on the agent juror's first draw: commit and reveal latency, its
+      published reasoning beside the rest of the panel, and coherence — which stays undefined until the
+      appeal period closes and a ruling exists
 - [ ] The view is structured so deferred telemetry could later join it without rearrangement

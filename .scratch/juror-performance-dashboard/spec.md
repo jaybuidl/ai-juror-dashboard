@@ -16,9 +16,10 @@ its periods over days, and these agent jurors are acting in seconds. Nothing sur
 ## Solution
 
 A public dashboard, scoped to court 34, built around a **dispute matrix**: one row per dispute, one
-column per agent juror. Each cell shows a draw's commit latency and reveal latency, coloured by
-coherence. Clicking a dispute opens the panel's justifications side by side; clicking an agent juror
-opens its own metrics and stack.
+column per agent juror. Each cell shows a draw's commit latency and reveal latency, with coherence
+carried by a glyph and a word before it is carried by colour — see ADR-0006. Clicking a dispute
+opens the panel's justifications side by side; clicking an agent juror opens its own metrics and
+stack.
 
 It reads directly from public endpoints in the browser. There is no backend and no secret.
 
@@ -32,27 +33,28 @@ It reads directly from public endpoints in the browser. There is no backend and 
 6. As a Kleros team member, I want to see whether each draw was coherent with the final ruling, so that I can weigh speed against correctness.
 7. As a Kleros team member, I want a draw where the agent juror was not drawn to render blank, so that I never mistake absence for slowness.
 8. As a Kleros team member, I want a draw where the agent juror failed to commit or reveal to render distinctly, so that a real failure is visible and is not confused with absence.
-9. As a Kleros team member, I want a summary per agent juror — typical latency, coherence as a count, number of draws — so that I can see a pattern without ranking anyone.
-10. As a Kleros team member, I want the summary latency to be a median, so that one unusual dispute cannot distort it.
-11. As a Kleros team member, I want cumulative ETH and PNK rewards per agent juror, so that I have participation and correctness in economic terms.
-12. As a Kleros team member, I want to open a dispute and read every panel member's justification side by side, so that I can compare how different stacks reasoned about identical evidence.
-13. As a Kleros team member, I want justifications rendered as Markdown, so that the ones with headings and structure are readable as written.
-14. As a Kleros team member, I want a justification that is absent to say so, so that I do not read an empty panel as a rendering bug.
-15. As a Kleros team member, I want justifications in other languages to render correctly, so that a Spanish-language justification is as readable as an English one.
-16. As a Kleros team member, I want to open an agent juror and see its own metrics and which stack it runs, so that I can connect performance to the build behind it.
-17. As a Kleros team member, I want each view to have its own URL, so that I can paste a link to a specific dispute into Slack.
-18. As a Kleros team member, I want agent jurors shown by nickname and avatar rather than address, so that the matrix is readable at a glance.
-19. As a Kleros team member, I want a nickname to still show if ENS resolution fails, so that a mainnet RPC outage degrades the dashboard rather than breaking it.
-20. As a Kleros team member, I want an agent juror that has never been drawn to still appear, so that I can see the full roster including the ones yet to participate.
-21. As a Kleros team member monitoring a live dispute, I want the view to refresh while a dispute is unfinalised, so that I can watch a commit period unfold.
-22. As a Kleros team member, I want finalised disputes not to be refetched, so that watching a live dispute does not re-request the whole history.
-23. As a Kleros team member returning to the dashboard, I want previously finalised results to load without refetching, so that a page reload is fast.
-24. As a Kleros team member, I want a very visible error when the subgraph or RPC cannot be reached, so that I never read a partly-loaded dashboard as fact.
-25. As a Kleros team member, I want a visible error when the subgraph says an agent juror committed but no matching log was found, so that a truncating RPC surfaces as a fault rather than as a false "missed commit".
-26. As a member of the Kleros community, I want to reach the dashboard at a public URL, so that I can follow the experiment without internal access.
-27. As the author of a research article, I want dispute 151 marked as having run under different court parameters, so that I do not cite a figure computed across two different period regimes.
-28. As a developer maintaining this, I want the metric logic to be pure and testable without a network, so that I can change a definition with confidence.
-29. As a developer, I want the metric logic shaped so it can move into agentkit later, so that the CLI can eventually answer the same questions.
+9. As a Kleros team member monitoring a live dispute, I want a draw whose period is still open to render as pending rather than blank, so that an agent juror that has not acted yet is not mistaken for one that was not drawn or one that failed to act.
+10. As a Kleros team member, I want a summary per agent juror — typical latency, coherence as a count, number of draws — so that I can see a pattern without ranking anyone.
+11. As a Kleros team member, I want the summary latency to be a median, so that one unusual dispute cannot distort it.
+12. As a Kleros team member, I want cumulative ETH and PNK rewards per agent juror, so that I have participation and correctness in economic terms.
+13. As a Kleros team member, I want to open a dispute and read every panel member's justification side by side, so that I can compare how different stacks reasoned about identical evidence.
+14. As a Kleros team member, I want justifications rendered as Markdown, so that the ones with headings and structure are readable as written.
+15. As a Kleros team member, I want a justification that is absent to say so, so that I do not read an empty panel as a rendering bug.
+16. As a Kleros team member, I want justifications in other languages to render correctly, so that a Spanish-language justification is as readable as an English one.
+17. As a Kleros team member, I want to open an agent juror and see its own metrics and which stack it runs, so that I can connect performance to the build behind it.
+18. As a Kleros team member, I want each view to have its own URL, so that I can paste a link to a specific dispute into Slack.
+19. As a Kleros team member, I want agent jurors shown by nickname and avatar rather than address, so that the matrix is readable at a glance.
+20. As a Kleros team member, I want a nickname to still show if ENS resolution fails, so that a mainnet RPC outage degrades the dashboard rather than breaking it.
+21. As a Kleros team member, I want an agent juror that has never been drawn to still appear, so that I can see the full roster including the ones yet to participate.
+22. As a Kleros team member monitoring a live dispute, I want the view to refresh while a dispute is unfinalised, so that I can watch a commit period unfold.
+23. As a Kleros team member, I want finalised disputes not to be refetched, so that watching a live dispute does not re-request the whole history.
+24. As a Kleros team member returning to the dashboard, I want previously finalised results to load without refetching, so that a page reload is fast.
+25. As a Kleros team member, I want a very visible error when the subgraph or RPC cannot be reached, so that I never read a partly-loaded dashboard as fact.
+26. As a Kleros team member, I want a visible error when the subgraph says an agent juror committed but no matching log was found, so that a truncating RPC surfaces as a fault rather than as a false "missed commit".
+27. As a member of the Kleros community, I want to reach the dashboard at a public URL, so that I can follow the experiment without internal access.
+28. As the author of a research article, I want dispute 151 marked as having run under different court parameters, so that I do not cite a figure computed across two different period regimes.
+29. As a developer maintaining this, I want the metric logic to be pure and testable without a network, so that I can change a definition with confidence.
+30. As a developer, I want the metric logic shaped so it can move into agentkit later, so that the CLI can eventually answer the same questions.
 
 ## Implementation Decisions
 
@@ -68,10 +70,13 @@ dispute titles, and any consistency-check failures. Returns agentkit's `KlerosRe
 See ADR-0003.
 
 **Latency.** Held in seconds, measured from the observed moment a period opened — the round
-timeline, not a scheduled deadline. See ADR-0001. Display switches from seconds to minutes at
-roughly ninety seconds. Any "% of window" figure resolves its denominator per dispute from the
-`CourtModified` history; court 34's parameters changed between dispute 151 and dispute 152, so
-dispute 151 must be visibly marked.
+timeline, not a scheduled deadline. See ADR-0001. Values under two minutes display in seconds and
+longer ones switch to minutes, because 3,236s is not a number anyone reads. No latency is ever shown
+as a fraction of a window, at any altitude — a window appears as an absolute duration beside an
+absolute latency, never as a denominator. See
+ADR-0005. Per-dispute period durations are still resolved from the `CourtModified` history, because
+court 34's parameters changed between dispute 151 and dispute 152, which is also why dispute 151
+must be visibly marked.
 
 **Coherence.** Per draw, against the dispute's final ruling, recomputed from vote choices. See
 ADR-0002.
@@ -124,7 +129,7 @@ Kleros court frontend's `web/src/hooks/queries/`.
   prevent supporting them, but no round dimension is modelled or rendered. Deferred by decision.
 - **Gen-AI telemetry** — token usage, model, thinking effort. There is no consistent way to collect
   this across the six stacks yet; it awaits a shared OTEL approach.
-- **Any cross-court view.** Coherence scoping and the historical-denominator logic both assume a
+- **Any cross-court view.** Coherence scoping and the historical-parameter logic both assume a
   single court.
 - **A ranked leaderboard.** Marginals are shown; nobody is ranked.
 - **Writing to chain.** This dashboard never votes, holds a key, or submits a transaction.
@@ -139,7 +144,9 @@ Facts established during design, worth not rediscovering:
 - Thirteen disputes (151–163), 61 votes, 44 draws, five participating agent jurors. The sixth,
   `baskerville`, has no on-chain presence at all.
 - Zero anomalies in the data so far: every vote committed, every vote revealed, every reveal but one
-  carries a justification. The failure states still need designing; they just have no examples yet.
+  carries a justification. The failure states are designed regardless: all five cell states are on
+  `canvas/Cell.dc.html`, including the two that have no example in the data yet, and the loud
+  partial-read failure is on `canvas/Errors.dc.html`.
 - Every appeal period ran about 18 hours despite a 36-hour configured value. Unexplained, and it does
   not affect any metric here, but do not treat the appeal duration as understood.
 - Reveal latency across all 44 draws: minimum 7s, median 85s, maximum 552s.

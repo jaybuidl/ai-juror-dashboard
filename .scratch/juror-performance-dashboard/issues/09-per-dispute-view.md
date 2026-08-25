@@ -6,15 +6,40 @@ identical evidence is the thing this experiment exists to show.
 
 **Blocked by:** 04, 05
 
+**Design:** `../canvas/Dispute.dc.html` (the whole view — header and ruling card at `:51-85`, the
+timeline strip at `:88-96`, the justification band at `:110-278`, the empty justification at
+`:149-177`, the ordering rule at `:276`), `../canvas/README.md` for provenance
+
 **Status:** ready-for-agent
 
 - [ ] Each dispute has its own route, linkable and reloadable
 - [ ] The view shows the dispute's title, question and ruling, and every draw in the panel
-- [ ] Justifications render side by side rather than one at a time
+- [ ] The header identifies the dispute beyond its title — category, court, round, panel size and the
+      period it is in — and links out to the dispute on chain
+- [ ] The ruling card names the winning choice by number and in words, and gives the vote count for
+      every choice, including choice `0` (refuse to arbitrate) and any choice with no votes
+- [ ] The ruling card states that coherence on this page is measured against that ruling and nothing
+      else
+- [ ] A timeline strip covers the dispute's evidence, commit, vote and appeal periods, each carrying its
+      configured window and what actually elapsed as two absolute durations, never as a ratio — see
+      ADR-0005
+- [ ] Justifications render side by side rather than one at a time, in columns of equal width and in
+      roster order, with the whole panel visible at once — a panel is at most six, so there is no
+      carousel and no pagination
+- [ ] Coherence never reorders those columns: a diverged reading keeps its roster position and is never
+      sorted last
+- [ ] Each column's header carries that draw's identity and outcome — avatar, roster nickname, stack
+      label, a coherence mark and the choice voted — with its reveal and commit latencies
+- [ ] Each column's footer carries the justification's length and its format — Markdown, plain text, or
+      the language it was written in — and, where the body is clipped to fit the column, a way to read
+      it in full
 - [ ] Justifications render as Markdown with GitHub-flavoured extensions
 - [ ] Raw HTML is disabled at the parser — deliberately stricter than the Kleros court frontend, which
       enables it and sanitises afterwards
 - [ ] A link inside a justification warns before navigating away
-- [ ] A draw with no justification says so, rather than rendering as empty space
+- [ ] A draw with no justification says so in its own column, rather than rendering as empty space, and
+      states that the vote is on chain and counts in full and only the prose is absent
+- [ ] That empty state reads as a field published empty, not as a failure: nothing was lost in transit,
+      and it is distinct from both a failed read and a draw that never acted
 - [ ] Justifications not written in English render correctly
 - [ ] Long justifications remain readable; the longest in the data is nearly five thousand characters

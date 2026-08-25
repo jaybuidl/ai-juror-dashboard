@@ -23,10 +23,11 @@ or on the behaviour of other jurors, which is what makes statistics across dispu
 
 ## Consequences
 
-Any "% of window" shown in the UI must resolve its denominator per dispute from the `CourtModified`
-event history, not from the court's current parameters. Dispute 151 has to be visibly marked as
-running under the pre-modification parameters: this dashboard is public and may be cited in
-research, and a median silently computed across two period regimes would be misleading.
+A dispute's period durations must be resolved from the `CourtModified` event history, not from the
+court's current parameters. Dispute 151 has to be visibly marked as running under the
+pre-modification parameters: this dashboard is public and may be cited in research, and a median
+silently computed across two period regimes would be misleading. Whether any fraction is ever shown
+on top of the stored seconds is a separate question, settled by ADR-0005: none is.
 
 Display units are not covered by this decision. Reveal latency has a median of 85 seconds and a
 minimum of 7, so the UI formats short latencies in seconds and long ones in minutes.

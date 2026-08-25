@@ -4,15 +4,38 @@
 error saying so. Nobody should ever read a partly-loaded dashboard as fact — least of all on a
 public deployment whose numbers may be cited.
 
+`Errors.dc.html` is the specification for what "prominent" means here, and it carries one thing this
+ticket did not have: **unread is its own cell state**, a sixth alongside the five ticket 05 builds. A
+dispute whose data could not be read is a gap, and a gap must never be readable as "not drawn" or as
+"failed to act" — the two states the cell design already exists to keep apart.
+
 **Blocked by:** 05
+
+**Design:** `../canvas/Errors.dc.html:43-162` (failure states), `../canvas/README.md` for provenance
 
 **Status:** ready-for-agent
 
-- [ ] A failure to reach the core subgraph, the template subgraph, the Arbitrum endpoint or the
-      Ethereum mainnet endpoint produces a prominent error
-- [ ] The error names which source failed, so it is actionable
-- [ ] Partial data is never presented as though it were complete
-- [ ] A failure of ENS resolution alone is the documented exception: it degrades to roster nicknames
-      rather than raising an error
-- [ ] The commit cross-check discrepancy from ticket 07 surfaces through this same prominent channel
-- [ ] Recovery is possible without a full page reload once the source is reachable again
+- [ ] A failure that changes a number is loud and blocking; a failure that changes only a label is
+      quiet and local
+- [ ] By that rule the core subgraph, the template subgraph and the Arbitrum endpoint are loud; the
+      Ethereum mainnet endpoint carries only ENS names and avatars and is the one documented exception
+- [ ] Every read that fails says so twice: in the place where the missing figure would have been, and
+      once in a banner at the top of the page
+- [ ] The banner heading — "Part of this page could not be read. Do not cite these figures." — tells
+      the reader what to do, and sits beside an "Incomplete" pill in a banner spanning the full width
+- [ ] The banner names the failing source, the status it returned, and how long ago the last complete
+      read was, and offers both a retry and an explanation of what a partial read means
+- [ ] An aggregate computed while a read has failed is labelled as partial everywhere it appears, and
+      what could not be read counts as unknown — never as zero and never as absent
+- [ ] A dispute whose data could not be read renders as unread across its whole row: a question glyph
+      and the words "not read" in every slot where a figure belongs
+- [ ] The row header of an unread dispute carries an unread badge and says the row itself is unavailable
+- [ ] The unread state shares nothing with "not drawn" and nothing with "failed to act", so a reader
+      can tell at a glance which rows are evidence and which are a gap
+- [ ] A failure of ENS resolution alone raises no banner: nicknames fall back to the roster and avatars
+      to initials, in a degraded-not-broken panel rather than a blocking one
+- [ ] The ENS fallback shows on the elements it affects — a chip on the fallen-back nickname and a
+      dashed avatar — and says that no measurement depends on ENS, so no figure on the page is partial
+- [ ] The commit cross-check discrepancy from ticket 07 surfaces through this same channel, and loudly,
+      because it changes a number
+- [ ] Recovery needs no full page reload: retrying from the banner clears it once the source answers
