@@ -67,3 +67,25 @@ Two things it settled that this ticket inherits:
 
 `/method#caveats` is where "the full account one click away" should point; the section is written
 and names the panel of one, the sparsity of the matrix and the fact that nothing is sampled.
+
+## From ticket 08: the second marker, and it is no longer unused
+
+The `TileCaveat` mechanism above is now wired: the median-reveal tile carries a `†` reading
+"2 of N draws ran under a vote window of 8h, which the court has since changed", linking to
+`/method#window`. So this ticket inherits **two** markers, not one, and every marginal it prints
+takes whichever apply:
+
+- `‡` — a lone panel, from `totals.lonePanelDisputes`. Qualifies **coherence**.
+- `†` — a superseded window, from `totals.changedWindows`. Qualifies **latency**. Each entry carries
+  the disputes it covers, the commit and vote windows they ran under, and `revealedDraws`, which is
+  the "N of M draws" count the reason line needs. Compare against `CourtParameters.current`.
+
+A per-agent-juror median reveal is qualified by `†` exactly when that agent juror was drawn in one
+of those disputes — which `changedWindows[].disputes` gives you and the rows give you the draws for.
+`medianOfSeconds`'s rule applies unchanged.
+
+Also inherited, and the trap worth reading before writing a marginal: **`totals.unplacedDisputes`.**
+A dispute the parameter history could not place is not a dispute that ran under the current windows,
+and a marginal that treated an empty `changedWindows` as "nothing to disclose" would state a clean
+bill of health over a short read. Ticket 08's `Matrix.tsx` and `MatrixPage.tsx` both branch on it;
+do the same rather than reading `changedWindows` alone.

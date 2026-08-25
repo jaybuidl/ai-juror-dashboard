@@ -68,3 +68,25 @@ Three things to reuse rather than rebuild:
 The 404 catches anything the route table does not match, so a bad id in the path is *not* a 404 —
 it is a real route with an id that names nothing, and this view has to say so itself. Ticket 13 owns
 what a failed *read* looks like; an id that does not exist is neither that nor a wrong URL.
+
+## From ticket 08: the timeline strip's configured half is already in the model
+
+`canvas/Dispute.dc.html:88-96` renders each period as *the period named, its configured duration,
+then how long it in fact ran* — "45m configured · closed in 34m 23s". Ticket 08 supplies the first
+of those two durations and nothing else needs fetching for it:
+
+- **`MatrixRow.windows`** is a `PeriodWindows` — `evidenceSeconds`, `commitSeconds`, `voteSeconds`,
+  `appealSeconds` — resolved from the court's own parameter history for **that** dispute, not from
+  what the court holds now. It is `null` until the history is read, and `null` must render as an
+  absent window rather than as the current one.
+- **`formatWindowSeconds`** (`performance/latency.ts`) is how a window reads: `"8h"`, `"45m"`,
+  `"1h 30m"`. Deliberately coarser than `formatLatencySeconds`, so a window and a measurement never
+  look like the same quantity. Use it for the configured half and `formatLatencySeconds` for the
+  elapsed half.
+
+How long a period *actually* ran is the difference between two `DisputeRound` moments, which are
+already on the model. Never divide one by the other, at any altitude — ADR-0005, and it is what the
+whole of ticket 08 exists to keep possible. Two absolute durations, side by side.
+
+One caveat this view inherits: a dispute carrying `underEarlierWindows` needs the `†` and its
+account, the same as its matrix row. `/method#window` is written and is where the link goes.

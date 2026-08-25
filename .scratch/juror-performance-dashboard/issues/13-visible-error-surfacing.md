@@ -193,3 +193,27 @@ Two smaller things:
   appear on it. Whatever rose treatment this ticket builds, it does not reach that view.
 - `StatTiles` and `LatencyStrip` already handle the no-model case by saying they have nothing rather
   than rendering zeros. They say it plainly; the designed version is yours if the design has one.
+
+## From ticket 08: a second unrendered error, and a third read-state
+
+`CourtPerformanceView` now carries **`parametersError`** beside `commitError`. Same contract: it is
+non-blocking, nothing renders it as a banner, and it is the reason behind a caveat rather than the
+caveat itself. An unread parameter history costs the `†` marker and each row's windows and nothing
+else, so it must never reach the blocking channel.
+
+Two things ticket 08 learned wording these, both of which the banner has to keep:
+
+- **A flag that is false during a read is not a flag that the read failed.** `commitCoverage.read`
+  and `parameters.read` are each false while Arbitrum is being asked *and* after it refused. Ticket
+  08 fixed a pre-existing case of this — the commit caveat said "still being read" about a read that
+  had given up — by keying the wording on the error as well as the flag. Every notice this ticket
+  writes over either read needs both halves. It is the same trap `CLAUDE.md` records against
+  `RosterView`.
+- **There is a third state under those two: a read that came back empty.** `parameters: []` is
+  `read: true` with no configuration in it, from a court that has certainly been configured — a
+  short read, not an absent one, and the page says so in different words. `CourtTotals.unplacedDisputes`
+  is the matching count for the rows it leaves unplaceable.
+
+`MatrixPage.tsx`'s `provenanceOf` now composes five wordings across these states, and `Matrix.tsx`'s
+`WindowFootnote` three. That is the catalogue this ticket folds into one component — one more than
+was there when this ticket was written.
