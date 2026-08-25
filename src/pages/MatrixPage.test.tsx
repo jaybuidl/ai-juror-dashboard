@@ -1,5 +1,5 @@
 import { cleanup, fireEvent, screen, within } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { arbitrumSource } from "../performance/arbitrum";
 import { formatLatencySeconds } from "../performance/latency";
 import { formatAgo, SOURCES } from "../read-failure";
@@ -24,6 +24,7 @@ import {
   unmeasured,
   unresolvedRoster,
 } from "../test/court";
+import { PHONE_WIDTH, stubViewportWidth } from "../test/viewport";
 
 /**
  * The landing view: the hero, the totals, the strip and the matrix.
@@ -834,3 +835,228 @@ function aboveTheMatrix(text: RegExp): HTMLElement[] {
   const grid = screen.queryByRole("table");
   return screen.getAllByText(text).filter((node) => grid === null || !grid.contains(node));
 }
+
+/**
+ * The same view below the breakpoint.
+ *
+ * jsdom implements no `matchMedia` at all, so every test above renders the desktop form without
+ * asking for it — which is the same guard that keeps `useIsNarrow` from throwing in a browser
+ * that lacks it. These say so explicitly.
+ */
+describe("the matrix view on a phone", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("replaces the matrix with one card per dispute rather than shrinking it", () => {
+    stubViewportWidth(PHONE_WIDTH);
+    renderAt("/");
+
+    // Not rendered, not hidden. A display:none table is still built, still 96 cells of DOM on
+    // the device least able to afford them, and still in the page a reader saves or prints.
+    expect(screen.queryByRole("table")).not.toBeInTheDocument();
+    expect(screen.getAllByRole("listitem").length).toBeGreaterThan(0);
+    expect(screen.getByRole("link", { name: /^Dispute 163\b/ })).toBeInTheDocument();
+  });
+
+  it("keeps the matrix above the breakpoint", () => {
+    stubViewportWidth(1280);
+    renderAt("/");
+
+    expect(screen.getByRole("table")).toBeInTheDocument();
+  });
+
+  it("drops the deck and the latency strip, and loses no measured figure with them", () => {
+    stubViewportWidth(PHONE_WIDTH);
+    renderAt("/");
+
+    // The deck goes; its read-only clause survives in the nav's own label, which is why that
+    // label is not what gives way for width.
+    expect(screen.queryByText(/it never votes, stakes, or holds a key/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/^Read only$/i)).toBeInTheDocument();
+
+    // The strip goes; its headline figure is the median reveal, which the tiles now lead with,
+    // and its comparison band was illustrative by its own caption.
+    expect(screen.queryByText(/median reveal, fastest and slowest/i)).not.toBeInTheDocument();
+
+    // `getAllByText`: the same duration is also one card's slot figure, which is the point —
+    // the figure did not leave the page with the strip, it moved into the tile that leads it.
+    const median = formatLatencySeconds(measured.performance?.totals.revealLatency?.median ?? 0);
+    expect(screen.getAllByText(median).length).toBeGreaterThan(0);
+    expect(screen.getByText(/^Median reveal/)).toBeInTheDocument();
+  });
+
+  it("shows three tiles, with the median reveal leading and the drawn count gone", () => {
+    stubViewportWidth(PHONE_WIDTH);
+    renderAt("/");
+
+    const labels = screen
+      .getAllByText(/^(Disputes read|Draws.*|Agent jurors drawn|Median reveal.*)$/)
+      .map((node) => node.textContent);
+
+    // `Mobile.dc.html:47-51`: median reveal, draws, disputes. The roster's drawn count is a fact
+    // about the roster rather than about the record, and `/agent-jurors` carries it in more
+    // detail than a tile can.
+    expect(labels).toHaveLength(3);
+    expect(labels[0]).toMatch(/^Median reveal/);
+    expect(labels[1]).toBe("Draws");
+    expect(labels[2]).toBe("Disputes read");
+  });
+
+  it("keeps the eyebrow's court number and chain and drops the court's name", () => {
+    stubViewportWidth(PHONE_WIDTH);
+    renderAt("/");
+
+    // The number and the chain locate the data; the name is the one segment a reader can lose
+    // without losing the scope.
+    const eyebrow = screen.getByText(/^Court 34/);
+    expect(eyebrow).toHaveTextContent("Arbitrum One");
+    expect(eyebrow).not.toHaveTextContent("Agentic Commerce Court");
+  });
+
+  it("keeps the headline the same sentence, never a shorter or a different one", () => {
+    stubViewportWidth(PHONE_WIDTH);
+    renderAt("/");
+
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      /^Agents do not wait for the deadline\.$/,
+    );
+  });
+
+  it("folds the nav onto one line without dropping a destination", () => {
+    stubViewportWidth(PHONE_WIDTH);
+    renderAt("/");
+
+    // The four destinations are behind one affordance rather than gone: a route a phone visitor
+    // could not reach is the failure ticket 15 refused when it ruled that a nav entry needs an
+    // index or does not appear.
+    const menu = screen.getByRole("button", { name: /open the menu/i });
+    expect(menu).toHaveAttribute("aria-expanded", "false");
+    expect(screen.queryByRole("link", { name: "Method" })).not.toBeInTheDocument();
+
+    fireEvent.click(menu);
+
+    expect(menu).toHaveAttribute("aria-expanded", "true");
+    for (const label of ["Disputes", "Agent jurors", "Method"]) {
+      expect(screen.getByRole("link", { name: label })).toBeInTheDocument();
+    }
+    // The matrix is the page being looked at, so it is marked rather than linked — the same rule
+    // the wide bar follows.
+    expect(screen.getByText("Matrix")).toHaveAttribute("aria-current", "page");
+  });
+
+  it("keeps the folded menu shut when the visitor comes back to where they opened it", () => {
+    stubViewportWidth(PHONE_WIDTH);
+    renderAt("/");
+
+    fireEvent.click(screen.getByRole("button", { name: /open the menu/i }));
+    fireEvent.click(screen.getByRole("link", { name: "Method" }));
+    fireEvent.click(screen.getByRole("link", { name: /Kleros ×AI/ }));
+
+    // Found by review, and invisible to the forward-navigation test above: the state was keyed on
+    // the path the menu was open *for*, which the path never stopped matching once you returned
+    // to it. Arriving Home found the panel open over the page just asked for — and Back did the
+    // same. What has to be watched is the path changing, not the path matching.
+    expect(screen.getByRole("button", { name: /open the menu/i })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(screen.queryByRole("link", { name: "Disputes" })).not.toBeInTheDocument();
+  });
+
+  it("does not tell a phone reader about a latency strip that is not on the page", () => {
+    stubViewportWidth(PHONE_WIDTH);
+    renderAt("/");
+
+    // The footer states what the figures above it rest on, and a provenance note about something
+    // the reader cannot see sends them looking for it, on a page that may be cited. The band is
+    // the only one of these the fold drops that was never a read; merging ticket 10 added three
+    // more that were, and the test below covers those.
+    expect(screen.queryByText(/comparison band on the latency strip/i)).not.toBeInTheDocument();
+  });
+
+  it("states no payout provenance on a layout that shows no payout figure", () => {
+    stubViewportWidth(PHONE_WIDTH);
+    renderAt("/");
+
+    // Merging tickets 10 and 16 created this and neither branch could have caught it. Ticket 10
+    // put cumulative ETH and net PNK in the matrix's column headers and gave the footer three
+    // sentences about them; ticket 16 drops the column headers whole. All three then described
+    // figures a phone reader cannot see — one of them promising a figure that is coming, when on
+    // this layout none is.
+    expect(
+      screen.queryByText(/summed over the .* draws the court has executed/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("promises a phone reader no payout figure while the payouts are being read", () => {
+    stubViewportWidth(PHONE_WIDTH);
+    renderAt("/", { performance: rewardsPending });
+
+    // "…is shown yet" promises a figure that is coming. On a phone none is coming, because this
+    // layout has nowhere to put one — so the promise is the misleading half rather than the wait.
+    // The pending fixture is what makes this assertion load-bearing: with the default court the
+    // sentence is absent for the ordinary reason that the payouts were read.
+    expect(screen.queryByText(/payouts are still being read/i)).not.toBeInTheDocument();
+  });
+
+  it("still states payout provenance above the breakpoint", () => {
+    // The other direction, so the gate above cannot silently swallow the desktop's own sentence.
+    stubViewportWidth(1280);
+    renderAt("/");
+
+    expect(
+      screen.getByText(/summed over the 44 draws the court has executed and paid out/i),
+    ).toBeInTheDocument();
+  });
+
+  it("does not tell a phone reader that a fee-token payout is missing from a figure it lacks", () => {
+    stubViewportWidth(PHONE_WIDTH);
+    renderAt("/", { performance: rewardsInFeeToken });
+
+    // The sentence says "the ETH shown for those agent jurors", and on a phone none is shown.
+    // Dead today either way — court 34 has never paid in its registered WETH — which is exactly
+    // why it is written rather than left for the day it is not.
+    expect(screen.queryByText(/paid in a fee token rather than in ETH/i)).not.toBeInTheDocument();
+  });
+
+  it("names no column header in a payout failure banner", () => {
+    stubViewportWidth(PHONE_WIDTH);
+    renderAt("/", { performance: rewardsFailed });
+
+    // The banner survives the fold — the read did fail — but it may not name furniture this
+    // layout has none of. Ticket 16's own review caught this exact fault in the commit-shortfall
+    // notice: a reader sent hunting for a string that is not on the page.
+    const banner = screen.getByText(/payouts could not be read/i);
+    expect(banner).not.toHaveTextContent(/column header/i);
+  });
+
+  it("describes cards and slots in the caveat card rather than columns and cells", () => {
+    stubViewportWidth(PHONE_WIDTH);
+    renderAt("/");
+
+    // The one place still speaking desktop-only after the fold, found by review. The whole point
+    // of this layout is that the two never say different things about one court; a caveat card
+    // describing furniture the reader cannot see is that fault in the other direction.
+    const caveat = screen.getByText(/This page measures how long each agent juror took/);
+    expect(caveat).toHaveTextContent(/each slot along its foot one agent juror's draw/);
+    expect(caveat).not.toHaveTextContent(/column header/);
+    expect(caveat).toHaveTextContent(/a blank slot means an agent juror was not drawn/);
+  });
+
+  it("closes the folded menu on the way to the page it opened", () => {
+    stubViewportWidth(PHONE_WIDTH);
+    renderAt("/");
+
+    fireEvent.click(screen.getByRole("button", { name: /open the menu/i }));
+    fireEvent.click(screen.getByRole("link", { name: "Method" }));
+
+    // react-router does not unmount the nav between routes, so a menu left open would cover the
+    // page the visitor just asked for.
+    expect(screen.getByRole("button", { name: /open the menu/i })).toHaveAttribute(
+      "aria-expanded",
+      "false",
+    );
+    expect(screen.queryByRole("link", { name: "Disputes" })).not.toBeInTheDocument();
+  });
+});

@@ -38,6 +38,22 @@ Kleros court frontend, which enables it and sanitises afterwards — and a link 
 before it takes you anywhere. A justification published empty says so in its own words and is never
 drawn as a failed read.
 
+**On a phone it is folded, not shrunk.** Below one declared width the grid is not rendered at all —
+not scaled, not scrolled sideways, not transposed into fewer columns. Each dispute becomes a card
+with a strip of six fixed slots along its foot, one per agent juror in roster order whether that
+agent juror was drawn or not, so the property the matrix exists for survives the fold: the nth slot
+is the same agent juror on every card, and one agent juror can be scanned down the page the way a
+column is scanned across a grid. A slot carries an avatar, the state glyph and one figure — the
+latency of the most recent thing that draw did — and an agent juror who was not drawn keeps its
+position and collapses to a single dot, so absence still reads as absence. The card is the tap
+target and opens that dispute's own page, where both latencies and the published reasoning are. The
+chrome folds with it: the lockup keeps the official wordmark and drops its diamond, the four
+destinations go behind one menu, three stat tiles replace four with the median reveal leading, and
+the read-only statement stays in the bar. Every caveat a desktop reader meets, a phone reader meets
+too — the legend and the note that sparsity is normal are rendered inline above the first card
+rather than behind a control, because a reader who does not know a blank means "not drawn" will not
+go looking for the sentence that says so.
+
 Commit latency is the one figure not read from a subgraph: it comes from `CommitCast` logs on an
 Arbitrum RPC, because the subgraph records only *whether* a juror committed and never *when*. Every
 draw the subgraph calls committed is cross-checked against a matching log, and any shortfall is

@@ -239,3 +239,37 @@ Three more things ticket 09 leaves here:
 - **The link interstitial** is a `role="alert"` panel that replaces navigation. Keyboard users
   reach it through the link's own focus, and the panel's controls follow in DOM order; nothing
   moves focus into it, which is worth a decision.
+
+## From ticket 16, 2026-08-25 — a second layout, and the smallest type on the dashboard
+
+Everything this ticket audits now has two forms, and the phone form is where the margins are
+thinnest. Four specific inheritances:
+
+- **The slot figure is 9.5px**, in `DisputeCards.tsx`. It is the artboard's size and the smallest
+  type here by some way — the vote count at 9px that `CLAUDE.md` already flags for you is its only
+  rival. Nothing rests on reading it alone: the glyph carries the state and the dispute's own view
+  carries both latencies in full. It is still a figure on a public page, and it is one of the
+  places the type scale has to be weighed rather than assumed.
+- **A slot's state word is *only* in its accessible name.** It does not fit under a 36pt avatar, so
+  each slot renders `<VisuallyHidden>{nickname}: {word}</VisuallyHidden>` and the glyph carries it
+  on screen. ADR-0006's greyscale test is met by the glyph; whether "007: Coherent, 46s" is what a
+  screen-reader user actually wants to hear six times per card is this ticket's call, and the
+  answer may be a `role`/`aria-label` structure rather than hidden text.
+- **Two dashed borders that must stay apart.** An agent juror drawn and awaiting its commit gets a
+  mint dashed avatar; an ENS portrait that could not be fetched gets an amber dashed one. The
+  second carrier is the mint `⋯` glyph beneath the first and the initials in the second, but the
+  primary distinction is hue, which is the pattern ADR-0006 exists to catch. Where a slot is both,
+  the state wins and the ENS dash is lost — documented in `SlotAvatar`, and worth a second opinion.
+- **The folded nav is a real disclosure.** `MenuButton` in `Nav.tsx` carries `aria-expanded` and
+  `aria-controls`, closes on Escape and on navigation, and its label changes between "Open the
+  menu" and "Close the menu". It is untested against a screen reader and has no focus management
+  when the panel opens or closes, which is the part most likely to be wrong.
+
+Also: the palette contrast this ticket owns now inks a 9.5px figure in `theme.textPending` on a
+card surface, which is `--text-4` again — the token `CLAUDE.md` measures at 2.68–2.91:1.
+
+**Which layout each site lives on, since the two notes above list sites on different ones.** The
+amber PNK-loss figure ticket 10 flags is in the matrix's column headers, and the card layout drops
+those headers whole — so it is a **desktop-only** site and a 390pt audit will never meet it. The
+four sites in this note are the phone's. Nothing here appears on both, which means this ticket's
+sweep is two sweeps and a surface checked at one width is not checked at the other.

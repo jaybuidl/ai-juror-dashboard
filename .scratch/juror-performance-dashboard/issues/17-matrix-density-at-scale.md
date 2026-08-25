@@ -230,3 +230,29 @@ What that view says, and why:
 
 The two share no wording on purpose. The distinction the matrix has to draw is the same one, and
 `MatrixRow.read` plus `panelSize > 0` is the whole test.
+
+## From ticket 16, 2026-08-25 — the other reduction path is built, and it is not yours
+
+The phone layout has landed. The two tickets stay two paths and never compose: **a phone shows
+cards at any row count and never the compact grid**, so whatever this ticket does to the grid is
+gated above `breakpoints.narrow` and `DisputeCards` is untouched by it.
+
+Three things that are now facts rather than plans:
+
+- **The sparsity figures moved onto `CourtTotals.sparsity`** — blank count, position count, empty
+  columns, over the rows that were read. Anything this ticket does that changes what is on screen
+  must not recompute them beside that field; the whole reason they moved is that two layouts were
+  about to disagree about how sparse one court is.
+- **The frozen header ticket 06 warned you about is unchanged**, and the phone route does not
+  relieve it. The compaction still has to carry a column header holding an avatar, a nickname, a
+  stack and three marked figures.
+- **`CLAUDE.md` § Traps now records the cross-layout prose trap**, which this ticket will meet the
+  moment it words anything about a compacted grid: a string naming a cell, a column or a row is a
+  claim about which layout the reader is on, and the caveat card in `MatrixPage.tsx` is already
+  written twice for that reason.
+
+**And the open question this ticket inherits is the one ticket 16 could not answer.** What a stack
+of several hundred *cards* should do is unsettled — the canvas draws four and the court holds
+thirty-one today. It is this ticket's question in the other layout, and the two answers should
+probably be decided together: whatever the grid does past forty rows, the card list needs a story
+past the same number, and neither may quietly stop showing disputes it has read.

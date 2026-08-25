@@ -195,6 +195,55 @@ describe("courtTotalsOf", () => {
 });
 
 /**
+ * Ticket 16's aggregate: the sparsity note is quoted by two layouts now, so its figures come
+ * from the model rather than from whichever of them is on screen.
+ */
+describe("sparsity", () => {
+  it("counts one position per agent juror per read dispute, and the draws against them", () => {
+    const { sparsity } = courtTotalsOf(built.rows, ROSTER);
+    const totals = courtTotalsOf(built.rows, ROSTER);
+
+    expect(sparsity.disputes).toBe(built.rows.length);
+    expect(sparsity.positions).toBe(built.rows.length * ROSTER.length);
+    // The complement of the draws the same pass counted: every position holds a draw or is
+    // blank, and nothing is both. This is the arithmetic the note rests on.
+    expect(sparsity.blank).toBe(sparsity.positions - totals.draws);
+  });
+
+  it("names the agent jurors no read dispute drew", () => {
+    // baskerville has never been drawn, which is the record this dashboard exists partly to
+    // state — one blank column end to end, against five that carry draws.
+    expect(courtTotalsOf(built.rows, ROSTER).sparsity.emptyColumns).toBe(1);
+  });
+
+  it("counts an unread row out of every figure rather than as six blanks", () => {
+    const unread: MatrixRow = {
+      ...(built.rows[0] as MatrixRow),
+      read: false,
+      cells: ROSTER.map(() => null),
+    };
+    const { sparsity } = courtTotalsOf([...built.rows.slice(1), unread], ROSTER);
+
+    // One fewer dispute in every figure, not six more blanks: a row nobody asked about is a
+    // gap in this dashboard, and the note's whole claim is that a blank is a fact about the
+    // court.
+    expect(sparsity.disputes).toBe(built.rows.length - 1);
+    expect(sparsity.positions).toBe((built.rows.length - 1) * ROSTER.length);
+  });
+
+  it("claims no empty column at all when nothing was read", () => {
+    const rows = built.rows.map((row) => ({ ...row, read: false, cells: ROSTER.map(() => null) }));
+    const { sparsity } = courtTotalsOf(rows, ROSTER);
+
+    // Six would be the vacuous answer — `every` on no rows is true for every column — and it
+    // would report the whole roster as never drawn on no evidence whatsoever.
+    expect(sparsity.emptyColumns).toBe(0);
+    expect(sparsity.positions).toBe(0);
+    expect(sparsity.blank).toBe(0);
+  });
+});
+
+/**
  * One row with nothing in it but the windows it ran under.
  *
  * Hand-built rather than captured: the court has been reconfigured once, so no fixture can

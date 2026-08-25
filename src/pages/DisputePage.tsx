@@ -222,7 +222,9 @@ const Strip = styled.ol`
   background-color: ${({ theme }) => theme.surfaceInset};
   list-style: none;
 
-  @media (max-width: 760px) {
+  /* The one width this dashboard reduces at, since ticket 16. It was a 760px literal that
+     pre-dated nothing and agreed with nothing; four period columns still fit at 720. */
+  ${narrow} {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 `;

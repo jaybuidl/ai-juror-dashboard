@@ -1,9 +1,8 @@
-import { Link } from "react-router";
 import styled, { css } from "styled-components";
 import { Notice } from "../chrome/Failure";
 import { DisputeRow, type DisputeRowSlots } from "../disputes/DisputeList";
 import type { Dispute } from "../disputes/disputes";
-import { isFinalised, periodOpenSeconds } from "../disputes/liveness";
+import { isFinalised } from "../disputes/liveness";
 import type { RosterView } from "../roster/useRoster";
 import { VisuallyHidden } from "../styles/hidden";
 import { type Tone, toneInk, toneLine, toneWash } from "../styles/tones";
@@ -15,10 +14,12 @@ import {
   UNREAD_FIGURE,
   UNREAD_PRESENTATION,
 } from "./cell";
-import { formatElapsedSeconds, formatWindowSeconds, railFraction } from "./latency";
+import { Footnotes, LonePanelFootnote, SparsityNote, WindowFootnote } from "./Footnotes";
+import { Dot, Legend, LegendGroup, LegendItem, StateLegend } from "./Legend";
+import { railFraction } from "./latency";
 import { Marginals } from "./Marginals";
-import type { CourtPerformance, Draw, MatrixRow } from "./performance";
-import type { PeriodWindows } from "./windows";
+import type { CourtPerformance, Draw } from "./performance";
+import { type RowFlagContext, rowFlagOf } from "./row-flags";
 
 /**
  * The dispute matrix: one row per dispute, one column per agent juror, one cell per draw.
@@ -32,122 +33,6 @@ import type { PeriodWindows } from "./windows";
  * Everything rendered here comes from `buildCourtPerformance`. This file computes no latency
  * and decides no coherence; it decides how they are read.
  */
-
-/* ─── the row flag ─────────────────────────────────────────────────────────────────────── */
-
-/**
- * A row carries at most one flag, in this order.
- *
- * The precedence is the point of the list. The changed-window flag sits above the lone panel
- * because the window is what makes a row's figures incomparable with the rows around it, where
- * a lone panel only makes one of them uninformative; ticket 12 adds the live flag below them.
- * Each is one entry here, not a second hard-coded pill in the markup.
- *
- * No row is both today — 151 is the marked one and 155 the lone panel — and one that was would
- * still be marked as a lone panel, because `Panel 1` carries its own amber tone independently
- * of this slot. The flag is the second mark on such a row, not the only one.
- *
- * `label` and `applies` take the court's current windows as well as the row, because the window
- * flag names *which* window changed: `† 8h window` on dispute 151, read from what the court was
- * configured with rather than typed in.
- */
-/**
- * What a flag may consult beyond the row itself.
- *
- * One object rather than a positional argument per flag, because tickets 08 and 12 each made
- * `label` a function and each needed a *different* second argument — the court's current
- * windows, to say which of them changed, and the clock, to count how long a period has been
- * open. Both were right and neither could hold the slot. A fourth flag adds a field here
- * instead of re-breaking every entry.
- *
- * The clock arrives here and never in the seam: `MatrixRow` is built by a pure function that
- * reads none, and `now` is threaded from the view for exactly that reason.
- */
-type RowFlagContext = {
-  /** The windows the court is configured with today, against which an earlier one is named. */
-  current: PeriodWindows | null;
-  /** Render time, in epoch milliseconds. */
-  now: number;
-};
-
-const ROW_FLAGS: readonly {
-  key: string;
-  applies: (row: MatrixRow, context: RowFlagContext) => boolean;
-  glyph: string;
-  /**
-   * Read at render rather than held as a string: the window flag names a duration read from
-   * the chain and the live flag counts elapsed time. A static flag ignores both arguments.
-   */
-  label: (row: MatrixRow, context: RowFlagContext) => string;
-  tone: Tone;
-}[] = [
-  // First, and above every flag any later ticket adds: a row whose draws were never read has
-  // nothing true to flag. Its panel size is 0 rather than 1, so the lone-panel flag below would
-  // not fire on it today — but ticket 08's window flag reads the dispute, which *was* read, and
-  // would happily label a row the matrix is about to draw as entirely unknown. That is not a
-  // hypothetical any more: the two tickets are on the same branch, and this entry is what keeps
-  // an unread row from being labelled "8h window" over six cells reading "not read".
-  {
-    key: "not-read",
-    applies: (row) => !row.read,
-    glyph: "?",
-    label: () => "Not read",
-    tone: "fail",
-  },
-  {
-    key: "window",
-    applies: (row) => row.underEarlierWindows,
-    glyph: "†",
-    label: (row, { current }) => windowFlagLabel(row, current),
-    tone: "work",
-  },
-  {
-    key: "lone-panel",
-    applies: (row) => row.panelSize === 1,
-    glyph: "‡",
-    label: () => "Lone panel",
-    tone: "work",
-  },
-  {
-    key: "live",
-    applies: (row) => !isFinalised(row.dispute),
-    glyph: "⋯",
-    // The period that is open and how long it has been open, per the artboard's
-    // `⋯ Live · commit 3m 12s`. Two things rather than one: a pill saying only "Live" reads
-    // the same at ten seconds and at ten hours, and this is the row a team member is watching.
-    //
-    // The elapsed half is dropped rather than faked when the moment cannot be trusted — the
-    // dispute is still live and still says so, it simply cannot be dated. Never a fraction of
-    // the period's window, at any magnitude: ADR-0005, and this is where a reader who knows
-    // the window would be one division away from forming one.
-    label: (row, { now }) => {
-      const open = periodOpenSeconds(row.dispute, now);
-      const elapsed = open === null ? "" : ` ${formatElapsedSeconds(open)}`;
-      return `Live · ${row.dispute.period}${elapsed}`;
-    },
-    tone: "live",
-  },
-];
-
-/**
- * The window flag's label: the one that actually differs.
- *
- * Naming the commit window unconditionally would be right for court 34's one reconfiguration
- * and wrong for the next one. A court that changed only its vote window would put `† 45m
- * window` on every older row — a duration identical to the one the court holds now, so the
- * marker would read as if it had been placed in error.
- *
- * `windows` is non-null wherever `underEarlierWindows` is true, the seam setting one from the
- * other; the fallback is here rather than a non-null assertion.
- */
-function windowFlagLabel(row: MatrixRow, current: PeriodWindows | null): string {
-  if (row.windows === null) return "Earlier window";
-
-  const commitChanged = current === null || row.windows.commitSeconds !== current.commitSeconds;
-  return commitChanged
-    ? `${formatWindowSeconds(row.windows.commitSeconds)} window`
-    : `${formatWindowSeconds(row.windows.voteSeconds)} vote window`;
-}
 
 /* ─── layout ───────────────────────────────────────────────────────────────────────────── */
 
@@ -166,45 +51,6 @@ const Heading = styled.h2`
 const Lede = styled.p`
   max-width: 68ch;
   color: ${({ theme }) => theme.textBody};
-`;
-
-const Legend = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${({ theme }) => theme.space8};
-  padding: ${({ theme }) => `${theme.space5} ${theme.space7}`};
-  border: ${({ theme }) => theme.borderHairline};
-  border-radius: ${({ theme }) => theme.radiusTile};
-  background-color: ${({ theme }) => theme.surfaceInset};
-`;
-
-const LegendGroup = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: ${({ theme }) => theme.space8};
-`;
-
-const LegendItem = styled.span<{ $tone?: Tone }>`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.space3};
-  font: ${({ theme }) => theme.typeMonoSm};
-  font-feature-settings: ${({ theme }) => theme.featureMono};
-  letter-spacing: ${({ theme }) => theme.trackingMono};
-  text-transform: uppercase;
-  color: ${({ theme, $tone }) => ($tone === undefined ? theme.textMeta : toneInk(theme, $tone))};
-`;
-
-/* The blank cell's mark, at legend size and in a cell. 3px of quiet: it holds the grid's
-   rhythm and says nothing, because nothing happened and nothing was expected. */
-const Dot = styled.span`
-  width: 3px;
-  height: 3px;
-  border-radius: 50%;
-  background-color: ${({ theme }) => theme.textPending};
 `;
 
 /* The matrix is 1328px at the canvas's measurements and the page is not. It scrolls in its
@@ -490,56 +336,6 @@ const CommitRailFill = styled(RailFill)`
   background-color: ${({ theme }) => theme.accentQuiet};
 `;
 
-const Footnotes = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.space9};
-  align-items: flex-start;
-`;
-
-const Footnote = styled.p`
-  flex: 1 1 380px;
-  display: flex;
-  gap: ${({ theme }) => theme.space4};
-  font: ${({ theme }) => theme.typeBodySm};
-  /* It names dispute ids and two configured durations, and the shorthand above resets the
-     tabular figures base.css puts on the body. */
-  font-feature-settings: ${({ theme }) => theme.featureNumeric};
-  color: ${({ theme }) => theme.textBody};
-
-  a {
-    color: ${({ theme }) => theme.accent};
-  }
-`;
-
-const FootnoteMark = styled.span`
-  flex: none;
-  font: ${({ theme }) => theme.typeMonoSm};
-  color: ${({ theme }) => theme.stateWork};
-`;
-
-const SparsityCard = styled.div`
-  flex: 1 1 380px;
-  padding: ${({ theme }) => `${theme.space6} ${theme.space7}`};
-  border: ${({ theme }) => theme.borderHairline};
-  border-radius: ${({ theme }) => theme.radiusTile};
-  background-color: ${({ theme }) => theme.surfaceInset};
-`;
-
-const SparsityLabel = styled.div`
-  font: ${({ theme }) => theme.typeMonoSm};
-  font-feature-settings: ${({ theme }) => theme.featureMono};
-  letter-spacing: ${({ theme }) => theme.trackingMono};
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.textMeta};
-`;
-
-const SparsityBody = styled.p`
-  margin-top: ${({ theme }) => theme.space4};
-  font: ${({ theme }) => theme.typeBodySm};
-  color: ${({ theme }) => theme.textBody};
-`;
-
 const Empty = styled.p`
   max-width: 68ch;
   color: ${({ theme }) => theme.textBody};
@@ -564,91 +360,6 @@ export type MatrixProps = {
    */
   now?: number;
 };
-
-/** "155", "155 and 160", "155, 158 and 160". */
-function listOf(ids: readonly number[]): string {
-  if (ids.length <= 1) return ids.join("");
-  return `${ids.slice(0, -1).join(", ")} and ${ids[ids.length - 1]}`;
-}
-
-/**
- * The window footnote, in whichever of its three states the page is in.
- *
- * It is one footnote and not three, and it is always on the page, because the sentence it has
- * to carry in every state is the same one: nothing here is a fraction of a window. What
- * changes is how much it can say about which rows ran under what — a fact about the court that
- * has to be read from the chain before it can be stated.
- *
- * Where the history is missing it says so as a fact about the read, and it distinguishes only
- * what it can see: a scan that came back with no configuration at all is not the same as one
- * that has not answered. Which of *those* two happened — still in flight, or refused — is the
- * provenance footer's business, because a footnote that guessed would announce a failure on
- * every cold load, the trap `CLAUDE.md` records against `RosterView`.
- */
-function WindowFootnote({ performance }: { performance: CourtPerformance }) {
-  const { current, read } = performance.parameters;
-  const { changedWindows: changes, unplacedDisputes: unplaced } = performance.totals;
-
-  return (
-    <Footnote>
-      <FootnoteMark aria-hidden="true">†</FootnoteMark>
-      <span>
-        {current === null ? (
-          <>
-            Court 34's period durations changed partway through this experiment, and its parameter
-            history is not in hand on this load —{" "}
-            {read
-              ? "that read came back carrying no configuration at all"
-              : "it is still being read, or could not be"}
-            . So no row above is marked as having run under the earlier ones, and that is an unread
-            state rather than a finding.
-          </>
-        ) : changes.length === 0 && unplaced.length === 0 ? (
-          <>
-            Every dispute here ran under the period durations the court holds now: a commit window
-            of {formatWindowSeconds(current.commitSeconds)} and a vote window of{" "}
-            {formatWindowSeconds(current.voteSeconds)}.
-          </>
-        ) : changes.length === 0 ? (
-          // The claim above is the one that must never be made carelessly. A dispute the
-          // history could not place is not a dispute that ran under the current windows: a scan
-          // that dropped the court's oldest configuration leaves exactly this state, and saying
-          // "every dispute ran under 45m and 30m" over it would state the opposite of the truth
-          // with nothing on the page to contradict it.
-          <>
-            No dispute here is marked as having run under earlier period durations, but the
-            parameter history read on this load does not reach back far enough to place{" "}
-            {unplaced.length === 1 ? "dispute" : "disputes"} {listOf(unplaced)} — so that is not the
-            same as saying they ran under the {formatWindowSeconds(current.commitSeconds)} and{" "}
-            {formatWindowSeconds(current.voteSeconds)} windows the court holds now.
-          </>
-        ) : (
-          <>
-            {changes.map((change) => (
-              <span key={`${change.windows.commitSeconds}-${change.windows.voteSeconds}`}>
-                {change.disputes.length === 1 ? "Dispute" : "Disputes"} {listOf(change.disputes)}{" "}
-                ran with a commit window of {formatWindowSeconds(change.windows.commitSeconds)} and
-                a vote window of {formatWindowSeconds(change.windows.voteSeconds)}, against{" "}
-                {formatWindowSeconds(current.commitSeconds)} and{" "}
-                {formatWindowSeconds(current.voteSeconds)} configured now.{" "}
-              </span>
-            ))}
-            {unplaced.length > 0 && (
-              <>
-                {unplaced.length === 1 ? "Dispute" : "Disputes"} {listOf(unplaced)} the history read
-                on this load cannot place at all, so {unplaced.length === 1 ? "it is" : "they are"}{" "}
-                unmarked for want of anything to compare against rather than for having matched.{" "}
-              </>
-            )}
-          </>
-        )}{" "}
-        Latency is held and shown as an absolute duration everywhere on this page, and never as a
-        fraction of the window it ran in.{" "}
-        <Link to="/method#window">What that means for these figures</Link>.
-      </span>
-    </Footnote>
-  );
-}
 
 /**
  * A cell in a row whose draws were never read.
@@ -740,28 +451,12 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
   // and after it fails, and a mark keyed on it alone would dash every avatar on every cold load.
   const fallenBack = !roster.isResolving && !roster.isResolvedFromEns;
 
-  // Every count below is about the part of the grid that was read. An unread row's cells are
-  // null and would otherwise be counted as blank, which would fold a gap into the sparsity
-  // figure — the one number on this page whose whole job is to say that blank means "not drawn".
-  const readRows = rows.filter((row) => row.read);
-  const unreadRows = rows.length - readRows.length;
-  const drawnCells = readRows.reduce(
-    (total, row) => total + row.cells.filter((cell) => cell !== null).length,
-    0,
-  );
-  const totalCells = readRows.length * agentJurors.length;
-  // "Never drawn" is a claim about the whole record, so a column is only empty end to end if
-  // every row that was actually read leaves it empty — and only if there is a read row to say it
-  // about. `every` on an empty array is vacuously true, so without the length guard a court whose
-  // every row was unread would report all six agent jurors as never drawn, on no evidence at all.
-  // Latent while a draw read covers everything it is joined to, and reachable the moment ticket
-  // 12 persists one across sessions.
-  const emptyColumns =
-    readRows.length === 0
-      ? 0
-      : agentJurors.filter((_, column) => readRows.every((row) => row.cells[column] === null))
-          .length;
-  const lonePanels = readRows.filter((row) => row.panelSize === 1).map((row) => row.dispute.id);
+  // How many rows are a gap rather than a record. The sparsity figures themselves moved onto
+  // `CourtTotals` with ticket 16, which gave the same disputes a second layout: two reductions
+  // of "how much of this court is blank" are two chances for a desktop and a phone to disagree
+  // about it. This one stays because it is a rendering decision — which legend entries to name,
+  // and whether "never drawn" is sayable at all.
+  const unreadRows = totals.unreadDisputes.length;
 
   return (
     <Section aria-labelledby="matrix-heading">
@@ -807,32 +502,10 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
           )}
 
           <Legend>
-            <LegendGroup>
-              <LegendItem $tone="pass">
-                <span aria-hidden="true">✓</span>Coherent
-              </LegendItem>
-              <LegendItem $tone="work">
-                <span aria-hidden="true">✕</span>Diverged
-              </LegendItem>
-              <LegendItem $tone="fail">
-                <span aria-hidden="true">∅</span>No vote
-              </LegendItem>
-              <LegendItem $tone="live">
-                <span aria-hidden="true">⋯</span>Acting
-              </LegendItem>
-              {/* Named only when one is on screen. A legend entry for a state the grid does not
-                  contain teaches a reader to look for a failure that is not there — and this is
-                  the entry a reader would most readily mistake for one of the others. */}
-              {unreadRows > 0 && (
-                <LegendItem $tone="fail">
-                  <span aria-hidden="true">?</span>Unknown
-                </LegendItem>
-              )}
-              <LegendItem>
-                <Dot aria-hidden="true" />
-                Not drawn
-              </LegendItem>
-            </LegendGroup>
+            {/* The states themselves are shared with the phone's card list — they are
+                ADR-0006's vocabulary rather than the grid's. The rails below are not: they
+                annotate a cell, and a card has neither. */}
+            <StateLegend unknown={unreadRows > 0} />
             <LegendGroup>
               <LegendItem>
                 <span aria-hidden="true">R</span>Reveal
@@ -930,7 +603,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
               </thead>
               <tbody>
                 {rows.map((row) => {
-                  const flag = ROW_FLAGS.find((candidate) => candidate.applies(row, flagContext));
+                  const flag = rowFlagOf(row, flagContext);
                   const lone = row.panelSize === 1;
                   // Read from the same predicate the flag and the caption use. The row wears
                   // the treatment even where a higher-precedence flag took the pill: a lone
@@ -955,7 +628,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                             // An unread row's panel size is 0 because nobody asked, not because
                             // the court drew nobody, and "Panel 0" is exactly the sort of zero
                             // this ticket exists to keep off the page. It says what it knows.
-                            panel: row.read ? `Panel ${row.panelSize}` : "Row unavailable",
+                            panel: row.read ? `Panel ${row.panelSize}` : "Draws not read",
                             panelTone: !row.read ? "fail" : lone ? "work" : undefined,
                             flag: flag && (
                               <>
@@ -999,47 +672,15 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
           <Footnotes>
             {/* † before ‡, as the artboard orders them and as `ROW_FLAGS` ranks them: dispute
                 151 carries both, and the window is the one that makes its figures
-                incomparable rather than merely uninformative. */}
+                incomparable rather than merely uninformative.
+
+                All three are shared with the phone's card list, which is what the artboard for
+                it does not answer and ticket 16 had to: they are caveats about the court, not
+                about the grid, and `CLAUDE.md` requires them visible in the UI rather than
+                handled correctly in code. */}
             <WindowFootnote performance={performance} />
-            {lonePanels.length > 0 && (
-              <Footnote>
-                <FootnoteMark aria-hidden="true">‡</FootnoteMark>
-                <span>
-                  {lonePanels.length === 1 ? "Dispute" : "Disputes"} {listOf(lonePanels)}{" "}
-                  {lonePanels.length === 1 ? "was" : "were"} decided by a panel of one. A lone agent
-                  juror is automatically the majority, so coherence there is tautological and
-                  carries no information. It is counted in the matrix and marked wherever it is
-                  counted.
-                </span>
-              </Footnote>
-            )}
-            <SparsityCard>
-              <SparsityLabel>On the empty cells</SparsityLabel>
-              <SparsityBody>
-                {/* Every figure here is about the rows that were read, so with none of them read
-                    there is nothing to count and the card says that instead of counting to zero.
-                    "0 of the 0 cells here are blank" is not a smaller version of this claim; it
-                    is a different one, and it is false. */}
-                {readRows.length === 0 ? (
-                  "No dispute on this page had its draws read, so there is nothing here to count as blank or as drawn."
-                ) : (
-                  <>
-                    {totalCells - drawnCells} of the {totalCells} cells here are blank
-                    {emptyColumns > 0 &&
-                      `, and ${emptyColumns === 1 ? "one column is" : `${emptyColumns} columns are`} blank end to end`}
-                    . Agent jurors are drawn at random: sparsity is the normal state of this matrix,
-                    not missing data. A blank cell is drawn as nothing at all, so it can never be
-                    read as a failure to act.
-                  </>
-                )}
-                {/* The sentence above is true of a row that was read and false of one that was
-                    not, where a blank would mean the draw has not been read rather than not
-                    happened. Those rows are drawn as Unknown instead and counted out of the
-                    figures above, and this says so rather than leaving the count unexplained. */}
-                {unreadRows > 0 &&
-                  ` ${unreadRows === 1 ? "One further dispute is" : `A further ${unreadRows} disputes are`} not counted here at all: ${unreadRows === 1 ? "its draws were" : "their draws were"} never read, so ${unreadRows === 1 ? "that row is" : "those rows are"} marked Unknown rather than blank.`}
-              </SparsityBody>
-            </SparsityCard>
+            <LonePanelFootnote performance={performance} />
+            <SparsityNote performance={performance} noun="cell" />
           </Footnotes>
         </>
       )}

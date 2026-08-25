@@ -171,3 +171,22 @@ Declined, with reasons: `rewardFigure`/`commitFigure` are not worth merging (the
 things — a missing commitment is a shortfall, a missing payout usually is not), and the `<0.0001`
 notation stays despite costing a glyph of column alignment, because the alternative is printing
 `0.0000` for an amount that is not zero.
+
+### 2026-08-25 — integrated with ticket 16, and where these two sums do not go
+
+Ticket 16 landed the phone layout on a parallel branch and left this ticket a note asking where a
+fourth measure lives below the breakpoint. Both tickets were finished by then, so the question fell
+to the merge rather than to either implementer. The answer is that the two sums do not go there.
+
+They are marginals, and the marginals live in the matrix's column headers. The card layout has no
+column headers — it drops that header whole, along with the four measures ticket 06 put in it — so
+ETH and PNK are absent on a phone for exactly the reason the per-agent-juror median reveal latency
+is, and not for a new one. Nothing was added to a card slot: `slotFigureOf` holds one figure and has
+already spent it on latency.
+
+What the merge did change is the caveat card, which ticket 16 rewrote once per layout. Its desktop
+branch states what each column has been paid; its narrow branch names cards and slots and claims
+neither sum. Saying there that they have not been read would be this ticket's retired falsehood in
+reverse — they *were* read, and a desktop reader is looking at them — so the phone makes no claim
+about them at all. Ticket 11 is where these two figures become legible on a phone, and its file now
+carries that as the one question joining both notes.

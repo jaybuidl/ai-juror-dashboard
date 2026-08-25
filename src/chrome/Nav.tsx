@@ -1,10 +1,12 @@
+import { useEffect, useId, useState } from "react";
 import { Link, useLocation } from "react-router";
 import styled, { css } from "styled-components";
-import { narrow } from "../styles/breakpoints";
+import { useIsNarrow } from "../styles/breakpoints";
 import { Lockup } from "./Lockup";
 
 /**
- * The nav, built against `canvas/Main.dc.html:41-50`.
+ * The nav, built against `canvas/Main.dc.html:41-50` and, below the breakpoint,
+ * `canvas/Mobile.dc.html:32-42`.
  *
  * Every destination here is a real route, and this file is the only place they are listed —
  * the route table renders these same paths, and a destination pointing nowhere would be a
@@ -20,6 +22,16 @@ import { Lockup } from "./Lockup";
  * The read-only pill is not a control. It is the invariant from `CLAUDE.md` — this dashboard
  * never votes, stakes, holds a key or connects a wallet — restated where a visitor meets the
  * page, and it is a `<span>` so that nothing about it invites a click.
+ *
+ * **Folded, the bar is still one line.** Ticket 15 left the narrow nav stacked over three rows,
+ * which was legible and not final; ticket 16 does what the artboard shows. The lockup becomes
+ * its own wordmark, the four destinations go behind one menu affordance, and the read-only
+ * label stays in the bar — it is the element the deck's read-only clause falls back to when
+ * the hero drops the deck, so it is not the thing that gives way for width.
+ *
+ * The destinations *fold* and are never dropped. A menu that hid a route on a phone would be a
+ * route a phone visitor could not reach, which is the same failure ticket 15 refused when it
+ * ruled that a nav entry needs an index or does not appear.
  */
 
 export type Destination = {
@@ -69,14 +81,12 @@ const Inner = styled.div`
   margin: 0 auto;
   padding: 0 ${({ theme }) => theme.gutter};
   max-width: ${({ theme }) => theme.container};
+`;
 
-  ${narrow} {
-    height: auto;
-    flex-direction: column;
-    align-items: flex-start;
-    gap: ${({ theme }) => theme.space5};
-    padding: ${({ theme }) => `${theme.space6} ${theme.gutter}`};
-  }
+/* One line, at the artboard's 56px, and the gap closes to what a phone can spare. */
+const NarrowInner = styled(Inner)`
+  height: 56px;
+  gap: ${({ theme }) => theme.space5};
 `;
 
 const home = css`
@@ -104,11 +114,6 @@ const Destinations = styled.div`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.space9};
-
-  ${narrow} {
-    flex-wrap: wrap;
-    gap: ${({ theme }) => theme.space6};
-  }
 `;
 
 const destination = css`
@@ -152,41 +157,178 @@ const ReadOnly = styled.span`
   color: ${({ theme }) => theme.textMeta};
 `;
 
+/* Folded, the label is the bare words rather than a chip: at 390pt the chip's border and
+   padding cost more width than the affordance is worth, and the statement is the point. */
+const NarrowReadOnly = styled.span`
+  font: ${({ theme }) => theme.typeMonoSm};
+  letter-spacing: ${({ theme }) => theme.trackingMono};
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.textPending};
+  white-space: nowrap;
+`;
+
+const NarrowRight = styled.div`
+  display: flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.space5};
+`;
+
+/* The artboard's 30px box with a `≡` in it. A real button, because it does something. */
+const MenuButton = styled.button`
+  display: flex;
+  width: 30px;
+  height: 30px;
+  flex: none;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: 1px solid ${({ theme }) => theme.borderCardColor};
+  border-radius: ${({ theme }) => theme.radiusChip};
+  background: none;
+  font: ${({ theme }) => theme.typeMonoSm};
+  font-size: 13px;
+  color: ${({ theme }) => theme.textMeta};
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.focusRing};
+    outline-offset: 3px;
+  }
+`;
+
+/* The panel the menu opens: the same four destinations, stacked, under the same rule the bar
+   draws. Below the bar rather than over the page, so it pushes the hero down instead of
+   covering it — nothing here is urgent enough to warrant a scrim. */
+const MenuPanel = styled.div`
+  display: flex;
+  flex-direction: column;
+  /* Shrink-wrapped, not stretched. The current destination is marked by a rule under it, and a
+     stretched span draws that rule across the whole panel — which reads as a divider rather
+     than as a mark on one word. It is right in the bar only because a row does not stretch. */
+  align-items: flex-start;
+  gap: ${({ theme }) => theme.space6};
+  margin: 0 auto;
+  padding: ${({ theme }) => `${theme.space6} ${theme.gutter} ${theme.space8}`};
+  max-width: ${({ theme }) => theme.container};
+  border-top: ${({ theme }) => theme.borderHairline};
+`;
+
 export function Nav() {
   const { pathname } = useLocation();
-  const atMatrix = isCurrent("/", pathname);
+  const isNarrow = useIsNarrow();
 
+  return isNarrow ? <FoldedNav pathname={pathname} /> : <WideNav pathname={pathname} />;
+}
+
+function WideNav({ pathname }: { pathname: string }) {
   return (
     <Bar aria-label="Dashboard">
       <Inner>
-        {/* On the matrix the lockup is not a link, and `role="img"` is then load-bearing: an
-            `aria-label` on a bare span is ignored, and both of the lockup's children are
-            `aria-hidden`, so without it the mark would have no accessible name at all. */}
-        {atMatrix ? (
-          <HomeMark role="img" aria-label="Kleros ×AI">
-            <Lockup />
-          </HomeMark>
-        ) : (
-          <HomeLink to="/" aria-label="Kleros ×AI — the matrix">
-            <Lockup />
-          </HomeLink>
-        )}
+        <Home pathname={pathname} />
         <Destinations>
-          {DESTINATIONS.map(({ path, label }) =>
-            isCurrent(path, pathname) ? (
-              <DestinationHere key={path} aria-current="page">
-                {label}
-              </DestinationHere>
-            ) : (
-              <DestinationLink key={path} to={path}>
-                {label}
-              </DestinationLink>
-            ),
-          )}
+          {DESTINATIONS.map((destination) => (
+            <DestinationItem key={destination.path} {...destination} pathname={pathname} />
+          ))}
           {/* A statement, not a control: no button, no toggle, nothing focusable. */}
           <ReadOnly>Read only</ReadOnly>
         </Destinations>
       </Inner>
     </Bar>
+  );
+}
+
+/**
+ * The folded bar: wordmark, read-only label, menu.
+ *
+ * The panel closes on navigation, which is not a nicety — react-router does not unmount this
+ * nav between routes, so a menu left open would stay open over the page the visitor just asked
+ * for, and the first thing they would have to do on arriving is dismiss it. Escape closes it
+ * too, because a disclosure that can only be dismissed by pointing at the thing that opened it
+ * is one a keyboard user is stuck inside.
+ */
+function FoldedNav({ pathname }: { pathname: string }) {
+  const [open, setOpen] = useState(false);
+  const panelId = useId();
+
+  // React's own way to reset state when a prop changes: remember the last path and adjust
+  // during render, so the menu closes with the render that shows the new page rather than one
+  // render after it.
+  //
+  // It was `open = openFor === pathname` and that was wrong in a way review caught and the
+  // forward-navigation test could not: `openFor` was never cleared, so opening the menu at `/`,
+  // going to `/method` and then coming Home again found `openFor` still `"/"` and the panel
+  // open on arrival. Back did the same. What has to be watched is the path *changing*, not the
+  // path matching.
+  const [shownPath, setShownPath] = useState(pathname);
+  if (shownPath !== pathname) {
+    setShownPath(pathname);
+    setOpen(false);
+  }
+
+  useEffect(() => {
+    if (!open) return;
+
+    const close = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setOpen(false);
+    };
+    document.addEventListener("keydown", close);
+    return () => document.removeEventListener("keydown", close);
+  }, [open]);
+
+  return (
+    <Bar aria-label="Dashboard">
+      <NarrowInner>
+        <Home pathname={pathname} wordmark />
+        <NarrowRight>
+          {/* Kept, and kept in the bar. The hero drops its deck below this breakpoint and the
+              read-only clause in it survives here — so this is not the element that gives way
+              for width. */}
+          <NarrowReadOnly>Read only</NarrowReadOnly>
+          <MenuButton
+            type="button"
+            aria-expanded={open}
+            aria-controls={panelId}
+            aria-label={open ? "Close the menu" : "Open the menu"}
+            onClick={() => setOpen((was) => !was)}
+          >
+            <span aria-hidden="true">≡</span>
+          </MenuButton>
+        </NarrowRight>
+      </NarrowInner>
+      {open && (
+        <MenuPanel id={panelId}>
+          {DESTINATIONS.map((destination) => (
+            <DestinationItem key={destination.path} {...destination} pathname={pathname} />
+          ))}
+        </MenuPanel>
+      )}
+    </Bar>
+  );
+}
+
+/**
+ * The lockup, and whether it is a link.
+ *
+ * On the matrix it is not, and `role="img"` is then load-bearing: an `aria-label` on a bare
+ * span is ignored, and both of the lockup's children are `aria-hidden`, so without it the mark
+ * would have no accessible name at all.
+ */
+function Home({ pathname, wordmark = false }: { pathname: string; wordmark?: boolean }) {
+  return isCurrent("/", pathname) ? (
+    <HomeMark role="img" aria-label="Kleros ×AI">
+      <Lockup wordmark={wordmark} />
+    </HomeMark>
+  ) : (
+    <HomeLink to="/" aria-label="Kleros ×AI — the matrix">
+      <Lockup wordmark={wordmark} />
+    </HomeLink>
+  );
+}
+
+function DestinationItem({ path, label, pathname }: Destination & { pathname: string }) {
+  return isCurrent(path, pathname) ? (
+    <DestinationHere aria-current="page">{label}</DestinationHere>
+  ) : (
+    <DestinationLink to={path}>{label}</DestinationLink>
   );
 }

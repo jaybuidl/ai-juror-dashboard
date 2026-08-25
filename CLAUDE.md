@@ -5,7 +5,8 @@ on two dimensions: **speed** (commit and reveal latency) and **coherence** (voti
 ruling).
 
 **Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01, 02, 03, 04,
-05, 06, 07, 08, 09, 10, 12, 13, 14 and 15 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a
+05, 06, 07, 08, 09, 10, 12, 13, 14, 15 and 16 are done: Vite + React + TypeScript, yarn 4, Biome,
+Vitest, a
 `netlify.toml`
 that is the single source of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted
 webfonts, and the dispute matrix — one row per dispute, headed by that dispute's own title and
@@ -48,6 +49,18 @@ added the first read scoped to *one* dispute rather than to the court (`dispute-
 subgraph reader and `useDisputeDetail`) — the ballot, the evidence count and the justification prose
 — and with it the three states a justification can be in, which `CONTEXT.md` now defines: published,
 published **empty**, and never published. None of the three is a failed read.
+Ticket 16 then gave the whole thing a second layout rather than a second page: below
+`breakpoints.narrow` the matrix is **not rendered at all** and `DisputeCards` replaces it — one
+card per dispute, six fixed 52px slots along its foot, one per agent juror in roster order whether
+drawn or not, so column position still means one agent juror when there are no columns. The chrome
+folds with it: the lockup drops its diamond for the official wordmark paths, the four destinations
+go behind a disclosure, three stat tiles replace four with the median reveal leading, and the deck
+and the latency strip are absent without a measured figure leaving the page. It also answered its
+own open question — the legend and the sparsity note reach a phone reader **inline at the head of
+the card list, always visible**, because the sparsity note prevents a misreading rather than
+answering a question, and a reader who does not know they have been misled never opens a
+disclosure. `narrow` is now the one width anything in this repo reduces at; the `600px` and `760px`
+literals are gone.
 The design work behind it (glossary, seven ADRs, a spec, eighteen tickets) came out of a full
 grilling session and a later pass that rebuilt the tracker on the finished design — ADR-0007 is the
 one that came from implementation rather than design, and it overrode the spec. Start by reading, not by
@@ -89,6 +102,12 @@ that is about a *read* rather than about the court — `RawCourtData.drawsReadAt
 draws on screen were fetched — because whether a row's draws were read at all is a derivation and
 not a rendering decision. It still consults no clock: the moment arrives as data, exactly as the
 commit timestamps do.
+Ticket 16 added the third and fourth, in the same file: `CourtTotals.sparsity` — the blank count,
+the position count and the empty-column count, over the rows that were read — and `row-flags.ts`,
+the flag precedence lifted out of `Matrix.tsx` whole. Both moved for the same reason and it is the
+rule stated once more: the matrix and the phone's card list are two renderings of one record, and
+a figure or a ranking reduced inside either of them is two chances for a desktop and a phone to
+disagree about one court.
 Ticket 09 added the **second** model beside it rather than inside it —
 `buildDisputeDetail` in `src/performance/dispute-detail.ts`, under the same discipline (pure, no
 network, no clock) at a different altitude: one dispute rather than the court, joining the row, the
@@ -444,6 +463,53 @@ Things that cost real effort to discover and are easy to get wrong again:
   attacker-influenced input in a way the court-wide reads are not. It is capped at
   `MAX_CHOICES` for exactly that reason: filling a ballot from 0 to an eighty-digit number
   hangs the tab with no error and nothing on screen.
+- **jsdom lays nothing out, so a whole class of defect is invisible to `yarn test`.** This is the
+  same lesson ticket 09's clipping bug taught in one instance, and ticket 16 hit three more in one
+  afternoon — every one of them with 619 green tests. A `ul` carries 40px of UA
+  `padding-inline-start` and this repo has no reset that removes it, so the phone card stack was
+  indented 40px and pushed the page 40px sideways, which is the single thing that layout must never
+  do. `flex: 1 1 380px` on an item that also gets rendered inside a *column* container is a
+  **height**, so the sparsity note became a three-line paragraph in a card three hundred pixels
+  tall; the fix is to put the basis on the container as `> * { flex: … }`, where the arrangement
+  owns it. And a `span` marked with a rule underneath it draws that rule across the whole container
+  when the container stretches it, which a flex row never does and the folded nav's column always
+  does. None of the three throws, warns, or fails a test. Anything positional in this repo needs a
+  browser at the width it is claimed to work at, and `agent-browser` with `--executable-path` is
+  how the rest of this ticket was checked.
+- **Two layouts share their model by construction and their *prose* by hand, and the prose is
+  where they drift.** Ticket 16 gave the matrix a second rendering; `cell.ts`, `row-flags.ts`,
+  `Legend.tsx` and `Footnotes.tsx` are shared so the states, the flag precedence and the caveats
+  cannot fork — and review then found five sentences copied from the desktop that were false on
+  the phone. The provenance footer named the latency strip's comparison band on a page with no
+  strip (and the comment beside the strip's removal claimed otherwise); the caveat card said "each
+  column header" and "a blank cell" on a layout with neither, two hundred lines from a
+  `SparsityNote` carefully parameterised to say "slot"; the commit-shortfall notice told a reader
+  that N slots read "Not read" when a card slot shows the commit only while a reveal is still
+  ahead, so almost none of them do. Every one passed lint, types and 619 tests. **Any string in a
+  view that names a cell, a column, a row, a grid or an element of the chrome is a claim about
+  which layout the reader is looking at**, and gets the same treatment `SparsityNote`'s noun does.
+  **The 10 + 16 merge produced four more of them, and no branch could have caught one.** Ticket 10
+  put two figures in the matrix's column headers and gave the footer three sentences about them;
+  ticket 16 drops the column headers whole. Merged, all three described figures a phone reader
+  cannot see — one promising a figure "is shown yet" on the one layout where none is coming — and
+  a fourth, the payout failure banner, named the column headers outright. Both parents were
+  correct alone. So the rule has a second half for anyone merging a branch into this one: **a
+  ticket that adds a figure to a desktop-only element adds every sentence about that figure to the
+  phone's list of things to gate**, and the gate is `!narrow` in `provenanceOf`, tested in both
+  directions because a caveat that is absent for the wrong reason tests nothing. `MatrixPage`'s
+  phone describe block carries those four.
+- **jsdom has no `window.matchMedia` at all** — `undefined`, not a stub answering false. So
+  `useIsNarrow` in `src/styles/breakpoints.ts` guards the read exactly as `useIsClipped` guards
+  `ResizeObserver`, and returns false where there is nothing to ask; every test written before
+  ticket 16 therefore keeps rendering the desktop form with no change. A test of the reduced form
+  has to say so, through `src/test/viewport.ts`. An unguarded `window.matchMedia(…)` here would
+  throw inside the render of most of the chrome, on every test in the suite.
+- **The breakpoint is one number and it has to stay one.** `styles/breakpoints.ts` exports both the
+  `narrow` media prelude and `useIsNarrow`, built from a single `NARROW_QUERY`, because two ways of
+  asking one question is how a page ends up rendering the phone's card list under the desktop's
+  chrome — broken only in the few pixels between two numbers, with nothing in the console. Ticket
+  16 folded the last two strays (`600px` in `MatrixPage.tsx`, `760px` in `DisputePage.tsx`) into
+  it. A new `@media` with a literal in it is a regression, not a local decision.
 - **Deciding whether to clip and then clipping never clips.** `useIsClipped` measured
   `scrollHeight > clientHeight` to decide whether to apply a `max-height` — and at the moment of
   the test nothing had bounded the element, so the two were always equal and the answer was always
@@ -481,7 +547,11 @@ Things that cost real effort to discover and are easy to get wrong again:
   `postCoreQuery` left in `court-subgraph.ts` — so what conflicted was a design choice, not a text
   merge. Ticket 05's file records how that one was settled, under § Integrated with ticket 04.
   When integrating, re-read every sentence that counts what is done or says how many of something
-  there are, and every helper both branches touched. Then look for what the merge newly connects
+  there are, and every helper both branches touched. Tickets 10 and 16 then showed the *type*
+  version of the same thing: 10 made `rewards` a required field of `RawCourtData`, and 16's
+  `DisputeCards.test.tsx` builds one — so the merge failed `check-types` on a file neither branch
+  had a reason to touch. That one is cheap, because the compiler finds it; the four prose defects
+  in the same merge are the expensive half, and nothing found them but reading. Then look for what the merge newly connects
   that neither parent could test: ticket 04's `slotsFor` only reaches ticket 05's matrix once both
   are on the same branch, and on either branch alone that wire is `undefined`. The sentences and
   hunks that raise a conflict marker are the easy half.
