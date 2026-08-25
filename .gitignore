@@ -23,6 +23,12 @@ coverage/
 # Machine-local agent permissions. .claude/settings.json IS tracked; this one
 # must not be, and must not rely on a contributor's global gitignore to stay out.
 .claude/settings.local.json
+
+# Worktrees from `claude --worktree`. Each is a separate checkout of this repo
+# living under .claude/, so its contents must never surface as untracked files
+# in the main checkout.
+.claude/worktrees/
+
 .vite/
 *.log
 .DS_Store
