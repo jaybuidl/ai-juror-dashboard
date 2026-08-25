@@ -35,3 +35,26 @@ aggregate), `../canvas/Dispute.dc.html:88-96` (a configured window beside an ela
       on the number, the reason one line below it, the full account one click away. This ticket supplies
       the marker and that rule; ticket 06 applies it to the per-agent-juror marginals
 - [ ] Tested against fixtures covering both parameter regimes
+
+## From ticket 15: your section of the method page is built and empty
+
+`/method` exists, and `src/pages/MethodPage.tsx` carries a `#window` section with a `Pending` block
+reading, in full: *"The two period regimes — which disputes ran under which, as absolute durations
+read from the court's own parameter history — are not written here yet. That account is ticket 08's,
+and until it lands this section says so rather than leaving you to infer what is missing."*
+
+**Replace that block; keep the section, its heading and its `id`.** The prose above it — that court
+34's durations changed partway through, and that this is why every figure is an absolute duration
+and never a percentage — is ticket 15's half and already written, so do not restate it.
+
+Two links already point here and will keep working:
+
+- The footnote under the matrix on `/` links to `/method#window` and words itself as "what that
+  means for these figures". It lives in `pages/MatrixPage.tsx`, not in `Matrix.tsx`.
+- `MethodPage.test.tsx` pins every anchor on the page, and asserts that the window account is
+  *absent* — `queryByText(/45 minutes/i)` and `/8 hours/i` must not match. **Those two assertions
+  are yours to delete** when you write the real durations in; they exist so the two tickets cannot
+  both write the same account.
+
+The row flag is separate and unchanged: `Matrix.tsx`'s `ROW_FLAGS` still reserves the first slot for
+the changed-window flag, above the lone panel.
