@@ -164,3 +164,32 @@ and the public endpoint rate-limits per call: 62 blocks read three times over in
 HTTP 429. One page load is far from that, but the ceiling arrives with roughly 200 more disputes,
 and when it does the symptom is a *partial* commit read rather than a failed one — a shortfall
 count, which is exactly what this channel is for.
+
+## From ticket 15: where the notices moved, and a fourth surface that is not yours
+
+`Dashboard.tsx` no longer exists. The two notices this ticket's catalogue attributes to it are now
+in **`src/pages/MatrixPage.tsx`**, unchanged in wording: the amber "may be incomplete or out of
+date" notice above the matrix, and the "could not be built from what was read" notice above the
+dispute-list fallback. The two in `DisputeList.tsx` are where they were. Counting ticket 07's rose
+`Shortfall` in `Matrix.tsx`, that is five placeholder notices and three separately-defined
+components — `MatrixPage.tsx`, `DisputeList.tsx` and `Matrix.tsx` each declare one — waiting to
+become one designed failure state. That count is only true of the two branches merged; on either
+one alone it read four and two, which is what each of these notes said when it was written.
+
+**The provenance footer is deliberately not another one.** Every view now ends with one
+(`src/chrome/Footer.tsx`), and it states what the figures rest on: which values are the measured
+record, the dispute range and the moment it was read, and any caveat — an ENS fallback, a title
+shortfall, a source that failed. It is *not* where a failed read is announced. Ticket 15's criteria
+fix that at two places, yours: where the figure would have been, and once in a banner. A test in
+`pages/MatrixPage.test.tsx` pins that the footer does not become a third. When you build the banner,
+leave the footer's caveat list alone — the two say different things, and a reader who sees the same
+sentence twice stops reading either.
+
+Two smaller things:
+
+- **The 404 view is not a failure state and must never look like one.** `pages/NotFoundPage.tsx`
+  says outright that nothing failed to load and no figure is missing, because Netlify answers every
+  unknown path with the app shell at HTTP 200. A test asserts the words "could not be read" do not
+  appear on it. Whatever rose treatment this ticket builds, it does not reach that view.
+- `StatTiles` and `LatencyStrip` already handle the no-model case by saying they have nothing rather
+  than rendering zeros. They say it plainly; the designed version is yours if the design has one.

@@ -5,20 +5,23 @@ on two dimensions: **speed** (commit and reveal latency) and **coherence** (voti
 ruling).
 
 **Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01, 02, 03, 04,
-05, 07 and 14 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a `netlify.toml` that is
-the single source of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted webfonts, a
-page that names all six agent jurors by nickname and avatar, and the dispute matrix — one row per
-dispute, headed by that dispute's own title and category, one column per agent juror, each cell
-carrying that draw's commit latency, its reveal latency and whether it voted with the final ruling.
-CI exists too — `.github/workflows/ci.yml`, added as toolchain upkeep rather than as a ticket, so do
-not propose it again. Three measures are read and no more: per-agent-juror marginals (06), rewards
-(10) and the historical windows (08) are all still unread, and the caveat the page carries above the
-roster says so outright rather than leaving a reader to infer it. Ticket 07 also brought the first
-read that is not a subgraph — `CommitCast` logs from an Arbitrum RPC — and with it
-`CourtPerformance.commitCoverage`, the cross-check that turns a short log scan into a number the
-page states rather than an absence. The design work behind it (glossary, six ADRs, a spec, eighteen
-tickets) came out of a full grilling session and a later pass that rebuilt the tracker on the
-finished design. Start by reading, not by writing.
+05, 07, 14 and 15 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a `netlify.toml`
+that is the single source of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted
+webfonts, and the dispute matrix — one row per dispute, headed by that dispute's own title and
+category, one column per agent juror, each cell carrying that draw's commit latency, its reveal
+latency and whether it voted with the final ruling. Ticket 15 put chrome and routes around it: five
+views under one shell — the matrix and the court's totals at `/`, a dispute index, the six agent
+jurors by nickname and avatar at `/agent-jurors`, `/method`, and a 404 — each carrying the same nav,
+the same read-only statement, and a footer stating the provenance of what is above it. CI exists
+too — `.github/workflows/ci.yml`, added as toolchain upkeep rather than as a ticket, so do not
+propose it again. Three measures are read and no more: per-agent-juror marginals (06), rewards (10)
+and the historical windows (08) are all still unread, and the caveat the matrix view carries says so
+outright rather than leaving a reader to infer it. Ticket 07 also brought the first read that is not
+a subgraph — `CommitCast` logs from an Arbitrum RPC — and with it `CourtPerformance.commitCoverage`,
+the cross-check that turns a short log scan into a number the page states rather than an absence.
+The design work behind it (glossary, six ADRs, a spec, eighteen tickets) came out of a full grilling
+session and a later pass that rebuilt the tracker on the finished design. Start by reading, not by
+writing.
 
 `README.md` covers the toolchain, the scripts, the test split and the CSP; this file covers the
 domain. Two constraints recorded there and easy to trip over: **yarn must be 4.18 or newer**
@@ -40,7 +43,10 @@ Ticket **05** was the keystone, and it has landed: `src/performance/` holds the 
 `buildCourtPerformance(RawCourtData) → KlerosResult<CourtPerformance>`, which is where every
 derivation belongs. It touches no network and reads no clock. Tickets 06, 07, 08 and 12 extend
 `RawCourtData` and the model rather than fetching beside them; a metric computed in a component is
-the mistake this seam exists to prevent.
+the mistake this seam exists to prevent. Ticket 15 added the first **aggregate** on the far side of
+it — `CourtTotals` in `src/performance/totals.ts`, which the stat tiles and the latency strip are
+figures of — so a court-wide number goes there and not into the view that prints it. Ticket 06's
+marginals are the same aggregates sliced by column.
 Every ticket from `03` up carries a `**Design:**` line naming what it is built against — an artboard
 and its line range, or, for ticket 14, the design system itself.
 
@@ -93,6 +99,16 @@ Things that cost real effort to discover and are easy to get wrong again:
 - **The unit is the draw, not the vote.** Across the first thirteen disputes, 61 votes collapsed to
   44 draws. The subgraph's `totalCoherentVotes` / `coherenceScore` are per-vote *and* global across
   all courts — unusable here (ADR-0002). `ClassicJustification` is conveniently one per draw.
+- **A dispute arrives in `evidence` with no panel and an all-zero timeline.** Disputes 167, 168 and
+  169 landed that way on 2026-08-25. Nobody has been drawn yet, so the row is six blank cells and a
+  panel size of zero, and `commitOpenedAt` parses to null — the same null the execution slot carries
+  for a dispute in `appeal`. Two things this breaks, both found by running against the live court
+  rather than a fixture. The matrix's own "On the empty cells" note says every blank is random draw
+  sparsity, which is true of a dispute that has a panel and false of one that does not — the draw
+  has not happened rather than not selected anyone. And `court-subgraph.integration.test.ts`
+  asserted `commitOpenedAt > 0` for every dispute the court returns, which was true until it wasn't;
+  it now asserts null for `evidence` and a moment for everything else. Any assertion quantified over
+  "every dispute the court holds" has this shape and will expire the same way.
 - **Dispute 155 had a panel of one.** Coherence is tautological there. Any aggregate carries this.
 - **A green suite here proves the healthy path and nothing else.** Every fixture in this repo is
   one successful read of a working court, so no test can contain a second read that failed, a
@@ -184,6 +200,29 @@ Things that cost real effort to discover and are easy to get wrong again:
   not. The same string ordering is why dispute lists order on `disputeID` and not on `id`, and why
   ordering happens in the model rather than the query — **ordering by `period` is rejected outright**
   by The Graph on the `Dispute` type, so the obvious query is the broken one.
+- **Two reads that failed at different moments render as one page that was read at the later one.**
+  react-query keeps what it already holds when a refetch fails, which is the right behaviour and is
+  why the matrix survives a flaky subgraph — but the dispute read and the draw read are separate
+  queries, so one can succeed while the other keeps hour-old data. The page then joins a fresh
+  dispute list to stale draws, and a dispute created since that draw read has *no cells* — which
+  this design defines as "not drawn", an unread state rendering as a fact about the court. Found by
+  review on ticket 15, where both the notice and the provenance footer keyed on `disputes.error`
+  alone and said nothing about `performance.error`. Every ticket that adds a read — 06, 07, 08, 10,
+  12 — adds another pair that can drift apart. Check *each* query's error, and say which half is
+  stale rather than that "the court" is.
+- **A flag that is false while a read is in flight is not a flag that the read failed.**
+  `RosterView.isResolvedFromEns` is false during the mainnet lookup *and* after it fails, so a
+  caveat keyed on it alone announces "ENS could not be reached" for the length of every cold load
+  and then retracts it — and a caveat that comes and goes teaches a reader to ignore caveats.
+  `isResolving` is the other half and both are required. This bit three call sites on ticket 15,
+  including one pre-dating it in `Roster.tsx`, and the fixture hid it by hard-coding
+  `isResolving: false` for a state whose own comment said it covered both. It applies to every
+  caveat any ticket writes from here on.
+- **A backtick inside a CSS comment ends the styled-components template.** This repo's house style
+  puts long prose comments inside `styled.x\`…\`` blocks, and the moment one of them quotes an
+  identifier the way the rest of the codebase does — around a filename, say — the template literal
+  closes there and the file fails to parse somewhere further down, with an error pointing at the
+  wrong line. Write those comments without backticks.
 - **Parallel ticket branches collide in the status prose *and* in the code.** Tickets 03, 14 and a
   CI branch each touched this file's status paragraph and `README.md` § Status. Git auto-merged all
   three textually and produced claims true of every parent alone and false of the merge — "no

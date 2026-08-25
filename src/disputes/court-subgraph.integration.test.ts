@@ -28,9 +28,19 @@ describe("fetchCourtDisputes", () => {
       expect(Number.isInteger(dispute.id)).toBe(true);
       expect(PERIODS).toContain(dispute.period);
       expect(dispute.rounds.length).toBeGreaterThanOrEqual(1);
-      // Every dispute here has passed the evidence period, so its commit period has an
-      // observed opening moment. Everything measured later is offset from one of these.
-      expect(dispute.rounds[0]?.commitOpenedAt).toBeGreaterThan(0);
+      // A dispute past the evidence period has an observed commit opening, and everything
+      // measured later is offset from one of these. A dispute still *in* evidence has not
+      // opened one, and its whole timeline is zeros the model parses to null — which is the
+      // assertion this makes, rather than skipping the row. Written as a live drift check,
+      // this test asserted `> 0` for every dispute until disputes 167, 168 and 169 arrived in
+      // `evidence` on 2026-08-25 and made it false. `null` is not a lax expectation here: it
+      // is the parse that keeps a zero from becoming a latency of fifty-six years.
+      const commitOpenedAt = dispute.rounds[0]?.commitOpenedAt;
+      if (dispute.period === "evidence") {
+        expect(commitOpenedAt).toBeNull();
+      } else {
+        expect(commitOpenedAt).toBeGreaterThan(0);
+      }
     }
   }, 30_000);
 

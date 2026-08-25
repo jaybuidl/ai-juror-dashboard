@@ -1,5 +1,6 @@
 import { type Dispute, type DisputeRound, type RawDispute, toDisputes } from "../disputes/disputes";
 import type { AgentJuror } from "../roster/agent-jurors";
+import { type CourtTotals, courtTotalsOf } from "./totals";
 
 /**
  * The seam.
@@ -203,6 +204,17 @@ export type CourtPerformance = {
   agentJurors: readonly AgentJuror[];
   /** The matrix rows, newest dispute first. */
   rows: readonly MatrixRow[];
+  /**
+   * What the rows amount to court-wide: the stat tiles' figures and the latency distribution.
+   *
+   * Computed here rather than reduced in a view, so the tiles above the matrix and the matrix
+   * itself are two readings of one model. See `totals.ts`.
+   *
+   * Reveal latency only, and named so on `CourtTotals` itself: the rows carry a commit latency
+   * too, and an aggregate that silently averaged both would be the fraction-of-a-window mistake
+   * in another form. Ticket 06 decides what a commit aggregate is worth saying.
+   */
+  totals: CourtTotals;
   /** Whether every commitment the subgraph knows of was found on chain. */
   commitCoverage: CommitCoverage;
 };
@@ -561,6 +573,7 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
       data: {
         agentJurors: raw.roster,
         rows,
+        totals: courtTotalsOf(rows, raw.roster),
         commitCoverage: { read: raw.commits !== null, expected, resolved },
       },
     };

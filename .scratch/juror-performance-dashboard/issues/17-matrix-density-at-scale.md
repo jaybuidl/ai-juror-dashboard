@@ -137,3 +137,27 @@ keys a rail no cell carries; `Matrix.tsx` has both in the legend's second `Legen
 **`commitFigureOf` never returns blank**, exactly as `revealFigureOf` never does. A compact cell
 that drops the line must drop it entirely rather than render it empty, because an empty slot beside
 a full one reads as missing data.
+
+## From the 07 + 15 integration, 2026-08-25 — a blank row that is not sparsity
+
+Running the merged page against the live court turned up a row shape neither branch could have
+seen, because every fixture in this repo stops at dispute 166. Disputes 167, 168 and 169 are in
+the `evidence` period: no juror has been drawn for them yet, so each renders as six blank cells
+with `PANEL 0`, above the finalised rows.
+
+The cells are correct. The **footnote is not.** `Matrix.tsx`'s "On the empty cells" card says every
+blank is random draw sparsity — "Agent jurors are drawn at random: sparsity is the normal state of
+this matrix, not missing data" — and that is true of a dispute whose panel exists and false of one
+whose panel does not. Today 18 of the blank cells it counts are the second kind, and the sentence
+tells a reader they mean something they do not: not *this agent juror was not selected*, but *no
+selection has happened*. Same words, different fact, on a page that may be cited.
+
+This is yours because you own what the matrix does as rows accumulate, and running disputes are now
+a permanent fraction of them — the count is in the matrix header already (`13 finalised · 6
+running`). Three options, none of them decided here: word the footnote to separate the two absences
+and count them separately; give a not-yet-drawn cell a state of its own rather than blankness, which
+ADR-0006 would have to admit; or keep running disputes out of the grid until they have a panel,
+which loses the fact that the court is busy. The first is the smallest and probably right.
+
+Not a merge artifact and not new to the merge — `master` renders the same rows today. It surfaced
+here only because integration verification runs against the live court.

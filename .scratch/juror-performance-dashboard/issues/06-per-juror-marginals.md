@@ -42,3 +42,28 @@ header's identity block), `../canvas/JurorEmpty.dc.html:66-76` (a dash, never a 
       rather than an absence
 - [ ] Tested against fixtures, including a case proving the median is not dragged by the dispute that
       ran under different court parameters
+
+## From ticket 15: the aggregate already has a home
+
+`src/performance/totals.ts` holds `CourtTotals`, computed by `buildCourtPerformance` and hanging off
+`CourtPerformance.totals`. It is the court-wide version of what this ticket slices by column:
+disputes, draws, vote IDs, agent jurors drawn, the whole reveal-latency distribution ascending, and
+the ids of the disputes decided by a panel of one. The marginals belong in that file, as a second
+export over the same rows — not in the column header that prints them, which is the rule ticket 15
+followed for the stat tiles and the same rule this ticket states for itself.
+
+Two things it settled that this ticket inherits:
+
+- **The median is the lower of the two middles on an even count**, not their mean. Averaging invents
+  a latency no draw recorded, and this page may be cited. `medianOf` in `totals.ts` is the one
+  implementation; a marginal median must use it rather than a second convention beside it.
+- **The caveat marker mechanism exists and is unused.** `StatTiles` takes an optional `TileCaveat` —
+  a mark on the figure, the reason beneath it, and a link to the full account — because this
+  ticket's criteria set the terms for it. No stat tile passes one today: the only caveat the model
+  carries is the lone panel, which qualifies coherence, and none of the four tile figures is a
+  coherence figure. **This ticket's per-agent-juror coherence is the first figure that takes the
+  mark** — `totals.lonePanelDisputes` is what tells you which draws it applies to, and the matrix
+  words the same caveat with `‡` (`Matrix.tsx`, `ROW_FLAGS`). Use that glyph, not a new one.
+
+`/method#caveats` is where "the full account one click away" should point; the section is written
+and names the panel of one, the sparsity of the matrix and the fact that nothing is sampled.

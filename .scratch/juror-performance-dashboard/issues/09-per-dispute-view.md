@@ -44,3 +44,27 @@ timeline strip at `:88-96`, the justification band at `:110-278`, the empty just
       and it is distinct from both a failed read and a draw that never acted
 - [ ] Justifications not written in English render correctly
 - [ ] Long justifications remain readable; the longest in the data is nearly five thousand characters
+
+## From ticket 15: the chrome, the route and the breadcrumb are waiting
+
+Add the route to `src/routes.tsx`, inside the existing layout route so the view cannot lose the
+shell. The parent index it sits under already exists, which is what makes the breadcrumb honest.
+
+Three things to reuse rather than rebuild:
+
+- **`View`** (`src/chrome/View.tsx`) wraps the content in the page's measure and renders the
+  provenance footer beneath it. Pass it a `Provenance` — what on this view is the measured record,
+  the dispute range and moment read, the caveats, and whether the view shows an agent juror (it
+  does, so the footer states they are identified by nickname, avatar and stack and never by who
+  built them). Compose it in a `provenanceOf` function beside the component, as the other views do.
+- **`Breadcrumb`** (`src/chrome/Breadcrumb.tsx`) takes `{ to, parent, current }` and is already
+  tested. It renders the current item as text rather than a link to itself. **`current` must be the
+  roster nickname or the dispute's own id — never the nickname ENS resolves.** `blaise` carries a
+  `name` record reading "Blaise", and the route is keyed on the roster.
+- **`isCurrent`** in `chrome/Nav.tsx` already keeps the parent destination marked while you are on a
+  child route, so `/disputes/152` leaves "Disputes" active in the nav. There is a test for it; you
+  need do nothing.
+
+The 404 catches anything the route table does not match, so a bad id in the path is *not* a 404 —
+it is a real route with an id that names nothing, and this view has to say so itself. Ticket 13 owns
+what a failed *read* looks like; an id that does not exist is neither that nor a wrong URL.

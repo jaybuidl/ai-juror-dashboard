@@ -112,8 +112,12 @@ frame-ancestors 'none'"""
 # Must stay last: the redirect engine takes the first matching rule. Deliberately
 # unforced — Netlify serves a real file in preference to an unforced rewrite, so the
 # hashed bundles under /assets/ are not shadowed by the app shell. Every other unknown
-# path does return the shell at HTTP 200; tickets 09, 11 and 15 add real routes and 15 will
-# need a 404 view behind them.
+# path does return the shell at HTTP 200. Ticket 15 added the real routes — /disputes,
+# /agent-jurors and /method — and the 404 view behind them, which is the only thing that can
+# tell a visitor their URL is wrong now that every path answers 200. Tickets 09 and 11 add
+# their views under those same two indexes and need nothing new here. The router is a
+# BrowserRouter and this rule is what makes a pasted link to any of them resolve; a hash
+# router would not have needed it, and would have put a `#` in every URL this page is cited by.
 #
 # Known and deliberately not fixed here: a MISSING /assets/* file also returns the shell
 # at 200 with Content-Type text/html. If a browser ever held a stale index.html pointing

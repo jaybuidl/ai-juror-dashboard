@@ -139,3 +139,28 @@ provenance
 - [ ] The control row above the first card holds the ordering and filtering affordances and does not
       wrap. No earlier ticket builds either — ticket 03 fixes newest-first as a property of the model
       rather than a control — so this ticket either builds them here or shows no control row at all
+
+## From ticket 15: the breakpoint now has one home, and it is not 600px
+
+`src/styles/breakpoints.ts` is that home. It exports `breakpoints.narrow` (`720px`) and a `narrow`
+media prelude used as `${narrow} { … }` inside a styled template. The chrome — nav, hero, stat
+tiles, view padding, the lockup — reduces there and nowhere else, and this ticket's criterion about
+declaring the breakpoint once is what the file exists for. **Move the number here rather than
+picking a second one**, and if 390pt needs a different value, change it here and check the chrome
+at the same time.
+
+The `@media (max-width: 600px)` rules the criterion attributes to `src/Dashboard.tsx` are now in
+`src/pages/MatrixPage.tsx` (the caveat card's padding) and in `DisputeList.tsx` and `Matrix.tsx`.
+They pre-date `breakpoints.ts` and were deliberately left alone by ticket 15, which owned only the
+chrome — so this ticket inherits two literals and one token, and reconciling them is part of its
+job.
+
+What ticket 15 built at narrow width is **legible, not final**, exactly as its criterion allowed:
+the nav stacks the lockup over a wrapped destination row with the read-only pill beneath, the four
+stat tiles wrap two-up, and the hero drops to body type. Verified in system Chrome at 390×844 —
+nothing overflows horizontally and the full-page capture is exactly 390px wide. Which tiles survive,
+in what order, and what the folded nav actually becomes are this ticket's calls, and none of them
+were made.
+
+`Mobile.dc.html` shows three tiles, not four, and in a different order — median reveal first. That
+is the artboard, and the canvas wins.
