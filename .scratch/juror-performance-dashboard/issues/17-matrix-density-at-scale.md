@@ -194,6 +194,22 @@ collapses on scroll, or by something else. Two things not to do: drop the marker
 the only mention, but it must be a mention), and let the six columns take five different heights,
 which is why `AgentColumn` is `vertical-align: top`.
 
+### From ticket 10, 2026-08-25 — the last two figures are in, and they cost less than the first four
+
+The header now holds all six the artboard designs for. The two ticket 10 added are cheap in exactly
+the dimension this ticket cares about: **they carry no reason line**, because neither the `†` nor
+the `‡` rides a reward — the window marker is about the commit and vote periods, and court 34's one
+reconfiguration left every reward parameter unchanged. So they add two lines to every column and
+nothing more, and the tallest header is still set by columbo's three caveat reason lines rather than
+by how many figures there are.
+
+That is worth knowing before you reduce it. Your criterion says the frozen header keeps three of its
+six figures, and the 330px above is what four figures plus three reason lines came to — the two new
+rows move it by roughly the height of two lines, not by a third again. **The reason lines are the
+budget, not the figures.** A reduction that dropped ETH and PNK would buy two lines; one that trades
+the reason lines for the footnotes below the grid buys eight, which is the trade ticket 06 already
+pointed you at.
+
 ## From ticket 09, 2026-08-25 — the blank-row wording, solved on one view and not on the matrix
 
 This ticket owns the reading the matrix gives a dispute that has been read and genuinely has no

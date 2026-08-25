@@ -197,6 +197,23 @@ is certainly worth measuring: `stateFail` on `washRose` for the "Not read" figur
 cell, and the `FactKey` labels, which are `textPending` — the token measured at 2.68–2.91:1 in dark
 theme and already flagged here as inking the pending dash and the rail keys.
 
+## From ticket 10: a new amber-on-small-text site, and one figure that is exempt by construction
+
+**`stateWork` now inks a figure, not just a marker.** A net PNK loss renders amber in the matrix's
+column headers (`Marginals.tsx`, the `$loss` flag on `Value`) at the same 9px mono the other five
+figures use. That is a third accent carrying text at small size, beside the `stateFail` and
+`textPending` sites listed above, and `CLAUDE.md` measures `--amber-600` at **4.10** against its own
+stated 4.5:1 target. Two of the five drawn agent jurors are net negative today, so this is the
+ordinary reading of the page rather than an edge case — measure `stateWork` on `surfaceCard`.
+
+**The colour-independence half needs no work here, and it is worth knowing why so you can spend the
+audit elsewhere.** The sign is a character in the value itself — `-467.50`, `+436.33` — and the
+amber is applied on top of it, never instead. Greyscale, 60% zoom and forced-colors all leave the
+figure fully readable, which is ADR-0006 satisfied by construction rather than by a token. The
+`Marginals.test.tsx` case that pins it asserts the *character*, not the colour, so it keeps holding
+whatever this ticket does to the palette. Zero carries no sign at all, deliberately: it is neither a
+gain nor a loss.
+
 ## From ticket 09: one link that needs a name, and one that must not be given one
 
 **Each row of the dispute index is now a link into that dispute**, and its accessible name is the
