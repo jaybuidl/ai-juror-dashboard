@@ -327,6 +327,30 @@ Things that cost real effort to discover and are easy to get wrong again:
   that neither parent could test: ticket 04's `slotsFor` only reaches ticket 05's matrix once both
   are on the same branch, and on either branch alone that wire is `undefined`. The sentences and
   hunks that raise a conflict marker are the easy half.
+- **Never machine-resolve a conflict hunk by concatenating both sides, however additive it looks.**
+  Three branches merged at once (08, 12, 13) produce dozens of hunks whose base side is empty, and
+  a script that keeps ours-then-theirs for those looks safe and is not: git splits hunks wherever
+  the diff happens to align, which in this repo's house style lands **inside a prose doc comment**.
+  Concatenating then swallows the `/**` opener of the second block, or drops the `});` closing a
+  `describe`, and the error surfaces hundreds of lines away pointing at the wrong thing. Four files
+  broke that way on the 08 + 12 + 13 merge — `totals.ts`, `Matrix.tsx`, `useCourtPerformance.ts`,
+  `performance.test.ts` — and it was Biome's parser that caught every one, not review. Worse, the
+  same technique can lose a *type field* rather than a brace: `unreadDisputes` was concatenated
+  onto the end of `WindowChange` instead of `CourtTotals`, which parses fine and is simply wrong.
+  Resolve hunks by hand. If a script is unavoidable, diff the result against **both** parents
+  afterwards for lines appearing more often than in either — that check is what proved the rest of
+  that merge clean.
+- **One failed source gets one banner line, and the provenance footer never carries the failed
+  half.** Ticket 13's rule, made concrete by the merge that first tested it. A read that fails is
+  said exactly twice — in the banner at the top, and in the place where the figure would have been
+  — so the footer stating it too makes one outage three voices, and a reader who meets the same
+  sentence three times stops reading any of them. The half the footer keeps is the read still *in
+  flight*, which is provenance for what is on screen rather than a failure. Two consequences that
+  are easy to get wrong: when one endpoint serves two reads (Arbitrum serves the commit scan and
+  the parameter history) an outage takes both, so `arbitrumFailureOf` returns the **worst one**
+  rather than listing the source twice — and a caveat that goes quiet under a banner is correct,
+  where one that says "still being read" about a read that gave up is the `RosterView` trap again.
+  Tickets 06, 09, 10 and 11 each add a read or a view and each meet this.
 
 ## Verified constants
 
