@@ -15,8 +15,11 @@
 # https://docs.netlify.com/build/configure-builds/manage-dependencies/
 
 [build]
-  # `build:ci`, not `build`: this deploy is the only gate between a change and a public
-  # page, so it lints and runs the tests as well as type-checking. There is no other CI.
+  # `build:ci`, not `build`: it lints and runs the tests as well as type-checking.
+  # .github/workflows/ci.yml runs those same checks on pull requests and on master, so this
+  # is no longer the only place they run — but it stays the last gate between a change and a
+  # public page, and a workflow can be disabled, skipped, or bypassed by a direct push.
+  # Verifying twice costs a minute; deploying something no one verified costs more.
   command = "yarn build:ci"
   publish = "dist"
 

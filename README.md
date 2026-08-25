@@ -10,10 +10,11 @@ dashboard's job.
 
 ## Status
 
-**The roster is live.** This repository contains the application shell, the deployment pipeline and
-a page naming the six agent jurors — but no data layer, no metrics and no matrix. The deployed page
-says so outright rather than rendering an empty grid, because a public page whose figures may be
-cited must never let "not built" look like "no results".
+**The roster and the dispute list are live.** This repository contains the application shell, the
+deployment pipeline, the Kleros ×AI visual system, a page naming the six agent jurors and a list of
+every dispute court 34 has held — but no metrics and no matrix. Both of those are records, not
+measurements. The deployed page says so outright rather than rendering an empty grid, because a
+public page whose figures may be cited must never let "not built" look like "no results".
 
 Read [`CLAUDE.md`](CLAUDE.md) before writing code — in particular its **Traps** section, which
 records the things that cost real time to discover. The design that this scaffold serves lives in:
@@ -56,7 +57,8 @@ yarn dev        # http://localhost:5173
 `yarn build` type-checks first on purpose: Vite strips types without checking them and Biome does
 no type checking at all, so nothing else in the pipeline would catch a type error. Netlify runs
 `build:ci` rather than `build`, which additionally lints and runs the tests — that deploy is the
-only gate between a change and a public page, and there is no separate CI.
+last gate between a change and a public page, and it stays a full one even though CI now runs the
+same checks earlier.
 
 Type-checking is two programs, not one. `tsconfig.json` covers `src/` and sets `"types": []`, so
 `process`, `Buffer` and `__dirname` are **errors** in browser code; `tsconfig.node.json` covers
@@ -64,6 +66,23 @@ the Vite and Vitest configs and does load the Node globals. Without that split a
 `process.env` type-checks, bundles, and then throws on a public page — which is a live hazard
 here, because agentkit's `getSubgraphUrl` reads `process.env` and ADR-0003 has metric code moving
 between the two repos in both directions.
+
+### Continuous integration
+
+`.github/workflows/ci.yml` holds two jobs. **`ci`** gates pull requests and pushes to `master`,
+running lint, type-check, tests and build as four separate steps so a failure names its own stage.
+**`live`** runs `yarn test:integration` — the ENS suite that checks each roster address against
+the subname it claims, and the core-subgraph suite that checks the court's disputes still arrive
+in the shape the model parses — on a daily cron and on `workflow_dispatch` only. It never gates a
+pull request: its failure mode there would be network flake, and a red that means nothing teaches
+people to ignore red.
+
+One constraint in that file resists being tidied. Yarn 4 is not vendored here, so `corepack enable`
+must run *after* `actions/setup-node` and *before* anything invokes `yarn`; Ubuntu runners ship Yarn
+1.22 on `PATH`, and without that step `yarn` silently is Yarn 1. This is also why the workflow
+resolves the cache directory itself rather than using `cache: yarn` on `setup-node`, which asks Yarn
+1 where its cache lives and then caches a directory Yarn 4 never writes to — a cache that never
+errors and never hits.
 
 ## Configuration
 

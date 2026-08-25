@@ -1,0 +1,141 @@
+# Continuous integration for the AI Juror Dashboard.
+#
+# Modelled on ../agentkit/.github/workflows/ci.yml, minus everything there that exists to
+# guard an npm publish — the no-eval lint, the built-CLI version check, the pack footprint
+# guard, the skill-reference check. This package is `private: true` and ships as a Netlify
+# site, so none of them have a referent here.
+#
+# This does NOT replace the Netlify gate. netlify.toml still runs `yarn build:ci`, which
+# lints and tests before building: a workflow can be disabled, skipped, or bypassed by a
+# direct push, and that deploy is the last thing between a change and a public page.
+
+name: CI
+
+# `push` is narrowed to master on purpose. agentkit's unqualified `on: push` plus
+# `on: pull_request` runs every same-repo PR branch twice, once per event — and the
+# concurrency group below cancels neither, because the two runs have different refs.
+on:
+  push:
+    branches: [master]
+  pull_request:
+  schedule:
+    # Off the hour: scheduled workflows queue behind everyone else's on-the-hour crons.
+    - cron: "17 6 * * *"
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  # Gates pull requests and master. Offline: nothing in this job touches the network after
+  # the install.
+  ci:
+    if: github.event_name == 'push' || github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      # .nvmrc rather than a literal 22. README.md § Known toolchain constraints records
+      # .nvmrc as the top of Netlify's own precedence chain, so hardcoding the version here
+      # would create a second declaration free to drift from the one governing the deploy.
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      # ORDER IS LOAD-BEARING, in both directions.
+      #
+      # Yarn 4.18 is not vendored — .gitignore says so, and .yarnrc.yml carries only
+      # nodeLinker — so the version comes solely from `packageManager` via corepack. Ubuntu
+      # runners ship Yarn 1.22 on PATH: without this step, `yarn` silently IS Yarn 1.
+      # Running it BEFORE setup-node is equally wrong, because the shims would then point at
+      # the runner's pre-installed Node instead of the one .nvmrc selects.
+      - name: Enable corepack
+        run: corepack enable
+
+      # Why not `cache: yarn` on setup-node: that resolves the cache directory inside the
+      # action, which is necessarily before corepack has been enabled. It therefore asks
+      # Yarn 1 where its cache lives and caches a directory Yarn 4 never writes to. It does
+      # not fail — it just never hits, which is the worst of both. Asking Yarn 4 directly,
+      # after corepack, is the version that works.
+      - name: Resolve Yarn cache folder
+        run: echo "YARN_CACHE=$(yarn config get cacheFolder)" >> "$GITHUB_ENV"
+
+      - name: Cache Yarn downloads
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.YARN_CACHE }}
+          key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-${{ runner.os }}-
+
+      # --immutable is explicit even though GitHub sets CI=true and Yarn 4 would enforce it
+      # anyway. Same reasoning netlify.toml already records: a stale lockfile must fail,
+      # not be quietly rewritten.
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Lint
+        run: yarn lint
+
+      # Deliberately duplicated work: `yarn build` runs check-types first, so this step
+      # re-does it. It costs a couple of seconds and buys a type error that surfaces as a
+      # step named Typecheck rather than as a failed Build. Same reason the four scripts are
+      # called individually instead of `yarn verify` or `yarn build:ci`, either of which
+      # would collapse the whole gate into one opaque red step.
+      - name: Typecheck
+        run: yarn check-types
+
+      - name: Unit tests
+        run: yarn test
+
+      - name: Build
+        run: yarn build
+
+  # The live half of the test split described in README.md § Conventions. Held out of the
+  # PR gate: these are drift checks, worth a daily run and worth a manual one — but their
+  # failure mode on a pull request would be network flake, and a red that does not mean
+  # anything teaches people to ignore red.
+  #
+  # Two suites run here, and `yarn test:integration` picks up any third by filename:
+  # `roster/ens.integration.test.ts` resolves all six ENS subnames against mainnet and
+  # cross-checks each against the address the roster has checked in by hand, and
+  # `disputes/court-subgraph.integration.test.ts` asserts the core subgraph still returns
+  # the shape the model parses — a renamed field or a changed enum is exactly what a
+  # fixture cannot notice.
+  #
+  # They hit ethereum-rpc.publicnode.com and api.goldsky.com from a shared runner IP and
+  # may be rate-limited there in a way they never are from a laptop. If that starts biting,
+  # lower the cadence rather than adding a retry loop — a retry would paper over a real
+  # endpoint change too.
+  live:
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v7
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version-file: .nvmrc
+
+      - name: Enable corepack
+        run: corepack enable
+
+      - name: Resolve Yarn cache folder
+        run: echo "YARN_CACHE=$(yarn config get cacheFolder)" >> "$GITHUB_ENV"
+
+      - name: Cache Yarn downloads
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.YARN_CACHE }}
+          key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
+          restore-keys: yarn-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: yarn install --immutable
+
+      - name: Live suites
+        run: yarn test:integration

@@ -8,12 +8,13 @@ ruling).
 Tickets 01, 02, 03 and 14 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a
 `netlify.toml` that is the single source of truth for the deploy, the Kleros ×AI tokens adopted and
 self-hosted webfonts, a page that names all six agent jurors by nickname and avatar, and a list of
-every dispute court 34 has held. Both are records, not measurements. There is still no metric and no
-matrix — the page says so outright rather than rendering an empty grid, and says it *below* the
-roster precisely because showing who the six are is the point at which a visitor could start reading
-the page as a result. The design work behind it (glossary, six ADRs, a spec, eighteen tickets) came
-out of a full grilling session and a later pass that rebuilt the tracker on the finished design.
-Start by reading, not by writing.
+every dispute court 34 has held. Both are records, not measurements. CI exists too —
+`.github/workflows/ci.yml`, added as toolchain upkeep rather than as a ticket, so do not propose it
+again. There is still no metric and no matrix — the page says so outright rather than rendering an
+empty grid, and says it *below* the roster precisely because showing who the six are is the point at
+which a visitor could start reading the page as a result. The design work behind it (glossary, six
+ADRs, a spec, eighteen tickets) came out of a full grilling session and a later pass that rebuilt
+the tracker on the finished design. Start by reading, not by writing.
 
 `README.md` covers the toolchain, the scripts, the test split and the CSP; this file covers the
 domain. Two constraints recorded there and easy to trip over: **yarn must be 4.18 or newer**
@@ -145,7 +146,8 @@ Mainnet RPC          https://ethereum-rpc.publicnode.com  (ENS only; ankr needs 
 Nicknames            007, aletheia, baskerville, blaise, columbo, daemonhill — ENS subnames of
                      agents.kleroslabs.eth on mainnet, all six resolving with avatars on euc.li.
                      baskerville has never been drawn; the roster in src/roster/ is the only
-                     place all six appear, and the live suite checks it against ENS
+                     place all six appear, and the live suite checks it against ENS — now
+                     nightly, in CI's `live` job, so drift surfaces without anyone asking
 Round.timeline       [commit start, reveal start, appeal start, execution start]
 ```
 
