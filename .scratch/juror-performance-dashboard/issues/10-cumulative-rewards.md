@@ -97,3 +97,25 @@ possibly does, since the reward depends on the round. And `commitments` on the m
 model for "the subgraph says this happened and the second source has not confirmed it yet": if your
 read is a second source over the same draws, it needs the same in-flight gate rather than an
 emptiness test, which is `CLAUDE.md`'s fourth recurrence of that trap.
+
+## From ticket 16, 2026-08-25 — a fourth measure now has two faces to answer for
+
+The court has a second layout. Below `breakpoints.narrow` the matrix is not rendered at all and
+`src/performance/DisputeCards.tsx` replaces it — one card per dispute, six slots along its foot —
+so anything this ticket adds has to say where it goes on **both**, and the card is the harder half.
+
+- **A card slot holds exactly one figure**, and `slotFigureOf` in `cell.ts` already had to choose
+  which: the latency of the most recent thing that draw did. There is no room for a second. If a
+  reward is per draw, its home on the phone is the dispute's own view, and the card list has to
+  say so rather than silently omit it — the way the commit-shortfall notice now does.
+- **If the reward is per agent juror rather than per draw** it is a marginal, and the marginals
+  live in the matrix's column headers, which the card layout has none of. Ticket 11's view is then
+  the place it is legible on a phone, and `MatrixPage`'s caveat card has to stop claiming the
+  page shows it — that card is now written twice, once per layout, for exactly this reason.
+- **The stat tiles are three on a phone and four on the desktop**, in a different order
+  (`StatTiles.tsx`, `narrow` prop). A fifth tile has to answer which of the two lists it joins.
+  The one that gave way was "agent jurors drawn", on the grounds that it is a fact about the
+  roster rather than about the record.
+- **The caveats are shared modules now** — `Legend.tsx` and `Footnotes.tsx` — so a new caveat
+  written in either view reaches the other for free, and one written inline in a view does not.
+  `CLAUDE.md` § Traps records what happens when prose is copied between the two instead.

@@ -131,3 +131,28 @@ The breadcrumb takes the **roster** nickname and never the one ENS resolves, whi
 from ticket 15's note and is worth repeating because ticket 09's column headers deliberately do the
 opposite: they *display* `identity.nickname` ("Blaise") while everything keys on the roster
 ("blaise").
+
+## From ticket 16, 2026-08-25 — three shared modules, and a phone form to decide
+
+This view needs no read of its own, which ticket 06 already said. What ticket 16 adds is that it
+needs rather less code than it did:
+
+- **`src/performance/row-flags.ts`** is the flag table, lifted whole out of `Matrix.tsx`:
+  `rowFlagOf(row, context)` returns the one flag a dispute wears, in the precedence not-read,
+  window, lone panel, live. A per-agent-juror view listing that agent juror's disputes wants
+  exactly this rather than a fourth ranking of the same four facts.
+- **`Legend.tsx`** (`StateLegend`) and **`Footnotes.tsx`** (`WindowFootnote`, `LonePanelFootnote`,
+  `SparsityNote`) are the caveats, shared by the matrix and the card list. Any view that shows a
+  draw's state owes its reader the first; any view that aggregates latency or coherence owes them
+  the other two — this one does both.
+- **`cell.ts` gained `slotFigureOf`**: the latency of the most recent thing a draw did, which is
+  the reveal wherever one exists and the commit only while a reveal is still ahead. It is the rule
+  for anywhere that has room for one figure rather than two.
+
+**This view has a phone form and nobody has decided what it is.** `useIsNarrow()` in
+`styles/breakpoints.ts` is how a component asks; `narrow` is the media prelude for the same
+number. ADR-0005 and `Juror.dc.html:108` say this view plots reveal latency only — and
+`CLAUDE.md` § Traps records that the reason given for that is *false*, because both windows
+changed. Whatever this view plots, the marker belongs on the median the window it names actually
+governs, and `markedWindows(changes, current, "reveal" | "commit")` in `totals.ts` is what places
+it per window rather than per group.
