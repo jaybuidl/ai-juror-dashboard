@@ -42,7 +42,7 @@ records the things that cost real time to discover. The design that this scaffol
 | Document | Contents |
 | --- | --- |
 | [`CONTEXT.md`](CONTEXT.md) | The glossary. Read before naming anything |
-| [`docs/adr/`](docs/adr/) | Six decisions a reader would otherwise question |
+| [`docs/adr/`](docs/adr/) | Seven decisions a reader would otherwise question |
 | [`.scratch/juror-performance-dashboard/spec.md`](.scratch/juror-performance-dashboard/spec.md) | The spec, plus a Further Notes section of hard-won facts |
 | [`.scratch/juror-performance-dashboard/issues/`](.scratch/juror-performance-dashboard/issues/) | Eighteen tickets, blockers first |
 | [`DESIGN_PROMPT.md`](DESIGN_PROMPT.md) | The UI brief. Answered — read the canvas rather than re-deriving it |

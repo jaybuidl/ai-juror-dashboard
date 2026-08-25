@@ -27,3 +27,24 @@ per-agent-juror stat card), `../canvas/README.md` for provenance
       drawn shows a dash in both figures, matching ticket 06's rule for the marginals beside them: a
       zero is a measurement and a dash is the absence of one
 - [ ] Rewards are not ranked and do not reorder anything
+
+### From ticket 12, 2026-08-25 — your read is not persisted until you say so
+
+**`PERSISTED_QUERIES` in `src/persistence.ts` is an allowlist.** The query cache is written to
+`localStorage`, and a new query is not persisted until it is named there. Two questions to answer
+before adding one, both learned the hard way:
+
+1. **Does the value survive `JSON.stringify`?** No `Map`, no `Set`, no `bigint`, no `Date`. The
+   dispute-templates query holds a `Map`, which serialises to `{}` and restores as an object with
+   no `get` — every row would have rendered untitled, with nothing thrown anywhere. Rewards read
+   from a chain, so a `bigint` reaching storage is the live risk here; it throws on the way out
+   rather than degrading quietly, which is better but still not a production discovery.
+2. **Does a *failed* read of it produce a successful query?** If it has a fallback, it does. The
+   ENS identities were dropped from the allowlist for exactly this: a mainnet failure returns the
+   checked-in roster entry, so the query succeeds, and persisting it re-served one bad load for an
+   hour across reloads.
+
+**Anything derived inside a query function is a third question.** `stripDerived`/`rederive` in the
+same file exist because `useDisputes` models inside its query function, so a cache could otherwise
+serve yesterday's definition of a ruling to today's code. If your query function shapes its result
+rather than returning the payload, extend those two rather than trusting the version constant.

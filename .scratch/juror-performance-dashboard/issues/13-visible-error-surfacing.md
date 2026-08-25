@@ -193,3 +193,19 @@ Two smaller things:
   appear on it. Whatever rose treatment this ticket builds, it does not reach that view.
 - `StatTiles` and `LatencyStrip` already handle the no-model case by saying they have nothing rather
   than rendering zeros. They say it plainly; the designed version is yours if the design has one.
+
+### From ticket 12, 2026-08-25 — a row-level marker exists, and "Unknown" is still yours
+
+**`BodyRow` in `src/performance/Matrix.tsx` is a styled `tr`** that carries the row's tint and its
+left rail. If the designed failure state wants to mark a whole row — a dispute whose draws could
+not be read, say — the mechanism is there rather than needing to be invented, and it takes a `Tone`
+so it will match whatever ink you give the state.
+
+**Nothing in ticket 12 claims the word "Unknown."** ADR-0006 reserves it for you. A live latency
+that has not happened yet is a dash in pending ink, exactly as ticket 05 built it.
+
+**The five-second poll doubles as a hazard for you.** `CLAUDE.md` already records that the dispute
+read and the draw read can fail at different moments and render as one page read at the later one.
+That now happens *repeatedly* rather than once per load, so a notice that appears and retracts is a
+live risk: a transient failure on one poll will flash your banner and clear it five seconds later.
+Whatever you build should probably survive one failed poll before it says anything.

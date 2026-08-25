@@ -25,8 +25,9 @@ tint and a pill naming the open period and how long it has run, and the payloads
 `localStorage` so a return visit renders before either endpoint answers. It also settled what
 "finalised" means — the court has ruled, never `period === "execution"` — which `CONTEXT.md` now
 defines and the spec was amended to match.
-The design work behind it (glossary, six ADRs, a spec, eighteen tickets) came out of a full grilling
-session and a later pass that rebuilt the tracker on the finished design. Start by reading, not by
+The design work behind it (glossary, seven ADRs, a spec, eighteen tickets) came out of a full
+grilling session and a later pass that rebuilt the tracker on the finished design — ADR-0007 is the
+one that came from implementation rather than design, and it overrode the spec. Start by reading, not by
 writing.
 
 `README.md` covers the toolchain, the scripts, the test split and the CSP; this file covers the
@@ -39,7 +40,7 @@ rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines 
 | Read | For |
 | --- | --- |
 | `CONTEXT.md` | The glossary. Read before naming anything |
-| `docs/adr/0001`–`0006` | The six decisions a reader would otherwise question |
+| `docs/adr/0001`–`0007` | The seven decisions a reader would otherwise question |
 | `.scratch/juror-performance-dashboard/spec.md` | The spec, and a Further Notes section of hard-won facts |
 | `.scratch/juror-performance-dashboard/issues/` | 18 tickets, blockers-first, `01` upward |
 | `DESIGN_PROMPT.md` | The UI brief. Answered — read the canvas below rather than re-deriving it |
