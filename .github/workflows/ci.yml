@@ -60,13 +60,21 @@ jobs:
       # Yarn 1 where its cache lives and caches a directory Yarn 4 never writes to. It does
       # not fail — it just never hits, which is the worst of both. Asking Yarn 4 directly,
       # after corepack, is the version that works.
+      #
+      # A step OUTPUT, not $GITHUB_ENV. Yarn 4 reads every `YARN_`-prefixed environment
+      # variable as a config setting, camelCased: `YARN_CACHE` is not a variable holding a
+      # path, it is an attempt to set a setting named `cache`. No such setting exists, so
+      # Yarn aborts with "Unrecognized or legacy configuration settings found: cache" —
+      # every yarn invocation AFTER the step that exported it, which is why the export step
+      # and the cache action both go green and `yarn install` is what turns red.
       - name: Resolve Yarn cache folder
-        run: echo "YARN_CACHE=$(yarn config get cacheFolder)" >> "$GITHUB_ENV"
+        id: yarn-cache
+        run: echo "dir=$(yarn config get cacheFolder)" >> "$GITHUB_OUTPUT"
 
       - name: Cache Yarn downloads
         uses: actions/cache@v4
         with:
-          path: ${{ env.YARN_CACHE }}
+          path: ${{ steps.yarn-cache.outputs.dir }}
           key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: yarn-${{ runner.os }}-
 
@@ -124,13 +132,16 @@ jobs:
       - name: Enable corepack
         run: corepack enable
 
+      # A step output rather than $GITHUB_ENV, for the reason the ci job spells out: a
+      # `YARN_`-prefixed variable is a Yarn config setting, not a variable.
       - name: Resolve Yarn cache folder
-        run: echo "YARN_CACHE=$(yarn config get cacheFolder)" >> "$GITHUB_ENV"
+        id: yarn-cache
+        run: echo "dir=$(yarn config get cacheFolder)" >> "$GITHUB_OUTPUT"
 
       - name: Cache Yarn downloads
         uses: actions/cache@v4
         with:
-          path: ${{ env.YARN_CACHE }}
+          path: ${{ steps.yarn-cache.outputs.dir }}
           key: yarn-${{ runner.os }}-${{ hashFiles('yarn.lock') }}
           restore-keys: yarn-${{ runner.os }}-
 
