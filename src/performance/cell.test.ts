@@ -13,6 +13,7 @@ function draw(overrides: Partial<Draw> = {}): Draw {
     commitLatencySeconds: 396,
     committed: true,
     voteCount: 1,
+    choices: [1],
     ...overrides,
   };
 }

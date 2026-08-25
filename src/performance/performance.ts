@@ -196,6 +196,20 @@ export type Draw = {
   committed: boolean;
   /** How many vote IDs this one draw holds. `1` for most of them. */
   voteCount: number;
+  /**
+   * Every distinct choice this draw's vote IDs revealed, ascending. Empty until it reveals.
+   *
+   * A list and not a number, because the model has always had to reckon with a draw whose vote
+   * IDs disagree — `choicesOf` computes exactly this to decide coherence, and collapsing it to
+   * one value here would make the cell claim a choice the draw did not make. It has never
+   * happened in this court and the classic kit's one-transaction reveal makes it unlikely; a
+   * per-dispute column that printed "Choice 2" over a draw that voted 1 and 2 would be the
+   * kind of quiet falsehood this seam exists to prevent.
+   *
+   * Read by ticket 09's panel columns. The matrix cell does not show it: coherence against the
+   * ruling is what a matrix row is scanned for, and the choice itself is detail for one dispute.
+   */
+  choices: readonly number[];
 };
 
 export type MatrixRow = {
@@ -449,6 +463,9 @@ function commitAt(timestamps: readonly number[] | undefined, round: DisputeRound
 function drawOf(group: DrawGroup, dispute: Dispute, commits: Map<string, number[]>): Draw {
   const revealed = group.votes.some((vote) => vote.voted);
   const committed = group.votes.some((vote) => vote.commited);
+  // Once, here, rather than again inside `stateOf`: the same list decides coherence and is
+  // shown by ticket 09's column header, and computing it twice is two chances to disagree.
+  const choices = revealed ? choicesOf(group.votes).sort((a, b) => a - b) : [];
   const revealedTimestamp = revealed ? revealedAt(group.votes) : null;
   const voteOpenedAt = group.round.voteOpenedAt;
 
@@ -473,12 +490,13 @@ function drawOf(group: DrawGroup, dispute: Dispute, commits: Map<string, number[
 
   return {
     agentJuror: group.agentJuror,
-    state: stateOf({ group, dispute, revealed, committed }),
+    state: stateOf({ group, dispute, revealed, committed, choices }),
     revealLatencySeconds,
     commitLatencySeconds:
       committedAt === null || commitOpenedAt === null ? null : committedAt - commitOpenedAt,
     committed,
     voteCount: group.voteCount,
+    choices,
   };
 }
 
@@ -487,17 +505,19 @@ function stateOf({
   dispute,
   revealed,
   committed,
+  choices,
 }: {
   group: DrawGroup;
   dispute: Dispute;
   revealed: boolean;
   committed: boolean;
+  /** What the draw revealed, computed once by `drawOf` and shown by ticket 09's columns. */
+  choices: readonly number[];
 }): DrawState {
   if (revealed) {
     const ruling = rulingChoiceOf(dispute);
     if (ruling === null) return { kind: "live", stage: "revealed" };
 
-    const choices = choicesOf(group.votes);
     if (choices.length === 0) {
       throw new Error(`Draw ${group.id} is recorded as revealed but carries no choice`);
     }

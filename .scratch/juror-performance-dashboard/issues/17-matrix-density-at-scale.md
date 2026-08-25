@@ -193,3 +193,24 @@ compact density that trades the reason lines for the footnotes below the grid, b
 collapses on scroll, or by something else. Two things not to do: drop the marker (it must not be
 the only mention, but it must be a mention), and let the six columns take five different heights,
 which is why `AgentColumn` is `vertical-align: top`.
+
+## From ticket 09, 2026-08-25 — the blank-row wording, solved on one view and not on the matrix
+
+This ticket owns the reading the matrix gives a dispute that has been read and genuinely has no
+panel yet: six blank cells under a note saying every blank is random draw sparsity. Ticket 09 met
+the same state on the per-dispute view and worded it, which makes the matrix the only place left
+where it is wrong.
+
+What that view says, and why:
+
+- **Read, and nobody drawn** → "Nobody has been drawn for this dispute yet, so there is no
+  reasoning to show. A panel is selected when the dispute leaves its evidence period." The panel
+  size pill is **omitted entirely** rather than rendered as `Panel 0` — a zero there is a claim
+  that the court drew a panel of nobody. That defect was live until a hand-built test caught it;
+  the captured court holds no such dispute, so searching the fixture for one found nothing and
+  passed.
+- **Not read at all** → "The draws for this dispute have not been read, so who was on the panel and
+  what they did is unknown rather than absent", which is ticket 13's vocabulary unchanged.
+
+The two share no wording on purpose. The distinction the matrix has to draw is the same one, and
+`MatrixRow.read` plus `panelSize > 0` is the whole test.

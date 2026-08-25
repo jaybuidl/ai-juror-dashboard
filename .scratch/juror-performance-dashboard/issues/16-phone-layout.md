@@ -164,3 +164,21 @@ were made.
 
 `Mobile.dc.html` shows three tiles, not four, and in a different order — median reveal first. That
 is the artboard, and the canvas wins.
+
+## From ticket 09: the widest view on the dashboard now exists, and it has not been on a phone
+
+`/disputes/:disputeId` renders up to six columns of prose side by side. It is built to wrap —
+`grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr))`, the header and the ruling
+card stack at `narrow`, and the timeline strip drops to two columns at 760px — but it was verified
+at 1280px in Chrome and **not on a phone**. Treat the wrapping as intent rather than as evidence.
+
+Three things on it that a narrow pass has to look at specifically:
+
+- **The justification body is capped at 612px and clipped**, with a fade and a "Read all" control
+  that appears only when the content actually overflows. That measurement is live: a narrower
+  column is a taller one, so what clips changes with the viewport. It is re-measured on resize
+  through a `ResizeObserver`, which is the part most likely to be wrong on a phone.
+- **A GFM table inside a justification scrolls inside its own box** rather than widening the
+  column. Dispute 154 holds a real one. `pre` does the same.
+- **The column footer** puts the character count and the format at opposite ends of a flex row; at
+  260px with a draw holding several vote IDs there are three things competing for that line.

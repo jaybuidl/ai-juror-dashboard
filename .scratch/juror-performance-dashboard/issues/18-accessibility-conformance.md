@@ -196,3 +196,29 @@ measured — the palette misses its own stated target, which is this ticket's to
 is certainly worth measuring: `stateFail` on `washRose` for the "Not read" figures inside an unread
 cell, and the `FactKey` labels, which are `textPending` — the token measured at 2.68–2.91:1 in dark
 theme and already flagged here as inking the pending dash and the rail keys.
+
+## From ticket 09: one link that needs a name, and one that must not be given one
+
+**Each row of the dispute index is now a link into that dispute**, and its accessible name is the
+dispute number alone — "156". A screen reader listing the links on `/disputes` reads forty bare
+numbers. It wants a visually-hidden qualifier, which is this ticket's vocabulary.
+
+It must **not** be fixed with `aria-label`, and this was tried: `aria-label="Dispute 156"` on that
+link becomes the only thing the link contributes to the accessible name of the element *around*
+it, which on the matrix is a `rowheader` whose name is designed to begin with the dispute ID. It
+renamed 27 matrix rows and failed their tests. `title` carries the tooltip today and does not
+affect the name, because text content outranks it.
+
+Three more things ticket 09 leaves here:
+
+- **Every justification column ends in a `<footer>` inside an `<article>`.** HTML-AAM scopes that
+  out of the `contentinfo` landmark, so a browser exposes one landmark and `dom-accessibility-api`
+  exposes five. The markup is right and the test library is naive; `DisputePage.test.tsx` carries a
+  helper that picks the page's own footer. Worth confirming against a real screen reader.
+- **The prose carries `lang`** where a language was recognised, so a Spanish justification is
+  pronounced as Spanish and hyphenated by the right rules. Where nothing was recognised the
+  attribute is absent and the element inherits the page — deliberately, rather than asserting
+  English over prose nobody identified. Roughly half this court's justifications are Spanish.
+- **The link interstitial** is a `role="alert"` panel that replaces navigation. Keyboard users
+  reach it through the link's own focus, and the panel's controls follow in DOM order; nothing
+  moves focus into it, which is worth a decision.

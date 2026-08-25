@@ -16,8 +16,14 @@ import { renderAt, unmeasured, views } from "./test/court";
  * page you are already on, and a view that lost its chrome.
  */
 
-/** Every path the nav offers. */
-const ROUTES = ["/", "/disputes", "/agent-jurors", "/method"];
+/**
+ * Every path the nav offers, plus the one beneath one of them.
+ *
+ * `/disputes/156` is not a destination and is still a view, so the chrome invariants below have
+ * to hold on it: ticket 15's rule is about every view, not about every nav entry, and a detail
+ * route is exactly where a page is most likely to be built without the shell around it.
+ */
+const ROUTES = ["/", "/disputes", "/disputes/156", "/agent-jurors", "/method"];
 
 /**
  * The app on a real history stack, which `MemoryRouter` deliberately is not.
@@ -109,6 +115,32 @@ describe("the shell", () => {
 
     window.history.forward();
     await screen.findByRole("heading", { level: 1, name: "Method" });
+  });
+
+  it("resolves a dispute's own URL to that dispute, and not to the 404", () => {
+    // Asserted against something only this view says. The chrome tests above run over the same
+    // path and would pass with the 404 behind them — it renders the same nav and the same
+    // footer — so they proved the route table matched *something*, and not what. The route
+    // genuinely did 404 in the browser while every one of them was green.
+    renderAt("/disputes/156");
+
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      "Image Similarity Assessment",
+    );
+    expect(screen.queryByText(/nothing at this address/i)).not.toBeInTheDocument();
+  });
+
+  it("keeps the dispute index marked in the nav while you are on one of its disputes", () => {
+    renderAt("/disputes/156");
+    // Scoped to the nav: the breadcrumb on this view links back to the same index, and an
+    // unscoped query would find that one and pass whatever the nav did.
+    const nav = screen.getByRole("navigation", { name: "Dashboard" });
+
+    // The destination stays current on the view beneath it, and a current destination is text
+    // rather than a link to itself — which is what makes the nav and the breadcrumb agree
+    // about where the reader is.
+    expect(within(nav).queryByRole("link", { name: "Disputes" })).not.toBeInTheDocument();
+    expect(within(nav).getByText("Disputes")).toBeInTheDocument();
   });
 
   it("says a path matches nothing, rather than showing the matrix at the wrong URL", () => {

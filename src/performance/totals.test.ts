@@ -229,6 +229,7 @@ function medianOfSeconds(seconds: readonly number[]): number | undefined {
         commitLatencySeconds: value * 2,
         committed: true,
         voteCount: 1,
+        choices: [1],
       },
     ],
     read: true,
@@ -524,6 +525,11 @@ function column({
             commitLatencySeconds,
             committed: commitLatencySeconds !== null,
             voteCount: 1,
+            // Ticket 09 put `choices` on `Draw`, and the seam never produces a revealed draw
+            // with an empty one — `stateOf` throws on exactly that. So the list follows the
+            // state rather than being a constant: everything but `no-vote` and an unrevealed
+            // live stage has revealed something.
+            choices: revealed(state) ? [1] : [],
           }
         : null,
     ),
@@ -531,4 +537,11 @@ function column({
     underEarlierWindows: windows !== null,
     read: true,
   };
+}
+
+/** Whether a state is one the seam only reaches after a reveal. */
+function revealed(state: Draw["state"]): boolean {
+  return state.kind === "coherent" || state.kind === "diverged"
+    ? true
+    : state.kind === "live" && state.stage === "revealed";
 }

@@ -571,6 +571,71 @@ describe("buildCourtPerformance", () => {
     });
   });
 
+  describe("the choice a draw voted", () => {
+    it("carries what each draw revealed, for the per-dispute view to name", () => {
+      // Dispute 154 refused to arbitrate: three voted 0 with it, aletheia voted 1.
+      expect(cellFor(154, "blaise")?.choices).toEqual([0]);
+      expect(cellFor(154, "aletheia")?.choices).toEqual([1]);
+    });
+
+    it("collapses a draw's several vote IDs into the one choice they voted", () => {
+      // aletheia held two vote IDs in dispute 154 and voted them together, which is what the
+      // classic kit's one-transaction reveal makes the ordinary case.
+      expect(cellFor(154, "aletheia")?.voteCount).toBe(2);
+      expect(cellFor(154, "aletheia")?.choices).toEqual([1]);
+    });
+
+    it("keeps both where a draw's vote IDs disagree, rather than reporting the first", () => {
+      // Never seen in this court, and the reason the field is a list: a column printing
+      // "Choice 2" over a draw that voted 1 and 2 would state something that did not happen.
+      // The draw has not voted the ruling either way, whatever the ruling turns out to be.
+      const raw = courtData({
+        disputes: [rawDispute({ period: "execution", ruled: true, currentRuling: "2" })],
+        draws: [
+          rawDraw({
+            id: "163-0-0",
+            vote: {
+              commited: true,
+              voted: true,
+              choice: "1",
+              justification: { timestamp: "1787343444", choice: "1" },
+            },
+          }),
+          rawDraw({ id: "163-0-1" }),
+        ],
+      });
+
+      expect(cellFor(163, "blaise", built(raw))?.choices).toEqual([1, 2]);
+      expect(cellFor(163, "blaise", built(raw))?.state).toEqual({ kind: "diverged" });
+    });
+
+    it("says nothing about a draw that has not revealed", () => {
+      // Empty and not `[0]`: choice 0 is a real choice, and defaulting to it would report
+      // every awaiting draw as having refused to arbitrate.
+      const raw = courtData({
+        disputes: [
+          rawDispute({
+            period: "commit",
+            ruled: false,
+            currentRuling: "0",
+            // `0` in a timeline is a period that has not opened, not midnight in 1970. The
+            // helper's default has all four filled, which is a dispute that finished.
+            rounds: [{ id: "163-0", timeline: ["1787342856", "0", "0", "0"] }],
+          }),
+        ],
+        draws: [
+          rawDraw({
+            vote: { commited: false, voted: false, choice: null, justification: null },
+          }),
+        ],
+      });
+
+      const draw = cellFor(163, "blaise", built(raw));
+      expect(draw?.state).toEqual({ kind: "live", stage: "awaiting" });
+      expect(draw?.choices).toEqual([]);
+    });
+  });
+
   describe("the states a draw can be in", () => {
     it("reports a draw whose vote period closed with nothing revealed as a missed vote", () => {
       const raw = courtData({

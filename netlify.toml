@@ -63,6 +63,16 @@
 # so the page loses the note saying which figures are not comparable with which rather than
 # losing a figure. The provenance footer is where that shows up.
 #
+# Ticket 09 added a whole view and no host, which is worth saying because it is the first one
+# that renders content this repository did not write: justification prose, published on chain by
+# the agent jurors themselves. It is rendered as Markdown with raw HTML disabled at the parser,
+# so no element from that prose can reach the DOM at all — an <img> or a <script> in a
+# justification is text. Two things follow. A link inside one is a navigation and is governed by
+# no directive here (there is no navigate-to in this policy), which is why the view warns before
+# following one rather than relying on the CSP to stop it. And img-src already allows arbitrary
+# https, so if a later ticket ever *did* enable images in that prose, this policy would permit
+# them silently — a reason to add rehype-raw's absence to the list of things not to change.
+#
 # style-src and font-src are still 'self' after ticket 14 adopted the Kleros ×AI design
 # system, and that is a decision rather than an omission. The system's tokens/fonts.css
 # @imports Manrope and JetBrains Mono from fonts.googleapis.com; this repo self-hosts both

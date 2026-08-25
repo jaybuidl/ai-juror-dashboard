@@ -19,15 +19,43 @@ export type RawDisputeTemplate = {
 };
 
 /**
- * What a dispute row shows about itself once its template resolves.
+ * One option on the ballot, as the template names it.
  *
- * Both fields are plain strings and both may be empty, which the row treats as "no
- * value" rather than rendering. `""` is not hypothetical: dispute 159's template carries
- * an empty `category` today.
+ * The template is the only place a choice has a *name*: the chain carries choice numbers and
+ * nothing else, so `currentRuling: 2` is all the court itself says about its own decision.
+ * Ticket 09's ruling card names the winning choice "by number and in words", and the words
+ * come from here or from nowhere.
+ *
+ * Choice `0` is deliberately absent from this list, because it is absent from the template's
+ * own `answers` array: refusing to arbitrate is always valid and is never enumerated
+ * (`CONTEXT.md`). Whatever renders a ballot supplies it.
+ */
+export type ChoiceLabel = {
+  /** The choice number this names. Parsed from the template's hex `id` — `"0x1"` is choice 1. */
+  choice: number;
+  /** What to call it. May be empty, on the same terms as every other field here. */
+  title: string;
+};
+
+/**
+ * What a dispute shows about itself once its template resolves.
+ *
+ * Every field is a plain string or a list of them, and every one may be empty — which a row
+ * treats as "no value" rather than rendering. `""` is not hypothetical: dispute 159's template
+ * carries an empty `category` today.
+ *
+ * `question` and `answers` are ticket 09's and are read by the per-dispute view alone; the
+ * matrix and the dispute index use `title` and `category` exactly as they did. They are parsed
+ * here rather than there because nothing validates `templateData` before publication, and one
+ * tolerant reader is easier to keep honest than two.
  */
 export type DisputeTemplate = {
   title: string;
   category: string;
+  /** What the panel was actually asked. Empty where the template carries no question. */
+  question: string;
+  /** The named choices, ascending. Empty where the template names none. */
+  answers: readonly ChoiceLabel[];
 };
 
 /** Just enough of a dispute to find its template. */
@@ -82,6 +110,44 @@ function toText(value: unknown): string {
 }
 
 /**
+ * A choice number, as a template writes it: `"0x1"`.
+ *
+ * Hex with the prefix, which is how every live template in this court spells it. Anything else
+ * — a decimal, a number, a missing field — drops the answer rather than guessing, for the same
+ * reason `toText` treats a non-string as absent: a mis-parsed id would put one choice's name
+ * against another choice's votes, which is worse on a ruling card than no name at all.
+ */
+const CANONICAL_HEX = /^0x[0-9a-fA-F]{1,8}$/;
+
+/**
+ * The named choices a template carries, ascending, with anything unreadable dropped.
+ *
+ * Ascending by choice rather than in the order the template happens to list them, so a ballot
+ * reads 0, 1, 2 down the card whatever the JSON did. Duplicates are dropped on first-wins: two
+ * entries claiming the same choice is a template nobody validated, and rendering both would
+ * show one choice's votes twice.
+ */
+function toAnswers(value: unknown): readonly ChoiceLabel[] {
+  if (!Array.isArray(value)) return [];
+
+  const byChoice = new Map<number, ChoiceLabel>();
+
+  for (const entry of value) {
+    if (typeof entry !== "object" || entry === null || Array.isArray(entry)) continue;
+
+    const { id, title } = entry as Record<string, unknown>;
+    if (typeof id !== "string" || !CANONICAL_HEX.test(id)) continue;
+
+    const choice = Number.parseInt(id, 16);
+    if (byChoice.has(choice)) continue;
+
+    byChoice.set(choice, { choice, title: toText(title) });
+  }
+
+  return [...byChoice.values()].sort((a, b) => a.choice - b.choice);
+}
+
+/**
  * The templates for a batch of ids, keyed by template id.
  *
  * Keyed by the template's own id and never by a dispute id: the two are not the same
@@ -107,11 +173,13 @@ export function toDisputeTemplates(
     // fields, and both would otherwise reach the property reads below as `undefined`.
     if (typeof data !== "object" || data === null || Array.isArray(data)) continue;
 
-    const { title, category } = data as Record<string, unknown>;
+    const { title, category, question, answers } = data as Record<string, unknown>;
 
     templates.set(Number(template.id), {
       title: toText(title),
       category: toText(category),
+      question: toText(question),
+      answers: toAnswers(answers),
     });
   }
 

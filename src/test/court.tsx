@@ -1,7 +1,14 @@
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { render } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { ThemeProvider } from "styled-components";
 import fixture from "../disputes/court-34.fixture.json" with { type: "json" };
+import templateFixture from "../disputes/court-34-templates.fixture.json" with { type: "json" };
+import {
+  type RawDisputeTemplate,
+  templateFor,
+  toDisputeTemplates,
+} from "../disputes/dispute-templates";
 import { type RawDispute, toDisputes } from "../disputes/disputes";
 import type { DisputesView } from "../disputes/useDisputes";
 import commitFixture from "../performance/court-34-commits.fixture.json" with { type: "json" };
@@ -74,6 +81,16 @@ export const resolvedRoster: RosterView = {
 /** A fixed moment, so the footer's read time is not a moving target in a test. */
 export const READ_AT = Date.UTC(2026, 7, 25, 5, 12, 0);
 
+/**
+ * The sixteen templates the captured court joins to, from the same day's read of the DRT
+ * subgraph.
+ *
+ * Real rather than hand-written, because what the views have to survive is what publishers
+ * actually publish: dispute 159's category is the empty string on chain, and the choice names
+ * a ruling card prints are whatever somebody typed into a JSON blob nothing validates.
+ */
+export const templates = toDisputeTemplates(templateFixture as RawDisputeTemplate[]);
+
 /** The court as the dashboard holds it, read from the captured payload. */
 export const disputes: DisputesView = {
   raw: fixture as RawDispute[],
@@ -83,6 +100,11 @@ export const disputes: DisputesView = {
   readAt: READ_AT,
   isPaused: false,
   retry: () => {},
+  slotsFor: (dispute) => {
+    const template = templateFor(templates, dispute);
+    return { title: template?.title, category: template?.category };
+  },
+  templateFor: (dispute) => templateFor(templates, dispute),
 };
 
 const built = buildCourtPerformance({
@@ -294,9 +316,27 @@ export const views: DashboardRoutesProps = {
 export function renderAt(path: string, overrides: Partial<DashboardRoutesProps> = {}) {
   return render(
     <ThemeProvider theme={theme}>
-      <MemoryRouter initialEntries={[path]}>
-        <DashboardRoutes {...views} {...overrides} />
-      </MemoryRouter>
+      <QueryClientProvider client={inertQueries()}>
+        <MemoryRouter initialEntries={[path]}>
+          <DashboardRoutes {...views} {...overrides} />
+        </MemoryRouter>
+      </QueryClientProvider>
     </ThemeProvider>,
   );
+}
+
+/**
+ * A query client that never fetches.
+ *
+ * `DisputePage` is the one route that reads something of its own — the dispute it shows is
+ * named by the URL, which `App` cannot know — so rendering the route table now needs a client
+ * in scope. `enabled: false` is what keeps `yarn test` network-free with no mock anywhere: the
+ * route renders exactly as it does before its read lands, which is a state the view has to draw
+ * correctly regardless.
+ *
+ * Anything asserting on what that read *returned* renders `DisputeView` directly and hands it
+ * the answer, the same way every other view here is handed its data.
+ */
+function inertQueries(): QueryClient {
+  return new QueryClient({ defaultOptions: { queries: { enabled: false, retry: false } } });
 }
