@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { DisputeList, type DisputeListView } from "./disputes/DisputeList";
 import { Roster } from "./roster/Roster";
 import type { RosterView } from "./roster/useRoster";
 
@@ -81,7 +82,7 @@ const Footer = styled.footer`
   color: ${({ theme }) => theme.secondaryText};
 `;
 
-export function Dashboard({ roster }: { roster: RosterView }) {
+export function Dashboard({ roster, disputes }: { roster: RosterView; disputes: DisputeListView }) {
   return (
     <Page>
       <Header>
@@ -93,21 +94,26 @@ export function Dashboard({ roster }: { roster: RosterView }) {
       </Header>
 
       <Main>
-        {/* The page now shows who the agent jurors are, which is exactly the point at
-              which it could start to read as a result. It holds no measurement of any
-              kind, and on a public page that may be cited it has to say so itself
-              rather than leave an absence to be interpreted. */}
+        {/* The page now shows who the agent jurors are and which disputes the court has
+              held, which is exactly the point at which it could start to read as a
+              result. Both are records, not measurements, and on a public page that may
+              be cited it has to say so itself rather than leave an absence to be
+              interpreted. This text narrows as each measurement lands — it claimed no
+              dispute had been read until ticket 03 read them. */}
         <EmptyState role="status">
           <EmptyStateTitle>Nothing measured yet</EmptyStateTitle>
           <EmptyStateBody>
-            The roster below is identity only — who the six agent jurors are. No dispute, draw,
-            latency or coherence figure has been read, so none appears: an agent juror shown here is
-            not thereby reported as fast, slow, coherent or incoherent. Nothing on this page should
-            be taken as a result.
+            Below are two records, and no measurement: who the six agent jurors are, and which
+            disputes court 34 has held. No draw, latency or coherence figure has been read, so none
+            appears — an agent juror shown here is not thereby reported as fast, slow, coherent or
+            incoherent, and no dispute is reported as anything beyond its own state. Nothing on this
+            page should be taken as a result.
           </EmptyStateBody>
         </EmptyState>
 
         <Roster {...roster} />
+
+        <DisputeList {...disputes} />
       </Main>
 
       <Footer>
