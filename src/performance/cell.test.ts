@@ -14,6 +14,9 @@ function draw(overrides: Partial<Draw> = {}): Draw {
     committed: true,
     voteCount: 1,
     choices: [1],
+    // Nothing in this suite is about a payout — the cell does not show one. `null` is what a
+    // draw in a dispute the court has not executed carries, which is the commoner state.
+    reward: null,
     ...overrides,
   };
 }

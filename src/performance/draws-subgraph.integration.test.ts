@@ -64,6 +64,9 @@ describe("fetchCourtDraws", () => {
       draws,
       commits,
       parameters: null,
+      // And the payouts are not read either: `rewards-subgraph.integration.test.ts` reads them
+      // live, and nothing this suite asserts is about what an agent juror earned.
+      rewards: null,
       roster: ROSTER,
       drawsReadAt: null,
     });

@@ -5,12 +5,14 @@ import { isFinalised } from "../disputes/liveness";
 import { ROSTER } from "../roster/agent-jurors";
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
+import rewardFixture from "./court-34-rewards.fixture.json" with { type: "json" };
 import {
   buildCourtPerformance,
   type CourtPerformance,
   type Draw,
   type MatrixRow,
   type RawDraw,
+  type RawRewardShift,
 } from "./performance";
 import { agentJurorMarginalsOf, courtTotalsOf, markedWindows } from "./totals";
 import type { RawCourtParameters } from "./windows";
@@ -32,6 +34,9 @@ const built = ((): CourtPerformance => {
     // every figure this suite pins must be the same whether or not the log scan came back.
     commits: null,
     parameters: parameterFixture as RawCourtParameters[],
+    // The payouts *are* read: they are the two figures ticket 10 added to each column, and
+    // pinning them needs the real 44 shifts rather than a hand-written pair of amounts.
+    rewards: rewardFixture as RawRewardShift[],
     roster: ROSTER,
     drawsReadAt: null,
   });
@@ -230,6 +235,7 @@ function medianOfSeconds(seconds: readonly number[]): number | undefined {
         committed: true,
         voteCount: 1,
         choices: [1],
+        reward: null,
       },
     ],
     read: true,
@@ -297,6 +303,130 @@ describe("agentJurorMarginalsOf", () => {
     expect(never?.revealLatency).toBeNull();
     expect(never?.commitLatency).toBeNull();
     expect(never?.coherence).toMatchObject({ coherent: 0, resolved: 0 });
+    // And the two ticket 10 added, on the same terms: an agent juror the court has never drawn
+    // has not earned zero, it has not been in a position to earn. `{ethWei: 0n}` here would be
+    // a figure, which is exactly what the view would then print.
+    expect(never?.rewards).toBeNull();
+  });
+
+  describe("the payouts", () => {
+    it("sums what each column was actually paid, in wei and never in a number", () => {
+      // The real 44 shifts, summed down each column. These are the figures the column headers
+      // print, and they are pinned as exact wei rather than as formatted strings so that a
+      // change to the *display* precision cannot quietly change what is being displayed.
+      //
+      // 007 and aletheia are both net **negative** on PNK: they lost more to penalties than
+      // they won. That is a real outcome for an agent juror that diverged or failed to reveal,
+      // and it is why every one of these is a signed `bigint` — `-561000000000000000000` in a
+      // `number` is already wrong before anything is rounded.
+      const paid = (nickname: string) =>
+        agentJurorMarginalsOf(built.rows, ROSTER).find((m) => m.agentJuror.nickname === nickname)
+          ?.rewards;
+
+      expect(paid("007")).toMatchObject({
+        ethWei: 2565000000000000n,
+        pnkWei: -93500000000000000000n,
+      });
+      expect(paid("aletheia")).toMatchObject({ pnkWei: -561000000000000000000n });
+      expect(paid("blaise")).toMatchObject({ pnkWei: 218166666666666666666n });
+      expect(paid("columbo")).toMatchObject({ pnkWei: 171416666666666666666n });
+      expect(paid("daemonhill")).toMatchObject({ pnkWei: 264916666666666666666n });
+    });
+
+    it("accounts for one juror fee per vote ID the court executed, and not one per draw", () => {
+      // The cross-check that makes these figures believable without trusting the subgraph's
+      // arithmetic — and the assumption it corrected. Court 34's `feeForJuror` is
+      // 270000000000000 wei, and the obvious reading is that a coherent draw earns exactly one.
+      // It does not: **the fee is per vote ID**, and a draw holding two of a dispute's three
+      // coherent vote IDs earns two thirds of that dispute's pot. Nine of the 44 shifts are
+      // therefore fractions of a fee — 1.25, 1.67 and 2.5 of one — which is why nothing here
+      // may assume a payout divides evenly.
+      //
+      // What *is* exact is the court-wide total, and it lands on a figure `spec.md` § Further
+      // Notes established before any of this code existed: 61 vote IDs across the thirteen
+      // executed disputes, 61 juror fees paid. That ties the payout read to the draw read
+      // through the court's own configured fee, so a reward read that came back short — the
+      // silent failure `CLAUDE.md` records for every subgraph read — moves this by a whole fee
+      // and fails here rather than rendering as an agent juror that earned less.
+      const FEE_FOR_JUROR = 270000000000000n;
+      const marginals = agentJurorMarginalsOf(built.rows, ROSTER);
+      const paid = marginals.reduce((total, m) => total + (m.rewards?.ethWei ?? 0n), 0n);
+
+      expect(paid).toBe(FEE_FOR_JUROR * BigInt(courtTotalsOf(finalised, ROSTER).votes));
+      expect(paid).toBe(16_470_000_000_000_000n);
+    });
+
+    it("redistributes PNK rather than creating it, to within integer-division dust", () => {
+      // The other half of the same argument, and the stronger one for a *sum*. A penalty is
+      // taken from the incoherent and handed to the coherent, so the court's net PNK across a
+      // finished dispute is zero — the money moves between columns and none enters or leaves.
+      //
+      // "To within dust" is not a hedge: the court divides a penalty pot by the number of
+      // coherent vote IDs in integer arithmetic, so a three-way split leaves a wei or two
+      // behind. The captured court is 2 wei short of zero across 44 shifts. A missing shift
+      // would move this by 1e20, so the tolerance is fifteen orders of magnitude smaller than
+      // the failure it is there to catch.
+      const marginals = agentJurorMarginalsOf(built.rows, ROSTER);
+      const net = marginals.reduce((total, m) => total + (m.rewards?.pnkWei ?? 0n), 0n);
+
+      expect(net > -1000n && net < 1000n).toBe(true);
+      // And it is genuinely a redistribution rather than a court that paid nobody: two columns
+      // are down and three are up.
+      expect(marginals.filter((m) => (m.rewards?.pnkWei ?? 0n) < 0n)).toHaveLength(2);
+      expect(marginals.filter((m) => (m.rewards?.pnkWei ?? 0n) > 0n)).toHaveLength(3);
+    });
+
+    it("sums the columns back to what the court paid out in total", () => {
+      // The same claim every other marginal makes: a column and the court are two readings of
+      // one set of draws. `paidDraws` on the coverage is counted in `buildCourtPerformance`
+      // over the cells; these are counted again in `agentJurorMarginalsOf`. Two counts of one
+      // thing is one chance for them to disagree, and this is what would catch it.
+      const marginals = agentJurorMarginalsOf(built.rows, ROSTER);
+
+      expect(marginals.reduce((n, m) => n + (m.rewards?.paidDraws ?? 0), 0)).toBe(
+        built.rewards.paidDraws,
+      );
+      // The captured court had executed thirteen of its sixteen disputes, which is 44 of the
+      // 56 draws. The other twelve are disputes 164–166, still in `appeal`.
+      expect(built.rewards.paidDraws).toBe(44);
+    });
+
+    it("carries nothing for a column drawn only in disputes the court has not executed", () => {
+      // The state the ticket calls "drawn and earned nothing", and the one the view has to
+      // render as a real zero rather than as a dash. It is not a failed read and not an empty
+      // column: the court simply has not paid yet, which is where every live dispute sits.
+      const unexecuted = agentJurorMarginalsOf([column({ id: 170, ruled: false })], ROSTER);
+
+      expect(unexecuted[0]?.draws).toBe(1);
+      expect(unexecuted[0]?.rewards).toBeNull();
+    });
+
+    it("sums a dispute's rounds into one figure rather than reading the cell's own round", () => {
+      // Court 34 is single-round throughout, so nothing in the captured payload exercises this
+      // — and an appeal writes one shift per round for the same agent juror while the matrix
+      // shows one cell. The seam sums them before they reach here; what this pins is that a
+      // marginal adds whatever the cell carries rather than counting rounds itself.
+      const appealed = agentJurorMarginalsOf(
+        [
+          column({
+            id: 170,
+            ruled: true,
+            reward: {
+              ethWei: 540000000000000n,
+              pnkWei: -374000000000000000000n,
+              inFeeToken: false,
+            },
+          }),
+        ],
+        ROSTER,
+      );
+
+      expect(appealed[0]?.rewards).toMatchObject({
+        ethWei: 540000000000000n,
+        pnkWei: -374000000000000000000n,
+        paidDraws: 1,
+      });
+    });
   });
 
   it("counts coherence only over the draws the court has ruled on", () => {
@@ -499,6 +629,7 @@ function column({
   panelSize = 2,
   windows = null,
   at = 0,
+  reward = null,
 }: {
   id: number;
   ruled: boolean;
@@ -508,6 +639,8 @@ function column({
   panelSize?: number;
   windows?: { commitSeconds: number; voteSeconds: number } | null;
   at?: number;
+  /** What the court paid this one draw, or `null` for a dispute it has not executed. */
+  reward?: Draw["reward"];
 }): MatrixRow {
   return {
     dispute: {
@@ -530,6 +663,7 @@ function column({
             // state rather than being a constant: everything but `no-vote` and an unrevealed
             // live stage has revealed something.
             choices: revealed(state) ? [1] : [],
+            reward,
           }
         : null,
     ),

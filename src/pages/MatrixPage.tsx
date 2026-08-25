@@ -77,18 +77,39 @@ export type MatrixPageProps = {
  *
  * The precedence is worst-first, and each case is genuinely different to a reader: what to go and
  * check, and whether anything on the page can be quoted at all.
+ *
+ * `costsTiles` is the half `affects` cannot work out for itself. That function is per **source**,
+ * which was the right grain while every core-subgraph failure cost the figures above the matrix —
+ * and ticket 10 added the first that does not: the payouts feed two rows of each column header
+ * and nothing else, so a failed payout read leaves the dispute count, the draw count and the
+ * median reveal entirely whole. Labelling them "Partial" anyway is ticket 13's own first-cut
+ * mistake at a finer grain, and `CLAUDE.md` is blunt about the cost: a caveat a reader checks and
+ * finds baseless is one that teaches them to stop checking.
  */
+type CoreFailure = {
+  read: FailedRead;
+  /** Whether this failure is one the stat tiles and the latency strip are short because of. */
+  costsTiles: boolean;
+};
+
+/** `failureOf`'s nullable answer, tagged as one the figures above the matrix depend on. */
+function costingTiles(read: FailedRead | null): CoreFailure | null {
+  return read === null ? null : { read, costsTiles: true };
+}
+
 function coreFailureOf({
   disputes,
   performance,
-}: Pick<MatrixPageProps, "disputes" | "performance">): FailedRead | null {
+}: Pick<MatrixPageProps, "disputes" | "performance">): CoreFailure | null {
   const measured = performance.performance;
 
   if (disputes.error !== null) {
-    return failureOf(
-      disputes.error,
-      SOURCES.core,
-      "The court's disputes could not be read, so what is below is whatever was already held rather than the court as it stands.",
+    return costingTiles(
+      failureOf(
+        disputes.error,
+        SOURCES.core,
+        "The court's disputes could not be read, so what is below is whatever was already held rather than the court as it stands.",
+      ),
     );
   }
 
@@ -99,20 +120,47 @@ function coreFailureOf({
   // because nothing above it could show more.
   if (performance.failure !== null) {
     return {
-      source: SOURCES.core,
-      status: performance.failure.code,
-      what: `The court's own record could not be read as a matrix: ${performance.failure.message}. Every endpoint answered; what came back was not something this page could measure.`,
+      read: {
+        source: SOURCES.core,
+        status: performance.failure.code,
+        what: `The court's own record could not be read as a matrix: ${performance.failure.message}. Every endpoint answered; what came back was not something this page could measure.`,
+      },
+      costsTiles: true,
     };
   }
 
   if (performance.error !== null) {
-    return failureOf(
-      performance.error,
-      SOURCES.core,
-      measured === null
-        ? "The draws could not be read, so no latency and no coherence on this page was measured on this load."
-        : "The draws could not be re-read, so the matrix below joins the disputes just read to an earlier read of the draws.",
+    return costingTiles(
+      failureOf(
+        performance.error,
+        SOURCES.core,
+        measured === null
+          ? "The draws could not be read, so no latency and no coherence on this page was measured on this load."
+          : "The draws could not be re-read, so the matrix below joins the disputes just read to an earlier read of the draws.",
+      ),
     );
+  }
+
+  // Ticket 10's payouts, read from this same deployment — so an outage takes all four reads and
+  // listing them separately would report one source as four faults. It ranks below every branch
+  // above because it costs the least of them: two of the six figures in each column header,
+  // where those cost the matrix itself.
+  //
+  // It ranks **above** the stale read below, though, and that ordering is load-bearing rather
+  // than aesthetic. This is the only entry here with no second voice: a failed payout read
+  // leaves both slots showing a pending dash, which is exactly what a column that was never
+  // drawn shows, so the banner is the only place it can be said. The stale read has two of its
+  // own — every affected row carries a `?` flag and draws its cells as Unknown. Ranked the other
+  // way round, a page with both would say nothing at all about the payouts: the banner would be
+  // occupied and the footer's own sentence is suppressed the moment there is an error to
+  // suppress it. That is "a read that fails is said exactly twice" coming out as zero.
+  if (performance.rewardsError !== null) {
+    const read = failureOf(
+      performance.rewardsError,
+      SOURCES.core,
+      "The court's payouts could not be read, so no cumulative ETH or PNK figure in the column headers below is a measurement.",
+    );
+    return read === null ? null : { read, costsTiles: false };
   }
 
   // The case with no error anywhere, and the reason this function exists rather than a list of
@@ -124,9 +172,27 @@ function coreFailureOf({
   const unread = measured?.totals.unreadDisputes ?? [];
   if (unread.length > 0) {
     return {
-      source: SOURCES.core,
-      status: "Stale read",
-      what: `${unread.length === 1 ? "Dispute" : "Disputes"} ${unread.join(", ")} ${unread.length === 1 ? "was" : "were"} created after the draws on this page were last read, so ${unread.length === 1 ? "its" : "their"} draws are unknown rather than absent.`,
+      read: {
+        source: SOURCES.core,
+        status: "Stale read",
+        what: `${unread.length === 1 ? "Dispute" : "Disputes"} ${unread.join(", ")} ${unread.length === 1 ? "was" : "were"} created after the draws on this page were last read, so ${unread.length === 1 ? "its" : "their"} draws are unknown rather than absent.`,
+      },
+      costsTiles: true,
+    };
+  }
+
+  // And the payout read that *succeeded* and came back short, which raises no error at all: a
+  // reindexing Goldsky answers HTTP 200 with `[]`. Last, because it costs the same two figures
+  // as the failure above and, unlike it, the column headers already say "Not read" where those
+  // figures belong — so this is the second voice rather than the only one.
+  if (measured?.rewards.short === true) {
+    return {
+      read: {
+        source: SOURCES.core,
+        status: "Short read",
+        what: `The court's payouts came back short — ${measured.rewards.paidDraws === 0 ? "none was returned at all" : `${measured.rewards.paidDraws} were returned`} for a court that has ruled on disputes with draws in them — so no cumulative ETH or PNK figure below is a measurement.`,
+      },
+      costsTiles: false,
     };
   }
 
@@ -211,14 +277,17 @@ function arbitrumFailureOf(performance: CourtPerformanceView): FailedRead | null
  * twice stops reading either, which is why `MatrixPage.test.tsx` pins that the footer never
  * becomes a second alarm.
  */
-function failuresOf({ roster, disputes, performance }: MatrixPageProps): Failures {
+function failuresOf(
+  { roster, disputes, performance }: MatrixPageProps,
+  core: CoreFailure | null,
+): Failures {
   const titles = disputes.titles;
   const missingTitles =
     titles === undefined || titles.isLoading ? 0 : titles.expected - titles.resolved;
 
   return {
     blocking: present(
-      coreFailureOf({ disputes, performance }),
+      core?.read ?? null,
       missingTitles > 0
         ? {
             source: SOURCES.templates,
@@ -311,11 +380,44 @@ function provenanceOf({ roster, disputes, performance }: MatrixPageProps): Prove
   caveats.push(
     "The comparison band on the latency strip is illustrative and measures no court; it is the only thing above that did not come from a read.",
   );
-  // Narrowed by ticket 06, which read the summaries: what each agent juror's column header now
-  // states is the same three measures aggregated down that column, over the same draws. Rewards
-  // are the half that is still unread, and naming the whole list would claim an absence that has
-  // stopped being one — the failure this sentence exists to prevent, in reverse.
-  caveats.push("Cumulative ETH and PNK rewards per agent juror have not been read at all.");
+  // Retired by ticket 10, which read them. It said "Cumulative ETH and PNK rewards per agent
+  // juror have not been read at all" — the last "not read" claim this view made about itself —
+  // and leaving it above the figures would be the same falsehood in the other direction.
+  //
+  // What replaces it is not a second version of the same absence but the one thing a reader
+  // cannot see from the figures: what they are summed over. A shift is written when the court
+  // **executes** a dispute, which is a later transaction than ruling it, so a dispute counted in
+  // the coherence figure one line above may legitimately contribute nothing to these two. That
+  // is a lag and not a shortfall, which is why it is stated here in the affirmative rather than
+  // counted as a read that came up short.
+  //
+  // Gated on `short` as well as on `read`, because a read that came back short has no business
+  // saying what it covers: the banner owns that one, and the column headers say "Not read" where
+  // the figures belong.
+  if (measured?.rewards.read === true && !measured.rewards.short) {
+    caveats.push(
+      `Cumulative ETH and net PNK are summed over the ${measured.rewards.paidDraws} draws the court has executed and paid out. A dispute it has ruled but not yet executed is counted in the coherence figures above and in neither reward figure, so these two lag the rest of this page rather than disagreeing with it.`,
+    );
+  }
+
+  // The half of that story the figures actively cannot express, said only when it is true. Court
+  // 34 has a WETH fee token registered and has never paid in it; if it ever does, an agent juror
+  // will have earned something no ETH figure here carries, and reading as though it earned less
+  // is the failure this page cannot afford.
+  const feeTokenDraws = measured?.rewards.feeTokenDraws ?? 0;
+  if (feeTokenDraws > 0) {
+    caveats.push(
+      `${feeTokenDraws} ${feeTokenDraws === 1 ? "draw was" : "draws were"} paid in a fee token rather than in ETH, and no figure above carries that value. The ETH shown for those agent jurors is therefore less than what they were paid.`,
+    );
+  }
+
+  // And the in-flight half, on the terms every other read here is stated on: the failed half is
+  // the banner's, and saying it twice would make one outage two voices.
+  if (measured !== null && !measured.rewards.read && performance.rewardsError === null) {
+    caveats.push(
+      "The court's payouts are still being read, so no cumulative ETH or PNK figure is shown yet.",
+    );
+  }
 
   // Announced here and nowhere else on this view, which is why it belongs in the footer at all.
   // A shortfall in the log scan is stated above the grid, where the figures it affects are, and
@@ -381,13 +483,21 @@ function provenanceOf({ roster, disputes, performance }: MatrixPageProps): Prove
 export function MatrixPage(props: MatrixPageProps) {
   const { roster, disputes, performance } = props;
   const measured = performance.performance;
-  const failures = failuresOf(props);
+  const core = coreFailureOf(props);
+  const failures = failuresOf(props, core);
   // Asked of the core subgraph specifically, because that is the only source the tiles and the
   // strip read: disputes, draws, votes and reveal latency all come from it, and none of them
   // touches the template subgraph or Arbitrum. Labelling them partial over a missing title would
   // be a caveat that is simply false — and a reader who checks one and finds it baseless stops
   // checking the ones that are not.
-  const partial = affects(failures, SOURCES.core);
+  //
+  // `costsTiles` narrows it once more, because ticket 10 added the first core-subgraph failure
+  // that leaves these figures whole: the payouts feed two rows of each column header and
+  // nothing above the matrix at all. `affects` is per source and cannot tell two of one
+  // deployment's queries apart, so the exception is made here, where what the tiles are figures
+  // of is actually known. Offline still counts against everything — nothing is being read.
+  const partial =
+    failures.offline || (affects(failures, SOURCES.core) && core?.costsTiles === true);
 
   return (
     <View provenance={provenanceOf(props)} failures={failures}>
@@ -418,11 +528,12 @@ export function MatrixPage(props: MatrixPageProps) {
               period opened, how long it took to reveal that vote after the vote period opened, and
               whether the vote matched the dispute's final ruling. Each latency is measured from its
               own period, so the reveal figure is not the time since the commit. Each column header
-              summarises that agent juror's own draws in the same three measures. It measures
-              nothing else yet: cumulative ETH and PNK rewards have not been read, and no figure
-              here is a fraction of a period's window. Coherence is asserted only where the court
-              has ruled, a blank cell means an agent juror was not drawn rather than that it failed
-              to act, and a dispute decided by a panel of one is marked wherever it is counted.
+              summarises that agent juror's own draws in the same three measures, and states what
+              that column has been paid: cumulative ETH and net PNK, which are context beside the
+              measures rather than a fourth dimension anyone is ranked on. No figure here is a
+              fraction of a period's window. Coherence is asserted only where the court has ruled, a
+              blank cell means an agent juror was not drawn rather than that it failed to act, and a
+              dispute decided by a panel of one is marked wherever it is counted.
             </CaveatBody>
           </>
         ) : (

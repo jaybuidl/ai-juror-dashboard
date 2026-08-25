@@ -16,10 +16,12 @@ import drawFixture from "../performance/court-34-draws.fixture.json" with { type
 import parameterFixture from "../performance/court-34-parameters.fixture.json" with {
   type: "json",
 };
+import rewardFixture from "../performance/court-34-rewards.fixture.json" with { type: "json" };
 import {
   buildCourtPerformance,
   type RawCommitCast,
   type RawDraw,
+  type RawRewardShift,
 } from "../performance/performance";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import type { RawCourtParameters } from "../performance/windows";
@@ -112,6 +114,7 @@ const built = buildCourtPerformance({
   draws: drawFixture as RawDraw[],
   commits: commitFixture as RawCommitCast[],
   parameters: parameterFixture as RawCourtParameters[],
+  rewards: rewardFixture as RawRewardShift[],
   roster: ROSTER,
   drawsReadAt: null,
 });
@@ -124,6 +127,7 @@ export const measured: CourtPerformanceView = {
   error: null,
   commitError: null,
   parametersError: null,
+  rewardsError: null,
   failure: null,
   readAt: READ_AT,
   isPaused: false,
@@ -140,6 +144,7 @@ export const unmeasured: CourtPerformanceView = {
   }),
   commitError: null,
   parametersError: null,
+  rewardsError: null,
   failure: null,
   // The draws never landed at all, so this page has never been complete and the banner says
   // "Never" rather than dating it to the dispute read that did succeed.
@@ -162,6 +167,9 @@ const building = buildCourtPerformance({
   draws: drawFixture as RawDraw[],
   commits: null,
   parameters: null,
+  // The payouts are in, so this fixture isolates the two Arbitrum reads exactly as its name
+  // says. `rewardsPending` below is the one that holds them back.
+  rewards: rewardFixture as RawRewardShift[],
   roster: ROSTER,
   drawsReadAt: null,
 });
@@ -177,6 +185,7 @@ export const arbitrumPending: CourtPerformanceView = {
   error: null,
   commitError: null,
   parametersError: null,
+  rewardsError: null,
   failure: null,
   readAt: READ_AT,
   isPaused: false,
@@ -200,6 +209,94 @@ export const arbitrumFailed: CourtPerformanceView = {
   readAt: READ_AT,
   isPaused: false,
   retry: () => {},
+};
+
+/**
+ * The same court with the payouts still out — every cold load that is not served from the cache.
+ *
+ * `rewards: null` and not `[]`, and this is the pair where the difference is loudest. The two
+ * figures it feeds are **sums**: `[]` builds a perfectly successful model in which all six agent
+ * jurors have earned exactly nothing, rendered in the ink of a measurement. Every other unread
+ * figure on this page degrades to a dash, so no other fixture here can demonstrate that shape.
+ */
+const unpaid = buildCourtPerformance({
+  disputes: fixture as RawDispute[],
+  draws: drawFixture as RawDraw[],
+  commits: commitFixture as RawCommitCast[],
+  parameters: parameterFixture as RawCourtParameters[],
+  rewards: null,
+  roster: ROSTER,
+  drawsReadAt: null,
+});
+if (!unpaid.success) throw new Error(`${unpaid.code}: ${unpaid.message}`);
+
+/** What the page has before the payouts land: every other measure, and no ETH or PNK. */
+export const rewardsPending: CourtPerformanceView = { ...measured, performance: unpaid.data };
+
+/**
+ * The same court with that read having failed rather than being in flight.
+ *
+ * Split from the one above for the reason `arbitrumFailed` is split from `arbitrumPending`, and
+ * this is the fourth read to need it: `rewards.read` is false in both states, so anything keyed
+ * on the flag alone announces a failure that has not happened for the length of every cold load.
+ */
+export const rewardsFailed: CourtPerformanceView = {
+  ...rewardsPending,
+  rewardsError: new ReadFailure("The core subgraph returned HTTP 502 Bad Gateway", {
+    source: SOURCES.core,
+    status: "HTTP 502",
+  }),
+};
+
+/**
+ * The payout read that **succeeded** and came back short — no error anywhere.
+ *
+ * The third state, and the one neither of the two above can demonstrate. A reindexing Goldsky
+ * answers HTTP 200 with `[]`, so nothing throws and `rewards.read` is true; the court has ruled
+ * thirteen disputes with draws in them, so a read that found no payout for any of them cannot
+ * be whole. Without the `short` flag every column renders `0.0000` and `0.00` in the ink of a
+ * measurement — six named agent jurors stated to have earned nothing.
+ */
+const emptied = buildCourtPerformance({
+  disputes: fixture as RawDispute[],
+  draws: drawFixture as RawDraw[],
+  commits: commitFixture as RawCommitCast[],
+  parameters: parameterFixture as RawCourtParameters[],
+  rewards: [],
+  roster: ROSTER,
+  drawsReadAt: null,
+});
+if (!emptied.success) throw new Error(`${emptied.code}: ${emptied.message}`);
+
+/** What the page has when the payouts were read and what came back cannot be all of them. */
+export const rewardsShort: CourtPerformanceView = { ...measured, performance: emptied.data };
+
+/**
+ * A court paying in a registered fee token, which no fixture can hold.
+ *
+ * Court 34 has a WETH fee token registered and has never used it, so this is hand-built — the
+ * reason `CLAUDE.md` gives for hand-building every failure shape here. What it demonstrates is
+ * value an agent juror earned that the ETH figure does not carry: disclosed rather than dropped,
+ * because an agent juror that reads as having earned less than it did is the one thing worse
+ * than one whose figure is missing.
+ */
+const inFeeToken = buildCourtPerformance({
+  disputes: fixture as RawDispute[],
+  draws: drawFixture as RawDraw[],
+  commits: commitFixture as RawCommitCast[],
+  parameters: parameterFixture as RawCourtParameters[],
+  rewards: (rewardFixture as RawRewardShift[]).map((shift, index) =>
+    index < 2 ? { ...shift, feeTokenAmount: "1000000000000000000" } : shift,
+  ),
+  roster: ROSTER,
+  drawsReadAt: null,
+});
+if (!inFeeToken.success) throw new Error(`${inFeeToken.code}: ${inFeeToken.message}`);
+
+/** What the page has when two of the court's payouts were made in something other than ETH. */
+export const rewardsInFeeToken: CourtPerformanceView = {
+  ...measured,
+  performance: inFeeToken.data,
 };
 
 /**
@@ -245,6 +342,7 @@ const drifted = buildCourtPerformance({
   // `null` rather than the captured history: nothing this fixture is about is a window, and an
   // unread history marks no row, which keeps the drift the only thing it demonstrates.
   parameters: null,
+  rewards: rewardFixture as RawRewardShift[],
   roster: ROSTER,
   drawsReadAt: DRAWS_READ_AT,
 });
@@ -265,6 +363,7 @@ export const staleDraws: CourtPerformanceView = {
   }),
   commitError: null,
   parametersError: null,
+  rewardsError: null,
   failure: null,
   // An hour older than the dispute read beside it, which is the whole shape of the drift: the
   // banner has to date the page to *this* moment and not to the fresh half.
@@ -290,6 +389,7 @@ export const refused: CourtPerformanceView = {
   error: new Error('MALFORMED_COURT_DATA: Draw sits in a round with an unreadable id: "163-x"'),
   commitError: null,
   parametersError: null,
+  rewardsError: null,
   readAt: null,
   failure: {
     code: "MALFORMED_COURT_DATA",

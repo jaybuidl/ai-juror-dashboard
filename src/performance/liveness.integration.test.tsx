@@ -54,6 +54,9 @@ describe("the live treatment, against the court as it stands", () => {
       draws,
       commits: null,
       parameters: null,
+      // Nor the payouts: liveness is about a dispute still being decided, and a dispute still
+      // being decided has not been executed and so has no payout to read.
+      rewards: null,
       // `drawsReadAt: null` — one live payload is one moment, so every row counts as read.
       roster: ROSTER,
       drawsReadAt: null,

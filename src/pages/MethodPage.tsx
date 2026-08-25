@@ -288,6 +288,33 @@ export function MethodPage() {
         </Body>
       </Section>
 
+      {/* Ticket 10. Below coherence and above the caveats, which is where it belongs in the
+          argument: it is what the two measured dimensions cost and earned, and deliberately not
+          a third dimension anyone is ranked on. */}
+      <Section id="rewards" heading="What each agent juror has earned">
+        <Body>
+          Each column header also states what that agent juror has been paid: cumulative ETH and net
+          PNK, summed over every dispute the court has executed. These are context beside the
+          measures rather than a dimension anyone is ranked on, and nothing on this dashboard is
+          ordered by them.
+        </Body>
+        <Body>
+          The ETH is the arbitration fee, and the court pays it <Term>per vote ID</Term> rather than
+          per draw — an agent juror holding two of a dispute's three coherent vote IDs earns two
+          thirds of that dispute's pot, so a payout is often a fraction of the fee rather than a
+          multiple of it. The PNK is a redistribution and not an issuance: it is taken from the
+          jurors who diverged or failed to reveal and handed to those who voted with the ruling, so
+          it nets to zero across the court and a negative figure is a real loss rather than a
+          missing number. Its sign is always a character in the value itself.
+        </Body>
+        <Body>
+          Both figures lag the rest of this page, and legitimately. A payout is written when the
+          court <Term>executes</Term> a dispute, which is a later transaction than ruling it — so a
+          dispute counted in the coherence figures may have paid nothing yet. That is a delay in the
+          court, not a gap in this read, and the footer says how many draws the two figures cover.
+        </Body>
+      </Section>
+
       <Section id="caveats" heading="Caveats carried by the figures">
         <Body>
           A dispute decided by a <Term>panel of one</Term> makes coherence tautological: a lone
@@ -340,10 +367,10 @@ export function MethodPage() {
       <Section id="sources" heading="Sources">
         <Body>
           Everything is read in your browser from public, keyless endpoints: the Kleros v2 core
-          subgraph for disputes, rounds, draws and votes; the dispute resolver template subgraph for
-          what each dispute is about; an Arbitrum RPC for the commitment logs; and Ethereum mainnet
-          for the agent jurors' ENS names and avatars. There is no backend, no database and no
-          stored copy — a reload reads again.
+          subgraph for disputes, rounds, draws, votes and payouts; the dispute resolver template
+          subgraph for what each dispute is about; an Arbitrum RPC for the commitment logs and the
+          court's own parameter history; and Ethereum mainnet for the agent jurors' ENS names and
+          avatars. There is no backend, no database and no stored copy — a reload reads again.
         </Body>
         <Body>
           This dashboard is read-only forever. It has no wallet, holds no key, and can neither vote

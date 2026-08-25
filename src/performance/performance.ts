@@ -1,4 +1,5 @@
 import { type Dispute, type DisputeRound, type RawDispute, toDisputes } from "../disputes/disputes";
+import { isFinalised } from "../disputes/liveness";
 import type { AgentJuror } from "../roster/agent-jurors";
 import {
   type AgentJurorMarginals,
@@ -94,6 +95,45 @@ export type RawCommitCast = {
 };
 
 /**
+ * One reward or penalty the court paid out, as `TokenAndETHShift` records it.
+ *
+ * Written when the court **executes** a dispute, which is a later and separate transaction from
+ * ruling it: a dispute can be `ruled` with no shift yet, and the two figures built from these
+ * are therefore always "what has been paid out so far" rather than "what every ruled draw came
+ * to". That lag is stated in the provenance footer rather than being counted as a shortfall —
+ * an absence with a legitimate cause is not a read that failed.
+ *
+ * One shift per juror per dispute **per round**, so a dispute that goes to appeal produces
+ * several for one agent juror. `rewardsByDraw` sums them rather than picking the current
+ * round's, because what these figures are is cumulative: the matrix cell shows the latest round
+ * and the earnings are every round's.
+ *
+ * Amounts are decimal strings, signed — a penalty is a negative `pnkAmount`. They are parsed to
+ * `bigint` and never to `number`: a penalty in this court is 1.87e20 wei, four orders of
+ * magnitude past `Number.MAX_SAFE_INTEGER`. See `rewards.ts`.
+ */
+export type RawRewardShift = {
+  /** `"<juror>-<disputeID>-<round>"`, lowercase. The paging cursor and nothing else. */
+  id: string;
+  /** Lowercased, as The Graph stores it — never as the chain checksums it. */
+  juror: { id: string };
+  dispute: { disputeID: string };
+  /** Signed: negative where the draw was penalised for diverging or for not revealing. */
+  pnkAmount: string;
+  /** The arbitration fee share, in wei. Native ETH in this court — see `rewards-subgraph.ts`. */
+  ethAmount: string;
+  /**
+   * Value paid in a registered fee token rather than natively, in that token's own units.
+   *
+   * `"0"` throughout court 34's life. Read only so that a non-zero one can be disclosed instead
+   * of dropped: it is value an agent juror earned that the ETH figure does not carry. Court 34
+   * has a WETH fee token registered and unused, so this is a live possibility rather than a
+   * hypothetical one.
+   */
+  feeTokenAmount: string;
+};
+
+/**
  * Everything fetched, in one value.
  *
  * Tickets 06, 10 and 12 add fields here rather than a second seam beside this one, exactly as
@@ -124,6 +164,17 @@ export type RawCourtData = {
    * it had always held — the read exists precisely to make that impossible.
    */
   parameters: readonly RawCourtParameters[] | null;
+  /**
+   * Every reward and penalty the court has paid out, from the core subgraph — or `null` where
+   * that read has not come back yet. See `RawRewardShift`.
+   *
+   * `null` and `[]` are different here in the way that matters most on this page, because the
+   * figures built from these are **sums**. An empty read makes every column read `0.0000`, which
+   * is a statement that six agent jurors earned nothing across sixteen disputes — where a median
+   * that cannot be taken at least renders as a dash. A sum has no natural way to say "unknown",
+   * so the distinction has to be carried here and gated in the view.
+   */
+  rewards: readonly RawRewardShift[] | null;
   /** The column set, and the only place all six agent jurors appear. */
   roster: readonly AgentJuror[];
   /**
@@ -168,6 +219,25 @@ export type DrawState =
   | { kind: "no-vote" }
   | { kind: "live"; stage: LiveStage };
 
+/**
+ * What one draw has been paid, net, across every round of its dispute.
+ *
+ * Held in wei as `bigint` because a PNK penalty in this court is 1.87e20 — see `rewards.ts` on
+ * why a `number` is wrong here before anything is rounded. Nothing in this seam formats one;
+ * `rewards.ts` is the only place wei becomes words.
+ */
+export type DrawReward = {
+  /** The arbitration fee share, in wei. Zero for a draw that diverged or never revealed. */
+  ethWei: bigint;
+  /** Net PNK in wei — **negative** where the draw was penalised. */
+  pnkWei: bigint;
+  /**
+   * Whether any part of this was paid in a registered fee token instead, which `ethWei` does
+   * not carry. False throughout court 34's life; disclosed rather than dropped if it changes.
+   */
+  inFeeToken: boolean;
+};
+
 /** One agent juror's involvement in one dispute: one cell of the matrix. */
 export type Draw = {
   agentJuror: AgentJuror;
@@ -210,6 +280,20 @@ export type Draw = {
    * ruling is what a matrix row is scanned for, and the choice itself is detail for one dispute.
    */
   choices: readonly number[];
+  /**
+   * What this draw was paid, or `null` where the court has paid nothing for it *yet*.
+   *
+   * Three things produce that `null` and only one of them is an absence of money: the reward
+   * read has not come back, the court has ruled the dispute but not executed it, or the dispute
+   * is still being decided. None is a failed read and none may render as a zero on its own —
+   * `CourtPerformance.rewards.read` is the flag that tells the first from the other two, and it
+   * is the fourth of the "has the read happened" gates `CLAUDE.md` records.
+   *
+   * Summed across rounds, so an appealed dispute's several shifts arrive here as one figure.
+   * The cell shows the current round and this shows every round, which is what makes it
+   * cumulative rather than a snapshot of the round on screen.
+   */
+  reward: DrawReward | null;
 };
 
 export type MatrixRow = {
@@ -303,6 +387,67 @@ export type CourtParameters = {
   current: PeriodWindows | null;
 };
 
+/**
+ * Whether the court's payouts were read, and what the figures built from them cover.
+ *
+ * Deliberately **not** the shape `CommitCoverage` has, and the difference is the point. That one
+ * compares a read against a known set — every draw the subgraph says committed — because a log
+ * scan that comes back short is indistinguishable from a court that never committed. This one
+ * has no such set to compare against: a draw with no shift is most often a dispute the court has
+ * ruled and not yet executed, which is an ordinary state lasting hours. Counting those as a
+ * shortfall would put "could not be read" on a page where nothing failed — the false caveat
+ * `CLAUDE.md` warns about four times over, and a reader who checks one and finds it baseless
+ * stops checking.
+ *
+ * So this counts what *was* paid rather than what is missing, and the view says what the figure
+ * covers rather than what it fell short of.
+ */
+export type RewardCoverage = {
+  /**
+   * Whether the reward read has happened at all.
+   *
+   * False means the answer is not in yet, and nothing may be concluded from the sums — least of
+   * all a zero, which on this measure is the whole risk. Every other figure on this page
+   * degrades to a dash when it cannot be taken; a sum degrades to `0.0000`, which reads as a
+   * measurement.
+   */
+  read: boolean;
+  /** Draws the court has paid out at all — what the two figures are summed over. */
+  paidDraws: number;
+  /**
+   * Draws paid wholly or partly in a fee token, whose value no ETH figure here carries.
+   *
+   * `0` throughout, and the footer says so only when it is not: an agent juror that earned
+   * something this page cannot express must not read as one that earned less.
+   */
+  feeTokenDraws: number;
+  /**
+   * Whether what came back cannot be a whole read of the court's payouts.
+   *
+   * The guard a **sum** needs and a count does not. A reindexing Goldsky answers HTTP 200 with
+   * `[]` and a lagging one returns some of what it holds — neither throws, and both leave
+   * `read: true` (`CLAUDE.md` § Traps). Every column would then print `0.0000` and `0.00` in the
+   * ink of a measurement: a public statement that six named agent jurors have earned nothing.
+   *
+   * Two tests, and both are deliberately **all-or-nothing** rather than the per-draw
+   * `expected`/`resolved` cross-check `CommitCoverage` runs. That shape is unusable here,
+   * because a dispute the court has ruled and not yet executed legitimately has no payout, and
+   * a check counting those as missing would cry shortfall over an ordinary state lasting hours:
+   *
+   * - **No payout at all, for a court that has draws in disputes it has ruled.** The same shape
+   *   as an empty parameter history for a court that has plainly been configured.
+   * - **A ruled dispute where some draws were paid and others were not.** `execute()` writes a
+   *   shift for every drawn juror in one transaction, so a dispute is all-paid or none-paid;
+   *   partial is only ever a read that came back short. This is the per-dispute test that has
+   *   no false positive, which is why it is the one that is made.
+   *
+   * It does not catch a read that lost whole disputes off the end — nothing here could, without
+   * knowing what the court has executed. `totals.test.ts` pins the arithmetic that would
+   * (`feeForJuror` × the vote-ID count), and this is the half that can be checked at runtime.
+   */
+  short: boolean;
+};
+
 export type CourtPerformance = {
   /** The matrix columns, in roster order. Nothing may read rank into it. */
   agentJurors: readonly AgentJuror[];
@@ -334,6 +479,8 @@ export type CourtPerformance = {
   commitCoverage: CommitCoverage;
   /** The court's own parameter history, and what it holds now. */
   parameters: CourtParameters;
+  /** Whether the court's payouts were read, and what the column headers' two sums cover. */
+  rewards: RewardCoverage;
 };
 
 /** The one failure code this seam returns. Everything it rejects is a payload it cannot believe. */
@@ -347,6 +494,31 @@ function toNumber(value: string, what: string): number {
     throw new Error(`${what}: ${JSON.stringify(value)}`);
   }
   return Number(value);
+}
+
+/**
+ * The same guard, signed, for an amount of money.
+ *
+ * Signed because a penalty is a negative `pnkAmount` and rejecting it would throw away every
+ * loss this court has recorded — two of the five drawn agent jurors are net negative. `"-0"` is
+ * refused along with `"01"` and `"1e18"`: it is not a form The Graph emits, and a payload
+ * inventing one is a payload this seam has no reason to believe.
+ */
+const CANONICAL_SIGNED_DECIMAL = /^-?(0|[1-9]\d*)$/;
+
+/**
+ * An amount in wei, as `bigint` and never as `number`.
+ *
+ * `Number("187000000000000000000")` is finite, looks right and is already wrong — it is past
+ * `Number.MAX_SAFE_INTEGER` by four orders of magnitude, so the low digits are gone before any
+ * sum is taken. The whole reason these figures are held in `bigint` end to end is that the loss
+ * would be invisible: no throw, no `NaN`, just a total that is not the total. See `rewards.ts`.
+ */
+function toWei(value: string, what: string): bigint {
+  if (!CANONICAL_SIGNED_DECIMAL.test(value) || value === "-0") {
+    throw new Error(`${what}: ${JSON.stringify(value)}`);
+  }
+  return BigInt(value);
 }
 
 /**
@@ -444,6 +616,41 @@ function commitsByDraw(raw: RawCourtData): Map<string, number[]> {
 }
 
 /**
+ * What the court paid each agent juror in each dispute, keyed exactly as the commitments are.
+ *
+ * Summed rather than indexed, because a shift is per round and a cell is per dispute: an
+ * appealed dispute writes one shift per round for the same agent juror, and the figure the
+ * column header prints is what that agent juror earned from the dispute, not from whichever
+ * round the cell happens to show. Court 34 is single-round throughout, so this sums one entry
+ * today and stays right the first time it does not — the same shape as `roundIndexOf` reading
+ * the index from the id rather than from the position a round arrived in.
+ *
+ * Keyed on the lowercased address for the same reason `commitsByDraw` is: The Graph lowercases
+ * and the roster checksums, and this is the only join between them.
+ */
+function rewardsByDraw(raw: RawCourtData): Map<string, DrawReward> {
+  const rewards = new Map<string, DrawReward>();
+
+  for (const shift of raw.rewards ?? []) {
+    const disputeId = toNumber(shift.dispute.disputeID, "Reward names a bad dispute");
+    const key = `${disputeId}/${shift.juror.id.toLowerCase()}`;
+
+    const ethWei = toWei(shift.ethAmount, "Reward carries a bad ETH amount");
+    const pnkWei = toWei(shift.pnkAmount, "Reward carries a bad PNK amount");
+    const feeTokenWei = toWei(shift.feeTokenAmount, "Reward carries a bad fee token amount");
+
+    const running = rewards.get(key);
+    rewards.set(key, {
+      ethWei: (running?.ethWei ?? 0n) + ethWei,
+      pnkWei: (running?.pnkWei ?? 0n) + pnkWei,
+      inFeeToken: (running?.inFeeToken ?? false) || feeTokenWei !== 0n,
+    });
+  }
+
+  return rewards;
+}
+
+/**
  * When this draw committed, out of every commitment its agent juror published in the dispute.
  *
  * The earliest one at or after this round's commit period opened. A juror commits at most once
@@ -460,7 +667,12 @@ function commitAt(timestamps: readonly number[] | undefined, round: DisputeRound
   return timestamps.find((timestamp) => timestamp >= opened) ?? null;
 }
 
-function drawOf(group: DrawGroup, dispute: Dispute, commits: Map<string, number[]>): Draw {
+function drawOf(
+  group: DrawGroup,
+  dispute: Dispute,
+  commits: Map<string, number[]>,
+  rewards: Map<string, DrawReward>,
+): Draw {
   const revealed = group.votes.some((vote) => vote.voted);
   const committed = group.votes.some((vote) => vote.commited);
   // Once, here, rather than again inside `stateOf`: the same list decides coherence and is
@@ -497,6 +709,9 @@ function drawOf(group: DrawGroup, dispute: Dispute, commits: Map<string, number[
     committed,
     voteCount: group.voteCount,
     choices,
+    // The same key the commitments use, and `undefined` collapsed to `null` because the model
+    // says "no reward" with a null everywhere else it says anything is absent.
+    reward: rewards.get(`${dispute.id}/${group.agentJuror.address.toLowerCase()}`) ?? null,
   };
 }
 
@@ -664,6 +879,7 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
     const disputes = toDisputes(raw.disputes);
     const grouped = groupDraws(raw, disputes);
     const commits = commitsByDraw(raw);
+    const rewards = rewardsByDraw(raw);
 
     // The court's own history, never its current configuration: what the court holds today is
     // not a fact about a dispute that ran before it was reconfigured (`windows.ts`).
@@ -674,6 +890,17 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
     // than by walking the model a second time.
     let expected = 0;
     let resolved = 0;
+
+    // What the reward figures cover, counted in the same pass and for the same reason. Not a
+    // per-draw cross-check and deliberately not shaped like one — see `RewardCoverage`.
+    let paidDraws = 0;
+    let feeTokenDraws = 0;
+    // Draws in disputes the court has ruled: what a whole payout read would have *something* to
+    // say about. Only ever compared against zero — see `RewardCoverage.short`.
+    let payableDraws = 0;
+    // Ruled disputes where some draws were paid and others were not, which `execute()` cannot
+    // produce and a short read can.
+    let partlyPaidDisputes = 0;
 
     const rows = disputes.map((dispute) => {
       const drawn = grouped.get(dispute.id);
@@ -698,13 +925,29 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
         const group = currentDraw(drawn?.byAgentJuror.get(agentJuror.address.toLowerCase()));
         if (group === undefined) return null;
 
-        const draw = drawOf(group, dispute, commits);
+        const draw = drawOf(group, dispute, commits, rewards);
         if (group.votes.some((vote) => vote.commited)) {
           expected += 1;
           if (draw.commitLatencySeconds !== null) resolved += 1;
         }
+        if (draw.reward !== null) {
+          paidDraws += 1;
+          if (draw.reward.inFeeToken) feeTokenDraws += 1;
+        }
         return draw;
       });
+
+      // Whether this dispute's payouts can be a whole read of it. Asked per dispute because
+      // `execute()` pays every drawn juror in one transaction, so a ruled dispute is all-paid
+      // or none-paid and a partial one is only ever a read that came back short — the one
+      // per-dispute test here that a ruled-but-unexecuted dispute cannot trip.
+      if (isFinalised(dispute)) {
+        const drawnCells = cells.filter((cell) => cell !== null);
+        const paid = drawnCells.filter((cell) => cell.reward !== null).length;
+
+        payableDraws += drawnCells.length;
+        if (paid > 0 && paid < drawnCells.length) partlyPaidDisputes += 1;
+      }
 
       const windows = windowsFor(regimes, dispute);
 
@@ -730,6 +973,16 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
         marginals: agentJurorMarginalsOf(rows, raw.roster),
         commitCoverage: { read: raw.commits !== null, expected, resolved },
         parameters: { read: raw.parameters !== null, regimes, current },
+        rewards: {
+          read: raw.rewards !== null,
+          paidDraws,
+          feeTokenDraws,
+          // Only ever true of a read that happened: an unstarted read is not a short one, which
+          // is the "has the read happened" gate `CLAUDE.md` records four recurrences of.
+          short:
+            raw.rewards !== null &&
+            (partlyPaidDisputes > 0 || (payableDraws > 0 && paidDraws === 0)),
+        },
       },
     };
   } catch (cause) {

@@ -9,6 +9,7 @@ import { fetchCommitCasts } from "./commit-logs";
 import { fetchCourtParameters } from "./court-parameters";
 import { fetchCourtDraws } from "./draws-subgraph";
 import { buildCourtPerformance, type CourtPerformance } from "./performance";
+import { fetchCourtRewards } from "./rewards-subgraph";
 
 export type CourtPerformanceView = {
   /**
@@ -46,6 +47,19 @@ export type CourtPerformanceView = {
    * not about what a successful one carried.
    */
   parametersError: Error | null;
+  /**
+   * Why the court's payouts could not be read, on the same terms again.
+   *
+   * Non-blocking for the reason the other two are: cumulative ETH and PNK are two of the six
+   * figures in a column header and nothing else on the page reads them, so blanking a matrix of
+   * true latencies over them would be the worse lie.
+   *
+   * It is read from the **core subgraph**, unlike the two above — the same deployment that
+   * serves the disputes and the draws. So an outage there raises this alongside `error`, and
+   * `MatrixPage` has to state one failure once: `coreFailureOf` ranks this last and returns a
+   * single entry, exactly as `arbitrumFailureOf` does for the two reads that share Arbitrum.
+   */
+  rewardsError: Error | null;
   /**
    * The seam's own rejection, unflattened.
    *
@@ -234,6 +248,33 @@ export function useCourtPerformance(
   });
 
   const parameters = parametersQuery.data;
+
+  /**
+   * What the court has paid out, from the core subgraph (ticket 10).
+   *
+   * Keyed on the court alone, like the parameter history and unlike the commit scan: it is not
+   * a cross-check against the draws, so it answers the same way whichever of them are on
+   * screen, and keying it on the draw set would retire a perfectly good read every time a new
+   * commitment landed.
+   *
+   * **No interval, and the reason is not the one the commit scan has.** That read is throttled
+   * because arb1 rate-limits per call; this one shares an endpoint with the disputes and the
+   * draws, which already poll every five seconds while the court is live. What decides it is
+   * the figure's own cadence: a shift is written when a dispute is *executed*, hours after the
+   * commit and vote periods a live viewer is watching unfold, so a five-second poll would add
+   * half again to this endpoint's load to catch a number that moves twice a day. It refetches
+   * on mount and holds the same minute of staleness as everything else.
+   *
+   * Not waited on, exactly like the two Arbitrum reads. What an unread payout costs is two of
+   * the six figures in each column header, and the header says which.
+   */
+  const rewardsQuery = useQuery({
+    queryKey: ["courtRewards", COURT_ID],
+    queryFn: ({ signal }) => fetchCourtRewards({ signal }),
+    staleTime: 60 * 1000,
+  });
+
+  const rewards = rewardsQuery.data;
   // The moment the draws on screen were *asked for*. This is what tells a row whose draws were
   // read from a row created after the last read that could have seen it. react-query keeps what
   // it holds when a refetch fails, so it can be an hour older than the dispute list beside it —
@@ -254,9 +295,14 @@ export function useCourtPerformance(
       // nothing, where `[]` would assert that a court which has plainly been configured at
       // least once never was.
       parameters: parameters ?? null,
+      // `null` again, and here the consequence is the loudest of the three, because these two
+      // figures are sums. `[]` would put `0.0000` and `0.00` in all six column headers on every
+      // cold load — a statement that nobody has earned anything, in the ordinary ink of a
+      // measurement, retracting itself a moment later.
+      rewards: rewards ?? null,
       roster: agentJurors,
     });
-  }, [disputes, draws, commits, parameters, agentJurors, drawsReadAt]);
+  }, [disputes, draws, commits, parameters, rewards, agentJurors, drawsReadAt]);
 
   const failure = result?.success === false ? result : null;
 
@@ -272,6 +318,7 @@ export function useCourtPerformance(
       (failure !== null ? new Error(`${failure.code}: ${failure.message}`) : null),
     commitError: commitQuery.error,
     parametersError: parametersQuery.error,
+    rewardsError: rewardsQuery.error,
     readAt: drawsReadAt,
     failure:
       failure === null
@@ -283,6 +330,7 @@ export function useCourtPerformance(
     retry: () => {
       void query.refetch();
       void commitQuery.refetch();
+      void rewardsQuery.refetch();
       disputes.retry();
     },
   };

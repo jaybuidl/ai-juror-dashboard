@@ -730,7 +730,7 @@ function DrawCell({ draw, scanned }: { draw: Draw; scanned: boolean }) {
 }
 
 export function Matrix({ performance, roster, slotsFor, now = Date.now() }: MatrixProps) {
-  const { agentJurors, rows, totals, marginals, commitCoverage, parameters } = performance;
+  const { agentJurors, rows, totals, marginals, commitCoverage, parameters, rewards } = performance;
   const flagContext: RowFlagContext = { current: parameters.current, now };
   const unread = commitCoverage.expected - commitCoverage.resolved;
   const identityOf = new Map(
@@ -919,6 +919,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                           <Marginals
                             marginals={marginal}
                             scanned={commitCoverage.read}
+                            payouts={rewards}
                             current={parameters.current}
                           />
                         )}

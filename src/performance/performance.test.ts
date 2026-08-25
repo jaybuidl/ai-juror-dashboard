@@ -5,12 +5,14 @@ import { type AgentJuror, ROSTER } from "../roster/agent-jurors";
 import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
+import rewardFixture from "./court-34-rewards.fixture.json" with { type: "json" };
 import {
   buildCourtPerformance,
   type CourtPerformance,
   type RawCommitCast,
   type RawCourtData,
   type RawDraw,
+  type RawRewardShift,
 } from "./performance";
 import type { RawCourtParameters } from "./windows";
 
@@ -33,6 +35,15 @@ const rawDisputes = disputeFixture as RawDispute[];
 const rawDraws = drawFixture as RawDraw[];
 const rawCommits = commitFixture as RawCommitCast[];
 const rawParameters = parameterFixture as RawCourtParameters[];
+/**
+ * The 44 payouts the court had written on the same day, from `TokenAndETHShift`.
+ *
+ * One per agent juror per **executed** dispute, which is why there are 44 of them against 56
+ * draws: disputes 164–166 were still in `appeal` when this was captured, so nothing has been
+ * paid for their twelve draws. That is a lag and not a gap, and it is the state a live court
+ * spends most of its time in.
+ */
+const rawRewards = rewardFixture as RawRewardShift[];
 
 function courtData(overrides: Partial<RawCourtData> = {}): RawCourtData {
   return {
@@ -40,6 +51,7 @@ function courtData(overrides: Partial<RawCourtData> = {}): RawCourtData {
     draws: rawDraws,
     commits: rawCommits,
     parameters: rawParameters,
+    rewards: rawRewards,
     roster: ROSTER,
     drawsReadAt: null,
     ...overrides,
@@ -524,6 +536,142 @@ describe("buildCourtPerformance", () => {
       });
 
       expect(built(raw).commitCoverage).toEqual({ read: true, expected: 1, resolved: 1 });
+    });
+  });
+
+  describe("what the court paid", () => {
+    it("joins each payout to the draw it belongs to", () => {
+      // The join is the dispute and the lowercased address, exactly as the commitments join.
+      // 007 diverged in dispute 156 and was penalised a whole vote ID's stake — `minStake ×
+      // alpha` is 187 PNK — and earned no fee for it. A model that dropped the sign would
+      // render that as a reward.
+      expect(cellFor(156, "007", built())?.reward).toEqual({
+        ethWei: 0n,
+        pnkWei: -187_000_000_000_000_000_000n,
+        inFeeToken: false,
+      });
+    });
+
+    it("carries no payout for a draw in a dispute the court has not executed", () => {
+      // Disputes 164–166 were in `appeal` when this was captured: every vote in, no ruling,
+      // and nothing paid. That is not a failed read and not an empty payout — it is the state
+      // every dispute passes through, and the commonest thing a `null` here means.
+      expect(cellFor(165, "blaise", built())?.reward).toBeNull();
+    });
+
+    it("tells a read that has not come back from one that came back empty", () => {
+      // The same trap as the commitments above, and materially worse here, because these two
+      // figures are **sums**. A median that cannot be taken renders as a dash; a sum that was
+      // never read renders as `0.0000` — a number, in the ink of a measurement, saying six
+      // agent jurors earned nothing across sixteen disputes. `read` is the only thing that
+      // separates the two states, and `paidDraws` is 0 in both.
+      const pending = built(courtData({ rewards: null }));
+      const empty = built(courtData({ rewards: [] }));
+
+      expect(pending.rewards).toEqual({
+        read: false,
+        paidDraws: 0,
+        feeTokenDraws: 0,
+        // An unstarted read is not a short one, whatever it returned. Without this gate the
+        // page would announce a shortfall on every cold load and then retract it.
+        short: false,
+      });
+      // And the empty one *is* short: this court has ruled thirteen disputes with draws in
+      // them, so a read that found no payout for any of them cannot be a whole read. It is the
+      // shape a reindexing Goldsky produces, and nothing throws anywhere along the way.
+      expect(empty.rewards).toEqual({
+        read: true,
+        paidDraws: 0,
+        feeTokenDraws: 0,
+        short: true,
+      });
+    });
+
+    it("calls a whole read of a court that has paid out exactly that", () => {
+      expect(built().rewards).toEqual({
+        read: true,
+        paidDraws: 44,
+        feeTokenDraws: 0,
+        short: false,
+      });
+    });
+
+    it("calls a ruled dispute paid for some of its draws and not others a short read", () => {
+      // The one per-dispute test here that a ruled-but-unexecuted dispute cannot trip.
+      // `execute()` writes a shift for every drawn juror in one transaction, so a dispute is
+      // all-paid or none-paid; partial is only ever a read that lost something.
+      const [first, ...rest] = rawRewards;
+      if (first === undefined) throw new Error("the captured court has payouts");
+
+      expect(built(courtData({ rewards: rest })).rewards.short).toBe(true);
+    });
+
+    it("does not call a court that has simply not executed anything short", () => {
+      // The false positive this shape exists to avoid, and the reason there is no
+      // `expected`/`resolved` cross-check here. Disputes 164–166 were ruled after the fixture
+      // was captured and paid nothing for hours; a check that counted those as missing would
+      // put "could not be read" on a page where nothing failed.
+      const unruled = built(
+        courtData({
+          disputes: rawDisputes.filter((dispute) => dispute.ruled === false),
+          rewards: [],
+        }),
+      );
+
+      expect(unruled.rewards).toMatchObject({ read: true, paidDraws: 0, short: false });
+    });
+
+    it("still builds every other measurement while the payouts are unread", () => {
+      const pending = built(courtData({ rewards: null }));
+
+      expect(cellFor(163, "blaise", pending)?.revealLatencySeconds).toBe(46);
+      expect(cellFor(163, "blaise", pending)?.state).toEqual({ kind: "coherent" });
+      expect(cellFor(163, "blaise", pending)?.reward).toBeNull();
+    });
+
+    it("counts a payout in a fee token so that it can be disclosed rather than dropped", () => {
+      // `ethAmount` is what the ETH figure carries, and a shift paid in a registered fee token
+      // puts its value somewhere the figure does not reach. Court 34 has a WETH fee token
+      // registered and has never paid in it, so nothing in the captured payload exercises
+      // this — and an agent juror that reads as having earned less than it did is exactly the
+      // failure a public page cannot afford.
+      const [first, ...rest] = rewardFixture as RawRewardShift[];
+      if (first === undefined) throw new Error("The captured court has payouts");
+
+      const model = built(
+        courtData({ rewards: [{ ...first, feeTokenAmount: "1000000000000000000" }, ...rest] }),
+      );
+
+      expect(model.rewards.feeTokenDraws).toBe(1);
+    });
+
+    it("refuses an amount it cannot believe rather than summing a wrong one", () => {
+      // Every rejection in this seam is a payload that would otherwise produce a confident
+      // wrong number, and money is where that matters most. A float, an exponent or a leading
+      // zero is not a form The Graph emits, and `BigInt("1e18")` throws where `Number("1e18")`
+      // would quietly succeed at a thousand times the value.
+      for (const amount of ["1e18", "0.5", "01", "", "-0"]) {
+        const [first, ...rest] = rewardFixture as RawRewardShift[];
+        if (first === undefined) throw new Error("The captured court has payouts");
+
+        const result = buildCourtPerformance(
+          courtData({ rewards: [{ ...first, pnkAmount: amount }, ...rest] }),
+        );
+
+        expect(result.success).toBe(false);
+      }
+    });
+
+    it("keeps a negative amount, because a penalty is the point of the figure", () => {
+      // The one form that must *not* be rejected. Two of the five drawn agent jurors are net
+      // down on this experiment, and a guard that only accepted unsigned decimals would have
+      // thrown away every loss the court has recorded.
+      const model = built();
+      const penalised = model.rows
+        .flatMap((row) => row.cells)
+        .filter((cell) => cell !== null && (cell.reward?.pnkWei ?? 0n) < 0n);
+
+      expect(penalised.length).toBeGreaterThan(0);
     });
   });
 

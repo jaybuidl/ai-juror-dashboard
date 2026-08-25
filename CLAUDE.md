@@ -5,7 +5,7 @@ on two dimensions: **speed** (commit and reveal latency) and **coherence** (voti
 ruling).
 
 **Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01, 02, 03, 04,
-05, 06, 07, 08, 09, 12, 13, 14 and 15 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a
+05, 06, 07, 08, 09, 10, 12, 13, 14 and 15 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a
 `netlify.toml`
 that is the single source of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted
 webfonts, and the dispute matrix — one row per dispute, headed by that dispute's own title and
@@ -20,8 +20,11 @@ absolute durations each, and every panel member's published reasoning side by si
 Markdown rendered with raw HTML off at the parser and a warning before any link in it takes you
 away. CI exists
 too — `.github/workflows/ci.yml`, added as toolchain upkeep rather than as a ticket, so do not
-propose it again. Three measures are read and no more: cumulative rewards (10) are still unread, and
-the caveat the matrix view carries says so outright rather than leaving a reader to infer it.
+propose it again. Ticket 10 read the last of the four measures the design named — cumulative ETH and
+net PNK per agent juror, from `TokenAndETHShift` on the core subgraph — so the matrix view's caveat
+no longer names anything as unread at all, and what replaces that sentence says what the two sums
+are *over* rather than what is missing from them. They are supporting context beside the marginals
+and not a dimension anyone is ranked on; nothing on the page orders by them.
 Ticket 06 put the per-agent-juror marginals in the column headers — the same three measures sliced
 down each column, from `agentJurorMarginalsOf` in `totals.ts` — and with them the first figures on
 this page that carry a caveat marker of their own. Ticket 07 also brought the first read that is not
@@ -68,10 +71,11 @@ rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines 
 
 Ticket **05** was the keystone, and it has landed: `src/performance/` holds the seam,
 `buildCourtPerformance(RawCourtData) → KlerosResult<CourtPerformance>`, which is where every
-derivation belongs. It touches no network and reads no clock. Ticket 10 extends
+derivation belongs. It touches no network and reads no clock. Ticket 10 extended
 `RawCourtData` and the model rather than fetching beside them, exactly as tickets 07 and 08 did when
-they added `commits` and `parameters` — the two fields on it that no subgraph fills; a metric
-computed in a component is the mistake this seam exists to prevent. Ticket 15 added the first
+they added `commits` and `parameters` — so `rewards` is the fourth nullable payload on it, and
+`Draw.reward` and `AgentJurorMarginals.rewards` are derived from it under the same discipline as
+every latency; a metric computed in a component is the mistake this seam exists to prevent. Ticket 15 added the first
 **aggregate** on the far side of it — `CourtTotals` in `src/performance/totals.ts`, which the stat
 tiles and the latency strip are figures of — so a court-wide number goes there and not into the view
 that prints it. Ticket 06 added the second, in the same file: `agentJurorMarginalsOf` →
@@ -182,6 +186,41 @@ Things that cost real effort to discover and are easy to get wrong again:
   passed alone, and fixed it by not scanning — liveness is read from the ruling and the round
   timeline, so it never needed the commitments. Before adding a commit scan to a live test, ask
   whether the test actually needs a moment, and run the whole suite rather than the one file.
+- **`TokenAndETHShift.isNativeCurrency` is `false` on a court that pays in native ETH.** All 56 of
+  court 34's payouts carry it, with `feeToken: null` and `feeTokenAmount: "0"`, while `ethAmount`
+  carries the full `feeForJuror` — and the raw `TokenAndETHShift` logs decode to
+  `_feeToken = address(0)`, which *is* native ETH. The v0.17.2 mapping is simply wrong about it.
+  This is the `blockTimestamp: "0x0"` trap in another entity: present, correctly typed, and wrong.
+  A reader that believed it would take the fee-token branch, find `0`, and report that every agent
+  juror has earned nothing — no error, no console warning, six columns of `0.0000`. The guard is
+  that `rewards-subgraph.ts` **does not select the field at all**, and says why: a field absent
+  from the query cannot be reached for by someone who has not read this. `feeTokenAmount` is
+  selected as the one usable half and is a *partial* guard — the deployment that mislabels the flag
+  gives no assurance about which field it would fill if court 34 were switched to the WETH fee
+  token it already has registered and unused.
+- **The arbitration fee is paid per vote ID, not per draw, so a payout is often a fraction of
+  `feeForJuror`.** Nine of the captured court's 44 shifts are 1.25, 1.67 or 2.5 fees: a draw
+  holding two of a dispute's three coherent vote IDs takes two thirds of that dispute's pot. An
+  assertion that every payout divides evenly by `feeForJuror` looks obviously right and fails on
+  real data — it was written and it failed. What *is* exact is court-wide: total ETH paid equals
+  `feeForJuror × ` the vote-ID count over the executed disputes, which is 61 fees for the fixture
+  and ties the payout read to the draw read through the court's own configured fee. PNK is a
+  redistribution and nets to **zero** across the court, to within a wei or two of integer-division
+  dust. Both are pinned in `totals.test.ts` and live in `rewards-subgraph.integration.test.ts`,
+  because these two figures are *sums*: a read that comes back short renders as an agent juror that
+  earned less, which nothing else on the page would catch.
+- **Court 34's one reconfiguration changed no reward parameter.** `CourtCreated` and `CourtModified`
+  carry byte-identical `minStake` (11000e18), `alpha` (170), `feeForJuror` (2.7e14) and
+  `jurorsForCourtJump` (7); only `timesPerPeriod` moved. So the `†` window marker must **not** ride
+  cumulative ETH or PNK — it would be a marker a reader can see is misplaced, and one they stop
+  reading. Decoded from the logs rather than assumed, because "the court was reconfigured" reads as
+  though everything about it changed.
+- **A ruled dispute can legitimately have no payout.** Shifts are written by `execute()`, a later
+  and separate transaction from ruling, so cumulative rewards lag coherence by hours. This is why
+  ticket 10 has **no** coverage cross-check in the shape of `CommitCoverage`: "every draw in a ruled
+  dispute has a shift" is true of the captured court and would cry "short read" over an ordinary
+  state lasting hours — the false caveat this file warns about four times over. The disclosure is
+  the affirmative one instead: `RewardCoverage.paidDraws` says what the figures are summed *over*.
 - **The unit is the draw, not the vote.** Across the first thirteen disputes, 61 votes collapsed to
   44 draws. The subgraph's `totalCoherentVotes` / `coherenceScore` are per-vote *and* global across
   all courts — unusable here (ADR-0002). `ClassicJustification` is conveniently one per draw.
@@ -257,7 +296,10 @@ Things that cost real effort to discover and are easy to get wrong again:
   round with no votes. Where a read draws a **known set** of ids, compare what came back against what
   was asked for and report the shortfall as a count, not as an error: `src/disputes/useDisputes.ts`
   carries `{expected, resolved, isLoading}` and `DisputeList` names the number. A thrown error is then
-  just the case where the count is zero. This bites every ticket that fetches by id — 05, 07, 08, 10.
+  just the case where the count is zero. This bit every ticket that fetches by id — 05, 07, 08 — and
+  ticket 10 met a version of it with no known set to compare against: its read asks for "every payout
+  in court 34" rather than for named ids, so the guard there is arithmetic instead (§ Traps, the
+  per-vote-ID fee), which is what a *sum* needs and a count does not.
 - **`text-overflow: ellipsis` does nothing inside a `1fr` grid track.** A track's minimum is `auto`,
   which is its content's minimum, so the column grows to fit the longest title and the row overflows
   sideways instead of clipping — with nothing in the console. `minmax(0, 1fr)` on the track and
@@ -321,7 +363,8 @@ Things that cost real effort to discover and are easy to get wrong again:
   this design defines as "not drawn", an unread state rendering as a fact about the court. Found by
   review on ticket 15, where both the notice and the provenance footer keyed on `disputes.error`
   alone and said nothing about `performance.error`. Every ticket that adds a read — 06, 07, 08, 10
-  — adds another pair that can drift apart, and ticket 12's five-second poll means they now drift
+  — added another pair that can drift apart, and ticket 10's is now the fourth query on the matrix
+  page, and ticket 12's five-second poll means they now drift
   apart *repeatedly* rather than once per load. Check *each* query's error, and say which half is
   stale rather than that "the court" is.
 - **A flag that is false while a read is in flight is not a flag that the read failed.**
@@ -353,7 +396,11 @@ Things that cost real effort to discover and are easy to get wrong again:
   someone names it and answers whether its value survives a JSON round trip — no `Map`, no `Set`,
   no `bigint`, no `Date` — and then whether a *failed* read of it succeeds, which is what kept the
   ENS identities out. Ticket 08's `courtParameters` was admitted on those terms when the two
-  branches were merged; tickets 06 and 10 still have to answer for theirs.
+  branches were merged, and ticket 10's `courtRewards` on the same two. That one is worth keeping
+  as the example, because the expected answer was wrong: the amounts are `bigint` in the model, so
+  it looked like the first `bigint` payload here — and the subgraph serves every one of them as a
+  decimal **string**, with the parsing inside the pure seam where nothing is stored. Asking is what
+  showed that; assuming would have kept a perfectly safe read out of the cache.
 - **Persisting a *derived* value means today's code reads yesterday's shape.** The seam is pure and
   re-derives every figure on load, so persisting payloads needs no invalidation when the arithmetic
   changes — that is the whole safety argument for the cache. But three query functions store a
@@ -461,7 +508,11 @@ Things that cost real effort to discover and are easy to get wrong again:
   the parameter history) an outage takes both, so `arbitrumFailureOf` returns the **worst one**
   rather than listing the source twice — and a caveat that goes quiet under a banner is correct,
   where one that says "still being read" about a read that gave up is the `RosterView` trap again.
-  Tickets 06, 09, 10 and 11 each add a read or a view and each meet this.
+  Tickets 06, 09 and 10 each added a read or a view and each met this; ticket 11 still will.
+  Ticket 10 is the one that tested the rule on a **shared** endpoint from the subgraph side: its
+  payouts come from the same Goldsky deployment as the disputes and the draws, so `coreFailureOf`
+  now collapses four reads into one line the way `arbitrumFailureOf` collapses two, and it ranks
+  last because it costs the least — two of six figures in a column header, against the matrix.
 
 ## Verified constants
 
@@ -495,6 +546,18 @@ CommitCast           CommitCast(uint256 indexed _coreDisputeID, address indexed 
                      addresses and the seam drops what belongs to another court. 56 of them
                      across disputes 151–166 on 2026-08-25, one per committed draw, latency 14s
                      to 3,236s
+Court 34 economics   feeForJuror 270000000000000 wei (0.00027 ETH), minStake 11000e18, alpha 170,
+                     jurorsForCourtJump 7. All four **unchanged** across the court's one
+                     reconfiguration, so no reward figure is qualified by the window marker.
+                     Stake at risk per vote ID is minStake × alpha / 10000 = 187 PNK
+TokenAndETHShift     TokenAndETHShift(address indexed _account, uint256 indexed _disputeID,
+                     uint256 indexed _roundID, uint256 _degreeOfCoherency, int256 _pnkAmount,
+                     int256 _feeAmount, address _feeToken), on KlerosCore. Read from the core
+                     subgraph rather than from logs — it is one of the few things the deployment
+                     carries in full, amounts included. 56 of them across disputes 151–166 on
+                     2026-08-25, one per (juror, dispute, round), written at execution. The fee
+                     is per **vote ID**, not per draw; `isNativeCurrency` is wrong on this
+                     deployment — see § Traps for both
 Mainnet RPC          https://ethereum-rpc.publicnode.com  (ENS only; ankr needs a key now, and
                      cloudflare-eth reverts inside the ENS universal resolver)
 Nicknames            007, aletheia, baskerville, blaise, columbo, daemonhill — ENS subnames of

@@ -178,12 +178,34 @@ export type Coherence = {
 };
 
 /**
+ * What one agent juror's column has been paid, summed down it.
+ *
+ * `null` on `AgentJurorMarginals` where this column has no paid draw at all, which is three
+ * different things and only the view can tell them apart: the reward read has not come back,
+ * this agent juror has never been drawn, or every dispute it was drawn in is still unexecuted.
+ * `CourtPerformance.rewards.read` and `draws` are the two flags that separate them, exactly as
+ * `commitCoverage.read` and `commitments` separate the three absences of a commit median.
+ *
+ * A `bigint` because a PNK penalty in this court is 1.87e20 wei. See `rewards.ts`.
+ */
+export type AgentJurorRewards = {
+  /** Cumulative arbitration fees, in wei. Never negative: the court's penalty is taken in PNK. */
+  ethWei: bigint;
+  /** Net PNK in wei — **negative** for an agent juror that has lost more than it has won. */
+  pnkWei: bigint;
+  /** How many of this column's draws these two are summed over. */
+  paidDraws: number;
+  /** How many were paid wholly or partly in a fee token, which `ethWei` does not carry. */
+  feeTokenDraws: number;
+};
+
+/**
  * One agent juror's column, summarised: the marginals in the matrix's column header.
  *
  * The same rows as `CourtTotals`, sliced down one column, so a marginal and the total above it
  * can never become two accounts of one set of draws — `totals.test.ts` pins that they sum. Six
- * figures are designed for and four are filled: cumulative ETH and PNK are ticket 10's and join
- * the same block.
+ * figures are designed for and six are now filled: ticket 10 added cumulative ETH and net PNK
+ * to the four ticket 06 built the block to hold.
  *
  * Every figure that cannot be measured is `null` rather than `0`, because the view draws it as
  * an em dash and a zero would be a measurement nobody took (`canvas/JurorEmpty.dc.html:66-76`).
@@ -228,6 +250,20 @@ export type AgentJurorMarginals = {
    * column never drawn under the earlier windows is comparable with the court as it stands.
    */
   changedWindows: readonly WindowChange[];
+  /**
+   * Cumulative ETH and net PNK for this column, or `null` where nothing has been paid.
+   *
+   * **The † does not ride these two, and that is a measured fact rather than an assumption.**
+   * The marker is about the commit and vote windows, and a reward depends on none of them: it
+   * is `feeForJuror` per coherent draw and `minStake × alpha` at risk per draw. Court 34's one
+   * reconfiguration, on 2026-08-20, carried `minStake`, `alpha`, `feeForJuror` and
+   * `jurorsForCourtJump` **unchanged** and moved only `timesPerPeriod` — decoded from the
+   * `CourtModified` log against the `CourtCreated` before it. So every figure summed here was
+   * earned under one set of reward parameters, and a dagger claiming otherwise would be a
+   * marker placed in error. The ‡ does not ride them either: a panel of one makes coherence
+   * tautological and the fee it earned real.
+   */
+  rewards: AgentJurorRewards | null;
 };
 
 /**
@@ -445,6 +481,10 @@ export function agentJurorMarginalsOf(
     const lonePanelDisputes: number[] = [];
     const revealSeconds: number[] = [];
     const commitSeconds: number[] = [];
+    let ethWei = 0n;
+    let pnkWei = 0n;
+    let paidDraws = 0;
+    let feeTokenDraws = 0;
 
     for (const row of rows) {
       const cell = row.cells[column];
@@ -453,6 +493,18 @@ export function agentJurorMarginalsOf(
       draws += 1;
       votes += cell.voteCount;
       if (cell.committed) commitments += 1;
+
+      // Summed over the cells rather than over the shifts themselves, so that these two figures
+      // are over exactly the draws the five figures beside them are over. An unread row
+      // contributes nothing here for the same reason it contributes no draws — and in practice
+      // the two readings coincide, because a dispute new enough to be unread is far too new to
+      // have been executed.
+      if (cell.reward !== null) {
+        ethWei += cell.reward.ethWei;
+        pnkWei += cell.reward.pnkWei;
+        paidDraws += 1;
+        if (cell.reward.inFeeToken) feeTokenDraws += 1;
+      }
       if (cell.revealLatencySeconds !== null) revealSeconds.push(cell.revealLatencySeconds);
       if (cell.commitLatencySeconds !== null) commitSeconds.push(cell.commitLatencySeconds);
 
@@ -485,6 +537,10 @@ export function agentJurorMarginalsOf(
         rows.filter((row) => row.cells[column] != null),
         (row) => [row.cells[column] ?? null],
       ),
+      // `null` and not a pair of zeros: a zero here is a measurement — "drawn, and paid
+      // nothing" — and this is its absence. The view is what turns the absence into either a
+      // real zero or a dash, because only it knows whether the read has happened.
+      rewards: paidDraws === 0 ? null : { ethWei, pnkWei, paidDraws, feeTokenDraws },
     };
   });
 }

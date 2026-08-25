@@ -74,9 +74,12 @@ export const PERSISTED_CACHE_KEY = "kleros-ai-juror-dashboard:query-cache";
  * 1. Does its value survive a JSON round trip — no `Map`, no `Set`, no `bigint`, no `Date`?
  * 2. Does a *failed* read of it produce a successful query? If it has a fallback, it does.
  *
- * Ticket 08's parameter history and ticket 10's rewards both read from a chain, and a `bigint`
- * anywhere in either would throw on the way out rather than degrade quietly — the better
- * failure, still not one to discover in production.
+ * Ticket 08's parameter history reads from a chain, and a `bigint` anywhere in it would throw on
+ * the way out rather than degrade quietly — the better failure, still not one to discover in
+ * production. Ticket 10's rewards were expected to raise the same question and did not: they are
+ * read from the subgraph, which serves every amount as a decimal **string**, and the `bigint`
+ * only appears above the seam where nothing is stored. Answering the question is what showed
+ * that; assuming the answer is what this list exists to prevent.
  */
 const PERSISTED_QUERIES: readonly string[] = [
   "courtDisputes",
@@ -100,6 +103,19 @@ const PERSISTED_QUERIES: readonly string[] = [
   // retracts itself a moment later. A caveat that comes and goes teaches a reader to ignore
   // caveats — see `CLAUDE.md` § Traps.
   "courtParameters",
+  // Ticket 10's payouts, admitted on the same two questions. The value is the raw
+  // `TokenAndETHShift` payload — decimal strings, no Map, no bigint, no Date — and it is parsed
+  // to `bigint` inside the pure seam on every render, so a restored cache is re-summed by
+  // today's code exactly as the draws are. A failed read is a failed query: `fetchCourtRewards`
+  // has no fallback and throws a `ReadFailure`, so there is no successful-but-empty result to
+  // re-serve for an hour, which is what kept the ENS identities out.
+  //
+  // It is also a read that wants persisting, for the reason `courtParameters` does. These two
+  // figures are sums, so the state before they land is not a dash on a median but six column
+  // headers reading "—" under a footer saying the payouts are still being read. Without this,
+  // every return visit renders that and then retracts it a moment later — a caveat that comes
+  // and goes teaches a reader to ignore caveats.
+  "courtRewards",
 ];
 
 /** Whether one query's result is written to storage. Keyed on the head of the query key. */

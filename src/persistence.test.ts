@@ -2,6 +2,13 @@ import { describe, expect, it } from "vitest";
 import fixture from "./disputes/court-34.fixture.json" with { type: "json" };
 import { toDisputeTemplates } from "./disputes/dispute-templates";
 import { type RawDispute, toDisputes } from "./disputes/disputes";
+import drawFixture from "./performance/court-34-draws.fixture.json" with { type: "json" };
+import rewardFixture from "./performance/court-34-rewards.fixture.json" with { type: "json" };
+import {
+  buildCourtPerformance,
+  type RawDraw,
+  type RawRewardShift,
+} from "./performance/performance";
 import {
   PERSISTED_MAX_AGE_MS,
   PERSISTED_MODEL_VERSION,
@@ -9,6 +16,7 @@ import {
   shouldPersistQuery,
   stripDerived,
 } from "./persistence";
+import { ROSTER } from "./roster/agent-jurors";
 
 /**
  * What may be persisted, and what has to be rebuilt on the way back.
@@ -34,6 +42,10 @@ describe("shouldPersistQuery", () => {
     // Ticket 08's read, admitted when the two branches were merged. Plain numbers all the way
     // down, and a court's parameter history is the least changeable thing this app reads.
     expect(shouldPersistQuery(["courtParameters", "34"])).toBe(true);
+    // Ticket 10's, admitted on the same two questions. It was expected to fail the first — the
+    // amounts are `bigint` above the seam — and does not: the subgraph serves every one of them
+    // as a decimal string, and the parsing happens inside the pure model on every render.
+    expect(shouldPersistQuery(["courtRewards", "34"])).toBe(true);
   });
 
   it("refuses the ENS identities, because a failed read of them succeeds", () => {
@@ -54,15 +66,16 @@ describe("shouldPersistQuery", () => {
   });
 
   it("refuses a query nobody has thought about yet", () => {
-    // Tickets 06 and 10 each still add a read. None is persisted by default, and the question
-    // to answer before adding one is whether its value is plain JSON — and then whether a
-    // failed read of it succeeds, which is what the ENS case below cost.
+    // Ticket 11 still adds a view, and anything later still adds reads. None is persisted by
+    // default, and the question to answer before adding one is whether its value is plain JSON
+    // — and then whether a failed read of it succeeds, which is what the ENS case below cost.
     //
-    // This case named `courtParameters` until ticket 08 was merged in and the question was
-    // actually answered; the example was replaced rather than the assertion deleted, because
-    // what it pins is the default rather than any one query.
+    // This case named `courtParameters` until ticket 08 was merged in and `rewards` until
+    // ticket 10 answered for it. The examples are replaced rather than the assertion deleted,
+    // because what it pins is the default rather than any one query — and a stale example is
+    // how an allowlist quietly stops being one.
     expect(shouldPersistQuery(["perAgentJurorMarginals", "34"])).toBe(false);
-    expect(shouldPersistQuery(["rewards", "34"])).toBe(false);
+    expect(shouldPersistQuery(["courtStakes", "34"])).toBe(false);
     expect(shouldPersistQuery([])).toBe(false);
   });
 
@@ -75,7 +88,40 @@ describe("shouldPersistQuery", () => {
     expect(templates.get(161)).toBeDefined();
     expect(JSON.parse(JSON.stringify(templates))).toEqual({});
   });
+
+  it("proves the admission is safe rather than assuming it, for the one that looked unsafe", () => {
+    // The positive counterpart, and the reason it is worth writing for this query and not for
+    // the others: ticket 10's amounts *are* `bigint` in the model, so `courtRewards` looked like
+    // the first payload here that could not survive storage. `JSON.stringify` throws outright on
+    // a `bigint` — the loud failure — but the answer is that none ever reaches it: the subgraph
+    // serves decimal strings and the parsing happens inside the pure seam.
+    //
+    // Asserted end to end rather than on the payload alone, because "survives JSON" is not the
+    // claim that matters. The claim is that a *restored* cache produces the same figures, which
+    // is the whole safety argument for persisting payloads instead of results.
+    const stored = JSON.parse(JSON.stringify(rewardFixture)) as RawRewardShift[];
+
+    expect(stored).toEqual(rewardFixture);
+    expect(() => JSON.stringify(rewardFixture)).not.toThrow();
+    expect(marginalsFrom(stored)).toEqual(marginalsFrom(rewardFixture as RawRewardShift[]));
+  });
 });
+
+/** Cumulative ETH and PNK per column, built from one reward payload through the real seam. */
+function marginalsFrom(rewards: RawRewardShift[]) {
+  const result = buildCourtPerformance({
+    disputes: raw,
+    draws: drawFixture as RawDraw[],
+    commits: null,
+    parameters: null,
+    rewards,
+    roster: ROSTER,
+    drawsReadAt: null,
+  });
+  if (!result.success) throw new Error(`${result.code}: ${result.message}`);
+
+  return result.data.marginals.map((marginal) => marginal.rewards);
+}
 
 describe("stripDerived and rederive", () => {
   const data = { raw, disputes: toDisputes(raw) };
@@ -160,6 +206,25 @@ describe("the persisted model shape", () => {
     const commit = { disputeID: "151", juror: "0xabc", timestamp: "1787188232" };
 
     expect(Object.keys(commit).sort()).toEqual(["disputeID", "juror", "timestamp"]);
+  });
+
+  it("pins the shape of a stored payout", () => {
+    // Unlike the commitment above, `fetchCourtRewards` stores the payload unshaped — so what is
+    // pinned here is what the *query selects*, which is the thing that would silently change.
+    // Dropping `feeTokenAmount` would restore every shift as one this page believes was paid in
+    // ETH; adding `isNativeCurrency` would put the mislabelled field (CLAUDE.md § Traps) back
+    // within reach of someone who has not read why it is absent.
+    const shift = rewardFixture[0];
+    if (shift === undefined) throw new Error("the fixture holds no payouts");
+
+    expect(Object.keys(shift).sort()).toEqual([
+      "dispute",
+      "ethAmount",
+      "feeTokenAmount",
+      "id",
+      "juror",
+      "pnkAmount",
+    ]);
   });
 
   it("carries a version to bump when one of the shapes above changes", () => {

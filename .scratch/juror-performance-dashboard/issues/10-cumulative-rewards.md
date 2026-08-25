@@ -10,23 +10,23 @@ dimension.
 agent juror's column header), `../canvas/Juror.dc.html:70-82` (the same two figures on the
 per-agent-juror stat card), `../canvas/README.md` for provenance
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Reward shifts are read per agent juror, scoped to court 34
-- [ ] Cumulative ETH and PNK render as the last two of the six rows in each agent juror's matrix column
+- [x] Reward shifts are read per agent juror, scoped to court 34
+- [x] Cumulative ETH and PNK render as the last two of the six rows in each agent juror's matrix column
       header, under the same hairline as the four marginals ticket 06 puts there — not in a summary
       column of their own
-- [ ] This ticket adds only those two rows: the column header, its hairline and the other four
+- [x] This ticket adds only those two rows: the column header, its hairline and the other four
       marginals are ticket 06's and are not rebuilt here
-- [ ] Amounts render at a fixed precision per token rather than as raw integers — four decimal places
+- [x] Amounts render at a fixed precision per token rather than as raw integers — four decimal places
       for ETH, two for PNK, so a column of them aligns
-- [ ] Wherever a net PNK figure is shown, its sign is carried by a sign character in the value itself
+- [x] Wherever a net PNK figure is shown, its sign is carried by a sign character in the value itself
       and never by colour alone — see
       ADR-0006
-- [ ] An agent juror that has been drawn but earned nothing shows a real zero. One that has never been
+- [x] An agent juror that has been drawn but earned nothing shows a real zero. One that has never been
       drawn shows a dash in both figures, matching ticket 06's rule for the marginals beside them: a
       zero is a measurement and a dash is the absence of one
-- [ ] Rewards are not ranked and do not reorder anything
+- [x] Rewards are not ranked and do not reorder anything
 
 ### From ticket 12, 2026-08-25 — your read is not persisted until you say so
 
@@ -97,3 +97,77 @@ possibly does, since the reward depends on the round. And `commitments` on the m
 model for "the subgraph says this happened and the second source has not confirmed it yet": if your
 read is a second source over the same draws, it needs the same in-flight gate rather than an
 emptiness test, which is `CLAUDE.md`'s fourth recurrence of that trap.
+
+## Comments
+
+### 2026-08-25 — what the read actually found
+
+**The measure came from the subgraph, not from a chain.** Every other ticket that added an
+economic or historical read reached for Arbitrum; `TokenAndETHShift` is one of the few things the
+v0.17.2 deployment carries in full, amounts included, so `rewards-subgraph.ts` is three GraphQL
+fields and no RPC. That also kept the live suite off the arb1 call budget entirely.
+
+**Three findings that changed the implementation:**
+
+1. **`isNativeCurrency` is `false` on a court that pays native ETH.** All 56 payouts carry it,
+   with `feeToken: null` and `feeTokenAmount: "0"`, while `ethAmount` holds the full
+   `feeForJuror` — and the raw log decodes to `_feeToken = address(0)`. Following the flag would
+   have reported that every agent juror earned nothing. The field is deliberately **not selected**
+   by the query, so it cannot be reached for. Recorded in `CLAUDE.md` § Traps.
+2. **The fee is per vote ID, not per draw.** Nine of the 44 captured shifts are fractions of
+   `feeForJuror` (1.25, 1.67, 2.5). The first cross-check written here assumed whole multiples and
+   failed on real data. The court-wide identity that *does* hold — total ETH = `feeForJuror` × the
+   vote-ID count over executed disputes, 61 fees — is stronger anyway, because it ties this read to
+   the draw read through the court's own configured fee.
+3. **The reconfiguration changed no reward parameter.** `minStake`, `alpha`, `feeForJuror` and
+   `jurorsForCourtJump` are byte-identical across `CourtCreated` and `CourtModified`. That is why
+   neither figure takes the †, and it is decoded rather than assumed.
+
+**A coverage cross-check was considered and deliberately not built.** `CommitCoverage`'s shape
+would have fitted — "every draw in a ruled dispute has a shift" is true of the captured court — and
+it would cry "short read" for hours at a time, because a shift is written by `execute()`, a later
+transaction than ruling. That is the false caveat `CLAUDE.md` warns about four times over. The
+disclosure is affirmative instead: `RewardCoverage.paidDraws` says what the sums are *over*, and
+the guard against a short read is the arithmetic in finding 2.
+
+**A sum degrades worse than a median.** Every other unread figure on this page renders as an em
+dash; an unread sum renders as `0.0000`, in the ink of a measurement. That is why `rewards` is
+nullable on `RawCourtData`, why `Marginals` takes a `paid` gate beside its `scanned` one, and why
+`rewardsPending`/`rewardsFailed` exist as separate fixtures.
+
+**Retired, not added to:** the matrix view's "Cumulative ETH and PNK rewards per agent juror have
+not been read at all" — the last "not read" claim it made about itself.
+
+### 2026-08-25 — what review changed
+
+Two-axis review (standards + spec) found three defects, all of which turned on the fact that these
+two figures are **sums** rather than medians. All three are fixed.
+
+1. **A failed payout read could be announced nowhere.** `coreFailureOf` returns one entry per
+   source and ranked the payouts last, so a stale-read drift took the banner; and `provenanceOf`
+   suppresses its own sentence precisely when there is an error to suppress it for. A page with
+   both said nothing about the payouts anywhere — "a read that fails is said exactly twice" coming
+   out as zero. Fixed by ranking the payout failure **above** the stale read, which can afford to
+   yield because it has two voices of its own: every affected row carries a `?` flag and draws its
+   cells as Unknown.
+2. **A short read rendered as a measurement.** A reindexing Goldsky answers HTTP 200 with `[]`, so
+   the read *succeeds* and pays nothing, and every drawn column printed `0.0000` / `0.00` in the
+   ink of a measurement. `RewardCoverage.short` now catches it with two all-or-nothing tests that a
+   ruled-but-unexecuted dispute cannot trip: no payout at all for a court with ruled draws, and a
+   ruled dispute paid for some of its draws and not others (`execute()` pays every drawn juror in
+   one transaction, so partial is only ever a short read). The slots then read "Not read" — ticket
+   13's Unknown, the same words the commit median uses for the same thing.
+3. **A payout failure labelled the stat tiles "Partial".** `affects` is per *source*, and this is
+   the first core-subgraph failure that leaves the figures above the matrix whole — nothing on the
+   tiles or the strip reads a payout. That is ticket 13's own first-cut mistake at a finer grain,
+   and the comment in `failures.ts` records what it costs. `coreFailureOf` now returns
+   `{ read, costsTiles }` and `MatrixPage` narrows on it.
+
+Also corrected: the **CONTEXT.md entry contradicted its own code** — its first draft said to avoid
+"reward" for the signed pair while every type in the change is named `…Reward…`. The entry was
+wrong, not the names; the ticket and the artboard both use "reward" that way.
+
+Declined, with reasons: `rewardFigure`/`commitFigure` are not worth merging (they gate on different
+things — a missing commitment is a shortfall, a missing payout usually is not), and the `<0.0001`
+notation stays despite costing a glyph of column alignment, because the alternative is printing
+`0.0000` for an amount that is not zero.

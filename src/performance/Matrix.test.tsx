@@ -12,6 +12,7 @@ import { theme } from "../styles/theme";
 import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
+import rewardFixture from "./court-34-rewards.fixture.json" with { type: "json" };
 import { Matrix } from "./Matrix";
 import {
   buildCourtPerformance,
@@ -19,6 +20,7 @@ import {
   type RawCommitCast,
   type RawCourtData,
   type RawDraw,
+  type RawRewardShift,
 } from "./performance";
 import type { RawCourtParameters } from "./windows";
 
@@ -34,6 +36,7 @@ function build(raw: Partial<RawCourtData> = {}): CourtPerformance {
     draws: drawFixture as RawDraw[],
     commits: commitFixture as RawCommitCast[],
     parameters: parameterFixture as RawCourtParameters[],
+    rewards: rewardFixture as RawRewardShift[],
     roster: ROSTER,
     drawsReadAt: null,
     ...raw,
@@ -544,8 +547,45 @@ describe("Matrix", () => {
 
       // baskerville is staked, listed and never asked. There is nothing to measure and no
       // figure that could be shown without inventing it — but zero draws is a measurement.
-      expect(header("baskerville").getAllByText("—")).toHaveLength(3);
+      //
+      // Five dashes since ticket 10 and not three: an agent juror the court has never drawn has
+      // not been paid nothing, it has not been in a position to be paid at all, and `0.0000`
+      // would state the first.
+      expect(header("baskerville").getAllByText("—")).toHaveLength(5);
       expect(header("baskerville").getByText("0 · 0v")).toBeInTheDocument();
+    });
+
+    it("shows what each drawn column has been paid, at the precision the artboard sets", () => {
+      renderMatrix();
+
+      // The real payouts, summed down each column from the 44 shifts the court had written when
+      // the fixture was captured. Four places for ETH and two for PNK
+      // (`canvas/Main.dc.html:150-151`), and the PNK sign is a character in the value — 007 and
+      // aletheia are both net *down* on the experiment, which is a fact this page has to be able
+      // to state as plainly as a gain (ADR-0006).
+      expect(header("007").getByText("0.0026")).toBeInTheDocument();
+      expect(header("007").getByText("-93.50")).toBeInTheDocument();
+
+      expect(header("blaise").getByText("0.0036")).toBeInTheDocument();
+      expect(header("blaise").getByText("+218.17")).toBeInTheDocument();
+
+      expect(header("aletheia").getByText("-561.00")).toBeInTheDocument();
+      expect(header("daemonhill").getByText("+264.92")).toBeInTheDocument();
+      expect(header("columbo").getByText("+171.42")).toBeInTheDocument();
+    });
+
+    it("says nothing about a payout it has not read, rather than reading it as zero", () => {
+      // The state every cold load passes through, and the one that makes these two figures
+      // different from the four beside them. A median that cannot be taken is a dash; a *sum*
+      // that has not been read is `0.0000`, which is a number in the ink of a measurement
+      // saying six agent jurors earned nothing across sixteen disputes.
+      renderMatrix(build({ rewards: null }));
+
+      expect(screen.queryByText("0.0000")).not.toBeInTheDocument();
+      expect(screen.queryByText("0.00")).not.toBeInTheDocument();
+      expect(header("007").queryByText("0.0026")).not.toBeInTheDocument();
+      // Every column falls back to the same dash the never-drawn one shows.
+      expect(header("007").getAllByText("—").length).toBeGreaterThanOrEqual(2);
     });
 
     it("marks the column drawn in dispute 151, and leaves the others unmarked", () => {

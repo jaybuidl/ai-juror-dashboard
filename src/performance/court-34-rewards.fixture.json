@@ -1,0 +1,530 @@
+[
+  {
+    "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6-152-0",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "152"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6-153-0",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "153"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6-156-0",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "156"
+    },
+    "pnkAmount": "-187000000000000000000",
+    "ethAmount": "0",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6-159-0",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "159"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6-160-0",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "160"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "540000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6-161-0",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "161"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6-162-0",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "162"
+    },
+    "pnkAmount": "93500000000000000000",
+    "ethAmount": "675000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6-163-0",
+    "juror": {
+      "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
+    },
+    "dispute": {
+      "disputeID": "163"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea-152-0",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "152"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea-153-0",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "153"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea-154-0",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "154"
+    },
+    "pnkAmount": "124666666666666666666",
+    "ethAmount": "450000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea-156-0",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "156"
+    },
+    "pnkAmount": "46750000000000000000",
+    "ethAmount": "337500000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea-157-0",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "157"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "540000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea-158-0",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "158"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "810000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea-159-0",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "159"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea-162-0",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "162"
+    },
+    "pnkAmount": "46750000000000000000",
+    "ethAmount": "337500000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea-163-0",
+    "juror": {
+      "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
+    },
+    "dispute": {
+      "disputeID": "163"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c-151-0",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "151"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "540000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c-152-0",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "152"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c-153-0",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "153"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c-154-0",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "154"
+    },
+    "pnkAmount": "124666666666666666666",
+    "ethAmount": "450000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c-155-0",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "155"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "810000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c-156-0",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "156"
+    },
+    "pnkAmount": "46750000000000000000",
+    "ethAmount": "337500000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c-159-0",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "159"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c-161-0",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "161"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c-163-0",
+    "juror": {
+      "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
+    },
+    "dispute": {
+      "disputeID": "163"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xac237740772093fcc812a463050c43a275dd01e5-151-0",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "151"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xac237740772093fcc812a463050c43a275dd01e5-152-0",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "152"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xac237740772093fcc812a463050c43a275dd01e5-154-0",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "154"
+    },
+    "pnkAmount": "124666666666666666666",
+    "ethAmount": "450000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xac237740772093fcc812a463050c43a275dd01e5-156-0",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "156"
+    },
+    "pnkAmount": "93500000000000000000",
+    "ethAmount": "675000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xac237740772093fcc812a463050c43a275dd01e5-158-0",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "158"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xac237740772093fcc812a463050c43a275dd01e5-160-0",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "160"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "540000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xac237740772093fcc812a463050c43a275dd01e5-162-0",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "162"
+    },
+    "pnkAmount": "46750000000000000000",
+    "ethAmount": "337500000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xac237740772093fcc812a463050c43a275dd01e5-163-0",
+    "juror": {
+      "id": "0xac237740772093fcc812a463050c43a275dd01e5"
+    },
+    "dispute": {
+      "disputeID": "163"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be-152-0",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "152"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be-153-0",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "153"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "540000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be-154-0",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "154"
+    },
+    "pnkAmount": "-374000000000000000000",
+    "ethAmount": "0",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be-157-0",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "157"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "810000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be-158-0",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "158"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be-159-0",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "159"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "540000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be-160-0",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "160"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be-161-0",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "161"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "810000000000000",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be-162-0",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "162"
+    },
+    "pnkAmount": "-187000000000000000000",
+    "ethAmount": "0",
+    "feeTokenAmount": "0"
+  },
+  {
+    "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be-163-0",
+    "juror": {
+      "id": "0xd44ca97bcd957b410a6e0a7109323cfd9ad814be"
+    },
+    "dispute": {
+      "disputeID": "163"
+    },
+    "pnkAmount": "0",
+    "ethAmount": "270000000000000",
+    "feeTokenAmount": "0"
+  }
+]

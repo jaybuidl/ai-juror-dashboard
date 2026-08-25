@@ -41,6 +41,9 @@ describe("fetchCommitCasts", () => {
       draws,
       commits,
       parameters: null,
+      // `rewards: null` on the same terms: nothing here is about a payout, and reading them
+      // would be another subgraph round trip for a figure this suite never asserts on.
+      rewards: null,
       roster: ROSTER,
       drawsReadAt: null,
     });

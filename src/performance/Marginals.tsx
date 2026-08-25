@@ -1,9 +1,16 @@
 import { Link } from "react-router";
 import styled from "styled-components";
 import { VisuallyHidden } from "../styles/hidden";
-import type { Figure } from "./cell";
+import { type Figure, UNREAD_FIGURE } from "./cell";
 import { formatLatencySeconds, formatWindowSeconds } from "./latency";
-import { type AgentJurorMarginals, markedWindows, type WindowChange } from "./totals";
+import type { RewardCoverage } from "./performance";
+import { formatEthWei, formatPnkWei } from "./rewards";
+import {
+  type AgentJurorMarginals,
+  type AgentJurorRewards,
+  markedWindows,
+  type WindowChange,
+} from "./totals";
 import type { PeriodWindows } from "./windows";
 
 /**
@@ -44,6 +51,8 @@ type Slot = {
   name: string;
   figure: Figure;
   caveat?: Caveat;
+  /** Whether this figure is a net loss, which takes amber on top of its own sign character. */
+  loss?: boolean;
 };
 
 /* The hairline the artboard puts between the identity block and the figures under it. */
@@ -70,7 +79,7 @@ const Key = styled.span`
   color: ${({ theme }) => theme.textPending};
 `;
 
-const Value = styled.span<{ $tone: Figure["tone"] }>`
+const Value = styled.span<{ $tone: Figure["tone"]; $loss?: boolean }>`
   font: ${({ theme }) => theme.typeMonoSm};
   /* TRAP: the font shorthand above just reset font-feature-settings, and with it the tabular
      digits base.css puts on the body. Six of these sit one under another down a column and
@@ -79,9 +88,15 @@ const Value = styled.span<{ $tone: Figure["tone"] }>`
   font-feature-settings: ${({ theme }) => theme.featureMono};
   font-weight: 600;
   white-space: nowrap;
-  color: ${({ theme, $tone }) => {
+  color: ${({ theme, $tone, $loss }) => {
     if ($tone === "missed" || $tone === "unread") return theme.stateFail;
-    return $tone === "pending" ? theme.textPending : theme.textBody;
+    if ($tone === "pending") return theme.textPending;
+    /* Amber for a net PNK loss, exactly as canvas/Main.dc.html:259 inks it — and strictly the
+       second signal. The sign is a character in the value itself, so the figure reads the same
+       in greyscale and to someone who cannot separate amber from body ink (ADR-0006). This is
+       a flag of its own rather than a fifth `Figure` tone because a loss is not a state a
+       *cell* can be in: the shared type stays what a cell says. */
+    return $loss === true ? theme.stateWork : theme.textBody;
   }};
 `;
 
@@ -122,21 +137,31 @@ export type MarginalsProps = {
    * column would read "Not read" for the length of every cold load.
    */
   scanned: boolean;
+  /**
+   * What the court's payouts amount to — `CourtPerformance.rewards`.
+   *
+   * The whole coverage rather than a `read` flag, and it is the one gate here that needs two
+   * fields, because these two figures are **sums**. Every other figure in this block degrades to
+   * an em dash when it cannot be taken; a sum degrades to `0.0000`, in the ink of a measurement.
+   * So both an unstarted read and a *short* one have to be caught before the arithmetic, and
+   * `read` alone catches only the first.
+   */
+  payouts: RewardCoverage;
   /** The windows the court is configured with today, against which an earlier one is named. */
   current: PeriodWindows | null;
 };
 
-export function Marginals({ marginals, scanned, current }: MarginalsProps) {
+export function Marginals({ marginals, scanned, payouts, current }: MarginalsProps) {
   return (
     <Block>
-      {slotsOf(marginals, scanned, current).map((slot) => (
+      {slotsOf(marginals, scanned, payouts, current).map((slot) => (
         <div key={slot.key}>
           <Line>
             <Key>
               <span aria-hidden="true">{slot.label}</span>
               <VisuallyHidden>{slot.name}</VisuallyHidden>
             </Key>
-            <Value $tone={slot.figure.tone}>
+            <Value $tone={slot.figure.tone} $loss={slot.loss}>
               {slot.figure.text}
               {slot.caveat && (
                 <Mark to={slot.caveat.href} aria-label={slot.caveat.about}>
@@ -153,17 +178,21 @@ export function Marginals({ marginals, scanned, current }: MarginalsProps) {
 }
 
 /**
- * The four figures this ticket fills, in the artboard's order.
+ * The six figures, in the artboard's order.
  *
- * A list rather than four hard-coded blocks because the block is designed to hold six: ticket 10's
- * cumulative ETH and PNK join it here, as two more entries. They are deliberately *not* rendered
- * yet as em dashes — a dash on this page means "no draws to measure", and printing one against a
- * reward figure nobody has read would state a measurement where there has been no read at all.
- * What has not been read is said in words, in the provenance footer.
+ * A list rather than six hard-coded blocks because the block was designed to hold six and held
+ * four until ticket 10: the last two entries are cumulative ETH and net PNK, under the same
+ * hairline as the four above them and not in a summary column of their own
+ * (`canvas/Main.dc.html:136-152`).
+ *
+ * Nothing here is ranked and nothing reorders: the order is the artboard's, and the rewards sit
+ * last because they are supporting context beside the marginals rather than a dimension this
+ * dashboard measures agent jurors on.
  */
 function slotsOf(
   marginals: AgentJurorMarginals,
   scanned: boolean,
+  payouts: RewardCoverage,
   current: PeriodWindows | null,
 ): Slot[] {
   const { nickname } = marginals.agentJuror;
@@ -221,7 +250,65 @@ function slotsOf(
       // because the two differ — 61 votes were 44 draws across the first thirteen disputes.
       figure: { text: `${marginals.draws} · ${marginals.votes}v`, tone: "value" },
     },
+    {
+      key: "eth",
+      label: "Eth",
+      name: "Cumulative ETH earned",
+      figure: rewardFigure(marginals, payouts, (rewards) => formatEthWei(rewards.ethWei)),
+    },
+    {
+      key: "pnk",
+      label: "Pnk",
+      name: "Net PNK gained or lost",
+      figure: rewardFigure(marginals, payouts, (rewards) => formatPnkWei(rewards.pnkWei)),
+      // Amber on top of the sign character the value already carries, never instead of it.
+      loss: (marginals.rewards?.pnkWei ?? 0n) < 0n,
+    },
   ];
+}
+
+/** Drawn and paid nothing: a real zero, at the same precision as a real amount. */
+const EMPTY_REWARDS: AgentJurorRewards = {
+  ethWei: 0n,
+  pnkWei: 0n,
+  paidDraws: 0,
+  feeTokenDraws: 0,
+};
+
+/**
+ * A reward figure, and the four absences it has to tell apart before it prints a zero.
+ *
+ * The same shape as `commitFigure` above and for a sharper version of the same reason. Every
+ * other figure in this block degrades to an em dash when it cannot be taken; these two are sums,
+ * and a sum's natural degradation is `0.0000` — a number, in the ink of a measurement, saying
+ * an agent juror earned nothing. So every gate comes first and the arithmetic last:
+ *
+ * - **The read is not in.** Pending ink and a dash. `read` is false while the subgraph is being
+ *   asked *and* after it refused, which is the fourth recurrence of that trap in `CLAUDE.md` —
+ *   the failed half is the banner's to say, and this only has to not lie in the meantime.
+ * - **Never drawn.** Pending ink and a dash, which is what `canvas/JurorEmpty.dc.html:66-76`
+ *   draws and what the four figures above already do. baskerville has no on-chain presence at
+ *   all; there is nothing here to have earned. Asked *before* the shortfall below, because a
+ *   column with no draws has nothing that could have been read short.
+ * - **The read came back short.** Ticket 13's Unknown — rose, and the word "Not read" beside it,
+ *   exactly as the commit median states the same thing one gate up. This is the case the whole
+ *   `short` flag exists for: without it a reindexing subgraph's `[]` renders as six columns of
+ *   `0.0000`, and a wrong figure is worse than an absent one on a page that may be cited.
+ * - **Drawn, read whole, and paid nothing.** A real zero, because that is a measurement: the
+ *   court has executed nothing this agent juror was drawn in. The ticket asks for exactly this
+ *   distinction — "a zero is a measurement and a dash is the absence of one".
+ */
+function rewardFigure(
+  marginals: AgentJurorMarginals,
+  payouts: RewardCoverage,
+  format: (rewards: AgentJurorRewards) => string,
+): Figure {
+  if (!payouts.read || marginals.draws === 0) return { text: "—", tone: "pending" };
+  if (payouts.short) return UNREAD_FIGURE;
+
+  // `format` is given a zero rather than being skipped, so that the zero is written to the same
+  // precision as every figure beside it — "0.0000" lines up under "0.0026" and "0" would not.
+  return { text: format(marginals.rewards ?? EMPTY_REWARDS), tone: "value" };
 }
 
 /** A duration, or the em dash that means there were no draws to measure. */

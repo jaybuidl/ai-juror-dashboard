@@ -170,6 +170,19 @@ matrix and rank nobody. They live in the column header rather than a column of t
 agent jurors are the columns.
 _Avoid_: summary column, leaderboard, score
 
+**Reward shift**:
+What the court paid one agent juror for one dispute: an ETH arbitration fee and a PNK amount that is
+positive for a coherent draw and negative for a penalised one. Written when the court **executes** a
+dispute, which is a later transaction than ruling it — so a ruled dispute may legitimately have no
+shift yet, and cumulative rewards lag coherence rather than disagreeing with it. The ETH fee is paid
+**per vote ID**, not per draw, so one draw's payout is often a fraction of `feeForJuror`. The PNK
+side is a redistribution and nets to zero across the court, to within integer-division dust.
+**Reward** is the accepted shorthand for the pair, signed — the ticket, the artboard and the code
+(`Draw.reward`, `AgentJurorRewards`, `RewardCoverage`) all use it that way, and a negative one is a
+penalty rather than a separate term.
+_Avoid_: earnings where it implies income (PNK is redistributed, not issued), profit, score,
+payout for the PNK side alone (nothing is paid out — it changes hands)
+
 **Cell**:
 One cell is one draw: one agent juror's involvement in one dispute, carrying two latencies, a
 coherence state and the number of vote IDs it holds. Panel size is not among them — it lives on the

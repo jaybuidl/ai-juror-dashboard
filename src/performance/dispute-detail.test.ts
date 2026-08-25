@@ -32,6 +32,8 @@ const court = ((): CourtPerformance => {
     draws: drawFixture as RawDraw[],
     commits: null,
     parameters: parameterFixture as RawCourtParameters[],
+    // The per-dispute view shows no payout, so this model needs none to be built from.
+    rewards: null,
     roster: ROSTER,
     drawsReadAt: null,
   });

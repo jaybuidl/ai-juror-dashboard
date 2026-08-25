@@ -5,6 +5,7 @@ import { describe, expect, it } from "vitest";
 import { ROSTER } from "../roster/agent-jurors";
 import { theme } from "../styles/theme";
 import { Marginals } from "./Marginals";
+import type { RewardCoverage } from "./performance";
 import type { AgentJurorMarginals, LatencySummary, WindowChange } from "./totals";
 import type { PeriodWindows } from "./windows";
 
@@ -56,15 +57,32 @@ function marginalsOf(over: Partial<AgentJurorMarginals> = {}): AgentJurorMargina
     commitments: 4,
     coherence: { coherent: 3, resolved: 4, lonePanelDisputes: [] },
     changedWindows: [],
+    rewards: {
+      ethWei: 1080000000000000n,
+      pnkWei: 218166666666666666666n,
+      paidDraws: 4,
+      feeTokenDraws: 0,
+    },
     ...over,
   };
 }
 
-function renderMarginals(over: Partial<AgentJurorMarginals> = {}, scanned = true) {
+/** A whole read of a court that has paid out, which is what most of these cases assume. */
+const PAID: RewardCoverage = { read: true, paidDraws: 4, feeTokenDraws: 0, short: false };
+
+function renderMarginals(
+  over: Partial<AgentJurorMarginals> = {},
+  { scanned = true, payouts = PAID }: { scanned?: boolean; payouts?: RewardCoverage } = {},
+) {
   return render(
     <ThemeProvider theme={theme}>
       <MemoryRouter>
-        <Marginals marginals={marginalsOf(over)} scanned={scanned} current={CURRENT} />
+        <Marginals
+          marginals={marginalsOf(over)}
+          scanned={scanned}
+          payouts={payouts}
+          current={CURRENT}
+        />
       </MemoryRouter>
     </ThemeProvider>,
   );
@@ -94,6 +112,11 @@ describe("Marginals", () => {
   it("shows a dash for every figure an agent juror never drawn cannot have", () => {
     // `canvas/JurorEmpty.dc.html:66-76`. A dash means "no draws to measure"; it never means
     // zero, and it never means the read failed.
+    //
+    // Five of the six now: the two reveal and commit medians, the coherence count, and — since
+    // ticket 10 — cumulative ETH and net PNK. An agent juror the court has never asked cannot
+    // have been paid, so `0.0000` there would be a measurement of something that never happened.
+    // Only the draw count is a real zero, which is the next case down.
     renderMarginals({
       draws: 0,
       votes: 0,
@@ -101,10 +124,12 @@ describe("Marginals", () => {
       commitLatency: null,
       commitments: 0,
       coherence: { coherent: 0, resolved: 0, lonePanelDisputes: [] },
+      rewards: null,
     });
 
-    expect(screen.getAllByText("—")).toHaveLength(3);
+    expect(screen.getAllByText("—")).toHaveLength(5);
     expect(screen.queryByText("0/0")).not.toBeInTheDocument();
+    expect(screen.queryByText("0.0000")).not.toBeInTheDocument();
   });
 
   it("shows its draw count as a real zero, because zero draws is a measurement", () => {
@@ -117,7 +142,7 @@ describe("Marginals", () => {
     // The same gate `commitFigureOf` takes. Arbitrum answers slower than the subgraph and this
     // page does not wait for it, so between the two answers every column would otherwise come
     // up rose reading "Not read" — a failure announced before it has happened.
-    renderMarginals({ commitLatency: null, commitments: 4 }, false);
+    renderMarginals({ commitLatency: null, commitments: 4 }, { scanned: false });
 
     expect(screen.queryByText("Not read")).not.toBeInTheDocument();
     expect(screen.getAllByText("—").length).toBeGreaterThan(0);
@@ -127,15 +152,116 @@ describe("Marginals", () => {
     // The subgraph says these draws committed and no log was found for any of them. Wording
     // that as an em dash would report a read that came back short as an agent juror that did
     // not act — ticket 13's Unknown, in the aggregate.
-    renderMarginals({ commitLatency: null, commitments: 4 }, true);
+    renderMarginals({ commitLatency: null, commitments: 4 }, { scanned: true });
 
     expect(screen.getByText("Not read")).toBeInTheDocument();
   });
 
   it("keeps the dash where there was nothing to commit at all", () => {
-    renderMarginals({ commitLatency: null, commitments: 0 }, true);
+    renderMarginals({ commitLatency: null, commitments: 0 }, { scanned: true });
 
     expect(screen.queryByText("Not read")).not.toBeInTheDocument();
+  });
+
+  describe("what the column has been paid", () => {
+    it("reads ETH to four places and PNK to two, with the sign in the value", () => {
+      renderMarginals();
+
+      // The precisions the ticket sets and `canvas/Main.dc.html:150-151` draws. They differ
+      // because the quantities do: a coherent vote ID in court 34 pays 0.00027 ETH and puts
+      // 187 whole PNK at risk.
+      expect(screen.getByText("0.0011")).toBeInTheDocument();
+      expect(screen.getByText("+218.17")).toBeInTheDocument();
+    });
+
+    it("names both figures in full for a reader who cannot see the column", () => {
+      renderMarginals();
+
+      expect(screen.getByText("Cumulative ETH earned")).toBeInTheDocument();
+      expect(screen.getByText("Net PNK gained or lost")).toBeInTheDocument();
+    });
+
+    it("carries a loss in the value itself and not only in its colour", () => {
+      // ADR-0006, which the ticket cites directly. The artboard inks a net loss amber; the
+      // minus sign is what makes it survive greyscale, a 60% zoom, and a reader who cannot
+      // separate amber from body ink. Colour is the second signal, never the only one.
+      renderMarginals({
+        rewards: {
+          ethWei: 0n,
+          pnkWei: -561_000_000_000_000_000_000n,
+          paidDraws: 4,
+          feeTokenDraws: 0,
+        },
+      });
+
+      expect(screen.getByText("-561.00")).toBeInTheDocument();
+    });
+
+    it("shows a real zero for an agent juror drawn and paid nothing", () => {
+      // The ticket's own distinction: "a zero is a measurement and a dash is the absence of
+      // one". This column has been drawn and the court has executed nothing it was drawn in,
+      // which is a fact about the court rather than a gap in the read.
+      renderMarginals({ draws: 4, rewards: null });
+
+      expect(screen.getByText("0.0000")).toBeInTheDocument();
+      expect(screen.getByText("0.00")).toBeInTheDocument();
+    });
+
+    it("gives a zero no sign, because zero is neither a gain nor a loss", () => {
+      renderMarginals({ draws: 4, rewards: null });
+
+      expect(screen.queryByText("+0.00")).not.toBeInTheDocument();
+      expect(screen.queryByText("-0.00")).not.toBeInTheDocument();
+    });
+
+    it("says nothing at all before the payouts have been read", () => {
+      // The gate, and the reason it has to exist for these two and not for the medians beside
+      // them. `read` is false while the subgraph is being asked *and* after it refused — the
+      // fourth recurrence of that trap in `CLAUDE.md` — so a figure keyed on the data alone
+      // would print `0.0000` for the length of every cold load and then correct itself. A
+      // caveat that comes and goes teaches a reader to ignore caveats.
+      renderMarginals({ draws: 4 }, { payouts: { ...PAID, read: false } });
+
+      expect(screen.queryByText("0.0000")).not.toBeInTheDocument();
+      expect(screen.queryByText("+218.17")).not.toBeInTheDocument();
+      expect(screen.queryByText("Not read")).not.toBeInTheDocument();
+    });
+
+    it("reads a payout that came back short as unknown, not as a zero", () => {
+      // The case a `read` flag alone cannot catch, and the one that would put a false economic
+      // claim about named agents on a public page: a reindexing Goldsky answers HTTP 200 with
+      // `[]`, so the read *succeeded* and paid nothing. Rendering `0.0000` there states that
+      // this agent juror earned nothing across every dispute it was drawn in.
+      renderMarginals({ draws: 4, rewards: null }, { payouts: { ...PAID, short: true } });
+
+      expect(screen.queryByText("0.0000")).not.toBeInTheDocument();
+      expect(screen.queryByText("0.00")).not.toBeInTheDocument();
+      // Ticket 13's Unknown, in the aggregate — the same words the commit median uses one gate
+      // up, because it is the same thing: a read that happened and came up short.
+      expect(screen.getAllByText("Not read")).toHaveLength(2);
+    });
+
+    it("keeps the never-drawn dash under a short read, since there was nothing to read", () => {
+      // Order matters between the two gates. baskerville has no draws, so no payout of its own
+      // could have come back short — "Not read" there would attribute a failed read to a column
+      // that never had anything in it.
+      renderMarginals({ draws: 0, votes: 0, rewards: null }, { payouts: { ...PAID, short: true } });
+
+      expect(screen.queryByText("Not read")).not.toBeInTheDocument();
+    });
+
+    it("does not mark either figure with the window dagger", () => {
+      // A measured fact rather than an omission. The † is about the commit and vote windows,
+      // and a reward depends on neither: court 34's one reconfiguration carried `minStake`,
+      // `alpha` and `feeForJuror` unchanged and moved only `timesPerPeriod`. Marking these
+      // would be a caveat a reader can see is misplaced, which is one they stop reading.
+      renderMarginals({ changedWindows: [EARLIER] });
+
+      // Two daggers: the reveal median and the commit median, and neither reward figure.
+      expect(screen.getAllByText("†")).toHaveLength(2);
+      expect(screen.getAllByText(/ran under a .* window of 8h/i)).toHaveLength(2);
+      expect(screen.queryByRole("link", { name: /eth|pnk/i })).not.toBeInTheDocument();
+    });
   });
 
   describe("the markers", () => {

@@ -131,3 +131,34 @@ The breadcrumb takes the **roster** nickname and never the one ENS resolves, whi
 from ticket 15's note and is worth repeating because ticket 09's column headers deliberately do the
 opposite: they *display* `identity.nickname` ("Blaise") while everything keys on the roster
 ("blaise").
+
+## From ticket 10, 2026-08-25 — the two reward figures on your stat card are computed too
+
+`AgentJurorMarginals.rewards` is `{ ethWei, pnkWei, paidDraws, feeTokenDraws }` or `null`, and
+`Juror.dc.html:70-82` puts the first two on your stat card. Read them; do not sum shifts yourself.
+Four things about them that the matrix's column header already had to get right:
+
+- **They are `bigint` and must stay so until the moment they are printed.** A PNK penalty here is
+  1.87e20 wei. `formatEthWei` and `formatPnkWei` in `performance/rewards.ts` are the only place wei
+  becomes words — four decimal places for ETH, two for PNK — and nothing may divide or re-round one.
+- **`null` is three states and you need a fourth flag to separate them.** It means the read has not
+  come back, *or* this agent juror has never been drawn, *or* the court has executed nothing it was
+  drawn in. `CourtPerformance.rewards.read` and `marginals.draws` are what tell them apart, and the
+  order matters: unread → dash, never drawn → dash, drawn and unpaid → a **real zero**. Getting this
+  wrong is worse here than for a median, because a missing sum degrades to `0.0000` rather than to
+  an em dash — a number, in the ink of a measurement, saying the agent juror earned nothing.
+  `rewardFigure` in `Marginals.tsx` is the shape; `rewardsPending` and `rewardsFailed` in
+  `test/court.tsx` are fixtures for both halves of the in-flight/failed pair.
+- **Neither figure takes the † or the ‡.** Court 34's one reconfiguration left `minStake`, `alpha`
+  and `feeForJuror` unchanged and moved only `timesPerPeriod`, so a window change says nothing about
+  a reward; and a lone panel makes coherence tautological while the fee it earned is real. Both are
+  argued at `AgentJurorMarginals.rewards` in `totals.ts`.
+- **The sign is a character, never only a colour.** ADR-0006. Two of the five drawn agent jurors are
+  net *down* on this experiment, so a losing figure is the ordinary case rather than the exotic one.
+  Amber on top of the sign is what `canvas/Main.dc.html:259` draws; `Marginals.tsx` carries it as a
+  `$loss` flag rather than a fifth `Figure` tone, because a loss is not a state a *cell* can be in.
+
+If your view reads nothing of its own — and per ticket 06 it need not — then it raises no banner of
+its own either, and inherits `MatrixPage`'s treatment of a failed payout read: one line, ranked last
+within the core subgraph's four reads, because it costs the least of them.
+

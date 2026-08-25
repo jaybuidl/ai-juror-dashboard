@@ -18,11 +18,14 @@ and whether it voted with the dispute's final ruling — plus the court's totals
 distribution above it, a dispute index at `/disputes`, one dispute read whole at `/disputes/:id`,
 the six agent jurors at `/agent-jurors`, how everything is measured at `/method`, and a 404 view
 behind them. Every column header carries that agent juror's own summary of the same three
-measures — median reveal, median commit, coherence as a count and how many times it was drawn.
-Every view carries the same nav, the same read-only statement and a footer stating the provenance
-of what is above it. Three measures, and no more — cumulative ETH and PNK rewards are still
-unread. Each page names its own gaps outright, because a public page whose figures may be cited
-must never let "not built" look like "no results".
+measures — median reveal, median commit, coherence as a count and how many times it was drawn —
+and, beneath them, what that column has been paid: cumulative ETH and net PNK, summed over every
+dispute the court has executed. Those two are context beside the measures and not a dimension
+anyone is ranked on; nothing here orders by them, and a net loss carries its sign as a character
+in the value rather than only as a colour. Every view carries the same nav, the same read-only
+statement and a footer stating the provenance of what is above it. Each page names its own gaps
+outright, because a public page whose figures may be cited must never let "not built" look like
+"no results".
 
 **A dispute's own page is where the experiment is legible.** It carries the question the panel was
 asked, a ruling card giving the vote count for every choice — including choice 0 and any choice

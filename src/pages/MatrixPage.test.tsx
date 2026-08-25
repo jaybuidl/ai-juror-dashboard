@@ -1,8 +1,8 @@
-import { fireEvent, screen, within } from "@testing-library/react";
+import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import { arbitrumSource } from "../performance/arbitrum";
 import { formatLatencySeconds } from "../performance/latency";
-import { formatAgo } from "../read-failure";
+import { formatAgo, SOURCES } from "../read-failure";
 import { ROSTER } from "../roster/agent-jurors";
 import {
   arbitrumFailed,
@@ -16,6 +16,10 @@ import {
   refused,
   renderAt,
   resolvingRoster,
+  rewardsFailed,
+  rewardsInFeeToken,
+  rewardsPending,
+  rewardsShort,
   staleDraws,
   unmeasured,
   unresolvedRoster,
@@ -48,17 +52,23 @@ describe("the matrix view", () => {
     renderAt("/");
 
     expect(screen.getByText(/three measures, and what is missing from them/i)).toBeInTheDocument();
-    // Twice, in the two voices this page has: the caveat card above the matrix, and the
-    // provenance footer under it. The court's period durations left this list with ticket 08 and
-    // the per-agent-juror summaries with ticket 06, both of which read them — what remains
-    // unread is what remains named, and a list that kept naming either would be false.
-    expect(
-      screen.getByText(/it measures nothing else yet: cumulative eth and pnk rewards/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.getByText(/cumulative eth and pnk rewards per agent juror have not been read at all/i),
-    ).toBeInTheDocument();
+
+    // The list of what has *not* been read is now empty, and that is the whole of ticket 10.
+    // The court's period durations left it with ticket 08, the per-agent-juror summaries with
+    // ticket 06, and the rewards here — every one of them because it was read. A caveat naming
+    // an absence that has stopped being one is the same failure as an unnamed absence, in the
+    // other direction, and it is the one this page is most at risk of: nobody notices a
+    // sentence that has quietly become false.
+    expect(screen.queryByText(/it measures nothing else yet/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/have not been read at all/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/per-agent-juror summaries.*not been read/i)).not.toBeInTheDocument();
+
+    // What replaces it says what the two reward figures are *over*, which is the one thing a
+    // reader cannot see from the figures themselves: a dispute the court has ruled but not yet
+    // executed is in the coherence count and in neither of these.
+    expect(
+      screen.getByText(/summed over the 44 draws the court has executed and paid out/i),
+    ).toBeInTheDocument();
   });
 
   it("claims no measurement it has not made", () => {
@@ -411,6 +421,110 @@ describe("the matrix view's footer", () => {
       expect(
         within(screen.getByRole("alert")).getByText(arbitrumSource().name),
       ).toBeInTheDocument();
+    });
+
+    it("names the payouts in the banner, and says so once rather than beside the disputes", () => {
+      // Ticket 10's read comes from the *core* subgraph, unlike the two Arbitrum ones, so it
+      // shares an endpoint with the disputes and the draws. That makes it the fourth read
+      // `coreFailureOf` has to collapse into one line: a Goldsky outage raises all four, and a
+      // banner listing one deployment four times reads as four things having gone wrong.
+      renderAt("/", { performance: rewardsFailed });
+
+      const banner = screen.getByRole("alert");
+      expect(
+        within(banner).getByText(/the court's payouts could not be read/i),
+      ).toBeInTheDocument();
+      expect(within(banner).getAllByText(SOURCES.core.name)).toHaveLength(1);
+    });
+
+    it("keeps the payout failure below every failure that costs more than it does", () => {
+      // Precedence, and the reason it is worst-first: a failed dispute read leaves the whole
+      // page stale, where a failed payout read costs two of the six figures in each column
+      // header. A reader counting sources in a banner is working out how bad it is.
+      renderAt("/", {
+        performance: { ...rewardsFailed, error: new Error("The core subgraph returned HTTP 503") },
+      });
+
+      expect(screen.queryByText(/the court's payouts could not be read/i)).not.toBeInTheDocument();
+      expect(screen.getByRole("alert")).toBeInTheDocument();
+    });
+
+    it("still names the payout failure when a stale read would otherwise take the banner", () => {
+      // Found by review, and the reason the payout branch outranks the stale read rather than
+      // sitting below it. Both are `SOURCES.core`, so only one line is printed — and ranked the
+      // other way this page said nothing about the payouts anywhere at all: the banner was
+      // occupied, the footer's own sentence is suppressed the moment there is an error to
+      // suppress it, and both column slots fall back to the same pending dash a never-drawn
+      // column shows. "A read that fails is said exactly twice" came out as zero.
+      //
+      // The stale read can afford to yield because it has two voices of its own: every affected
+      // row carries a `?` flag and draws its cells as Unknown.
+      renderAt("/", {
+        disputes: disputesWithNewcomer,
+        performance: { ...staleDraws, error: null, rewardsError: new Error("HTTP 502") },
+      });
+
+      expect(screen.getByText(/the court's payouts could not be read/i)).toBeInTheDocument();
+      // And the row still says what it says, so nothing was traded away for it.
+      expect(screen.getAllByText(/not read/i).length).toBeGreaterThan(0);
+    });
+
+    it("calls a payout read that came back short a short read, not an empty court", () => {
+      // No error anywhere: a reindexing Goldsky answers HTTP 200 with `[]`. Without this the
+      // page would render six columns of `0.0000` — a statement that six named agent jurors
+      // have earned nothing — with nothing on the page to qualify it.
+      renderAt("/", { performance: rewardsShort });
+
+      expect(screen.getByText(/the court's payouts came back short/i)).toBeInTheDocument();
+      // And the standing "summed over N draws" sentence goes quiet: a short read has no
+      // business saying what it covers.
+      expect(screen.queryByText(/summed over the .* draws the court has executed/i)).toBeNull();
+    });
+
+    it("does not label the tiles partial over a read none of them depends on", () => {
+      // Found by review. `affects` is per *source*, and ticket 10 added the first core-subgraph
+      // failure that leaves the figures above the matrix whole: nothing on the tiles or the
+      // strip reads a payout. Marking them "Partial" would be ticket 13's own first-cut mistake
+      // at a finer grain — the one its comment records as "labelled every stat tile partial over
+      // a missing dispute title, contradicting a notice a few hundred pixels below it".
+      renderAt("/", { performance: rewardsFailed });
+
+      // The banner still says it, so nothing was traded away for the correction.
+      expect(screen.getByText(/the court's payouts could not be read/i)).toBeInTheDocument();
+      expect(screen.queryByText(/^Partial/i)).not.toBeInTheDocument();
+    });
+
+    it("still labels them partial when the failure is one they do depend on", () => {
+      // The other direction, so the narrowing above cannot silently swallow a real caveat.
+      renderAt("/", { performance: staleDraws });
+
+      expect(screen.getAllByText(/partial/i).length).toBeGreaterThan(0);
+    });
+
+    it("discloses a payout this page cannot express rather than letting it read as less", () => {
+      // Dead today — court 34 has a WETH fee token registered and has never paid in it — and
+      // written because a green suite here proves the healthy path and nothing else. An agent
+      // juror paid in a fee token has earned something no ETH figure carries, and reading as
+      // though it earned less is the failure a public page cannot afford.
+      renderAt("/", { performance: rewardsInFeeToken });
+
+      expect(
+        screen.getByText(/2 draws were paid in a fee token rather than in ETH/i),
+      ).toBeInTheDocument();
+    });
+
+    it("says the payouts are still being read only while they are", () => {
+      // The two states again, and the fourth read to need them kept apart. `rewards.read` is
+      // false while the subgraph is being asked *and* after it refused, so the footer's
+      // "still being read" has to go quiet once there is an error — the banner owns the
+      // failure, and one outage said twice is one voice too many.
+      renderAt("/", { performance: rewardsPending });
+      expect(screen.getByText(/payouts are still being read/i)).toBeInTheDocument();
+
+      cleanup();
+
+      renderAt("/", { performance: rewardsFailed });
+      expect(screen.queryByText(/payouts are still being read/i)).not.toBeInTheDocument();
     });
 
     it("names the window history in the banner when it is the only Arbitrum read that failed", () => {
