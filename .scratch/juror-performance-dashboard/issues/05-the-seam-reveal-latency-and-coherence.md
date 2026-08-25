@@ -77,3 +77,28 @@ cards), `../canvas/README.md` for provenance
       no mocks, covering: the vote-to-draw collapse, an absent justification, and an agent juror never drawn
 - [ ] Rows are disputes and columns are agent jurors, so the matrix grows downward as disputes
       accumulate — the density rules that take over past roughly forty rows are ticket 17, not this one
+
+## Comments
+
+### From ticket 14, 2026-08-25 — read before styling a figure
+
+**The `font` shorthand resets `font-feature-settings`, and every `--type-*` token is one.**
+`tokens/base.css` sets `font-feature-settings: var(--font-feature-numeric)` (`"tnum" 1`) on `body`
+so digits are tabular page-wide. Any element that sets its type through a `--type-*` token — which
+is how everything is typed now — silently drops that for itself and all its descendants. A column
+of latency figures inside a body-typed subtree gets proportional digits and stops lining up, with
+nothing in the console and nothing failing.
+
+Re-declare `font-feature-settings` immediately after the shorthand on anything holding a figure:
+`theme.featureMono` (`"zero" 1, "tnum" 1, "ss01" 1`) for mono values, `theme.featureNumeric` for
+sans. The canvas never relies on the inheritance either — every numeric element on every artboard
+carries its own `font-feature-settings`, which is the tell.
+
+**`theme.ts` is aliases, not values.** Each key is a `var(--token)` reference into the vendored
+design system at `src/styles/kleros-ai/`. Add keys as this ticket needs them; never paste a hex.
+`src/styles/theme.test.ts` fails on a copied value and on a `var()` naming a property that is not
+declared on `:root` — the second is worth knowing about, because CSS itself treats an undefined
+custom property as the inherited value and says nothing.
+
+**`--type-metric` (`800 34px … var(--font-mono)`) is the big-figure token, and its weight is
+self-hosted** even though the design system's own font import stops at 700. It will render as drawn.

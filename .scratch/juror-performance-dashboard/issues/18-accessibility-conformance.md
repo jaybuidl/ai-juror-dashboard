@@ -128,3 +128,31 @@ states and the not-drawn dot), `../canvas/Errors.dc.html:42-64` (the banner and 
       changed. Where a check can become a test in the existing Vitest and Testing Library suite — a
       cell's accessible name, the not-drawn wording, focus surviving a refresh — it is written as
       one, so it stays true rather than having been true once
+
+## Comments
+
+### From ticket 14, 2026-08-25 — the focus ring this ticket inherits
+
+**The ring is `tokens/base.css`'s and was kept deliberately**: `outline: none` plus
+`box-shadow: var(--ring-focus)`, which is `0 0 0 2px var(--page), 0 0 0 4px var(--focus-ring)` —
+a page-coloured gap and a cyan halo. Ticket 14 chose it over replacing it with an outline because it
+is the system's look, and added one thing beside it in `src/styles/global.ts`: an
+`@media (forced-colors: active)` block restoring `outline: 2px solid CanvasText`, because forced
+colours drops box-shadows entirely and a ring that is only a shadow disappears there. That is one
+ring per mode, not two competing.
+
+Two things to measure that ticket 14 could not:
+
+- **The 2px gap is `--page`, not the surface the focused element sits on.** On `--surface-card`
+  (`--ink-850`) or `--surface-raised` (`--ink-800`) the gap is a slightly *darker* ring against a
+  lighter card rather than a true gap. It is visible; whether it is 3:1 against both neighbours is
+  this ticket's call.
+- **Nothing on the page is focusable yet** — no links, no controls — so the ring has never rendered
+  in anger. The first focusable element arrives with ticket 15's routes.
+
+**Contrast baseline.** The measured failures in `CLAUDE.md` § Traps are unchanged by ticket 14: the
+tokens were vendored with their declared values, deliberately, so this ticket has a clean before.
+The light theme in `tokens/themes.css` is vendored and wired to nothing — `color-scheme` stays
+`dark`, there is no `data-theme` attribute anywhere, and `theme.test.ts` scopes its token scan to
+`:root` for exactly that reason. Fixing light-theme contrast is not in scope unless this ticket
+decides to ship the theme.

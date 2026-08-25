@@ -94,6 +94,13 @@ Things that cost real effort to discover and are easy to get wrong again:
   either side of dispute 152, and a percentage is false the moment it is quoted away from the page.
   ADR-0005. Where the window matters it appears *beside* how long the period actually ran, as two absolute
   durations.
+- **The CSS `font` shorthand resets `font-feature-settings`, and every `--type-*` token is one.**
+  `tokens/base.css` puts `font-feature-settings: var(--font-feature-numeric)` (`"tnum" 1`) on `body`
+  so digits are tabular page-wide; any element typed through a `--type-*` token silently drops that
+  for itself and its descendants. A column of latency figures then stops lining up, with nothing in
+  the console. Re-declare `font-feature-settings` after the shorthand on anything holding a figure —
+  `theme.featureMono` for mono values, `theme.featureNumeric` for sans. Every numeric element on
+  every artboard carries its own, which is the tell.
 - **Vite dev and `yarn preview` send no CSP at all**, so a missing host in `netlify.toml` looks
   perfect locally and fails only in production — for a font or a stylesheet, as a silent fall back
   rather than an error. The guard-rail comment there covered only `connect-src` until ticket 14 and

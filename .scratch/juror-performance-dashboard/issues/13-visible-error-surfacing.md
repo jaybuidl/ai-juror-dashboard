@@ -43,3 +43,26 @@ dispute whose data could not be read is a gap, and a gap must never be readable 
 - [ ] The commit cross-check discrepancy from ticket 07 surfaces through this same channel, and loudly,
       because it changes a number
 - [ ] Recovery needs no full page reload: retrying from the banner clears it once the source answers
+
+## Comments
+
+### From ticket 14, 2026-08-25 — a degraded panel already exists
+
+The ENS-unreachable notice in `src/roster/Roster.tsx` is now built against
+`../canvas/Errors.dc.html:142` — the amber panel (`--line-amber` hairline, `--wash-amber` fill,
+`◇` glyph, mono label "Degraded, not broken"). Ticket 14 first built it in no state colour at all,
+per its own criterion, and that was wrong twice over: it came out quieter than the prose it
+interrupts, which `CLAUDE.md` forbids of a caveat, and the canvas draws that exact block in amber.
+The canvas won. Recorded in ticket 14's Comments under "The one criterion not met as written".
+
+Two things this ticket inherits:
+
+- **The two tiers are already distinguished on that artboard, and they are not a colour choice.**
+  Amber at `:142` is *degraded, not broken* — something could not be read and no figure depends on
+  it. Rose at `:45` is the blocking banner, "Part of this page could not be read. Do not cite these
+  figures", for a read that actually cost a figure. This ticket owns the rose tier; the amber one is
+  built and can be lifted rather than re-invented.
+- **`Errors.dc.html:45` has a known defect** — it badges the blocking banner with `∅`, which
+  `Cell.dc.html:140` reserves for a draw that failed to act and says is "used nowhere else". The
+  unread *cell* correctly uses `?`. See `../canvas/README.md` § Known defects; do not copy the
+  banner's glyph as drawn.
