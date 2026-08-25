@@ -2,6 +2,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMemo } from "react";
 import { COURT_ID } from "../disputes/court-subgraph";
 import type { RawDispute } from "../disputes/disputes";
+import { refetchIntervalFor } from "../disputes/liveness";
 import { type AgentJuror, ROSTER } from "../roster/agent-jurors";
 import { createArbitrumClient } from "./arbitrum";
 import { fetchCommitCasts } from "./commit-logs";
@@ -89,7 +90,9 @@ export function hasReadableDisputes(disputes: RawDisputesView): boolean {
  * the checked-in one — the ENS identities belong to the column headers, and joining on a
  * resolved nickname would key the matrix on a display name.
  *
- * Liveness is ticket 12's: no refetch interval here, and no persistence of finalised rows.
+ * Liveness is ticket 12's, and it is here: the draws are re-read on the same five-second
+ * interval as the disputes while the court has anything still being decided. The commitments
+ * deliberately are not — see the commit query below.
  */
 export function useCourtPerformance(
   disputes: RawDisputesView,
@@ -101,6 +104,19 @@ export function useCourtPerformance(
     // The same minute the dispute list holds: the two are read together and there is nothing
     // to be gained from one of them being fresher than the other.
     staleTime: 60 * 1000,
+    /**
+     * And the same interval, for the same reason.
+     *
+     * Watching a live dispute is watching *this* query: the disputes say a period is open and
+     * the draws say who has acted in it. A five-second dispute list beside a minute-old draw
+     * list would render a commit period unfolding above cells that had not moved — the pair
+     * ticket 15's provenance footer already had to learn to talk about.
+     *
+     * Keyed on the disputes rather than on what this query itself returned, because the draws
+     * carry no period: whether anything is still being decided is a fact about the court, and
+     * the court is what the dispute read holds.
+     */
+    refetchInterval: () => refetchIntervalFor(disputes.raw),
   });
 
   const draws = query.data;
@@ -133,6 +149,21 @@ export function useCourtPerformance(
     // be retired by the very next render.
     enabled: draws !== undefined,
     staleTime: 60 * 1000,
+    /**
+     * No interval here, and that is the deliberate exception to the pair above.
+     *
+     * This read costs one `eth_getLogs` and then one `eth_getBlockByNumber` per commitment,
+     * against an endpoint that rate-limits per RPC *call* and counts a batch as its size.
+     * ADR-0004 measured it: 62 blocks read three times over inside a second returns HTTP 429,
+     * surfacing through viem as an unrecognisable `UnknownRpcError`. A five-second interval
+     * here would take the commit line down for exactly the person watching a commit period.
+     *
+     * It is gated on the draw set instead, which is the other half of ticket 07's advice: a
+     * newly committed draw changes the key and retires this read, so the commitments refresh
+     * when there is something new to explain and not on a clock. `block-times.ts` is what
+     * makes that re-read cheap — a block's timestamp cannot change, so a repeated scan pays
+     * only for blocks it has never seen.
+     */
   });
 
   const commits = commitQuery.data;

@@ -89,3 +89,19 @@ A dispute the parameter history could not place is not a dispute that ran under 
 and a marginal that treated an empty `changedWindows` as "nothing to disclose" would state a clean
 bill of health over a short read. Ticket 08's `Matrix.tsx` and `MatrixPage.tsx` both branch on it;
 do the same rather than reading `changedWindows` alone.
+
+### From ticket 12, 2026-08-25 — a court-wide count is waiting to be moved into your module
+
+**The matrix's corner count is computed in the view, and `CLAUDE.md` says it should not be.**
+`Matrix.tsx` derives `finalised` and `live` from `rows` to print `13 finalised · 6 live`. That is a
+court-wide number, and the rule this repo set with ticket 15 is that those live on `CourtTotals` in
+`src/performance/totals.ts`, not in the view that prints them. It predates ticket 12 — ticket 15
+put the `finalised`/`running` count there and ticket 12 only renamed the second half — and moving
+it was deliberately deferred because tickets 08 and 13 were open on `totals.ts` at the same time.
+
+You are already adding to that module, so it is cheap for you: two counts on `CourtTotals`, read
+with `isFinalised` from `src/disputes/liveness.ts` so there is still one definition of the word.
+
+**Your marginals are sliced down a column, and coherence is only defined on finalised rows.**
+ADR-0007 fixes what that means: a dispute the court has ruled on. A marginal that counted an
+unruled dispute's draws as incoherent would be inventing a result out of a prediction.

@@ -114,3 +114,20 @@ Two links already point here and will keep working:
 
 The row flag is separate and unchanged: `Matrix.tsx`'s `ROW_FLAGS` still reserves the first slot for
 the changed-window flag, above the lone panel.
+
+### From ticket 12, 2026-08-25 — the row flag list changed shape, and your rail is already wired
+
+**`ROW_FLAGS` in `src/performance/Matrix.tsx` now takes a computed label.** `label` is
+`(row: MatrixRow, now: number) => string` rather than a string, because the live flag counts
+elapsed time and the seam holds no clock. Yours is static and ignores both arguments:
+`label: () => "8h window"`. The slot reserved for it is unchanged — first in the array, above the
+lone panel — and the live flag sits below both.
+
+**The left rail now takes the tone of whichever flag the row wears**, per `Main.dc.html:305`, where
+`mark` is amber for a window or a lone panel and mint for live. So the window flag gets its amber
+rail for free the moment you add the entry; you do not need to touch `BodyRow`. The row *tint* is a
+separate question and stays keyed on liveness, which is what the artboard does.
+
+**`isFinalised` is in `src/disputes/liveness.ts`** and ADR-0007 explains why it is the ruling and
+not the period. If your window logic needs to know whether a dispute is still moving, read that
+rather than testing `period` — nothing else should acquire a second answer to that question.

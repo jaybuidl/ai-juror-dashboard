@@ -1,6 +1,7 @@
 import { type PublicClient, parseAbiItem } from "viem";
 import { type AgentJuror, ROSTER } from "../roster/agent-jurors";
 import { blockTimestamps, createArbitrumClient } from "./arbitrum";
+import { type BlockTimes, browserBlockTimes } from "./block-times";
 import type { RawCommitCast } from "./performance";
 
 /**
@@ -52,9 +53,19 @@ const FROM_BLOCK = 0n;
 export async function fetchCommitCasts({
   client = createArbitrumClient(),
   roster = ROSTER,
+  blockTimes = browserBlockTimes(),
 }: {
   client?: PublicClient;
   roster?: readonly AgentJuror[];
+  /**
+   * Blocks this browser has already dated, so a repeated scan pays only for the new ones.
+   *
+   * Ticket 12 is what makes this necessary: the court is re-read every five seconds while a
+   * dispute is live, and dating every commitment in it each time is the per-call rate limit
+   * ADR-0004 measured. A block's timestamp cannot change, so this cache has no staleness to
+   * reason about — see `block-times.ts`.
+   */
+  blockTimes?: BlockTimes;
 } = {}): Promise<RawCommitCast[]> {
   const logs = await client.getLogs({
     address: DISPUTE_KIT_CLASSIC,
@@ -75,6 +86,7 @@ export async function fetchCommitCasts({
   const timestampOf = await blockTimestamps(
     client,
     logs.map((log) => log.blockNumber),
+    blockTimes,
   );
 
   return logs.map((log) => {

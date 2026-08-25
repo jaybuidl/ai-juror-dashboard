@@ -131,6 +131,18 @@ quantity), allowance
 The zero-based index of an appeal round within a dispute. Every dispute in this experiment so far
 has exactly one round.
 
+**Finalised**:
+Said of a dispute the court has ruled on, and of nothing else. It is the line this dashboard draws
+between the record and what is still happening: a finalised dispute's draws, latencies, coherence
+and commitments are fixed for ever, so they may be cached, persisted and stopped being read. Its
+complement is **live** — the word the matrix's corner count and its row flag use.
+
+Keyed on the ruling and never on the period. A dispute in `appeal` has every vote in and no ruling,
+and a dispute in `execution` still gains one when somebody executes it, so `execution` names
+neither the end of the juror's involvement nor the end of the court's. Coherence is undefined until
+a dispute is finalised, which is the same boundary seen from the measurement side.
+_Avoid_: settled, closed, complete, resolved, treating `period === "execution"` as the test
+
 ### The display
 
 **Matrix**:

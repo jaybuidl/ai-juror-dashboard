@@ -35,6 +35,39 @@ export function formatLatencySeconds(seconds: number): string {
   return `${minutes}m ${String(seconds % 60).padStart(2, "0")}s`;
 }
 
+/** Past an hour the minutes stop being a number anyone reads, and past a day the hours do. */
+const HOURS_FROM = 3600;
+const DAYS_FROM = 86400;
+
+/**
+ * How long something has been going on, in words: `"45s"`, `"3m 12s"`, `"4h 12m"`, `"2d 04h"`.
+ *
+ * Separate from `formatLatencySeconds` because it measures a different kind of thing. A latency
+ * is a measurement of an agent juror, read down a column against its neighbours, and the record
+ * spans seven seconds to fifty-four minutes. This is how long a period has been open, read once
+ * in a pill, and it has no upper bound at all: every appeal period in this court ran about
+ * eighteen hours, and a dispute nobody executes stays open indefinitely. `formatLatencySeconds`
+ * would render those as `"1080m 00s"`.
+ *
+ * It delegates below the hour rather than restating the rule, so the pill and the cells beside
+ * it word the same magnitude the same way.
+ *
+ * Still absolute, and still never a fraction of anything (ADR-0005). That matters more here
+ * than in a cell: this figure sits beside a period whose configured window a reader may well
+ * know, and dividing the two for them is exactly what the decision forbids.
+ */
+export function formatElapsedSeconds(seconds: number): string {
+  if (seconds < HOURS_FROM) return formatLatencySeconds(seconds);
+
+  if (seconds < DAYS_FROM) {
+    const hours = Math.floor(seconds / HOURS_FROM);
+    return `${hours}h ${String(Math.floor((seconds % HOURS_FROM) / 60)).padStart(2, "0")}m`;
+  }
+
+  const days = Math.floor(seconds / DAYS_FROM);
+  return `${days}d ${String(Math.floor((seconds % DAYS_FROM) / HOURS_FROM)).padStart(2, "0")}h`;
+}
+
 /**
  * A configured window in words: `"45m"`, `"8h"`, `"1h 30m"`.
  *

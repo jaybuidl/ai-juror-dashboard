@@ -34,13 +34,21 @@ it is configured with now. Dispute 151 ran an 8-hour commit window against the 4
 from dispute 152 onward, and it carries a marker wherever its figures are counted. No latency
 anywhere is divided by a window — see [ADR-0005](docs/adr/0005-latency-is-never-shown-as-a-fraction-of-a-window.md).
 
+**The page also moves.** While the court holds a dispute it has not ruled on, the disputes and the
+draws are re-read every five seconds, and those rows say so without being read: a mint rail down
+the left, a faint tint across the row, and a pill naming the period that is open and how long it
+has been open. When the court has ruled on everything, the polling stops entirely. Payloads are
+persisted to `localStorage`, so a return visit renders the finalised record before either endpoint
+answers — payloads rather than derived figures, so a changed metric definition recomputes instead
+of serving a stale number.
+
 Read [`CLAUDE.md`](CLAUDE.md) before writing code — in particular its **Traps** section, which
 records the things that cost real time to discover. The design that this scaffold serves lives in:
 
 | Document | Contents |
 | --- | --- |
 | [`CONTEXT.md`](CONTEXT.md) | The glossary. Read before naming anything |
-| [`docs/adr/`](docs/adr/) | Six decisions a reader would otherwise question |
+| [`docs/adr/`](docs/adr/) | Seven decisions a reader would otherwise question |
 | [`.scratch/juror-performance-dashboard/spec.md`](.scratch/juror-performance-dashboard/spec.md) | The spec, plus a Further Notes section of hard-won facts |
 | [`.scratch/juror-performance-dashboard/issues/`](.scratch/juror-performance-dashboard/issues/) | Eighteen tickets, blockers first |
 | [`DESIGN_PROMPT.md`](DESIGN_PROMPT.md) | The UI brief. Answered — read the canvas rather than re-deriving it |

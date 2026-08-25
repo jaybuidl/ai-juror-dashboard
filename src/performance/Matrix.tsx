@@ -1,11 +1,12 @@
 import { Link } from "react-router";
-import styled from "styled-components";
+import styled, { css } from "styled-components";
 import { DisputeRow, type DisputeRowSlots } from "../disputes/DisputeList";
 import type { Dispute } from "../disputes/disputes";
+import { isFinalised, periodOpenSeconds } from "../disputes/liveness";
 import type { RosterView } from "../roster/useRoster";
 import { type Tone, toneInk, toneLine, toneWash } from "../styles/tones";
 import { commitFigureOf, presentationOf, revealFigureOf } from "./cell";
-import { formatWindowSeconds, railFraction } from "./latency";
+import { formatElapsedSeconds, formatWindowSeconds, railFraction } from "./latency";
 import type { CourtPerformance, Draw, MatrixRow } from "./performance";
 import type { PeriodWindows } from "./windows";
 
@@ -40,18 +41,41 @@ import type { PeriodWindows } from "./windows";
  * flag names *which* window changed: `† 8h window` on dispute 151, read from what the court was
  * configured with rather than typed in.
  */
+/**
+ * What a flag may consult beyond the row itself.
+ *
+ * One object rather than a positional argument per flag, because tickets 08 and 12 each made
+ * `label` a function and each needed a *different* second argument — the court's current
+ * windows, to say which of them changed, and the clock, to count how long a period has been
+ * open. Both were right and neither could hold the slot. A fourth flag adds a field here
+ * instead of re-breaking every entry.
+ *
+ * The clock arrives here and never in the seam: `MatrixRow` is built by a pure function that
+ * reads none, and `now` is threaded from the view for exactly that reason.
+ */
+type RowFlagContext = {
+  /** The windows the court is configured with today, against which an earlier one is named. */
+  current: PeriodWindows | null;
+  /** Render time, in epoch milliseconds. */
+  now: number;
+};
+
 const ROW_FLAGS: readonly {
   key: string;
-  applies: (row: MatrixRow, current: PeriodWindows | null) => boolean;
+  applies: (row: MatrixRow, context: RowFlagContext) => boolean;
   glyph: string;
-  label: (row: MatrixRow, current: PeriodWindows | null) => string;
+  /**
+   * Read at render rather than held as a string: the window flag names a duration read from
+   * the chain and the live flag counts elapsed time. A static flag ignores both arguments.
+   */
+  label: (row: MatrixRow, context: RowFlagContext) => string;
   tone: Tone;
 }[] = [
   {
     key: "window",
     applies: (row) => row.underEarlierWindows,
     glyph: "†",
-    label: windowFlagLabel,
+    label: (row, { current }) => windowFlagLabel(row, current),
     tone: "work",
   },
   {
@@ -61,7 +85,25 @@ const ROW_FLAGS: readonly {
     label: () => "Lone panel",
     tone: "work",
   },
-  // Ticket 12: { key: "live", applies: row => row.dispute.period !== "execution", … }
+  {
+    key: "live",
+    applies: (row) => !isFinalised(row.dispute),
+    glyph: "⋯",
+    // The period that is open and how long it has been open, per the artboard's
+    // `⋯ Live · commit 3m 12s`. Two things rather than one: a pill saying only "Live" reads
+    // the same at ten seconds and at ten hours, and this is the row a team member is watching.
+    //
+    // The elapsed half is dropped rather than faked when the moment cannot be trusted — the
+    // dispute is still live and still says so, it simply cannot be dated. Never a fraction of
+    // the period's window, at any magnitude: ADR-0005, and this is where a reader who knows
+    // the window would be one division away from forming one.
+    label: (row, { now }) => {
+      const open = periodOpenSeconds(row.dispute, now);
+      const elapsed = open === null ? "" : ` ${formatElapsedSeconds(open)}`;
+      return `Live · ${row.dispute.period}${elapsed}`;
+    },
+    tone: "live",
+  },
 ];
 
 /**
@@ -244,6 +286,43 @@ const AgentStack = styled.span`
   letter-spacing: ${({ theme }) => theme.trackingMono};
   text-transform: uppercase;
   color: ${({ theme }) => theme.textPending};
+`;
+
+/**
+ * A row whose dispute is still being decided, marked so it is found without being read.
+ *
+ * Three carriers, per `canvas/Main.dc.html:302-306`: the flag pill above, this tint across the
+ * row, and the rail down its left edge. The pill is the one that says what is happening; these
+ * two are what make the row findable in a column of forty, and neither carries meaning alone —
+ * ADR-0006.
+ *
+ * **The two answer different questions**, which the artboard is careful about and it would be
+ * easy to collapse. Its `bg` is mint exactly when the dispute is live; its `mark` is the colour
+ * of whichever flag the row is wearing — amber for a lone panel or a changed window, mint for
+ * live. So a lone panel that is still being decided has an amber rail over a mint tint, and a
+ * finalised lone panel has the rail with no tint at all. Painting the rail from liveness instead
+ * would leave the highest-precedence flag on the row marked in the colour of a lower one.
+ *
+ * The rail is an inset shadow rather than a border because a border on one row and not another
+ * shifts that row's contents two pixels sideways, which reads as a rendering fault in a grid
+ * whose whole job is alignment.
+ *
+ * Half a wash: the artboard tints the row at roughly half the strength it tints a live cell, so
+ * that the cells still read as the stronger mark where they sit on top of it. The token set has
+ * one mint wash rather than two, so the second strength is mixed down from it here rather than
+ * invented as a value in `theme.ts` — which holds aliases and no colours of its own.
+ */
+const BodyRow = styled.tr<{ $live: boolean; $rail?: Tone }>`
+  ${({ theme, $live }) =>
+    $live &&
+    css`
+      background-color: color-mix(in srgb, ${theme.washMint} 50%, transparent);
+    `}
+  ${({ theme, $rail }) =>
+    $rail !== undefined &&
+    css`
+      box-shadow: inset 2px 0 0 ${toneInk(theme, $rail)};
+    `}
 `;
 
 const RowHeaderCell = styled.th`
@@ -470,6 +549,16 @@ export type MatrixProps = {
   roster: RosterView;
   /** How ticket 04 supplies each row header's title and category. */
   slotsFor?: (dispute: Dispute) => DisputeRowSlots;
+  /**
+   * The present, in epoch milliseconds — the one thing on this page that is not read from the
+   * chain.
+   *
+   * Here rather than below the seam because `buildCourtPerformance` reads no clock, and a prop
+   * rather than a `Date.now()` buried in the flag so that a test can pin it. No timer drives
+   * it: while anything in the court is live the whole model is re-read every five seconds and
+   * this re-renders with it, and while nothing is live there is no elapsed figure to keep.
+   */
+  now?: number;
 };
 
 /** "155", "155 and 160", "155, 158 and 160". */
@@ -602,15 +691,16 @@ function DrawCell({ draw }: { draw: Draw }) {
   );
 }
 
-export function Matrix({ performance, roster, slotsFor }: MatrixProps) {
+export function Matrix({ performance, roster, slotsFor, now = Date.now() }: MatrixProps) {
   const { agentJurors, rows, commitCoverage, parameters } = performance;
+  const flagContext: RowFlagContext = { current: parameters.current, now };
   const unread = commitCoverage.expected - commitCoverage.resolved;
   const identityOf = new Map(
     roster.entries.map(({ agentJuror, identity }) => [agentJuror.address, identity]),
   );
 
-  const finalised = rows.filter((row) => row.dispute.ruling.state !== "pending").length;
-  const running = rows.length - finalised;
+  const finalised = rows.filter((row) => isFinalised(row.dispute)).length;
+  const live = rows.length - finalised;
   const drawnCells = rows.reduce(
     (total, row) => total + row.cells.filter((cell) => cell !== null).length,
     0,
@@ -701,7 +791,7 @@ export function Matrix({ performance, roster, slotsFor }: MatrixProps) {
                 <tr>
                   <CaptionCell scope="col">
                     <CaptionCount>
-                      {finalised} finalised · {running} running
+                      {finalised} finalised · {live} live
                     </CaptionCount>
                     <CaptionBody>
                       Newest first. One row per dispute, one column per agent juror, one cell per
@@ -743,13 +833,15 @@ export function Matrix({ performance, roster, slotsFor }: MatrixProps) {
               </thead>
               <tbody>
                 {rows.map((row) => {
-                  const flag = ROW_FLAGS.find((candidate) =>
-                    candidate.applies(row, parameters.current),
-                  );
+                  const flag = ROW_FLAGS.find((candidate) => candidate.applies(row, flagContext));
                   const lone = row.panelSize === 1;
+                  // Read from the same predicate the flag and the caption use. The row wears
+                  // the treatment even where a higher-precedence flag took the pill: a lone
+                  // panel that is still being decided is both, and the rail is not the flag.
+                  const isLive = !isFinalised(row.dispute);
 
                   return (
-                    <tr key={row.dispute.id}>
+                    <BodyRow key={row.dispute.id} $live={isLive} $rail={flag?.tone}>
                       <RowHeaderCell scope="row">
                         <DisputeRow
                           as="div"
@@ -767,7 +859,7 @@ export function Matrix({ performance, roster, slotsFor }: MatrixProps) {
                             flag: flag && (
                               <>
                                 <span aria-hidden="true">{flag.glyph}</span>
-                                {flag.label(row, parameters.current)}
+                                {flag.label(row, flagContext)}
                               </>
                             ),
                             flagTone: flag?.tone,
@@ -787,7 +879,7 @@ export function Matrix({ performance, roster, slotsFor }: MatrixProps) {
                           <DrawCell key={agentJuror.address} draw={cell} />
                         );
                       })}
-                    </tr>
+                    </BodyRow>
                   );
                 })}
               </tbody>

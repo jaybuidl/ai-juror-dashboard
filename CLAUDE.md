@@ -5,7 +5,7 @@ on two dimensions: **speed** (commit and reveal latency) and **coherence** (voti
 ruling).
 
 **Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01, 02, 03, 04,
-05, 07, 08, 14 and 15 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a `netlify.toml`
+05, 07, 08, 12, 14 and 15 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a `netlify.toml`
 that is the single source of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted
 webfonts, and the dispute matrix — one row per dispute, headed by that dispute's own title and
 category, one column per agent juror, each cell carrying that draw's commit latency, its reveal
@@ -22,9 +22,15 @@ the cross-check that turns a short log scan into a number the page states rather
 Ticket 08 read the court's own parameter history from the same chain (`src/performance/windows.ts`,
 `court-parameters.ts`), so every dispute resolves the period windows that were in force while it
 ran, dispute 151 carries a `†` wherever its figures are counted, and no latency is a fraction of
-anything (ADR-0005).
-The design work behind it (glossary, six ADRs, a spec, eighteen tickets) came out of a full grilling
-session and a later pass that rebuilt the tracker on the finished design. Start by reading, not by
+anything (ADR-0005). Ticket 12 then made the court **move**: the disputes and the draws are re-read
+every five seconds for as long as anything in the court is unruled and not at all once nothing is,
+live rows carry a rail, a tint and a pill naming the open period and how long it has run, and the
+payloads are persisted to `localStorage` so a return visit renders before either endpoint answers.
+It also settled what "finalised" means — the court has ruled, never `period === "execution"` —
+which `CONTEXT.md` now defines and the spec was amended to match.
+The design work behind it (glossary, seven ADRs, a spec, eighteen tickets) came out of a full
+grilling session and a later pass that rebuilt the tracker on the finished design — ADR-0007 is the
+one that came from implementation rather than design, and it overrode the spec. Start by reading, not by
 writing.
 
 `README.md` covers the toolchain, the scripts, the test split and the CSP; this file covers the
@@ -37,7 +43,7 @@ rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines 
 | Read | For |
 | --- | --- |
 | `CONTEXT.md` | The glossary. Read before naming anything |
-| `docs/adr/0001`–`0006` | The six decisions a reader would otherwise question |
+| `docs/adr/0001`–`0007` | The seven decisions a reader would otherwise question |
 | `.scratch/juror-performance-dashboard/spec.md` | The spec, and a Further Notes section of hard-won facts |
 | `.scratch/juror-performance-dashboard/issues/` | 18 tickets, blockers-first, `01` upward |
 | `DESIGN_PROMPT.md` | The UI brief. Answered — read the canvas below rather than re-deriving it |
@@ -45,7 +51,7 @@ rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines 
 
 Ticket **05** was the keystone, and it has landed: `src/performance/` holds the seam,
 `buildCourtPerformance(RawCourtData) → KlerosResult<CourtPerformance>`, which is where every
-derivation belongs. It touches no network and reads no clock. Tickets 06, 10 and 12 extend
+derivation belongs. It touches no network and reads no clock. Tickets 06 and 10 extend
 `RawCourtData` and the model rather than fetching beside them, exactly as tickets 07 and 08 did when
 they added `commits` and `parameters` — the two fields on it that no subgraph fills; a metric
 computed in a component is the mistake this seam exists to prevent. Ticket 15 added the first
@@ -111,14 +117,27 @@ Things that cost real effort to discover and are easy to get wrong again:
   of undefined (reading 'error')` rather than as a rate limit. One page load is far from the ceiling
   and react-query's minute of staleness keeps it that way, but it arrives with roughly 200 more
   disputes, and a *live test suite* hits it immediately — which is why `commit-logs.integration.test.ts`
-  reads once in `beforeAll` and shares the result rather than reading per test. Ticket 12's
-  persistence is the real fix; ADR-0004's preferred one is to put the timestamp in the subgraph.
-  Measured again on ticket 08: one whole `yarn test:integration` is ~130 Arbitrum calls and
-  passes, **two back to back inside a minute do not** — the second run's `draws-subgraph`
-  suite 429s. So a red live suite is worth re-running once after a pause before believing it,
-  and a new suite that reads this chain must justify its calls: ticket 08 dropped a fourth read
-  from `draws-subgraph.integration.test.ts` rather than add ~63 calls for something
-  `court-parameters.integration.test.ts` already covers.
+  reads once in `beforeAll` and shares the result rather than reading per test. **Ticket 12 landed
+  the fix for a repeat scan**: `src/performance/block-times.ts` remembers block timestamps in
+  `localStorage` and `blockTimestamps` in `arbitrum.ts` consults it, so a second scan costs one
+  `eth_getLogs` plus only the blocks never seen before — one or two rather than 57. It is safe
+  because a mined block's timestamp cannot change, which makes it the only cache here with no
+  staleness to reason about. ADR-0004's preferred fix is still to put the timestamp in the
+  subgraph. The cache also outlives a *test*: `commit-logs.test.ts` clears `localStorage` in a
+  `beforeEach`, because without it an assertion about which blocks were read passes or fails on
+  the order the cases happen to run in.
+  **The cache does not rescue the live suite, and the budget belongs to the whole suite rather
+  than to one file.** Vitest runs test files in parallel and gives each its own `localStorage`, so
+  nothing carries between them and every file that scans pays full price. Measured on ticket 08:
+  one whole `yarn test:integration` is ~130 Arbitrum calls and passes, **two back to back inside a
+  minute do not** — the second run's `draws-subgraph` suite 429s. So a red live suite is worth
+  re-running once after a pause before believing it. And a new suite that reads this chain must
+  justify its calls: ticket 08 dropped a fourth read from `draws-subgraph.integration.test.ts`
+  rather than add ~63 calls for something `court-parameters.integration.test.ts` already covers,
+  and ticket 12 added a third scanning file, went red with `UnknownRpcError` while each file
+  passed alone, and fixed it by not scanning — liveness is read from the ruling and the round
+  timeline, so it never needed the commitments. Before adding a commit scan to a live test, ask
+  whether the test actually needs a moment, and run the whole suite rather than the one file.
 - **The unit is the draw, not the vote.** Across the first thirteen disputes, 61 votes collapsed to
   44 draws. The subgraph's `totalCoherentVotes` / `coherenceScore` are per-vote *and* global across
   all courts — unusable here (ADR-0002). `ClassicJustification` is conveniently one per draw.
@@ -230,8 +249,9 @@ Things that cost real effort to discover and are easy to get wrong again:
   dispute list to stale draws, and a dispute created since that draw read has *no cells* — which
   this design defines as "not drawn", an unread state rendering as a fact about the court. Found by
   review on ticket 15, where both the notice and the provenance footer keyed on `disputes.error`
-  alone and said nothing about `performance.error`. Every ticket that adds a read — 06, 07, 08, 10,
-  12 — adds another pair that can drift apart. Check *each* query's error, and say which half is
+  alone and said nothing about `performance.error`. Every ticket that adds a read — 06, 07, 08, 10
+  — adds another pair that can drift apart, and ticket 12's five-second poll means they now drift
+  apart *repeatedly* rather than once per load. Check *each* query's error, and say which half is
   stale rather than that "the court" is.
 - **A flag that is false while a read is in flight is not a flag that the read failed.**
   `RosterView.isResolvedFromEns` is false during the mainnet lookup *and* after it fails, so a
@@ -241,6 +261,25 @@ Things that cost real effort to discover and are easy to get wrong again:
   including one pre-dating it in `Roster.tsx`, and the fixture hid it by hard-coding
   `isResolving: false` for a state whose own comment said it covered both. It applies to every
   caveat any ticket writes from here on.
+- **`JSON.stringify` turns a `Map` into `{}`, and the query cache is persisted as JSON.** Ticket
+  12 persists react-query's cache to `localStorage`, and `useDisputes`'s templates query holds a
+  `Map<number, DisputeTemplate>`. Persisted, it comes back as an object with no `get` on it,
+  `templateFor` finds nothing, and **every row on the page renders untitled** — which is exactly
+  what a dispute that never had a template looks like, the reclassification ticket 04 built a
+  counted notice to prevent. Nothing throws at write time or read time. This is why the persisted
+  set in `src/persistence.ts` is an **allowlist** and not a filter: a query is not persisted until
+  someone names it and answers whether its value survives a JSON round trip — no `Map`, no `Set`,
+  no `bigint`, no `Date`. Tickets 06, 08 and 10 each add a read, and two of them read a chain.
+- **Persisting a *derived* value means today's code reads yesterday's shape.** The seam is pure and
+  re-derives every figure on load, so persisting payloads needs no invalidation when the arithmetic
+  changes — that is the whole safety argument for the cache. But three query functions store a
+  shaped value rather than a raw one (`toDisputes` inside `useDisputes`, `toDisputeTemplates`, and
+  the reduction in `fetchCommitCasts`), deliberately, because they throw on payloads they cannot
+  read. A field added to `Dispute` therefore arrives `undefined` on every restored row, and
+  `undefined` is what this dashboard draws as "not drawn", "no title" and "not read".
+  `PERSISTED_MODEL_VERSION` busts the cache and `src/persistence.test.ts` pins those three shapes
+  so that changing one fails a test naming the constant to bump. It is only a guard if the shapes
+  stay pinned.
 - **A backtick inside a CSS comment ends the styled-components template.** This repo's house style
   puts long prose comments inside `styled.x\`…\`` blocks, and the moment one of them quotes an
   identifier the way the rest of the codebase does — around a filename, say — the template literal

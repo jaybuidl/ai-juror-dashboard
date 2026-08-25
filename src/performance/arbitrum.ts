@@ -1,5 +1,6 @@
 import { createPublicClient, http, type PublicClient } from "viem";
 import { arbitrum } from "viem/chains";
+import type { BlockTimes } from "./block-times";
 
 /**
  * The chain this dashboard reads, and the one client both of its chain readers share.
@@ -58,13 +59,37 @@ export function createArbitrumClient(
  * The cost is one call per distinct block, and the public endpoint rate-limits per RPC *call*
  * rather than per request. One page load is nowhere near the ceiling; a live test suite that
  * read per test is not (see `commit-logs.integration.test.ts`).
+ *
+ * Which is what `blockTimes` is for, and why it lives on the shared helper rather than in the
+ * commit scan that first needed it: ticket 12 re-reads the court every five seconds while a
+ * dispute is live, and re-dating every block each time is precisely that ceiling. A mined
+ * block's timestamp cannot change, so the cache has nothing stale to serve — it remembers a
+ * fact of the chain rather than a figure derived from one. Omit it and every block is read.
  */
 export async function blockTimestamps(
   client: PublicClient,
   blockNumbers: readonly bigint[],
+  blockTimes?: BlockTimes,
 ): Promise<Map<bigint, bigint>> {
   const distinct = [...new Set(blockNumbers)];
-  const blocks = await Promise.all(distinct.map((blockNumber) => client.getBlock({ blockNumber })));
+  const unread = distinct.filter((blockNumber) => blockTimes?.get(blockNumber) === undefined);
+  const blocks = await Promise.all(unread.map((blockNumber) => client.getBlock({ blockNumber })));
 
-  return new Map(blocks.map((block) => [block.number, block.timestamp]));
+  if (blockTimes === undefined)
+    return new Map(blocks.map((block) => [block.number, block.timestamp]));
+
+  for (const block of blocks) blockTimes.set(block.number, block.timestamp);
+  // One write per scan rather than one per block: the whole map is serialised each time.
+  blockTimes.flush();
+
+  const timestampOf = new Map<bigint, bigint>();
+  for (const blockNumber of distinct) {
+    const timestamp = blockTimes.get(blockNumber);
+    // A block the cache still does not know is one whose read failed, and it is left out
+    // rather than defaulted: the seam drops a commitment with no moment, which is the
+    // shortfall `commitCoverage` counts. A zero here would date it to 1970 instead.
+    if (timestamp !== undefined) timestampOf.set(blockNumber, timestamp);
+  }
+
+  return timestampOf;
 }

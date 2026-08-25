@@ -1,5 +1,10 @@
 import { describe, expect, it } from "vitest";
-import { formatLatencySeconds, formatWindowSeconds, railFraction } from "./latency";
+import {
+  formatElapsedSeconds,
+  formatLatencySeconds,
+  formatWindowSeconds,
+  railFraction,
+} from "./latency";
 
 describe("formatLatencySeconds", () => {
   it("reads under two minutes in seconds", () => {
@@ -26,6 +31,37 @@ describe("formatLatencySeconds", () => {
     // carry a percent sign or the word it would need.
     for (const seconds of [0, 7, 85, 120, 3236, 86400]) {
       expect(formatLatencySeconds(seconds)).not.toMatch(/%|of|window/);
+    }
+  });
+});
+
+describe("formatElapsedSeconds", () => {
+  it("reads exactly like a latency under the hour", () => {
+    // The same wording for the same magnitudes, so the pill on a row and the figures in the
+    // cells beside it are read off one scale rather than two.
+    expect(formatElapsedSeconds(45)).toBe("45s");
+    expect(formatElapsedSeconds(192)).toBe("3m 12s");
+    expect(formatElapsedSeconds(3599)).toBe("59m 59s");
+  });
+
+  it("switches to hours, because a period runs far longer than a latency does", () => {
+    // Where it parts company with `formatLatencySeconds`: every appeal period in this court
+    // ran about eighteen hours, and "1080m 00s" is not a duration anyone reads.
+    expect(formatElapsedSeconds(3600)).toBe("1h 00m");
+    expect(formatElapsedSeconds(15120)).toBe("4h 12m");
+    expect(formatElapsedSeconds(64800)).toBe("18h 00m");
+  });
+
+  it("switches to days, because a dispute nobody executes stays open indefinitely", () => {
+    expect(formatElapsedSeconds(86400)).toBe("1d 00h");
+    expect(formatElapsedSeconds(187200)).toBe("2d 04h");
+  });
+
+  it("says nothing about a window, at any magnitude", () => {
+    // ADR-0005 again, and it bites harder here: this figure sits where a reader knows the
+    // configured window, so a percentage would be one subtraction from being formed for them.
+    for (const seconds of [0, 45, 192, 3600, 64800, 187200]) {
+      expect(formatElapsedSeconds(seconds)).not.toMatch(/%|of|window/);
     }
   });
 });
