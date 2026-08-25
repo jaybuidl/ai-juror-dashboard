@@ -51,6 +51,25 @@ adopted verbatim; `src/styles/theme.ts` currently holds the Kleros Court dark pa
 placeholder instead. Swapping it in also means widening `style-src` and `font-src` in
 `netlify.toml` for Google Fonts, as the comment in `src/styles/global.ts` warns.
 
+## Known defects, unfixed
+
+Found 2026-08-25 while building the tracker on these artboards, confirmed against the record, and
+left alone because each needs an edit plus a re-seed. No ticket quotes any of them.
+
+- `Errors.dc.html:195` renders "152 onward · Commit 45m · vote 45m". The modified `timesPerPeriod`
+  is `[2700, 2700, 1800, 129600]` — the vote window is **30m**, not 45m. This is on the artboard
+  whose whole subject is the parameter change, and it reads as measured rather than sampled.
+- `Errors.dc.html:45` uses `∅` for the blocking banner's badge. `Cell.dc.html:140` reserves that
+  glyph for a draw that failed to act and says it is "used nowhere else". The unread *cell*
+  correctly uses `?`; only the banner tile clashes.
+- `Juror.dc.html:73` shows a median commit stat while `:108` excludes commit latency from the chart
+  directly below it as not comparable across dispute 151. The same page both declines to compare
+  and compares, and the stat carries no marker.
+
+Lesser, noted in passing: `Main.dc.html:118`'s legend words the live state `Acting` where the cell
+words it `Committed`/`Awaiting`, and `Dispute.dc.html`'s justification columns are not in roster
+order despite its caption saying they are.
+
 ## What is measured and what is sampled
 
 Real, and safe to reason from: the 13×6 occupancy grid, panel sizes, 44 draws / 61 votes,

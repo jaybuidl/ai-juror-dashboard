@@ -47,6 +47,9 @@ and its line range, or, for ticket 14, the design system itself.
   Its `tokens/*.css` is adopted verbatim; `src/styles/theme.ts` still holds the Court dark palette
   as a placeholder. Do not re-derive a palette from `kleros-v2/web` — that repo is the reference for
   markdown rendering and react-query patterns, not for how this dashboard looks.
+- **Where the canvas and a ticket disagree, the canvas wins.** Ruled 2026-08-25, resolving three
+  conflicts at once; the tickets were amended, not the artboards. Two of those resolutions are now
+  ADR-0005 and ADR-0006. This does not extend to the canvas's *data*, which is largely sampled.
 - Use `CONTEXT.md` vocabulary. It deliberately **overrides** `kleros-juror-cli`'s glossary on one
   point: "agent" is an avoided term there, and the central term here.
 
@@ -91,6 +94,12 @@ Things that cost real effort to discover and are easy to get wrong again:
   02's data hosts and would miss a font host entirely. Adopting the design system's webfonts touches
   `style-src` and `font-src` — and Vite dev serves no CSP, so a missed edit looks perfect locally and
   falls back to system fonts only in production.
+- **The Kleros ×AI palette has never had its contrast measured, and misses its own stated target.**
+  `tokens/themes.css` claims "accents darkened to hold 4.5:1 on white"; measured, `--cyan-600` is
+  3.95, `--mint-600` 3.65 and `--amber-600` 4.10 — only `--rose-600` (5.08) clears. In the dark
+  theme `--text-4` (`#5b5675`) is 2.68–2.91:1 across page, card and raised, and it inks the pending
+  dash, the rail keys and the vote count at 9px. Consistent with the system's own readme, which
+  says its values were matched by eye from screenshots. Ticket 18 owns fixing it.
 
 ## Verified constants
 
