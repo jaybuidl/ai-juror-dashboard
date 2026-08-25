@@ -5,10 +5,11 @@ on two dimensions: **speed** (commit and reveal latency) and **coherence** (voti
 ruling).
 
 **Status: the roster and the dispute list are live**, at <https://kleros-ai-jurors.netlify.app>.
-Tickets 01, 02, 03 and 14 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a
+Tickets 01, 02, 03, 04 and 14 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a
 `netlify.toml` that is the single source of truth for the deploy, the Kleros ×AI tokens adopted and
 self-hosted webfonts, a page that names all six agent jurors by nickname and avatar, and a list of
-every dispute court 34 has held. Both are records, not measurements. CI exists too —
+every dispute court 34 has held, each row headed by the dispute's own title and category. All of
+that is record, not measurement. CI exists too —
 `.github/workflows/ci.yml`, added as toolchain upkeep rather than as a ticket, so do not propose it
 again. There is still no metric and no matrix — the page says so outright rather than rendering an
 empty grid, and says it *below* the roster precisely because showing who the six are is the point at
@@ -88,7 +89,21 @@ Things that cost real effort to discover and are easy to get wrong again:
   `config-source.ts`, `sdk-lock.ts`, `rate-limit.ts`, `report-issue.ts` are Node-only. Its
   `src/index.ts` does not export the domain readers, and `getSubgraphUrl` reads `process.env`.
 - Dispute titles come from the **DRT subgraph** as plain JSON — no IPFS, no Kleros SDK. Using the SDK
-  would drag the Node-only path into the bundle.
+  would drag the Node-only path into the bundle. The join is the core dispute's `templateId`, and it
+  is **neither the dispute id nor a constant offset from it**: 151→161, 152→163. It is nullable on
+  the subgraph's own type, so a dispute can have no title at all. `templateData` is a JSON *string*
+  holding `title` and `category`; nothing validates it before publication, so treat every field as
+  possibly missing, blank or not a string. Dispute 159's category is `""` today — the live example
+  of the empty slot.
+- **The DRT subgraph sorts `id` lexicographically too**, and the same trap bites harder there because
+  template ids are small: `id_gte: "161"` returns templates 2 and 17–28 as well. Ask for templates by
+  exact `id_in`, never by range. An id with no template is not an error — it simply does not come
+  back, which is the tolerance the row rendering assumes.
+- **`text-overflow: ellipsis` does nothing inside a `1fr` grid track.** A track's minimum is `auto`,
+  which is its content's minimum, so the column grows to fit the longest title and the row overflows
+  sideways instead of clipping — with nothing in the console. `minmax(0, 1fr)` on the track and
+  `min-width: 0` on the item are both required. `DisputeList.tsx` carries them and a test pins the
+  computed `grid-template-columns`, because the failure is invisible until someone reads a row.
 - Every appeal period ran ~18h against a 36h configured value. Unexplained, affects no metric here,
   but do not treat appeal duration as understood.
 - **Latency is never shown as a fraction of a window** — not in a cell, not in an aggregate, not on a
@@ -147,7 +162,8 @@ Disputes             start at 151; single-round so far. New ones arrive continua
 KlerosCore           0x991d2df165670b9cac3B022f4B68D65b664222ea
 DisputeKitClassic    0x70B464be85A547144C72485eBa2577E5D3A45421
 Core subgraph        api.goldsky.com/api/public/project_cmgx9all3003atlp2bqha1zif/subgraphs/kleros-v2-coreneo/v0.17.2/gn
-DRT subgraph         …/subgraphs/kleros-v2-drt/v0.12.0/gn
+DRT subgraph         …/subgraphs/kleros-v2-drt/v0.12.0/gn  — same host as the core subgraph, so
+                     it added nothing to connect-src. Joined on the core dispute's templateId
 Arbitrum RPC         https://arb1.arbitrum.io/rpc  (accepts 8M-block eth_getLogs)
 Mainnet RPC          https://ethereum-rpc.publicnode.com  (ENS only; ankr needs a key now, and
                      cloudflare-eth reverts inside the ENS universal resolver)

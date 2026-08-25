@@ -44,6 +44,11 @@
 # overriding that variable with a host absent from this list blocks ENS at the browser
 # rather than at the endpoint.
 #
+# Ticket 04 added a second subgraph — the dispute resolver template subgraph, for what
+# each dispute is about — and added no host: it is on api.goldsky.com, which the core
+# subgraph already put here. VITE_DRT_SUBGRAPH_URL is the override, and it is subject to
+# this list exactly as the two above are.
+#
 # style-src and font-src are still 'self' after ticket 14 adopted the Kleros ×AI design
 # system, and that is a decision rather than an omission. The system's tokens/fonts.css
 # @imports Manrope and JetBrains Mono from fonts.googleapis.com; this repo self-hosts both

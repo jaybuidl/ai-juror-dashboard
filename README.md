@@ -12,9 +12,10 @@ dashboard's job.
 
 **The roster and the dispute list are live.** This repository contains the application shell, the
 deployment pipeline, the Kleros ×AI visual system, a page naming the six agent jurors and a list of
-every dispute court 34 has held — but no metrics and no matrix. Both of those are records, not
-measurements. The deployed page says so outright rather than rendering an empty grid, because a
-public page whose figures may be cited must never let "not built" look like "no results".
+every dispute court 34 has held, each row carrying what the dispute is actually about — but no
+metrics and no matrix. Everything the page shows is record, not measurement. It says so outright
+rather than rendering an empty grid, because a public page whose figures may be cited must never
+let "not built" look like "no results".
 
 Read [`CLAUDE.md`](CLAUDE.md) before writing code — in particular its **Traps** section, which
 records the things that cost real time to discover. The design that this scaffold serves lives in:
@@ -71,11 +72,13 @@ between the two repos in both directions.
 
 `.github/workflows/ci.yml` holds two jobs. **`ci`** gates pull requests and pushes to `master`,
 running lint, type-check, tests and build as four separate steps so a failure names its own stage.
-**`live`** runs `yarn test:integration` — the ENS suite that checks each roster address against
-the subname it claims, and the core-subgraph suite that checks the court's disputes still arrive
-in the shape the model parses — on a daily cron and on `workflow_dispatch` only. It never gates a
-pull request: its failure mode there would be network flake, and a red that means nothing teaches
-people to ignore red.
+**`live`** runs `yarn test:integration`, which is every `*.integration.test.ts` under `src/` — a
+suite joins by filename, so nothing here has to count them. They are the drift checks a fixture
+cannot perform: that each roster address still answers to the subname it claims, that the core
+subgraph still returns the court's disputes in the shape the model parses, and that the template
+subgraph still resolves what those disputes are about. It runs on a daily cron and on
+`workflow_dispatch` only, and never gates a pull request: its failure mode there would be network
+flake, and a red that means nothing teaches people to ignore red.
 
 One constraint in that file resists being tidied. Yarn 4 is not vendored here, so `corepack enable`
 must run *after* `actions/setup-node` and *before* anything invokes `yarn`; Ubuntu runners ship Yarn

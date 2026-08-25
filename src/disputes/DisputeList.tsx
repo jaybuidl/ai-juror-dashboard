@@ -63,9 +63,15 @@ const Rows = styled.ul`
  */
 const ID_COLUMN = "2.5rem";
 
+/*
+ * `minmax(0, 1fr)` and not `1fr`: a grid track's minimum is `auto`, which is the content's
+ * own minimum, so a `1fr` track grows to fit the longest title instead of clipping it —
+ * the title never truncates and the row overflows sideways. It is the usual way
+ * `text-overflow: ellipsis` fails inside a grid, and it fails without a console warning.
+ */
 const Row = styled.li`
   display: grid;
-  grid-template-columns: ${ID_COLUMN} 1fr;
+  grid-template-columns: ${ID_COLUMN} minmax(0, 1fr);
   align-items: baseline;
   column-gap: 10px;
   row-gap: 6px;
@@ -84,12 +90,31 @@ const DisputeId = styled.span`
   color: ${({ theme }) => theme.textMeta};
 `;
 
+/*
+ * One line, clipped with an ellipsis, per `Main.dc.html:162`. Every row then keeps the
+ * same height whatever its title, which is what lets the list scan as a column — court
+ * 34's titles run from "x402 escrow dispute" to a two-clause question about a tailored
+ * jacket. The full text stays reachable through the `title` attribute below.
+ *
+ * `min-height` is what makes "whatever its title" include having none. The element is
+ * rendered even when the slot is empty, so a dispute with no template — or one whose
+ * title has not arrived yet — holds the same line as a titled row instead of collapsing
+ * onto the smaller dispute ID beside it. Without both, every row on the page shifts
+ * upward the moment the titles land, and untitled rows stay permanently shorter.
+ */
+const TITLE_LINE_HEIGHT = 1.35;
+
 const Title = styled.span`
   grid-column: 2;
   grid-row: 1;
+  min-width: 0;
   font-weight: 600;
+  line-height: ${TITLE_LINE_HEIGHT};
+  min-height: ${TITLE_LINE_HEIGHT}em;
   color: ${({ theme }) => theme.textHeading};
-  overflow-wrap: anywhere;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 const SecondLine = styled.div`
@@ -147,11 +172,34 @@ export type DisputeRowSlots = {
   flag?: ReactNode;
 };
 
+/**
+ * What came back when the disputes' subjects were read.
+ *
+ * A count and not an error, because the likeliest failure throws nothing: a reindexing
+ * template subgraph answers 200 with an empty list, and a lagging one answers with part
+ * of it. Both leave rows untitled, and a row missing its title is indistinguishable from
+ * a dispute that never had one unless the page says which happened.
+ */
+export type DisputeTitleRead = {
+  /** Disputes that carry a template, and so should resolve a title. */
+  expected: number;
+  /** Of those, how many the template subgraph actually returned. */
+  resolved: number;
+  /** True while the read is in flight; nothing is missing until it settles. */
+  isLoading: boolean;
+};
+
 export type DisputeListView = {
   disputes: readonly Dispute[];
   isLoading: boolean;
   /** Non-null when the court could not be read. The rows already held are kept. */
   error: Error | null;
+  /**
+   * How the read of what these disputes are *about* went, counted rather than caught.
+   * Separate from `error` because the two say different things: the list is whole here,
+   * and only its titles are missing.
+   */
+  titles?: DisputeTitleRead;
   /** How a later ticket supplies the reserved slots for one dispute. */
   slotsFor?: (dispute: Dispute) => DisputeRowSlots;
 };
@@ -198,10 +246,19 @@ function DisputeRow({ dispute, slots }: { dispute: Dispute; slots: DisputeRowSlo
   if (isFilled(slots.panel)) details.push({ key: "panel", node: <Pill>{slots.panel}</Pill> });
   if (isFilled(slots.flag)) details.push({ key: "flag", node: <Pill>{slots.flag}</Pill> });
 
+  // The clipped title is unreadable past the row's width, so the full text goes on the
+  // element as well. Only when it is genuinely a string: the slot takes any ReactNode,
+  // and a `title` attribute stringified from an element would read as "[object Object]".
+  // A tooltip is a weak affordance and ticket 18 owns the accessible treatment; this is
+  // the part that need not wait for it.
+  const titleText = typeof slots.title === "string" ? slots.title : undefined;
+
   return (
     <Row>
       <DisputeId>{dispute.id}</DisputeId>
-      {isFilled(slots.title) && <Title>{slots.title}</Title>}
+      {/* Always rendered, empty or not — see `Title`. An empty one holds the line so the
+          row does not change height when a title arrives or fails to. */}
+      <Title title={titleText}>{isFilled(slots.title) ? slots.title : null}</Title>
       <SecondLine>
         {details.map((detail, index) => (
           <Fragment key={detail.key}>
@@ -214,7 +271,10 @@ function DisputeRow({ dispute, slots }: { dispute: Dispute; slots: DisputeRowSlo
   );
 }
 
-export function DisputeList({ disputes, isLoading, error, slotsFor }: DisputeListView) {
+export function DisputeList({ disputes, isLoading, error, titles, slotsFor }: DisputeListView) {
+  const missingTitles =
+    titles === undefined || titles.isLoading ? 0 : titles.expected - titles.resolved;
+
   return (
     <Section aria-labelledby="disputes-heading">
       <Heading id="disputes-heading">The disputes</Heading>
@@ -227,6 +287,19 @@ export function DisputeList({ disputes, isLoading, error, slotsFor }: DisputeLis
         <Notice role="status">
           The court's disputes could not be read, so this list may be incomplete or out of date.
           Nothing here should be taken as the full record.
+        </Notice>
+      )}
+
+      {/* Worth saying rather than leaving to be noticed. A row with no title is exactly
+          what a dispute that never had one looks like, so an unannounced gap here would
+          quietly reclassify disputes as untitled. The list itself is whole, and this says
+          only what is missing — with the count, because "some" and "all" are different
+          claims and the partial case is the one a lagging subgraph produces. */}
+      {missingTitles > 0 && (
+        <Notice role="status">
+          {titles?.resolved === 0
+            ? "What these disputes are about could not be read, so the rows below are identified by ID alone. The list itself is complete; only the titles are missing."
+            : `${missingTitles} of these ${titles?.expected} disputes could not have their subject read, so those rows are identified by ID alone. The list itself is complete.`}
         </Notice>
       )}
 

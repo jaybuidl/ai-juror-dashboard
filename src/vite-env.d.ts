@@ -17,6 +17,14 @@ interface ImportMetaEnv {
    * also appear in `connect-src` in netlify.toml or the browser blocks the request.
    */
   readonly VITE_CORE_SUBGRAPH_URL?: string;
+
+  /**
+   * Kleros v2 dispute resolver template subgraph, read for what each dispute is about —
+   * its title and category. Optional, keyless, and on the same host as the core
+   * subgraph by default, so the stock configuration adds nothing to `connect-src`; a
+   * host set here that is not on that list is blocked before the request is sent.
+   */
+  readonly VITE_DRT_SUBGRAPH_URL?: string;
 }
 
 interface ImportMeta {

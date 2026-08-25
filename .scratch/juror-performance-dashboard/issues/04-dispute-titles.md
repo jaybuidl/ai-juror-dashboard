@@ -8,12 +8,12 @@ rather than matching numbers.
 **Design:** `../canvas/Main.dc.html:156-173` (the row header: the title on the first line beside the
 core dispute ID, the category on the second), `../canvas/README.md` for provenance
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Dispute titles and categories are read from the dispute resolver template subgraph
-- [ ] Template data is consumed as plain JSON — no IPFS resolution and no Kleros SDK dependency, so
+- [x] Dispute titles and categories are read from the dispute resolver template subgraph
+- [x] Template data is consumed as plain JSON — no IPFS resolution and no Kleros SDK dependency, so
       nothing Node-only enters the bundle
-- [ ] The title sits on the row header's first line, beside the core dispute ID, and truncates with an
+- [x] The title sits on the row header's first line, beside the core dispute ID, and truncates with an
       ellipsis rather than wrapping, so every row keeps one height
-- [ ] The category sits on the row header's second line, before the ruling, and never beside the title
-- [ ] A dispute whose template cannot be resolved still renders, identified by ID
+- [x] The category sits on the row header's second line, before the ruling, and never beside the title
+- [x] A dispute whose template cannot be resolved still renders, identified by ID

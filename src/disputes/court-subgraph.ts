@@ -1,4 +1,5 @@
 import type { RawDispute } from "./disputes";
+import { postSubgraphQuery } from "./subgraph";
 
 /**
  * The Kleros v2 core subgraph on Goldsky: keyless, CORS-open and reachable from a
@@ -34,6 +35,10 @@ const PAGE_SIZE = 100;
  *
  * The `rounds` selection is what makes every later latency measurement possible: the
  * timeline holds the observed moment each period opened, which exists nowhere else.
+ *
+ * `templateId` is the join to the dispute resolver template subgraph, where the title
+ * and the category live. It is nullable on this type, and a dispute without one has no
+ * title to resolve.
  */
 function disputesQuery(hasCursor: boolean): string {
   const params = ["$first: Int!", "$court: String!"];
@@ -60,6 +65,7 @@ function disputesQuery(hasCursor: boolean): string {
         createdAt
         lastPeriodChange
         currentRoundIndex
+        templateId
         rounds {
           id
           timeline
@@ -67,42 +73,6 @@ function disputesQuery(hasCursor: boolean): string {
       }
     }
   `;
-}
-
-type DisputesResponse = {
-  data?: { disputes?: RawDispute[] };
-  errors?: { message: string }[];
-};
-
-async function postQuery(
-  url: string,
-  query: string,
-  variables: Record<string, unknown>,
-  signal?: AbortSignal,
-): Promise<RawDispute[]> {
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ query, variables }),
-    signal,
-  });
-
-  if (!response.ok) {
-    throw new Error(`Core subgraph returned HTTP ${response.status} ${response.statusText}`);
-  }
-
-  const body = (await response.json()) as DisputesResponse;
-
-  // A GraphQL error arrives inside a 200, so this is the only place a bad query or a
-  // renamed field shows up. Absorbing it would leave the page reporting an empty court.
-  if (body.errors?.length) {
-    throw new Error(`Core subgraph rejected the query: ${body.errors[0]?.message}`);
-  }
-  if (!body.data?.disputes) {
-    throw new Error("Core subgraph returned no disputes field");
-  }
-
-  return body.data.disputes;
 }
 
 /**
@@ -126,14 +96,17 @@ export async function fetchCourtDisputes({
   // Cursor paging on disputeID, not `skip`: the cursor is strictly decreasing, so this
   // terminates even while new disputes are being created underneath it.
   for (;;) {
-    const page = await postQuery(
+    const page = await postSubgraphQuery<RawDispute[]>({
       url,
-      disputesQuery(cursor !== undefined),
-      cursor === undefined
-        ? { first: PAGE_SIZE, court: courtId }
-        : { first: PAGE_SIZE, court: courtId, disputeID_lt: cursor },
+      query: disputesQuery(cursor !== undefined),
+      variables:
+        cursor === undefined
+          ? { first: PAGE_SIZE, court: courtId }
+          : { first: PAGE_SIZE, court: courtId, disputeID_lt: cursor },
       signal,
-    );
+      source: "Core subgraph",
+      field: "disputes",
+    });
 
     all.push(...page);
 

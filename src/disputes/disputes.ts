@@ -31,6 +31,8 @@ export type RawDispute = {
   createdAt: string;
   lastPeriodChange: string;
   currentRoundIndex: string;
+  /** Nullable on the subgraph's own type: a dispute need not have a template. */
+  templateId?: string | null;
   rounds: readonly RawRound[];
 };
 
@@ -71,6 +73,14 @@ export type Dispute = {
   ruling: Ruling;
   createdAt: number;
   lastPeriodChange: number;
+  /**
+   * The join to the dispute resolver template subgraph, where the title and category
+   * live. `null` when the dispute has no template, and therefore no title to resolve.
+   *
+   * Not the dispute id, and not a fixed offset from it: dispute 151 resolves through
+   * template 161, dispute 152 through 163.
+   */
+  templateId: number | null;
   /** Ascending by round index. Every dispute in this court has exactly one so far. */
   rounds: readonly DisputeRound[];
 };
@@ -90,6 +100,20 @@ function toNumber(value: string, field: string): number {
     throw new Error(`Core subgraph returned a malformed ${field}: ${JSON.stringify(value)}`);
   }
   return Number(value);
+}
+
+/**
+ * The template id, or null where there is nothing usable to join on.
+ *
+ * The one field in this module that does not throw when it is malformed, and the reason
+ * is what a bad value would become. Every other field here turns into a timestamp or a
+ * ruling, where a garbled string would be read as a confident figure; this one turns
+ * into a title, so the worst case is a row that renders without one — which the list is
+ * built to do anyway.
+ */
+function toTemplateId(value: string | null | undefined): number | null {
+  if (value === undefined || value === null) return null;
+  return CANONICAL_DECIMAL.test(value) ? Number(value) : null;
 }
 
 /** `0` in a timeline means "not reached yet", not midnight on 1 January 1970. */
@@ -149,6 +173,7 @@ export function toDisputes(raw: readonly RawDispute[]): Dispute[] {
       ruling: rulingOf(dispute),
       createdAt: toNumber(dispute.createdAt, "createdAt"),
       lastPeriodChange: toNumber(dispute.lastPeriodChange, "lastPeriodChange"),
+      templateId: toTemplateId(dispute.templateId),
       rounds: dispute.rounds.map(toRound).sort((a, b) => a.index - b.index),
     }))
     .sort((a, b) => b.id - a.id);

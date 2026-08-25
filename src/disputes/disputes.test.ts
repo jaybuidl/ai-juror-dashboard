@@ -24,6 +24,7 @@ function rawDispute(overrides: Partial<RawDispute> = {}): RawDispute {
     createdAt: "1787340123",
     lastPeriodChange: "1787409015",
     currentRoundIndex: "0",
+    templateId: "161",
     rounds: [{ id: "151-0", timeline: ["1787342856", "1787343398", "1787344095", "1787409015"] }],
     ...overrides,
   };
@@ -86,6 +87,31 @@ describe("toDisputes", () => {
     });
 
     expect(toDisputes([raw])[0]?.rounds[0]?.executionOpenedAt).toBeNull();
+  });
+
+  it("carries the template id each dispute joins its title on", () => {
+    const byId = new Map(toDisputes(realDisputes).map((dispute) => [dispute.id, dispute]));
+
+    // Not the dispute id, and not a constant offset from it — which is the whole reason
+    // the join cannot be computed and has to be read.
+    expect(byId.get(151)?.templateId).toBe(161);
+    expect(byId.get(152)?.templateId).toBe(163);
+  });
+
+  it("reads a dispute with no template as having none, rather than as template zero", () => {
+    // `templateId` is nullable on the subgraph's own type. Court 34 has no such dispute
+    // today, and a dashboard that rendered one as template 0 would show a stranger's
+    // title against it.
+    expect(toDisputes([rawDispute({ templateId: null })])[0]?.templateId).toBeNull();
+    expect(toDisputes([rawDispute({ templateId: undefined })])[0]?.templateId).toBeNull();
+  });
+
+  it("reads a malformed template id as no template, rather than throwing", () => {
+    // The one field here that degrades instead of failing: it becomes a title, so the
+    // worst case is a row without one. Every other field becomes a timestamp or a
+    // ruling, where a garbled value would be read as a figure.
+    expect(toDisputes([rawDispute({ templateId: "16 1" })])[0]?.templateId).toBeNull();
+    expect(toDisputes([rawDispute({ templateId: "" })])[0]?.templateId).toBeNull();
   });
 
   it("orders rounds by index rather than by the lexicographic id the subgraph sorts on", () => {
