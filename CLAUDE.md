@@ -5,7 +5,7 @@ on two dimensions: **speed** (commit and reveal latency) and **coherence** (voti
 ruling).
 
 **Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01, 02, 03, 04,
-05, 06, 07, 08, 09, 10, 12, 13, 14, 15 and 16 are done: Vite + React + TypeScript, yarn 4, Biome,
+05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 15 and 16 are done: Vite + React + TypeScript, yarn 4, Biome,
 Vitest, a
 `netlify.toml`
 that is the single source of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted
@@ -19,7 +19,12 @@ added the sixth, at `/disputes/:id`: one dispute read whole — its question, it
 vote count for every choice including the ones nobody picked, a timeline of the four periods as two
 absolute durations each, and every panel member's published reasoning side by side in roster order,
 Markdown rendered with raw HTML off at the parser and a warning before any link in it takes you
-away. CI exists
+away. Ticket 11 added the seventh, at `/agent-jurors/:nickname` — one agent juror on its own: its
+stack, its six marginals at length, its reveals plotted against every reveal the court recorded,
+and the disputes it was drawn in with a panel size beside every coherence mark. It is the view that
+needed no read of its own, because tickets 06 and 10 had already computed every figure on it; the
+agent juror the court has never drawn gets an honest empty state there rather than an error, and an
+address naming nobody says so itself rather than 404ing. CI exists
 too — `.github/workflows/ci.yml`, added as toolchain upkeep rather than as a ticket, so do not
 propose it again. Ticket 10 read the last of the four measures the design named — cumulative ETH and
 net PNK per agent juror, from `TokenAndETHShift` on the core subgraph — so the matrix view's caveat
@@ -60,7 +65,11 @@ own open question — the legend and the sparsity note reach a phone reader **in
 the card list, always visible**, because the sparsity note prevents a misreading rather than
 answering a question, and a reader who does not know they have been misled never opens a
 disclosure. `narrow` is now the one width anything in this repo reduces at; the `600px` and `760px`
-literals are gone.
+literals are gone. Ticket 11 then answered the question ticket 16 handed it: the agent juror view
+has **no** reduced form for its figures — the stat card, the latency profile and the disputes all
+render at 390pt, the last as one block per dispute rather than a seven-column table — so it is the
+one place below the breakpoint where cumulative ETH and net PNK are legible at all, and the
+matrix's phone caveat now points there rather than staying silent about them.
 The design work behind it (glossary, seven ADRs, a spec, eighteen tickets) came out of a full
 grilling session and a later pass that rebuilt the tracker on the finished design — ADR-0007 is the
 one that came from implementation rather than design, and it overrode the spec. Start by reading, not by
@@ -108,14 +117,22 @@ the flag precedence lifted out of `Matrix.tsx` whole. Both moved for the same re
 rule stated once more: the matrix and the phone's card list are two renderings of one record, and
 a figure or a ranking reduced inside either of them is two chances for a desktop and a phone to
 disagree about one court.
-Ticket 09 added the **second** model beside it rather than inside it —
+Ticket 09 added the **second model** beside it rather than inside it —
 `buildDisputeDetail` in `src/performance/dispute-detail.ts`, under the same discipline (pure, no
 network, no clock) at a different altitude: one dispute rather than the court, joining the row, the
 dispute and the template the court-wide model already holds to one read only that view needs. The
 split is about what gets carried, not about what gets derived — the justification prose is 124 KB
 today and `courtDraws` is persisted, so reading it court-wide would inflate every load to serve one
-page. Ticket 11's agent juror view is the same shape and should reach for `marginals` first: it
-needs no read of its own at all.
+page. Ticket 11 then added the **third model**, `buildAgentJurorReading` in
+`agent-juror-detail.ts`, and the shallowest of the three: it reduces nothing at all, because ticket
+06 built `marginals` for that page and ticket 10 filled its last two figures. What it does is
+*join* — which column of the matrix a nickname names — and it lives below the seam for one reason,
+which is that the join is on an array index. `marginals` and every row's `cells` are both in roster
+order, so an off-by-one shows one agent juror's draws under another's avatar with every figure on
+the page internally consistent, no error and nothing in the console. It also lifted the six figure
+*readings* out of `Marginals.tsx` into `marginal-figures.ts`, so the matrix's column header and the
+agent juror's stat card are two renderings of one reading rather than two sets of judgements about
+what an absent commit log means — ticket 16's rule applied one level down.
 Every ticket from `03` up carries a `**Design:**` line naming what it is built against — an artboard
 and its line range, or, for ticket 14, the design system itself.
 
@@ -498,6 +515,22 @@ Things that cost real effort to discover and are easy to get wrong again:
   phone's list of things to gate**, and the gate is `!narrow` in `provenanceOf`, tested in both
   directions because a caveat that is absent for the wrong reason tests nothing. `MatrixPage`'s
   phone describe block carries those four.
+- **A page can say something true of every figure on it and false about the thing it is naming.**
+  Ticket 11's footer told a reader of `/agent-jurors/nope` that "the court has drawn it in none of
+  the disputes read" and that "not being drawn is the measured record" — sentences written for
+  baskerville, which is a real agent juror the court has never drawn, reaching a path segment that
+  names nobody at all. Both states show no figures and only one of them is a reading of the court;
+  the other has nothing for the court to have failed to do. It is the "not drawn" versus "not read"
+  distinction one level up, and the same rule applies: **an empty page has as many empty states as
+  it has reasons to be empty, and each needs its own words.** Nothing caught it — 731 tests, lint,
+  types and a green build — because every test asserted what the page *shows*, and what was wrong
+  was a sentence about something it does not.
+- **`flex-direction: column-reverse` lays a column out from the bottom, so items stop sharing a
+  baseline the moment one of their labels wraps.** The house pattern of a value above its own key
+  needs the `dt` first in the markup (a `dd` before its `dt` is invalid), and reversing is the
+  obvious way to get it. At 390pt "Median reveal" wraps to two lines where "Coherent" does not, and
+  the three numbers beside each other then sit at three different heights — with `order: -1` on the
+  value they do not. Invisible to every test, for the reason below.
 - **jsdom has no `window.matchMedia` at all** — `undefined`, not a stub answering false. So
   `useIsNarrow` in `src/styles/breakpoints.ts` guards the read exactly as `useIsClipped` guards
   `ResizeObserver`, and returns false where there is nothing to ask; every test written before

@@ -1,6 +1,7 @@
 import { Route, Routes } from "react-router";
 import { Shell } from "./chrome/Shell";
 import type { DisputesView } from "./disputes/useDisputes";
+import { AgentJurorPage } from "./pages/AgentJurorPage";
 import { AgentJurorsPage } from "./pages/AgentJurorsPage";
 import { DisputePage } from "./pages/DisputePage";
 import { DisputesPage } from "./pages/DisputesPage";
@@ -51,6 +52,15 @@ export function DashboardRoutes({ roster, disputes, performance }: DashboardRout
           element={<DisputePage roster={roster} disputes={disputes} performance={performance} />}
         />
         <Route path="agent-jurors" element={<AgentJurorsPage roster={roster} />} />
+        {/* Nested under the index for the reason `disputes/:disputeId` is: the breadcrumb's
+            parent and the URL's parent are then the same thing, and `isCurrent` keeps "Agent
+            jurors" marked in the nav while you are on one of them. Unlike that route this one
+            reads nothing of its own — ticket 06 computed every figure it shows — so it takes
+            the same three views the matrix does and starts no query. */}
+        <Route
+          path="agent-jurors/:nickname"
+          element={<AgentJurorPage roster={roster} disputes={disputes} performance={performance} />}
+        />
         <Route path="method" element={<MethodPage />} />
         {/* Netlify answers every unknown path with the app shell at HTTP 200, so this is the
             only thing that can tell a visitor the address is wrong. */}

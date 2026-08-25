@@ -195,10 +195,12 @@ function coreFailureOf({
   // figures belong — so this is the second voice rather than the only one.
   //
   // That second voice is the desktop's. Below the breakpoint there are no column headers and no
-  // payout figure at all, so on a phone this banner is the only voice *and* it reports the loss
-  // of something the reader was never shown. Ticket 13's rule tiers a failure by whether it costs
-  // a figure, and on this layout it costs none. Left as it stands rather than re-tiered inside a
-  // merge: it is a design call, and ticket 11 is where these two figures get a phone home.
+  // payout figure on *this* page, so here the banner is the only voice for it. Ticket 16 left the
+  // tier open on those grounds — a failure that costs a figure nobody was shown. Ticket 11
+  // settles it and the tier stands: the two sums now have a phone home on each agent juror's own
+  // view, which renders them at every width, so a phone reader who follows a nickname from
+  // `/agent-jurors` does lose a figure to this failure. It is one link away rather than on this
+  // page, and a banner that went quiet would leave them to find that out by arriving.
   if (measured?.rewards.short === true) {
     return {
       read: {
@@ -586,9 +588,12 @@ export function MatrixPage(props: MatrixPageProps) {
                   so naming the two sums here would credit the phone with figures it does not
                   carry. Saying instead that they have not been read would be ticket 10's retired
                   falsehood in reverse: they were read, and a desktop reader is looking at them.
-                  Neither claim is available, so the phone makes none. */}
+
+                  What the phone branch *can* say is where they are, which is what ticket 11 built:
+                  each agent juror's own view prints the same six figures at every width, so the
+                  sentence points there rather than claiming or denying anything about this page. */}
               {isNarrow
-                ? "Each card summarises one dispute, and each slot along its foot one agent juror's draw."
+                ? "Each card summarises one dispute, and each slot along its foot one agent juror's draw; what an agent juror amounts to across all of them, including what the court has paid it, is on that agent juror's own page."
                 : "Each column header summarises that agent juror's own draws in the same three measures, and states what that column has been paid: cumulative ETH and net PNK, which are context beside the measures rather than a fourth dimension anyone is ranked on."}{" "}
               No figure here is a fraction of a period's window. Coherence is asserted only where
               the court has ruled, a blank {isNarrow ? "slot" : "cell"} means an agent juror was not

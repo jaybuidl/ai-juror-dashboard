@@ -11,12 +11,13 @@ dashboard's job.
 ## Status
 
 **The matrix is live, and it now has a dashboard around it.** This repository contains the
-application shell, the deployment pipeline, the Kleros ×AI visual system, and six routes under one
-piece of chrome: the matrix at `/` — one row per dispute, headed by what that dispute is actually
-about, one column per agent juror, each cell carrying that draw's commit latency, its reveal latency
-and whether it voted with the dispute's final ruling — plus the court's totals and latency
-distribution above it, a dispute index at `/disputes`, one dispute read whole at `/disputes/:id`,
-the six agent jurors at `/agent-jurors`, how everything is measured at `/method`, and a 404 view
+application shell, the deployment pipeline, the Kleros ×AI visual system, and seven routes under
+one piece of chrome: the matrix at `/` — one row per dispute, headed by what that dispute is
+actually about, one column per agent juror, each cell carrying that draw's commit latency, its
+reveal latency and whether it voted with the dispute's final ruling — plus the court's totals and
+latency distribution above it, a dispute index at `/disputes`, one dispute read whole at
+`/disputes/:id`, the six agent jurors at `/agent-jurors`, one of them on its own at
+`/agent-jurors/:nickname`, how everything is measured at `/method`, and a 404 view
 behind them. Every column header carries that agent juror's own summary of the same three
 measures — median reveal, median commit, coherence as a count and how many times it was drawn —
 and, beneath them, what that column has been paid: cumulative ETH and net PNK, summed over every
@@ -38,6 +39,25 @@ Kleros court frontend, which enables it and sanitises afterwards — and a link 
 before it takes you anywhere. A justification published empty says so in its own words and is never
 drawn as a failed read.
 
+**An agent juror's own page is the column read down instead of across.** Clicking a nickname —
+in the matrix's column header or in the roster index — opens that agent juror at its own linkable
+URL, keyed on the nickname this repository holds rather than the one ENS resolves, so a display
+name an operator can change from a wallet can never move a page. It carries the stack it runs, its
+ENS name and address, and the six figures the column header prints in 148px shown at length: median
+reveal, median commit, coherence as a count, draws beside the vote IDs they hold, and cumulative
+ETH and net PNK. Its reveal latencies are plotted against every reveal the court recorded, on the
+same logarithmic axis the court's own distribution uses. Commit latency is excluded from that
+comparison rather than normalised into it, and the chart says why: the two are measured from
+different periods, so pooling them would compare durations against different clocks. Below the plot
+is every dispute it was drawn in, newest first, each linking to that dispute's own page, with the
+panel size beside every coherence mark — because coherence in a panel of one is tautological and a
+mark without its panel size cannot be read. **The agent juror the court has never drawn gets an
+honest empty state, not an error**: every unmeasurable figure is an em dash, the page says a dash
+means "no draws to measure" and never zero and never a failed read, the draw and vote counts stay
+real zeros because being drawn no times is something the court did, and it names what will appear
+on the first draw. An address that names no agent juror says so itself: it is a real route with an
+id that matches nobody, which is neither a wrong URL nor a read that failed.
+
 **On a phone it is folded, not shrunk.** Below one declared width the grid is not rendered at all —
 not scaled, not scrolled sideways, not transposed into fewer columns. Each dispute becomes a card
 with a strip of six fixed slots along its foot, one per agent juror in roster order whether that
@@ -52,7 +72,11 @@ destinations go behind one menu, three stat tiles replace four with the median r
 the read-only statement stays in the bar. Every caveat a desktop reader meets, a phone reader meets
 too — the legend and the note that sparsity is normal are rendered inline above the first card
 rather than behind a control, because a reader who does not know a blank means "not drawn" will not
-go looking for the sentence that says so.
+go looking for the sentence that says so. The agent juror's own page is the exception that proves
+the rule: it drops no figure at all below the breakpoint — the stat card, the plot and the disputes
+all render, the last as one block per dispute rather than a seven-column table — which makes it the
+one place a phone reader can see what an agent juror has been paid, since the matrix's card layout
+has no column headers to carry it.
 
 Commit latency is the one figure not read from a subgraph: it comes from `CommitCast` logs on an
 Arbitrum RPC, because the subgraph records only *whether* a juror committed and never *when*. Every

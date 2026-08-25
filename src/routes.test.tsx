@@ -17,13 +17,21 @@ import { renderAt, unmeasured, views } from "./test/court";
  */
 
 /**
- * Every path the nav offers, plus the one beneath one of them.
+ * Every path the nav offers, plus the two beneath one of them.
  *
  * `/disputes/156` is not a destination and is still a view, so the chrome invariants below have
  * to hold on it: ticket 15's rule is about every view, not about every nav entry, and a detail
  * route is exactly where a page is most likely to be built without the shell around it.
+ * `/agent-jurors/blaise` is ticket 11's, and is here on the same terms.
  */
-const ROUTES = ["/", "/disputes", "/disputes/156", "/agent-jurors", "/method"];
+const ROUTES = [
+  "/",
+  "/disputes",
+  "/disputes/156",
+  "/agent-jurors",
+  "/agent-jurors/blaise",
+  "/method",
+];
 
 /**
  * The app on a real history stack, which `MemoryRouter` deliberately is not.
@@ -128,6 +136,26 @@ describe("the shell", () => {
       "Image Similarity Assessment",
     );
     expect(screen.queryByText(/nothing at this address/i)).not.toBeInTheDocument();
+  });
+
+  it("resolves an agent juror's own URL to that agent juror, and not to the 404", () => {
+    // Asserted against something only that view says, for the reason the dispute route above is:
+    // the chrome tests run over this path too and the 404 renders the same nav and footer, so
+    // they prove the route table matched something rather than what.
+    renderAt("/agent-jurors/blaise");
+
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("blaise");
+    expect(screen.queryByText(/nothing at this address/i)).not.toBeInTheDocument();
+  });
+
+  it("keeps the agent-juror index marked in the nav while you are on one of them", () => {
+    renderAt("/agent-jurors/blaise");
+    // Scoped to the nav: the breadcrumb on that view links back to the same index, and an
+    // unscoped query would find that one and pass whatever the nav did.
+    const nav = screen.getByRole("navigation", { name: "Dashboard" });
+
+    expect(within(nav).queryByRole("link", { name: "Agent jurors" })).not.toBeInTheDocument();
+    expect(within(nav).getByText("Agent jurors")).toBeInTheDocument();
   });
 
   it("keeps the dispute index marked in the nav while you are on one of its disputes", () => {

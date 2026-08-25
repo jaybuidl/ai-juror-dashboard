@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import styled from "styled-components";
 import type { RosterView } from "./useRoster";
 
@@ -103,10 +104,24 @@ const Identity = styled.div`
   min-width: 0;
 `;
 
-const Nickname = styled.span`
+/* A link, and keyed on the *roster* nickname while it displays the resolved one: `blaise`
+   carries an ENS `name` record reading "Blaise", so a URL built from what is on screen would be
+   built from something an operator can change from a wallet. */
+const Nickname = styled(Link)`
   font: ${({ theme }) => theme.typeTitle3};
   color: ${({ theme }) => theme.textHeading};
   overflow-wrap: anywhere;
+  text-decoration: none;
+
+  &:hover {
+    color: ${({ theme }) => theme.accent};
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.focusRing};
+    outline-offset: 3px;
+  }
 `;
 
 /* The system's mono label: uppercase, widely tracked, quiet. Same anatomy as base.css's
@@ -151,7 +166,7 @@ export function Roster({ entries, isResolving, isResolvedFromEns }: RosterView) 
               </AvatarFallback>
             )}
             <Identity>
-              <Nickname>{identity.nickname}</Nickname>
+              <Nickname to={`/agent-jurors/${agentJuror.nickname}`}>{identity.nickname}</Nickname>
               {/* Beside the stack label, never instead of it: which stack an agent juror is
                   built on is a fact about the roster and is still true when ENS is down. */}
               <StackLabel>
