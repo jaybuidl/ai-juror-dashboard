@@ -5,11 +5,14 @@ on two dimensions: **speed** (commit and reveal latency) and **coherence** (voti
 ruling).
 
 **Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01, 02, 03, 04,
-05 and 14 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a `netlify.toml` that is the
-single source of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted webfonts, a
-page that names all six agent jurors by nickname and avatar, and the dispute matrix — one row per
-dispute, headed by that dispute's own title and category, one column per agent juror, each cell
-carrying that draw's reveal latency and whether it voted with the final ruling. CI exists too —
+05, 14 and 15 are done: Vite + React + TypeScript, yarn 4, Biome, Vitest, a `netlify.toml` that is
+the single source of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted webfonts,
+and the dispute matrix — one row per dispute, headed by that dispute's own title and category, one
+column per agent juror, each cell carrying that draw's reveal latency and whether it voted with the
+final ruling. Ticket 15 put chrome and routes around it: five views under one shell — the matrix
+and the court's totals at `/`, a dispute index, the six agent jurors by nickname and avatar at
+`/agent-jurors`, `/method`, and a 404 — each carrying the same nav, the same read-only statement,
+and a footer stating the provenance of what is above it. CI exists too —
 `.github/workflows/ci.yml`, added as toolchain upkeep rather than as a ticket, so do not propose it
 again. Two measures are read and no more: commit latency (07), per-agent-juror marginals (06),
 rewards (10) and the historical windows (08) are all still unread, and the caveat the page carries
@@ -37,7 +40,10 @@ Ticket **05** was the keystone, and it has landed: `src/performance/` holds the 
 `buildCourtPerformance(RawCourtData) → KlerosResult<CourtPerformance>`, which is where every
 derivation belongs. It touches no network and reads no clock. Tickets 06, 07, 08 and 12 extend
 `RawCourtData` and the model rather than fetching beside them; a metric computed in a component is
-the mistake this seam exists to prevent.
+the mistake this seam exists to prevent. Ticket 15 added the first **aggregate** on the far side of
+it — `CourtTotals` in `src/performance/totals.ts`, which the stat tiles and the latency strip are
+figures of — so a court-wide number goes there and not into the view that prints it. Ticket 06's
+marginals are the same aggregates sliced by column.
 Every ticket from `03` up carries a `**Design:**` line naming what it is built against — an artboard
 and its line range, or, for ticket 14, the design system itself.
 

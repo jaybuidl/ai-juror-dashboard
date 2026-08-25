@@ -1,0 +1,261 @@
+import { screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { formatLatencySeconds } from "../performance/latency";
+import { ROSTER } from "../roster/agent-jurors";
+import {
+  disputes,
+  measured,
+  renderAt,
+  resolvingRoster,
+  unmeasured,
+  unresolvedRoster,
+} from "../test/court";
+
+/**
+ * The landing view: the hero, the totals, the strip and the matrix.
+ *
+ * Most of this suite came from `Dashboard.test.tsx`, which ticket 15 replaced. What moved with
+ * the roster to `/agent-jurors` is tested there; what is left here is what the matrix view
+ * itself claims.
+ */
+
+describe("the matrix view", () => {
+  it("states the finding rather than naming the product", () => {
+    renderAt("/");
+
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
+      /agents do not wait for the deadline/i,
+    );
+  });
+
+  it("says what it measures and, in the same breath, that it does nothing else", () => {
+    renderAt("/");
+
+    expect(screen.getByText(/it never votes, stakes, or holds a key/i)).toBeInTheDocument();
+  });
+
+  it("says what it has measured and, in the same breath, what it has not", () => {
+    renderAt("/");
+
+    expect(screen.getByText(/two measures, and what is missing from them/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/commit latency, per-agent-juror summaries and rewards/i),
+    ).toBeInTheDocument();
+  });
+
+  it("claims no measurement it has not made", () => {
+    // The page holds two figures, so the old blanket caveat would be false. What has to
+    // survive is the half that still is true: everything it has not read, said outright.
+    renderAt("/");
+
+    expect(screen.queryByText(/nothing measured yet/i)).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/no figure here is a fraction of a period's window/i),
+    ).toBeInTheDocument();
+  });
+
+  it("hangs the matrix off the court's disputes, newest first", () => {
+    renderAt("/");
+
+    expect(screen.getByRole("heading", { name: /the matrix/i })).toBeInTheDocument();
+
+    const rows = screen.getAllByRole("rowheader");
+
+    expect(rows[0]).toHaveTextContent("166");
+    expect(rows[rows.length - 1]).toHaveTextContent("151");
+  });
+
+  it("names every agent juror as a column, including the one never drawn", () => {
+    renderAt("/");
+
+    for (const agentJuror of ROSTER) {
+      expect(screen.getAllByText(agentJuror.nickname).length).toBeGreaterThan(0);
+    }
+  });
+
+  it("lists the disputes and says why, when the matrix cannot be built", () => {
+    // A matrix built from a partial read would be a page of blank cells, and a blank cell says
+    // an agent juror was not drawn. The record is shown instead, and the gap is stated.
+    renderAt("/", { performance: unmeasured });
+
+    expect(
+      screen.getByText(/the matrix could not be built from what was read/i),
+    ).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /the disputes/i })).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /the matrix/i })).not.toBeInTheDocument();
+  });
+
+  it("does not describe cells and coherence above a page that is showing neither", () => {
+    // The caveat can overstate as easily as the matrix can. On the failure path it says what
+    // was not measured on this load, rather than how to read a matrix that is not there.
+    renderAt("/", { performance: unmeasured });
+
+    expect(screen.getByText(/nothing measured on this load/i)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/a blank cell means an agent juror was not drawn/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("says nothing about a failed read while the read is still out", () => {
+    renderAt("/", { performance: { performance: null, isLoading: true, error: null } });
+
+    expect(screen.queryByText(/the matrix could not be built/i)).not.toBeInTheDocument();
+  });
+
+  it("says the matrix may be stale when the court could not be re-read", () => {
+    // react-query keeps the rows already held when a refetch fails, so the matrix rebuilds and
+    // stays on the page. Rendering it silently would show an hour-old court as the full record.
+    renderAt("/", {
+      disputes: {
+        ...disputes,
+        error: new Error("Core subgraph returned HTTP 503 Service Unavailable"),
+      },
+    });
+
+    expect(screen.getByText(/this matrix may be incomplete or out of date/i)).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: /the matrix/i })).toBeInTheDocument();
+  });
+});
+
+describe("the totals above the matrix", () => {
+  it("prints figures read from the model, not written into the page", () => {
+    renderAt("/");
+
+    const totals = measured.performance?.totals;
+    if (totals === undefined) throw new Error("The captured court builds a model");
+
+    expect(screen.getByText(String(totals.disputes))).toBeInTheDocument();
+    expect(screen.getByText(String(totals.draws))).toBeInTheDocument();
+    expect(screen.getByText(`Draws · ${totals.votes} vote IDs`)).toBeInTheDocument();
+  });
+
+  it("reads the drawn count against the whole roster, so a never-drawn agent juror is legible", () => {
+    renderAt("/");
+
+    expect(screen.getByText("5")).toBeInTheDocument();
+    expect(screen.getByText(`/${ROSTER.length}`)).toBeInTheDocument();
+  });
+
+  it("plots one mark per revealed draw and says how many that is", () => {
+    renderAt("/");
+
+    const latency = measured.performance?.totals.revealLatency;
+    if (latency == null) throw new Error("The captured court has revealed draws");
+
+    expect(
+      screen.getByRole("heading", { name: `Reveal latency · ${latency.seconds.length} draws` }),
+    ).toBeInTheDocument();
+  });
+
+  it("quotes the median as one figure, wherever it appears", () => {
+    renderAt("/");
+
+    const latency = measured.performance?.totals.revealLatency;
+    if (latency == null) throw new Error("The captured court has revealed draws");
+    const median = formatLatencySeconds(latency.median);
+
+    // The tile, the median line on the strip and the summary are three readings of one
+    // number — read from the model here too, because a literal would only pin the fixture.
+    expect(screen.getAllByText(median).length).toBeGreaterThan(1);
+    expect(screen.getByText(`${median} median`)).toBeInTheDocument();
+  });
+
+  it("calls the comparison band illustrative on the page, not only in the source", () => {
+    renderAt("/");
+
+    expect(screen.getByText(/the comparison band is illustrative/i)).toBeInTheDocument();
+    expect(screen.getByText(/it measures no court/i)).toBeInTheDocument();
+  });
+
+  it("says it has nothing rather than showing zeros, when nothing was measured", () => {
+    renderAt("/", { performance: unmeasured });
+
+    expect(screen.getByText(/nothing has been measured on this load/i)).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /reveal latency ·/i })).not.toBeInTheDocument();
+    // A `0` here would be a claim about the court that nobody measured.
+    expect(screen.queryByText("0")).not.toBeInTheDocument();
+  });
+});
+
+describe("the matrix view's footer", () => {
+  it("names the range read and when it was read, without claiming it is the whole record", () => {
+    renderAt("/");
+
+    expect(screen.getByText(/16 disputes, 151 to 166/)).toBeInTheDocument();
+    expect(screen.getByText(/2026-08-25 05:12 UTC/)).toBeInTheDocument();
+    expect(screen.getByText(/never a claim that it is the whole record/i)).toBeInTheDocument();
+  });
+
+  it("says how agent jurors are identified, on a view that shows them", () => {
+    renderAt("/");
+
+    expect(screen.getByText(/never by the person or team who built them/i)).toBeInTheDocument();
+  });
+
+  it("names what on the page did not come from a read", () => {
+    renderAt("/");
+
+    expect(
+      screen.getByText(/the only thing above that did not come from a read/i),
+    ).toBeInTheDocument();
+  });
+
+  it("discloses a fallback to the roster when ENS could not be reached", () => {
+    renderAt("/", { roster: unresolvedRoster });
+
+    expect(screen.getAllByText(/ENS could not be reached/i).length).toBeGreaterThan(0);
+  });
+
+  it("does not announce an ENS failure while the lookup is still out", () => {
+    renderAt("/", { roster: resolvingRoster });
+
+    expect(screen.queryByText(/ENS could not be reached/i)).not.toBeInTheDocument();
+  });
+
+  it("says so when the draws are a staler read than the disputes above them", () => {
+    // The failure the matrix cannot show by itself: react-query kept the draws it already held
+    // while the dispute list was re-read successfully. A dispute newer than that draw read then
+    // has no cells — and a cell with no draw is drawn as not drawn, which is a claim about the
+    // court rather than about the read.
+    renderAt("/", {
+      performance: {
+        ...measured,
+        error: new Error("Core subgraph returned HTTP 503 Service Unavailable"),
+      },
+    });
+
+    expect(screen.getByRole("heading", { name: /the matrix/i })).toBeInTheDocument();
+    expect(screen.getByText(/the draws could not be re-read on this load/i)).toBeInTheDocument();
+    expect(screen.getByText(/this matrix may be incomplete or out of date/i)).toBeInTheDocument();
+  });
+
+  it("says a stale court once, not twice, when the dispute read is the half that failed", () => {
+    // `performance.error` chains the dispute error, so a naive pair of conditions would print
+    // both sentences for one failure.
+    renderAt("/", {
+      disputes: { ...disputes, error: new Error("Core subgraph returned HTTP 503") },
+      performance: { ...measured, error: new Error("Core subgraph returned HTTP 503") },
+    });
+
+    expect(screen.getByText(/the court could not be re-read on this load/i)).toBeInTheDocument();
+    expect(screen.queryByText(/the draws could not be re-read/i)).not.toBeInTheDocument();
+  });
+
+  it("does not become a third place a failed read is announced", () => {
+    renderAt("/", { performance: unmeasured });
+
+    // Ticket 13 fixes the announcement at two: where the figure would have been, and once in
+    // a banner. The footer states provenance — here, that the disputes below were read even
+    // though nothing was measured from them.
+    expect(screen.getAllByText(/could not be built/i)).toHaveLength(1);
+    expect(screen.getByText(/16 disputes, 151 to 166/)).toBeInTheDocument();
+  });
+
+  it("links the window footnote at the section that answers it", () => {
+    renderAt("/");
+
+    expect(
+      screen.getByRole("link", { name: /what that means for these figures/i }),
+    ).toHaveAttribute("href", "/method#window");
+  });
+});

@@ -133,7 +133,7 @@ const Description = styled.span`
   color: ${({ theme }) => theme.textMeta};
 `;
 
-export function Roster({ entries, isResolvedFromEns }: RosterView) {
+export function Roster({ entries, isResolving, isResolvedFromEns }: RosterView) {
   return (
     <Section aria-labelledby="roster-heading">
       <Heading id="roster-heading">The roster</Heading>
@@ -143,7 +143,11 @@ export function Roster({ entries, isResolvedFromEns }: RosterView) {
         at all, so the chain alone would show fewer than six.
       </Lede>
 
-      {!isResolvedFromEns && (
+      {/* `isResolving` as well as `isResolvedFromEns`: the second is false while the mainnet
+          lookup is still out, so on its own this panel claims a failure for the length of every
+          cold load and then takes it back. A caveat that appears and disappears teaches a reader
+          to ignore caveats. */}
+      {!isResolving && !isResolvedFromEns && (
         <Caveat role="status">
           <CaveatLabel>
             <span aria-hidden="true">◇</span>

@@ -10,13 +10,17 @@ dashboard's job.
 
 ## Status
 
-**The matrix is live.** This repository contains the application shell, the deployment pipeline,
-the Kleros ×AI visual system, a page naming the six agent jurors, and the dispute matrix: one row
-per dispute — headed by what that dispute is actually about — one column per agent juror, and each
-cell carrying that draw's reveal latency and whether it voted with the dispute's final ruling. Two
-measures, and no more — commit latency, per-agent-juror summaries, rewards and the historical period
-windows are all still unread. The deployed page names each of those gaps outright, because a public
-page whose figures may be cited must never let "not built" look like "no results".
+**The matrix is live, and it now has a dashboard around it.** This repository contains the
+application shell, the deployment pipeline, the Kleros ×AI visual system, and five routes under one
+piece of chrome: the matrix at `/` — one row per dispute, headed by what that dispute is actually
+about, one column per agent juror, each cell carrying that draw's reveal latency and whether it
+voted with the dispute's final ruling — plus the court's totals and latency distribution above it,
+a dispute index at `/disputes`, the six agent jurors at `/agent-jurors`, how everything is measured
+at `/method`, and a 404 view behind them. Every view carries the same nav, the same read-only
+statement and a footer stating the provenance of what is above it. Two measures, and no more —
+commit latency, per-agent-juror summaries, rewards and the historical period windows are all still
+unread. Each page names its own gaps outright, because a public page whose figures may be cited
+must never let "not built" look like "no results".
 
 Read [`CLAUDE.md`](CLAUDE.md) before writing code — in particular its **Traps** section, which
 records the things that cost real time to discover. The design that this scaffold serves lives in:
@@ -134,10 +138,21 @@ Two kinds of test, split by filename:
   Those readers are ENS in `src/roster/`, and the Kleros v2 core subgraph in `src/disputes/`
   (disputes and rounds) and `src/performance/` (draws, votes and justifications).
 
-**Components take what they render as props.** `App` is the composition root — providers, and the
-one place a hook reaches the network — while `Dashboard` and below are given their data. That is
-what lets the whole page be exercised offline against hand-built data, and is why `yarn test` needs
-no mock and no network to render it.
+**Components take what they render as props.** `App` is the composition root — providers, the
+router, and the one place a hook reaches the network — while the route table and every view below
+it are given their data. That is what lets the whole dashboard be exercised offline against
+hand-built data, and is why `yarn test` needs no mock and no network to render it. The reads happen
+above the routes rather than inside them, so one court read feeds the matrix, the dispute index and
+the totals, and moving between views re-reads nothing.
+
+**Routing** is react-router in its declarative mode, mounted as a `BrowserRouter` because these are
+real URLs: every view is reachable by link, survives a reload and moves under the browser's back
+and forward buttons. [`src/routes.tsx`](src/routes.tsx) is the whole table, and every route renders
+inside one layout route so no view can lose the chrome. The SPA fallback in `netlify.toml` is what
+makes a pasted link resolve in production — which also means the app is the only thing that can
+tell a visitor a URL is wrong, hence the 404 view. Tests render through
+[`src/test/court.tsx`](src/test/court.tsx)'s `renderAt(path)`, over a `MemoryRouter`, so the nav
+and footer are exercised as part of whatever the route renders.
 
 **Lint runs at end of turn.** `.claude/settings.json` registers a Stop hook,
 [`.claude/hooks/lint-check.sh`](.claude/hooks/lint-check.sh), that runs `yarn lint` when an

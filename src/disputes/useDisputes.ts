@@ -24,6 +24,15 @@ import { fetchDisputeTemplates } from "./drt-subgraph";
  */
 export type DisputesView = DisputeListView & {
   raw: readonly RawDispute[];
+  /**
+   * When the disputes on screen were read, in epoch milliseconds, or `null` before any land.
+   *
+   * The provenance footer prints it. It comes from react-query rather than from a clock read
+   * during render, so it is the moment of the *read* and not the moment of the render — those
+   * differ by however long a tab has been left open, which is exactly the gap a citing reader
+   * needs to see.
+   */
+  readAt: number | null;
 };
 
 /** What every dispute looks up against until the titles arrive, or if they never do. */
@@ -95,6 +104,9 @@ export function useDisputes(): DisputesView {
     raw: disputes.data?.raw ?? NO_DISPUTES,
     disputes: rows,
     isLoading: disputes.isPending,
+    // react-query reports 0 for a query that has never resolved; that is not the epoch, it is
+    // an absence, and the footer must not print 1970 as the moment the court was read.
+    readAt: disputes.dataUpdatedAt === 0 ? null : disputes.dataUpdatedAt,
     // Kept alongside whatever rows are already held: a failed refetch must not blank the
     // list, and an incomplete list must not read as the whole court. Ticket 13 replaces
     // the plain notice this feeds with the designed failure state.

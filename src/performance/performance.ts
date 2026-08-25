@@ -1,5 +1,6 @@
 import { type Dispute, type DisputeRound, type RawDispute, toDisputes } from "../disputes/disputes";
 import type { AgentJuror } from "../roster/agent-jurors";
+import { type CourtTotals, courtTotalsOf } from "./totals";
 
 /**
  * The seam.
@@ -128,6 +129,13 @@ export type CourtPerformance = {
   agentJurors: readonly AgentJuror[];
   /** The matrix rows, newest dispute first. */
   rows: readonly MatrixRow[];
+  /**
+   * What the rows amount to court-wide: the stat tiles' figures and the latency distribution.
+   *
+   * Computed here rather than reduced in a view, so the tiles above the matrix and the matrix
+   * itself are two readings of one model. See `totals.ts`.
+   */
+  totals: CourtTotals;
 };
 
 /** The one failure code this seam returns. Everything it rejects is a payload it cannot believe. */
@@ -412,7 +420,10 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
       };
     });
 
-    return { success: true, data: { agentJurors: raw.roster, rows } };
+    return {
+      success: true,
+      data: { agentJurors: raw.roster, rows, totals: courtTotalsOf(rows, raw.roster) },
+    };
   } catch (cause) {
     const message = cause instanceof Error ? cause.message : String(cause);
     return { success: false, code: MALFORMED, message, details: { cause } };

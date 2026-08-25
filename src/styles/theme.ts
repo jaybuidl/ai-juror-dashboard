@@ -52,6 +52,12 @@ export const theme = {
   // Cyan, and only for a value, a verified state, or focus. Not decoration.
   accent: "var(--accent)",
   accentQuiet: "var(--accent-quiet)",
+  focusRing: "var(--focus-ring)",
+
+  // The ×AI tail of the lockup. The system marks these "logo only", and they are used in
+  // exactly one component — a second use would be a third brand colour by accident.
+  brandAi: "var(--brand-ai)",
+  brandX: "var(--brand-x)",
 
   // Draw states, per ADR-0006: a glyph and a word carry the meaning, these carry the colour.
   statePass: "var(--state-pass)",
@@ -80,10 +86,15 @@ export const theme = {
   typeBody: "var(--type-body)",
   typeBodySm: "var(--type-body-sm)",
   typeMono: "var(--type-mono)",
+  typeMonoLg: "var(--type-mono-lg)",
   typeMonoSm: "var(--type-mono-sm)",
+  // The figure over a label: a stat tile's number, and nothing else.
+  typeMetric: "var(--type-metric)",
+  typeMetricSm: "var(--type-metric-sm)",
   trackingDisplay: "var(--tracking-display)",
   trackingTitle: "var(--tracking-title)",
   trackingMono: "var(--tracking-mono)",
+  trackingMonoTight: "var(--tracking-mono-tight)",
 
   // Shape. `border*` are complete `border` shorthands, not colours.
   radiusCard: "var(--radius-5)",
@@ -95,7 +106,10 @@ export const theme = {
 
   // Layout
   container: "var(--container)",
+  /* Prose measure: the method page, where a reader is reading rather than scanning a grid. */
+  containerNarrow: "var(--container-narrow)",
   gutter: "var(--gutter)",
+  navHeight: "var(--nav-h)",
   cardPad: "var(--card-pad)",
   cardPadLg: "var(--card-pad-lg)",
 
@@ -112,6 +126,7 @@ export const theme = {
   space9: "var(--space-9)",
   space10: "var(--space-10)",
   space11: "var(--space-11)",
+  space12: "var(--space-12)",
 
   // Motion. Nothing here animates yet; `tokens/motion.css` carries the reduced-motion block
   // that keeps it safe when something does.
@@ -119,8 +134,11 @@ export const theme = {
   durBase: "var(--dur-base)",
   easeOut: "var(--ease-out)",
 
-  // Atmosphere: the violet glow the ground is lit by.
+  // Atmosphere: the violet glow the ground is lit by, the orbit lines drawn over it, and the
+  // violet wash the latency strip's illustrative comparison band is filled with.
   glowViolet: "var(--glow-violet)",
+  orbitLine: "var(--orbit-line)",
+  washViolet: "var(--wash-violet)",
 };
 
 // Deliberately not `as const`: literal types would make `name: "dark"` the only
