@@ -85,6 +85,14 @@ that is about a *read* rather than about the court — `RawCourtData.drawsReadAt
 draws on screen were fetched — because whether a row's draws were read at all is a derivation and
 not a rendering decision. It still consults no clock: the moment arrives as data, exactly as the
 commit timestamps do.
+Ticket 09 added the **second** model beside it rather than inside it —
+`buildDisputeDetail` in `src/performance/dispute-detail.ts`, under the same discipline (pure, no
+network, no clock) at a different altitude: one dispute rather than the court, joining the row, the
+dispute and the template the court-wide model already holds to one read only that view needs. The
+split is about what gets carried, not about what gets derived — the justification prose is 124 KB
+today and `courtDraws` is persisted, so reading it court-wide would inflate every load to serve one
+page. Ticket 11's agent juror view is the same shape and should reach for `marginals` first: it
+needs no read of its own at all.
 Every ticket from `03` up carries a `**Design:**` line naming what it is built against — an artboard
 and its line range, or, for ticket 14, the design system itself.
 
