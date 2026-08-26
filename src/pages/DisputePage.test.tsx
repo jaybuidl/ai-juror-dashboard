@@ -82,13 +82,18 @@ describe("the header", () => {
   });
 
   it("identifies the dispute beyond its title", () => {
-    // The criterion names five: category, court, round, panel size and the period it is in.
+    // Ticket 09's criterion named five — category, court, round, panel size and the period — and
+    // this is four of them on purpose. The panel size left every surface that already draws the
+    // panel, and this view draws it most plainly of all: every member side by side in roster
+    // order, under a sentence saying the panel is at most six so all of it fits at once. The
+    // chip counted what the reader is looking at. Where a panel cannot be counted off the page
+    // the figure stays, which is why `AgentJurorDraws` keeps its column.
     renderDispute();
 
     expect(screen.getByText("IP")).toBeInTheDocument();
     expect(screen.getByText("Court 34")).toBeInTheDocument();
     expect(screen.getByText("Round 1 of 1")).toBeInTheDocument();
-    expect(screen.getByText("Panel 4")).toBeInTheDocument();
+    expect(screen.queryByText(/^Panel \d+$/)).not.toBeInTheDocument();
     expect(screen.getByText("execution")).toBeInTheDocument();
   });
 

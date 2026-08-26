@@ -38,12 +38,15 @@ function row(over: Partial<MatrixRow> = {}): MatrixRow {
 }
 
 describe("panelPillOf", () => {
-  it("counts the panel of a dispute the court has drawn for", () => {
-    expect(panelPillOf(row({ panelSize: 4 }))).toEqual({ text: "Panel 4", tone: undefined });
-  });
-
-  it("marks a panel of one amber, where being the majority took no agreement", () => {
-    expect(panelPillOf(row({ panelSize: 1 }))).toEqual({ text: "Panel 1", tone: "work" });
+  // The size is gone from both layouts, and asserting its absence is the point. A row draws six
+  // cells and a card six slots, each a draw or a blank, so the number counted what the reader is
+  // already looking at — checked against the live court, where all 31 rows had a panel size equal
+  // to their own drawn-cell count. A panel of one loses nothing either: it kept saying `Panel 1`
+  // beside a ‡ Lone panel flag that says the same thing and says why it matters.
+  it("says nothing where the panel is one the reader can count", () => {
+    for (const panelSize of [1, 2, 4, 7]) {
+      expect(panelPillOf(row({ panelSize }))).toBeNull();
+    }
   });
 
   // The defect this module was made for. Disputes 167, 168 and 169 sat in `evidence` with nobody
@@ -52,15 +55,16 @@ describe("panelPillOf", () => {
   it("never prints a panel of nobody for a dispute the court has not drawn for yet", () => {
     const pill = panelPillOf(row({ panelSize: 0 }));
 
-    expect(pill.text).not.toContain("0");
-    expect(pill.text).toBe("No panel yet");
+    expect(pill).not.toBeNull();
+    expect(pill?.text).toBe("No panel yet");
+    expect(pill?.text).not.toContain("0");
   });
 
   // Ticket 13's instruction, and it is about which of two things a reader concludes: a court
   // that has not drawn yet is not a read that failed.
   it("keeps a panel that has not been drawn out of the failure colours", () => {
-    expect(panelPillOf(row({ panelSize: 0 })).tone).toBeUndefined();
-    expect(panelPillOf(row({ read: false })).tone).toBe("fail");
+    expect(panelPillOf(row({ panelSize: 0 }))?.tone).toBeUndefined();
+    expect(panelPillOf(row({ read: false }))?.tone).toBe("fail");
   });
 
   it("says a row whose draws were never read is unread, not that it has no panel", () => {

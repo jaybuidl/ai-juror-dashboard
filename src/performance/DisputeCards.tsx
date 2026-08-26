@@ -537,12 +537,18 @@ function DisputeCard({
       {/* Never a blank where the ruling sits: a dispute the court has not decided reads
           "Pending", and an empty slot there is indistinguishable from one that failed to load. */}
       <span>{rulingLabel(dispute.ruling)}</span>
-      <MetaSeparator aria-hidden="true">·</MetaSeparator>
-      {/* On every card, as it is on every row, and in the same words: `panelPillOf` is where
-          they are decided now that there are three of them to keep apart. A dispute whose draws
-          were never read, one the court has not drawn a panel for yet, and one with a panel —
-          this card and the matrix row used to word the middle of those three as "Panel 0". */}
-      <Pill $tone={panel.tone}>{panel.text}</Pill>
+      {/* Only where there is no panel to see, and the separator goes with it — a middot left
+          behind by an absent neighbour is the same defect the matrix row carried until its own
+          second line stopped wrapping. `panelPillOf` is where the two surviving cases are
+          decided, shared with that row: a dispute whose draws were never read, and one the
+          court has not drawn a panel for yet. The size is gone from both layouts, because a
+          card's six slots are the count in the same way a row's six cells are. */}
+      {panel !== null && (
+        <>
+          <MetaSeparator aria-hidden="true">·</MetaSeparator>
+          <Pill $tone={panel.tone}>{panel.text}</Pill>
+        </>
+      )}
     </CardMeta>
   );
 

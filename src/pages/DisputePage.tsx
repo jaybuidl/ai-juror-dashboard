@@ -620,11 +620,12 @@ export function DisputeView({
                       Round {reading.round.index + 1} of {reading.dispute.rounds.length}
                     </Fact>
                   )}
-                  {/* Both conditions. `read` alone leaves "Panel 0" on a dispute still in its
-                      evidence period — a claim that the court drew a panel of nobody, where the
-                      truth is that it has not drawn one yet. The seam says the same thing about
-                      an unread row: `panelSize` is 0 there and must not be printed. */}
-                  {reading.read && reading.panelSize > 0 && <Fact>Panel {reading.panelSize}</Fact>}
+                  {/* No panel size here either. This page draws every panel member side by
+                      side and says so — "the panel is at most six, so all of it fits at once" —
+                      so the chip counted what the reader is already looking at, the same reason
+                      it left the matrix row and the phone's card. The two absences it used to
+                      guard are unaffected: ticket 09 words both in prose on this view rather
+                      than in a chip, which is where `panelPillOf` took the idea from. */}
                   <Fact>{reading.dispute.period}</Fact>
                   {reading.transactionHash !== null && (
                     <OnChain

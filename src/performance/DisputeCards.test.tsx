@@ -309,11 +309,14 @@ describe("DisputeCards", () => {
     expect(title.textOverflow).not.toBe("ellipsis");
   });
 
-  it("puts the panel size on every card, and says what it knows on an unread one", () => {
+  it("keeps the panel size off every card, and still says what it knows on an unread one", () => {
     renderCards();
 
-    expect(within(card(163)).getByText("Panel 5")).toBeInTheDocument();
-    expect(within(card(155)).getByText("Panel 1")).toBeInTheDocument();
+    // Six fixed slots along the card's foot, one per agent juror whether drawn or not, are the
+    // count — the card's equivalent of the row's six cells, and the reason the pill went from
+    // both layouts at once rather than from one of them.
+    expect(within(card(163)).queryByText(/^Panel \d+$/)).not.toBeInTheDocument();
+    expect(within(card(155)).queryByText(/^Panel \d+$/)).not.toBeInTheDocument();
 
     cleanup();
 
@@ -388,10 +391,10 @@ describe("DisputeCards", () => {
     const live = [...card(166).children] as HTMLElement[];
     expect(live[0]).toHaveTextContent(/166.*Live · appeal/s);
     expect(live[1]).toHaveTextContent("A dispute");
-    expect(live[2]).toHaveTextContent(/Licensing.*Pending.*Panel/s);
+    expect(live[2]).toHaveTextContent(/Licensing.*Pending/s);
 
     const finalised = [...card(163).children] as HTMLElement[];
-    expect(finalised[0]).toHaveTextContent(/163.*Licensing.*Ruling.*Panel 5/s);
+    expect(finalised[0]).toHaveTextContent(/163.*Licensing.*Ruling/s);
   });
 
   it("reads pending where the ruling sits on a dispute with no ruling yet", () => {

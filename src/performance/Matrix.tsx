@@ -1030,14 +1030,15 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                             // Content, not a pill: the row draws its own, and a pill passed in
                             // here would sit inside that one with two borders and two paddings.
                             //
-                            // Panel size lives on the row and never in a cell: coherence cannot
-                            // be read without it, and repeating it in every cell would cost more
-                            // than it tells. What it says is `panelPillOf`'s, shared with the
-                            // phone's card — including the case neither layout had right until
-                            // ticket 17: a dispute that was read and has no panel yet is not a
-                            // panel of nobody.
-                            panel: panel.text,
-                            panelTone: panel.tone,
+                            // Only where there is no panel to see. The size itself is gone from
+                            // this row and from the phone's card alike: six cells are the count,
+                            // and on dispute 155 the pill said `Panel 1` beside a ‡ Lone panel
+                            // flag that said it better. What survives is what the cells cannot
+                            // say about themselves — a dispute read with no panel drawn yet, and
+                            // one whose draws were never read. `panelPillOf` holds both, shared
+                            // with the card, and an absent slot takes its separator with it.
+                            panel: panel?.text,
+                            panelTone: panel?.tone,
                             // Abbreviated at the compact density, per `MatrixDense.dc.html:213`
                             // against `Main.dc.html:302` — the one place the two artboards word
                             // one thing twice, and the reason is a row 375px wide. Which flag it

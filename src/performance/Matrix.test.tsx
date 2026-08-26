@@ -123,6 +123,26 @@ function rowFor(id: number) {
 }
 
 /**
+ * The cells of a row that carry a draw, which is how a reader counts a panel now that no pill
+ * states its size.
+ *
+ * An undrawn cell is blank to the eye and says "Not drawn" to a screen reader; a row whose draws
+ * were never read says "Unknown" in all six. Both are absences rather than draws and neither may
+ * be counted into a panel — the distinction tickets 13 and 17 exist to keep, applied to the count
+ * itself.
+ *
+ * Matching on those two and not on "Not read" is the point: a cell that *was* drawn says "Not
+ * read" for its commit measure whenever the log scan has not come back, which is every fixture
+ * built without commits. Filtering on it counted a real draw as an absence and made a panel of
+ * one look like a panel of none.
+ */
+function drawnCellsOf(row: HTMLElement): HTMLElement[] {
+  return within(row)
+    .getAllByRole("cell")
+    .filter((cell) => !/not drawn|\bunknown\b/i.test(cell.textContent ?? ""));
+}
+
+/**
  * The same court, grown to a given number of disputes.
  *
  * `padCourt` is shared with `MatrixPage.test.tsx`, which checks what the page *says* about a
@@ -327,13 +347,13 @@ describe("Matrix", () => {
 
     const titled = screen.getByText("x402 escrow dispute").closest("tr") as HTMLElement;
     expect(within(titled).getByText("151")).toBeInTheDocument();
-    // The row draws its own panel pill; a filled title slot does not displace it.
-    expect(within(titled).getByText(/^Panel \d+$/)).toBeInTheDocument();
+    // The row draws its own ruling; a filled title slot does not displace it.
+    expect(within(titled).getByText(/^Ruling /)).toBeInTheDocument();
 
     // 152 resolves no title here, which is what a dispute with no template looks like. It keeps
     // its row and its header rather than dropping out of the matrix.
     const untitled = screen.getByText("152").closest("tr") as HTMLElement;
-    expect(within(untitled).getByText(/^Panel \d+$/)).toBeInTheDocument();
+    expect(within(untitled).getByText(/^Ruling /)).toBeInTheDocument();
     expect(screen.getAllByRole("rowheader")).toHaveLength(16);
   });
 
@@ -386,13 +406,18 @@ describe("Matrix", () => {
     expect(within(single).queryByText("×1")).not.toBeInTheDocument();
   });
 
-  it("puts panel size on the row and never in a cell", () => {
+  it("keeps the panel size off the row, because the six cells already are the count", () => {
     renderMatrix();
     const row = rowFor(163);
     if (row === null) throw new Error("no row for dispute 163");
 
-    expect(within(row).getByText("Panel 5")).toBeInTheDocument();
-    expect(within(row).queryAllByText(/panel/i)).toHaveLength(1);
+    // Dispute 163 has a panel of five and nothing on the row says so in words: five of its six
+    // cells carry a draw and the sixth is blank, which is the same fact drawn rather than
+    // counted. Checked against the live court before the pill went — all 31 rows had a panel
+    // size equal to their own drawn-cell count. It is a property of this court and not of the
+    // model, which is why `AgentJurorDraws` keeps the number where there are no cells to count.
+    expect(within(row).queryByText(/^Panel \d+$/)).not.toBeInTheDocument();
+    expect(drawnCellsOf(row)).toHaveLength(5);
   });
 
   it("flags a dispute decided by a panel of one, and explains why it matters", () => {
@@ -400,7 +425,10 @@ describe("Matrix", () => {
     const row = rowFor(155);
     if (row === null) throw new Error("no row for dispute 155");
 
-    expect(within(row).getByText("Panel 1")).toBeInTheDocument();
+    // The flag is the sole carrier now, and it was always the better of the two: it says what
+    // being a majority of one means, where `Panel 1` beside it only said how many there were.
+    expect(within(row).queryByText("Panel 1")).not.toBeInTheDocument();
+    expect(drawnCellsOf(row)).toHaveLength(1);
     expect(within(row).getByText("Lone panel")).toBeInTheDocument();
     expect(screen.getByText(/coherence there is tautological/i)).toBeInTheDocument();
   });
@@ -476,7 +504,9 @@ describe("Matrix", () => {
       const row = rowFor(151);
       if (row === null) throw new Error("no row for dispute 151");
 
-      expect(within(row).getByText("Panel 1")).toBeInTheDocument();
+      // One drawn cell is what makes this row lone, and it is asserted so the precedence claim
+      // below cannot pass vacuously against a fixture that stopped producing one.
+      expect(drawnCellsOf(row)).toHaveLength(1);
       expect(within(row).getByText("8h window")).toBeInTheDocument();
       expect(within(row).queryByText("Lone panel")).not.toBeInTheDocument();
     });
@@ -1533,7 +1563,7 @@ describe("Matrix", () => {
       expect(within(compact).queryByText("Escrow")).not.toBeInTheDocument();
       expect(within(compact).queryByText("Ruling 2")).not.toBeInTheDocument();
       expect(within(compact).getByText("An escrow dispute")).toBeInTheDocument();
-      expect(within(compact).getByText("Panel 4")).toBeInTheDocument();
+      expect(within(compact).getByText(/med c/i)).toBeInTheDocument();
       expect(within(compact).getByRole("link", { name: "156" })).toBeInTheDocument();
     });
 
