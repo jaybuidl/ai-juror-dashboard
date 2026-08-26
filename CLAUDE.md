@@ -197,6 +197,14 @@ and its line range, or, for ticket 14, the design system itself.
   panel", "⋯ Live · commit 3m 12s" and `MatrixDense.dc.html:213` gives "† 8h", "‡ Lone", "⋯ Live".
   The canvas won, and a browser said why: the live pill was 175px of a 375px row and it was the
   dispute's title that paid. `ROW_FLAGS` carries `label` and `shortLabel` so the two cannot fork.
+  **The rule only helps if the artboard being read is the one that draws the element.** The
+  column header's reason line was built from `Errors.dc.html:201-217`, which demonstrates the
+  dagger pattern on a standalone **400px explainer card**; the artboard for that block,
+  `Main.dc.html:136-152`, is six bare key-value lines with no prose in it at all. A pattern
+  specified at 400px, applied five times over inside a 145px column, cost 350px of column header
+  and put the six columns' figures on three different baselines — the one comparison a block of
+  marginals exists to allow. Before citing the canvas for how an element looks, find the artboard
+  that draws *that element in that place*, not the one that explains the idea.
 - Use `CONTEXT.md` vocabulary. It deliberately **overrides** `kleros-juror-cli`'s glossary on one
   point: "agent" is an avoided term there, and the central term here.
 
@@ -598,6 +606,24 @@ Things that cost real effort to discover and are easy to get wrong again:
   `minmax(7rem, 1fr)` on the track that must survive. It is the same family as the
   `text-overflow: ellipsis` failure `DisputeList.tsx` already carries a comment about, and it fails
   in the same silence.
+- **`table-layout: auto` settles a shortfall by crushing whatever can shrink, and a declared
+  width is only a suggestion to it.** The third member of the family above, and the most
+  expensive so far because it survived three tickets and a review. The matrix declared a 440px
+  row header and six 148px columns — 1328px, exactly what `canvas/Main.dc.html` draws — inside a
+  page that gives 1104px of content. An auto table does not overflow in that situation and does
+  not warn; it finds the compressible column and takes the whole 224px out of it. Six columns of
+  identity and figures are incompressible, so the row header rendered at **239px of the 440 it
+  declared** and the dispute title inside it at 180px of its natural 836. A 1440px desktop showed
+  a fifth of a question the 390pt phone showed whole, and the tell — a clipped title — is exactly
+  what a title is *supposed* to look like when it does not fit. jsdom lays nothing out, so no
+  offline test could see it; axe does not measure layout, so ticket 18 could not; and the code
+  around it had already convinced itself otherwise, because `breakpoints.compactGrid`'s note
+  described the compact grid as scrolling in its own box "exactly as the comfortable grid always
+  does" when the comfortable grid had no `min-width` and never did. The fix is `table-layout:
+  fixed` plus a `min-width` floor per density, so the widths are held and a page too narrow for
+  them scrolls the box rather than the record. **Any declared width in this repo needs a browser
+  to confirm it was honoured** — `getComputedStyle` reports what was *asked*, and
+  `getBoundingClientRect` what was *given*, and the gap between them is silent.
 - **A shared styled component sized for its first use is sized wrong for its second.**
   `MeasureKey` is 7px wide because a cell's key is one letter; the row's `MED C` overlapped the
   duration beside it. Fixed through a component selector where the second use is, rather than by

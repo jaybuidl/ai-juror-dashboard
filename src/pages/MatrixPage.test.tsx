@@ -50,7 +50,7 @@ describe("the matrix view", () => {
     // The matrix is the one view whose content has a measurement of its own — a 440px row
     // header and six 148px columns, 1328px — and the shared "wide" measure gives 1104px of
     // content on a 1440px screen. Under it the grid scrolled sideways in its own box on every
-    // desktop, and before ticket 19 it did something worse than scroll: the table was laid out
+    // desktop, and it did something worse than scroll for three tickets: the table was laid out
     // auto, so it absorbed the 224px shortfall by crushing the dispute title to 180px.
     renderAt("/");
 
