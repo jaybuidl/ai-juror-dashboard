@@ -202,6 +202,21 @@ describe("DisputeList", () => {
     expect(grid.gridTemplateColumns).toBe("2.5rem minmax(0, 1fr)");
   });
 
+  it("makes the row the containing block, without which the link's target covers the page", () => {
+    // Half of a pair that has to stay together, and the half whose failure is unbounded. The ID
+    // link stretches an `inset: 0` pseudo-element over its row so that the row is what a reader
+    // clicks; an absolutely positioned box with no positioned ancestor resolves against the
+    // initial containing block instead, so dropping this line does not shrink the target back to
+    // the digits — it spreads one dispute's link across the whole viewport and every row after
+    // the first becomes unreachable. jsdom lays nothing out, so the overlay's *area* can only be
+    // checked in a browser; what is pinned here is the declaration it depends on.
+    renderList();
+
+    const grid = getComputedStyle(screen.getAllByRole("listitem")[0] as HTMLElement);
+
+    expect(grid.position).toBe("relative");
+  });
+
   it("gives the compact row a third track, so the pills never push the title off the end", () => {
     // Ticket 17's one-line row. The details move onto the first line, and an `auto` track is
     // what makes the title give up the space rather than the pills: the same `minmax(0, 1fr)`

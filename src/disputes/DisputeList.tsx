@@ -82,6 +82,9 @@ const ID_COLUMN = "2.5rem";
 const TITLE_FLOOR = "7rem";
 
 const Row = styled.li<{ $compact?: boolean }>`
+  /* The containing block for the ID link's stretched target, described on DisputeId. Without a
+     positioned ancestor that overlay resolves against the page and covers the viewport. */
+  position: relative;
   display: grid;
   grid-template-columns: ${({ $compact }) =>
     $compact === true
@@ -92,6 +95,13 @@ const Row = styled.li<{ $compact?: boolean }>`
   row-gap: 6px;
   padding: ${({ $compact }) => ($compact === true ? "8px 4px" : "12px 4px")};
   border-bottom: ${({ theme }) => theme.borderHairline};
+
+  /* The row is the target, so the row is what answers the pointer. Without this the only
+     feedback is the ID underlining itself, a long way from wherever along the row the reader
+     is actually pointing, which reads as nothing happening at all. */
+  &:hover {
+    background-color: ${({ theme }) => theme.surfaceRaised};
+  }
 `;
 
 /*
@@ -104,6 +114,12 @@ const Row = styled.li<{ $compact?: boolean }>`
  *
  * One link per row. Making the title a second link to the same place would give a screen-reader
  * user two indistinguishable destinations on every row of a list forty rows long.
+ *
+ * Which leaves the pointer with a target the width of three digits. The ID is what the link is
+ * *named* by, for the two reasons above; it is not what the reader aims at. A stretched
+ * pseudo-element gives it the row's whole area without adding an element, a second name, or a
+ * second tab stop — the pattern the phone's card has shipped since ticket 16, applied one
+ * breakpoint up so that the two layouts open a dispute the same way.
  */
 const DisputeId = styled(Link)`
   grid-column: 1;
@@ -116,13 +132,32 @@ const DisputeId = styled(Link)`
   color: ${({ theme }) => theme.accent};
   text-decoration: none;
 
+  /* Stretched over the row, not over the matrix. Inside the matrix DisputeRow is rendered into
+     the row header cell, which is a positioned ancestor away, so the target stops at the end of
+     that cell and every measurement beside it stays unclickable and keeps its own meaning. */
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+  }
+
   &:hover {
     text-decoration: underline;
   }
 
+  /* The ring belongs on the area that answers the click rather than on the three digits that
+     name it. Both halves of the system's ring have to go for that: base.css gives every
+     focusable an outline of none and a --ring-focus box-shadow, so suppressing the outline
+     alone leaves the shadow drawing a second, smaller ring around the digits inside the one on
+     the overlay. Two rings, one focus. View.tsx records the same trap from the other side. */
   &:focus-visible {
+    outline: none;
+    box-shadow: none;
+  }
+
+  &:focus-visible::after {
     outline: 2px solid ${({ theme }) => theme.focusRing};
-    outline-offset: 3px;
+    outline-offset: -2px;
   }
 
   /* Room for the matrix's frozen column header, which is the one thing that can sit on top of
