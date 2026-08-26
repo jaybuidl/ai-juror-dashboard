@@ -1,3 +1,4 @@
+import type { ReactNode } from "react";
 import styled from "styled-components";
 import { formatReadAt, type Provenance } from "./provenance";
 
@@ -36,6 +37,26 @@ const ReadOnly = styled(Line)`
   color: ${({ theme }) => theme.textBody};
 `;
 
+/*
+ * Where a view may put one caveat of its own, in the footer's voice rather than in its own.
+ *
+ * Exactly one thing uses it today — the matrix's sparsity note, which moved down here from the
+ * footnotes below the grid. It belongs in this order rather than in that one: the † and ‡ notes
+ * decode marks the reader can see *in* the grid, and this one says what the record as a whole
+ * is like, which is the same kind of claim as the two lines above it and the identity line below.
+ *
+ * The note brings its own words and this brings the measure, because a paragraph in a column
+ * flex has no width of its own and would run the full grid measure while every line beside it
+ * stopped at 90ch. The child selector is the paragraph the note renders at its bare
+ * presentation; it stays a selector rather than a prop so the note goes on being dressed where
+ * it is used, which is the rule `Footnotes.tsx` states.
+ */
+const Note = styled.div`
+  > p {
+    max-width: 90ch;
+  }
+`;
+
 const Caveats = styled.ul`
   display: flex;
   flex-direction: column;
@@ -61,7 +82,7 @@ const Caveat = styled.li`
   }
 `;
 
-export function Footer({ provenance }: { provenance: Provenance }) {
+export function Footer({ provenance, note }: { provenance: Provenance; note?: ReactNode }) {
   const { measures, read, readAt, caveats, identifiesAgentJurors } = provenance;
 
   return (
@@ -94,6 +115,8 @@ export function Footer({ provenance }: { provenance: Provenance }) {
           </>
         )}
       </Line>
+
+      {note !== undefined && <Note>{note}</Note>}
 
       {identifiesAgentJurors && (
         <Line>

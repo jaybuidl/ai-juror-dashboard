@@ -23,7 +23,7 @@ import {
   UNREAD_PRESENTATION,
 } from "./cell";
 import { CELL_HEIGHT_PX, COMPACT_CELL_HEIGHT_PX, type Density, densityOf } from "./density";
-import { Footnotes, LonePanelFootnote, SparsityNote, WindowFootnote } from "./Footnotes";
+import { Footnotes, LonePanelFootnote, WindowFootnote } from "./Footnotes";
 import { Dot, Legend, LegendGroup, LegendItem, StateLegend } from "./Legend";
 import { railFraction } from "./latency";
 import { Marginals } from "./Marginals";
@@ -1105,13 +1105,20 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                 151 carries both, and the window is the one that makes its figures
                 incomparable rather than merely uninformative.
 
-                All three are shared with the phone's card list, which is what the artboard for
-                it does not answer and ticket 16 had to: they are caveats about the court, not
+                Both are shared with the phone's card list, which is what the artboard for it
+                does not answer and ticket 16 had to: they are caveats about the court, not
                 about the grid, and `CLAUDE.md` requires them visible in the UI rather than
-                handled correctly in code. */}
+                handled correctly in code.
+
+                The sparsity note used to be the third here and is now in the provenance footer,
+                above the identity line — `MatrixPage` passes it and `Footer` places it. These
+                two decode a mark the reader can see in the grid, and that one says what the
+                record as a whole is like, which is what the footer's other lines say too. The
+                phone is unchanged: it still carries the note as a card at the head of its list,
+                where ticket 16 put it, and both renderings still take their words from the one
+                `SparsityNote`. */}
             <WindowFootnote performance={performance} />
             <LonePanelFootnote performance={performance} />
-            <SparsityNote performance={performance} noun="cell" presentation="footnote" />
           </Footnotes>
         </>
       )}

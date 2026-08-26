@@ -82,11 +82,18 @@ export function View({
   provenance,
   failures = NO_FAILURES,
   measure = "wide",
+  footerNote,
   children,
 }: {
   provenance: Provenance;
   failures?: Failures;
   measure?: Measure;
+  /**
+   * One caveat a view may put in the footer rather than in its own body, above the identity
+   * line. It is a node and not a string because the only thing passing one is a component
+   * shared with another layout — see `Footer`'s note on where this sits and why.
+   */
+  footerNote?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -109,7 +116,7 @@ export function View({
         ))}
         {children}
       </Main>
-      <Footer provenance={provenance} />
+      <Footer provenance={provenance} note={footerNote} />
     </Frame>
   );
 }

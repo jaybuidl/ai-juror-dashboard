@@ -637,20 +637,16 @@ describe("Matrix", () => {
     expect(within(row).queryByText("No vote")).not.toBeInTheDocument();
   });
 
-  it("says in the page that a blank cell is the normal case", () => {
+  it("leaves the sparsity note to the page, which now puts it in the footer", () => {
+    // It was the third footnote under the grid until the note moved into the provenance
+    // footer, above the identity line. What it says is unchanged and is asserted where it is
+    // now composed, in `MatrixPage.test.tsx`; what this pins is that the matrix does not also
+    // carry it, because the one thing two renderings of one caveat must never be is two.
     renderMatrix();
 
-    // Worded about the *record* rather than about the matrix since ticket 16, because the phone
-    // says the same sentence over a layout with no grid and no columns in it. What stays is the
-    // noun for the position itself: a cell here, a slot there, and one figure behind both.
-    //
-    // No "On the empty cells" label here: below the grid this is a plain note among the † and ‡
-    // ones, in the same family rather than in a bordered card of its own. The phone keeps the
-    // card, where the note stands alone at the head of the list and needs an edge. The words
-    // are the same either way, which is what this test is really pinning.
-    expect(screen.getByText(/sparsity is the normal state of this record/i)).toBeInTheDocument();
-    expect(screen.getByText(/one agent juror is blank end to end/i)).toBeInTheDocument();
-    expect(screen.getByText(/cells here are blank/i)).toBeInTheDocument();
+    expect(
+      screen.queryByText(/sparsity is the normal state of this record/i),
+    ).not.toBeInTheDocument();
   });
 
   it("keys the legend so a first-time reader can decode a cell", () => {
@@ -1173,15 +1169,6 @@ describe("Matrix", () => {
       expect(within(row).queryByText(/Panel 0/)).not.toBeInTheDocument();
     });
 
-    it("keeps the gap out of the sparsity count, which is about draws and not about reads", () => {
-      renderDrifted();
-
-      // The sparsity card's claim — that every blank means an agent juror was not drawn — is
-      // true of the rows that were read and false of the one that was not. Folding the unread
-      // row's six nulls into that count would make the sentence false about six of them.
-      expect(screen.getByText(/not counted here at all/i, { selector: "p" })).toBeInTheDocument();
-    });
-
     it("names Unknown in the legend only when the grid contains one", () => {
       renderMatrix(build());
       expect(screen.queryByText("Unknown")).not.toBeInTheDocument();
@@ -1266,19 +1253,6 @@ describe("Matrix", () => {
       expect(within(row).queryByText("Draws not read")).not.toBeInTheDocument();
       expect(within(row).queryByText("Unknown")).not.toBeInTheDocument();
       expect(within(row).getAllByText("Not drawn")).toHaveLength(ROSTER.length);
-    });
-
-    it("separates the two kinds of blank where the blanks are counted", () => {
-      renderWaiting();
-
-      // The sentence that was wrong about eighteen cells: the note goes on saying that a blank
-      // means an agent juror was not drawn, and now says which of the blanks it is counting
-      // mean something else, by dispute id and as a count.
-      const note = screen.getByText(/sparsity is the normal state of this record/i);
-
-      expect(note).toHaveTextContent(/6 of those blanks are a different absence/);
-      expect(note).toHaveTextContent(/dispute 167 has no panel at all yet/);
-      expect(note).toHaveTextContent(/the draw has not happened/);
     });
 
     it("says nothing about it on a court where every dispute has a panel", () => {
@@ -1602,11 +1576,12 @@ describe("Matrix", () => {
       expect(screen.getByText("Rail: 1s — 1h, log")).toBeInTheDocument();
     });
 
-    it("goes on saying that a blank is normal, and that volume does not resolve it", () => {
+    it("says that volume does not resolve sparsity, which sixteen rows never tempted anyone to think", () => {
       renderMatrix(compactCourt());
 
-      expect(screen.getByText(/sparsity is the normal state of this record/i)).toBeInTheDocument();
       // The sentence a reader scrolling hundreds of rows needs and one reading sixteen does not.
+      // The counts themselves are the sparsity note's, in the footer — this says the one thing
+      // volume tempts a reader to assume away, from the same `totals.sparsity` the note quotes.
       const volume = screen.getByText(/sparsity does not resolve with volume/i);
       expect(volume).toHaveTextContent(/still blank across all \d+ disputes/);
     });
