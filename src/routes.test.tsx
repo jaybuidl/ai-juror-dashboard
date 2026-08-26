@@ -84,6 +84,23 @@ describe("a route change", () => {
     expect(document.title).toMatch(/^blaise\b/);
   });
 
+  it("moves focus to the section a hash names, not just the scroll", () => {
+    // The links carrying a hash are the ones a careful reader follows: /method#window from the
+    // stat tiles and the matrix's footnote, /method#caveats from a lone-panel mark,
+    // /method#partial from the failure banner. Each changes the route and unmounts the link that
+    // was activated, so an early return before the focus move drops the reader on <body> —
+    // exactly the defect the plain-route case was changed to fix.
+    renderAt("/");
+    const footnote = screen.getByRole("link", { name: /what that means for these figures/i });
+
+    fireEvent.click(footnote);
+
+    const section = document.getElementById("window");
+    expect(section, "the method page has no #window section").not.toBeNull();
+    expect(document.activeElement).toBe(section);
+    expect(section).toHaveAttribute("tabindex", "-1");
+  });
+
   it("hands focus back to the menu button when the folded panel is dismissed", () => {
     // Escape unmounts the panel and whichever of its links had focus with it, so without this
     // the reader is dropped on `<body>` — the top of the tab order, and nowhere they chose.

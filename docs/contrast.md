@@ -42,14 +42,32 @@ ramp and would make a pending figure read louder than the caption beside it. Tha
 flattening the ticket warns about, reached from the other direction. Both were lifted along their
 own hue so the ramp keeps its order and roughly its spacing.
 
-**3. The violet glow is a contrast surface, and was documented as not being one.**
-`Shell.tsx` describes the atmosphere layer as decoration carrying "no contrast anything else
-depends on". It is 720px tall, spans the full width and sits behind `Content`, so it is the actual
-ground under the nav, the hero, the breadcrumb and the stat tiles. At its declared 0.45 peak it
-lifted the page from `#08060f` to `#301f69`, which takes `--text-meta` from 5.43 to **3.71** — so
-the nav's destination links failed while every measurement taken against `--page` said they
-passed. A gradient varies continuously, so the peak is the number that matters. Dimmed to 0.22,
-where the dimmest ink used in that region still clears the target.
+**3. The violet glow is a contrast surface, was documented as not being one, and was painted
+twice.** `Shell.tsx` describes the atmosphere layer as decoration carrying "no contrast anything
+else depends on". It is 720px tall, spans the full width and sits behind `Content`, so it is the
+actual ground under the nav, the hero, the breadcrumb, the stat tiles and the failure banner. A
+gradient varies continuously, so its peak is the number that matters.
+
+It was also painted **twice** — as a `body` `background-image` in `global.ts` and again as
+`Shell`'s `<Glow>` div, same gradient, same size, same position. Two translucent layers
+composite, so a declared peak of `a` renders as `1-(1-a)²`: the token said 0.45 and the page drew
+0.70. Nothing looked wrong, because the result was simply a stronger glow — it only mattered once
+the layer was measured, at which point the figure computed from the token was not the figure on
+the screen. **This was found by review, after a first pass had already "fixed" the glow to 0.22
+and measured 4.86 for `--text-4` when the page was really drawing 4.10.**
+
+And the binding surface is not the bare page. The failure banner is a rose wash and is the first
+thing inside `<main>`, so its labels are three layers deep — ink on wash on glow on page. The
+first pass measured inks against washes, and inks against the glow, but never against the two
+together, which left the one region where both apply unmeasured and passing.
+
+The duplicate is gone and the peak is **0.10**, which is where the dimmest ink clears 4.5:1 on a
+wash over the glow. That is a large reduction from what the system declared and it is recorded as
+one rather than presented as a tidy-up: the atmosphere is fainter than the design intended. The
+way to get it back is geometry rather than opacity, and the artboard already shows it —
+`Main.dc.html:35` puts the gradient's origin at `20% -14%`, off the top-left, so its peak falls
+outside the canvas and only the tail lands on text. Ours is at `50% 0%`, which parks the maximum
+directly on the nav.
 
 ## What changed
 
@@ -57,7 +75,13 @@ where the dimmest ink used in that region still clears the target.
 | --- | --- | --- | --- |
 | `--text-3` | `#8681a0` | `#9e98bc` | 5.43 → 7.35 |
 | `--text-4` | `#5b5675` | `#8981b0` | 2.91 → 5.59 |
-| `--glow-violet` peak | `0.45` | `0.22` | `--text-3` over it 3.71 → 6.40 |
+| `--glow-violet` peak | `0.45`, painted twice (0.70 effective) | `0.10`, painted once | `--text-4` on a rose wash over it **1.33 → 4.79** |
+
+That last row is the worst pairing this dashboard actually shipped, and it is worth stating on
+its own: **1.33:1**, for the labels inside the failure banner — the block that appears when a read
+has failed and the page is incomplete, which is the one moment a reader most needs to read it.
+Three of the four numbers in it come from surfaces nobody had thought to compose: a wash, over a
+glow, over the page, with the glow itself painted twice.
 
 In `src/styles/contrast.css`, which is a layer over the vendored tokens rather than an edit to
 them: the copy under `kleros-ai/` stays a faithful record of the system as published.
@@ -123,7 +147,19 @@ one did: `--text-4` (`#9a94ac`) is 2.71 on the page and 2.91 on a card.
 
 Two, and each is a decision rather than a gap.
 
-**`--text-5`, the "not drawn" dot.** 1.83:1 on the page, and it has to be. It is a 3px dot, not
+**`--text-5`, the "not drawn" dot.** 1.83:1 on the page, and it has to be — including the part
+that looks worst, which is that this ticket made it *dimmer*. It was inking itself with
+`--text-4` before, at 2.91:1, and moving it to `--text-5` is a reduction. Review flagged exactly
+that: an accessibility pass that made a mark less visible, and `#5b5675` offered as the honest
+floor.
+
+The design wins, and it is worth saying why rather than citing the ticket. Neither value clears
+3:1, so this is not a choice between passing and failing — it is a choice about how faint the
+faintest mark on the page should be. ADR-0006 puts "not drawn" and "failed to act" at opposite
+ends of the page's loudness, `Cell.dc.html` inks the dot at `#3d3952`, and this ticket's own
+criterion names `--text-5` as the value and the exemption as the point. Drifting onto the pending
+ink was the accident; following that ink upward as it was raised for figures would have taken the
+dot most of the way to a state it must never resemble. It is a 3px dot, not
 text, and it is the emptiest mark in the matrix — a dot that cleared 4.5:1 would stop being the
 quietest thing on the page and start competing with the loudest, which is exactly the confusion
 ADR-0006 exists to prevent ("not drawn" and "failed to act" share no glyph, no weight, no fill and

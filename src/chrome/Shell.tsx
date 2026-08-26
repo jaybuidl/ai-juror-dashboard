@@ -109,6 +109,9 @@ function useScrollForLocation(): void {
   const { pathname, hash } = useLocation();
   const navigationType = useNavigationType();
   const previous = useRef(pathname);
+  // False for the first effect run only. `previous` cannot answer this — it is seeded with the
+  // current path, so a first render and a same-path hash change look identical to it.
+  const settled = useRef(false);
 
   useEffect(() => {
     if (hash !== "") {
@@ -116,6 +119,31 @@ function useScrollForLocation(): void {
       const target = document.getElementById(decodeURIComponent(hash.slice(1)));
       if (target !== null && typeof target.scrollIntoView === "function") {
         target.scrollIntoView();
+      }
+      /*
+       * And focus the section, not just scroll to it.
+       *
+       * These are not exotic links: `/method#window` from the stat tiles, the matrix's window
+       * footnote and every marked marginal figure; `/method#caveats` from the lone-panel marks;
+       * `/method#partial` from the failure banner. Every one changes the route, which unmounts
+       * the link that was activated — so an early return here, before the focus move below,
+       * dropped the reader on `<body>`: the exact defect this effect was extended to fix,
+       * reintroduced on the links most likely to be followed by someone reading carefully.
+       *
+       * The target rather than `<main>`, because a hash names a part of a page and scrolling
+       * there while reading from the top is the same mismatch one step along. `tabindex="-1"`
+       * is set here rather than in the markup so that every id addressable by a hash gets it
+       * without each view having to remember.
+       *
+       * Gated on `settled` and not on the pathname changing: the method page's own contents
+       * list is seven same-page anchors, and following one of those wants the section focused
+       * every bit as much as arriving from another view does. What must not happen is a focus
+       * grab on *first* render, where the visitor typed the URL and focus belongs to the
+       * browser's chrome.
+       */
+      if (settled.current && target instanceof HTMLElement) {
+        if (!target.hasAttribute("tabindex")) target.setAttribute("tabindex", "-1");
+        target.focus();
       }
       return;
     }
@@ -155,6 +183,11 @@ function useScrollForLocation(): void {
     const main = document.querySelector("main");
     if (main instanceof HTMLElement) main.focus();
   }, [pathname, hash, navigationType]);
+
+  // After every run, including the ones that returned early.
+  useEffect(() => {
+    settled.current = true;
+  });
 }
 
 export function Shell() {

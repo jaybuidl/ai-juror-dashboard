@@ -51,8 +51,10 @@ const NARROW_QUERY = `(max-width: ${breakpoints.narrow})`;
 /** `@media` prelude for the reduced form. Used as `${narrow} { … }` inside a styled template. */
 export const narrow = `@media ${NARROW_QUERY}`;
 
+const COMPACT_GRID_QUERY = `(max-width: ${breakpoints.compactGrid})`;
+
 /** `@media` prelude for a page too narrow to hold the compact grid at its own measurements. */
-export const belowCompactGrid = `@media (max-width: ${breakpoints.compactGrid})`;
+export const belowCompactGrid = `@media ${COMPACT_GRID_QUERY}`;
 
 /**
  * Whether the viewport is below the breakpoint, as a value a component can branch on.
@@ -76,7 +78,23 @@ export const belowCompactGrid = `@media (max-width: ${breakpoints.compactGrid})`
  * every component that consumes it, which is most of the chrome.
  */
 export function useIsNarrow(): boolean {
-  return useSyncExternalStore(subscribeToNarrow, isNarrowNow, serverIsNotNarrow);
+  return useMediaQuery(NARROW_QUERY);
+}
+
+/**
+ * Whether the page is too narrow to hold the compact grid at its own measurements, which is the
+ * condition under which that grid scrolls sideways.
+ *
+ * A hook and not only a media query for one reason, and it is the reason `useIsNarrow` gives for
+ * itself: whether an element is *focusable* is not a CSS question. The compact grid drops its
+ * `overflow` box above this width — ticket 17 had to, because a scroll container breaks the
+ * `position: sticky` header inside it — so above it there is nothing to scroll, and a scroll
+ * region that keeps its tab stop there is a stop that goes nowhere with a name that says
+ * otherwise. Below it the box is back and the tab stop is the only way a keyboard reaches the
+ * far columns.
+ */
+export function useFitsCompactGrid(): boolean {
+  return !useMediaQuery(COMPACT_GRID_QUERY);
 }
 
 /**
@@ -91,32 +109,64 @@ export function useIsNarrow(): boolean {
  * Cached lazily rather than at module load: a module that called `window.matchMedia` on import
  * would throw under jsdom before any guard could run.
  */
-let cachedList: MediaQueryList | null = null;
+let cachedLists = new Map<string, MediaQueryList | null>();
 let cachedFrom: unknown;
 
-function narrowList(): MediaQueryList | null {
+function listFor(query: string): MediaQueryList | null {
   const accessor = typeof window === "undefined" ? undefined : window.matchMedia;
-  // Keyed on the accessor it was built from, which is what makes the cache honest rather than
-  // merely convenient: a test that stubs `window.matchMedia` installs a different function, and a
-  // cache that ignored that would hand back the previous viewport's answer for the rest of the
-  // file. Nothing replaces `matchMedia` in a browser, so this compares equal there for ever.
+  // Keyed on the accessor the lists were built from, which is what makes the cache honest rather
+  // than merely convenient: a test that stubs `window.matchMedia` installs a different function,
+  // and a cache that ignored that would hand back the previous viewport's answer for the rest of
+  // the file. Nothing replaces `matchMedia` in a browser, so this compares equal there for ever.
   if (accessor !== cachedFrom) {
     cachedFrom = accessor;
-    cachedList = typeof accessor === "function" ? accessor.call(window, NARROW_QUERY) : null;
+    cachedLists = new Map();
   }
-  return cachedList;
+
+  const held = cachedLists.get(query);
+  if (held !== undefined) return held;
+
+  const made = typeof accessor === "function" ? accessor.call(window, query) : null;
+  cachedLists.set(query, made);
+  return made;
 }
 
-function subscribeToNarrow(onChange: () => void): () => void {
-  const list = narrowList();
-  if (list === null) return () => {};
+/**
+ * The `useSyncExternalStore` triple for one query, made once per query.
+ *
+ * Once matters: `getSnapshot` is called on every render and every store check, so a fresh
+ * `MediaQueryList` built inside it would allocate one per call and subscribe the listener to a
+ * different object from the one `matches` is read from. The store functions are cached for the
+ * same reason React requires them to be stable.
+ */
+const stores = new Map<string, { subscribe: (fn: () => void) => () => void; get: () => boolean }>();
 
-  list.addEventListener("change", onChange);
-  return () => list.removeEventListener("change", onChange);
+function storeFor(query: string) {
+  const held = stores.get(query);
+  if (held !== undefined) return held;
+
+  const made = {
+    subscribe(onChange: () => void): () => void {
+      const list = listFor(query);
+      if (list === null) return () => {};
+      list.addEventListener("change", onChange);
+      return () => list.removeEventListener("change", onChange);
+    },
+    get: (): boolean => listFor(query)?.matches ?? false,
+  };
+  stores.set(query, made);
+  return made;
 }
 
-function isNarrowNow(): boolean {
-  return narrowList()?.matches ?? false;
+/**
+ * Whether a media query matches, as a value a component can branch on.
+ *
+ * One implementation behind every such question in this file, so a hook and the `@media` prelude
+ * beside it are two readings of one string rather than two strings that have to be kept equal.
+ */
+function useMediaQuery(query: string): boolean {
+  const store = storeFor(query);
+  return useSyncExternalStore(store.subscribe, store.get, serverIsNotNarrow);
 }
 
 /**

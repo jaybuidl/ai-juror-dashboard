@@ -50,8 +50,17 @@ const Main = styled.main`
     gap: ${({ theme }) => theme.space9};
   }
 
-  &:focus {
+  /* box-shadow, not outline. The design system's focus ring is "outline: none" plus a
+     --ring-focus box-shadow, so suppressing the outline here suppressed nothing at all — and
+     Chrome matches :focus-visible on a scripted focus when the last interaction was a keyboard
+     one, which is exactly how a reader arrives: Enter on a nav link. A 2px cyan halo would then
+     be drawn around the entire view on every navigation. Nothing is suppressed for a pointer or
+     for a keyboard landing on a real control; this is a container that takes focus so the view
+     is read from its start, and a box around the whole page says a control is focused when none
+     is. */
+  &:focus-visible {
     outline: none;
+    box-shadow: none;
   }
 `;
 

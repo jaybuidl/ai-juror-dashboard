@@ -21,14 +21,14 @@ export const GlobalStyle = createGlobalStyle`
   body {
     min-height: 100dvh;
 
-    /* The violet ground the system's hero is lit by, over base.css's flat --page. It is a
-       background-image beside that shorthand's background-color, so it depends on this rule
-       arriving second — which it does: the vendored sheet is a build-time <link> and
-       createGlobalStyle appends at runtime. 720px matches the band on the Main artboard. */
-    background-image: ${({ theme }) => theme.glowViolet};
-    background-repeat: no-repeat;
-    background-position: top center;
-    background-size: 100% 720px;
+    /* No glow here. It used to paint --glow-violet as a background-image over base.css's flat
+       --page, 720px from the top — and Shell.tsx's <Glow> paints the same gradient at the same
+       size and position inside <Atmosphere>. Two identical translucent layers composite: a
+       declared peak of a compounded to 1-(1-a)^2, so the 0.45 in the token rendered as 0.70 and
+       nothing looked wrong because the result was simply a stronger glow. It mattered once the
+       glow was measured as a text ground (ticket 18): the figure computed from the token was not
+       the figure on the screen. One paint, in Shell, where it sits with the orbits it belongs to
+       and inherits their aria-hidden. */
   }
 
   /* The focus ring is base.css's: outline: none plus a --ring-focus box-shadow, which is the

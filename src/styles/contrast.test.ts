@@ -160,8 +160,28 @@ const SURFACES: Record<string, Rgb> = {
   "violet wash over card": ground("--wash-violet", card),
   // The glow's peak, which is the only point on a gradient worth asserting: everywhere else on
   // it is lighter ink over a darker ground and therefore passes if the peak does.
-  "glow peak over page": over({ rgb: [96, 62, 214], alpha: glowPeakAlpha() }, page),
+  "glow peak over page": glowOver(page),
+  // And a wash *over* the glow, which is where this list was wrong until review found it. The
+  // failure banner is a rose wash and is the first thing inside `<main>`, so it sits inside the
+  // glow's 720px band: its labels are three layers deep — ink on wash on glow on page. Asserting
+  // inks against washes and inks against the glow, but never against the two together, left the
+  // one region where both apply unmeasured and passing.
+  "rose wash over glow": ground("--wash-rose", glowOver(page)),
+  "amber wash over glow": ground("--wash-amber", glowOver(page)),
+  "mint wash over glow": ground("--wash-mint", glowOver(page)),
+  "inset over glow": ground("--surface-inset", glowOver(page)),
 };
+
+/**
+ * The glow composited onto a ground, at its peak.
+ *
+ * Painted once. It used to be painted twice — here and as a `body` background-image — and two
+ * translucent layers composite, so the declared alpha was not the rendered one. If a second
+ * paint ever comes back this function is where the model stops matching the page.
+ */
+function glowOver(base: Rgb): Rgb {
+  return over({ rgb: [96, 62, 214], alpha: glowPeakAlpha() }, base);
+}
 
 /** The alpha at the 0% stop of `--glow-violet`, read rather than assumed. */
 function glowPeakAlpha(): number {

@@ -386,10 +386,16 @@ export function AgentJurorDraws({
 function DrawTable({ lines, nickname }: { lines: readonly DrawLine[]; nickname: string }) {
   return (
     <Table>
-      <VisuallyHidden as="caption">
-        Every dispute {nickname} was drawn in, newest first, with its panel size, what it voted, how
-        long it took to commit and to reveal, and whether that vote matched the ruling.
-      </VisuallyHidden>
+      {/* A real <caption>, hidden from the inside. `VisuallyHidden` is `position: absolute`,
+          which computes a caption away from `table-caption` display — and several browser and
+          screen-reader pairs then drop it from the table's accessible name, so the element
+          added to name the table stops naming it. Ticket 18; the matrix carries the same. */}
+      <caption>
+        <VisuallyHidden>
+          Every dispute {nickname} was drawn in, newest first, with its panel size, what it voted,
+          how long it took to commit and to reveal, and whether that vote matched the ruling.
+        </VisuallyHidden>
+      </caption>
       <colgroup>
         <col style={{ width: "56px" }} />
         <col />

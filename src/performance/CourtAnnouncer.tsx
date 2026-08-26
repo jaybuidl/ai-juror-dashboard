@@ -1,7 +1,16 @@
 import { useEffect, useRef, useState } from "react";
+import { LIVE_REFETCH_MS } from "../disputes/liveness";
 import { VisuallyHidden } from "../styles/hidden";
 import type { CourtPerformance } from "./performance";
 import { type CourtSnapshot, snapshotOf, transitionsBetween } from "./transitions";
+
+/**
+ * How far apart two reads may be and still count as one poll following another.
+ *
+ * Four intervals: enough that a slow or retried poll is still heard, short enough that a
+ * restored cache or a backgrounded tab is not.
+ */
+const STALE_AFTER_MS = LIVE_REFETCH_MS * 4;
 
 /**
  * The court's movement, said out loud, once per thing that moved.
@@ -26,22 +35,60 @@ import { type CourtSnapshot, snapshotOf, transitionsBetween } from "./transition
  * and agent juror views hold live data too and say nothing here yet; that is a scope line rather
  * than an oversight, and it is recorded in `docs/accessibility.md`.
  */
-export function CourtAnnouncer({ performance }: { performance: CourtPerformance | null }) {
-  const previous = useRef<CourtSnapshot | null>(null);
-  const [said, setSaid] = useState<readonly string[]>([]);
+export function CourtAnnouncer({
+  performance,
+  readAt,
+}: {
+  performance: CourtPerformance | null;
+  /** When the draws on screen were read, from `CourtPerformanceView`. */
+  readAt: number | null;
+}) {
+  const previous = useRef<{ snapshot: CourtSnapshot; readAt: number | null } | null>(null);
+  const [said, setSaid] = useState<{ lines: readonly string[]; serial: number }>({
+    lines: [],
+    serial: 0,
+  });
 
   useEffect(() => {
     if (performance === null) return;
 
     const next = snapshotOf(performance);
-    const lines = transitionsBetween(previous.current, next);
-    previous.current = next;
+    const before = previous.current;
+    previous.current = { snapshot: next, readAt };
 
-    // Only ever replaced, never appended to, and only when there is something to say. Leaving
-    // the last announcement standing costs nothing — the region is not read again until its
-    // content changes — and clearing it would be a second pointless mutation of a live region.
-    if (lines.length > 0) setSaid(lines);
-  }, [performance]);
+    if (before === null) return;
+
+    /*
+     * Only between two reads close enough together to be one poll following another.
+     *
+     * Ticket 12 persists the dispute and draw payloads to `localStorage`, so a return visit
+     * renders from cache before either endpoint answers — which means the first diff on such a
+     * visit is *restored* against *fresh*, and everything that happened while the reader was
+     * away gets announced as though it had just happened. "Dispute 170 has been ruled," on
+     * arrival, about a ruling from yesterday.
+     *
+     * The gap between the two reads is what tells them apart, and it is data rather than a
+     * clock: a poll is `LIVE_REFETCH_MS` apart and a restore is however long the reader was
+     * gone. The allowance is generous because a slow poll is still a poll; anything beyond it
+     * is history, and history is not news. A backgrounded tab is not polled at all, so coming
+     * back to one after ten minutes is correctly silent rather than a burst about ten minutes
+     * nobody watched.
+     */
+    const gap = readAt !== null && before.readAt !== null ? readAt - before.readAt : null;
+    if (gap === null || gap > STALE_AFTER_MS) return;
+
+    const lines = transitionsBetween(before.snapshot, next);
+    if (lines.length === 0) return;
+
+    /*
+     * The serial is not decoration. A live region is announced when its text *changes*, and two
+     * consecutive polls can produce the same sentence — "5 draws advanced across 1 dispute."
+     * twice running is entirely ordinary while a panel is committing. Writing the same string
+     * back leaves the DOM text identical and the second one is never spoken. The zero-width
+     * space appended below changes the node without changing what is read aloud.
+     */
+    setSaid((was) => ({ lines, serial: was.serial + 1 }));
+  }, [performance, readAt]);
 
   /*
    * Rendered from the first paint, empty, and not conditionally mounted when there is news.
@@ -49,5 +96,10 @@ export function CourtAnnouncer({ performance }: { performance: CourtPerformance 
    * change to be announced; one that arrives already full is frequently read as nothing at all,
    * which is the quiet failure mode this whole component exists to avoid.
    */
-  return <VisuallyHidden role="status">{said.join(" ")}</VisuallyHidden>;
+  return (
+    <VisuallyHidden role="status">
+      {said.lines.join(" ")}
+      {"\u200b".repeat(said.serial % 2)}
+    </VisuallyHidden>
+  );
 }

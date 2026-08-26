@@ -1,7 +1,7 @@
 import { cleanup, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { ThemeProvider } from "styled-components";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import disputeFixture from "../disputes/court-34.fixture.json" with { type: "json" };
 import type { DisputeRowSlots } from "../disputes/DisputeList";
 import type { Dispute, RawDispute } from "../disputes/disputes";
@@ -10,6 +10,7 @@ import { rosterIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
 import { theme } from "../styles/theme";
 import { padCourt } from "../test/court";
+import { stubViewportWidth } from "../test/viewport";
 import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
@@ -266,6 +267,35 @@ describe("the matrix's own structure", () => {
     renderMatrix();
     const region = screen.getByRole("region", { name: "The matrix, scrollable" });
     expect(region).toHaveAttribute("tabindex", "0");
+  });
+
+  it("spends no tab stop on a compact grid that has nothing to scroll", () => {
+    // The compact density drops its overflow box above `compactGrid` — ticket 17 had to, since a
+    // scroll container breaks the `position: sticky` header inside it — so above that width
+    // there is nothing to pan. A focusable region there is a stop that goes nowhere, under a
+    // name that says it scrolls. Review found it; the gate now mirrors the CSS exactly.
+    stubViewportWidth(1400);
+    try {
+      renderMatrix(compactCourt());
+      expect(screen.queryByRole("region", { name: "The matrix, scrollable" })).toBeNull();
+    } finally {
+      vi.unstubAllGlobals();
+    }
+
+    cleanup();
+
+    // Narrow enough that the compact grid does not fit, so the box is a scroll container again
+    // and the tab stop is the only way a keyboard reaches the far columns.
+    stubViewportWidth(1000);
+    try {
+      renderMatrix(compactCourt());
+      expect(screen.getByRole("region", { name: "The matrix, scrollable" })).toHaveAttribute(
+        "tabindex",
+        "0",
+      );
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });
 

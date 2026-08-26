@@ -44,21 +44,34 @@
   --text-4: #8981b0; /* was #5b5675 — 2.91 on the page, 2.38 on a mint wash */
 
   /*
-   * The violet glow, dimmed from 0.45 to 0.22 at its peak.
+   * The violet glow, dimmed from 0.45 to 0.10 at its peak.
    *
    * `Shell.tsx` calls this layer decoration that carries "no contrast anything else depends on",
-   * and that was the one claim in it that was false: the glow is 720px tall, sits behind
-   * `Content`, and is therefore the actual ground under the nav, the hero, the breadcrumb and
-   * the stat tiles. At its declared peak it lifted the page from #08060f to #301f69, which took
-   * `--text-meta` from 5.43 to 3.71 — so the nav's own destination links failed 4.5:1 while every
-   * measurement taken against `--page` said they passed. A gradient means the ratio varies
-   * continuously across the layer, so the number that matters is the peak, and 0.22 is where the
-   * dimmest ink used in that region still clears the target (4.86 for `--text-4`, 6.40 for
-   * `--text-3`). The glow is still visibly there; it is no longer load-bearing.
+   * and that was the one claim in it that was false. The glow is 720px tall and sits behind
+   * `Content`, so it is the actual ground under the nav, the hero, the breadcrumb, the stat
+   * tiles and the failure banner — and a gradient's ratio varies continuously, so the number
+   * that has to clear the target is its peak.
+   *
+   * Two things made it worse than a reading of the token suggested. It was painted **twice** —
+   * here and as a `body` background-image in `global.ts`, same gradient, same size, same
+   * position — and two translucent layers composite, so the declared 0.45 rendered as
+   * 1-(1-0.45)^2 = 0.70. Nothing looked wrong, because the result was simply a stronger glow.
+   * The duplicate is gone. And the surface that binds is not the bare page but a translucent
+   * panel *over* the glow: the failure banner is a rose wash and is the first thing inside
+   * `<main>`, so its `FactKey` is `--text-4` on rose-on-glow-on-page, three layers deep.
+   *
+   * 0.10 is where the dimmest ink still clears 4.5:1 on that surface, which is the one the
+   * ticket's own criterion asks about — "the wash behind a tinted cell". It is a large
+   * reduction from what the system declared, and it is recorded as one in `docs/contrast.md`
+   * rather than presented as a tidy-up: the atmosphere is fainter than the design intended.
+   * The way to get it back is geometry rather than opacity, and the artboard already shows it —
+   * `Main.dc.html:35` puts the origin at `20% -14%`, off the top-left, so the peak of the
+   * gradient falls outside the canvas and what lands on the text is the tail. Ours is at
+   * `50% 0%`, which parks the maximum directly on the nav.
    */
   --glow-violet: radial-gradient(
     60% 60% at 50% 0%,
-    rgba(96, 62, 214, 0.22) 0%,
+    rgba(96, 62, 214, 0.1) 0%,
     rgba(18, 10, 47, 0) 70%
   );
 }

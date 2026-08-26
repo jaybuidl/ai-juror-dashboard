@@ -693,6 +693,32 @@ Things that cost real effort to discover and are easy to get wrong again:
   the one on disk. The cheap prevention is to pick a port and refuse to move off it —
   `yarn dev --port 5199 --strictPort` fails loudly instead of serving somebody else's branch,
   which is what ticket 17's browser pass ran on.
+- **Two translucent layers of the same gradient composite, and the token then lies about the
+  page.** `--glow-violet` was painted twice — as a `body` `background-image` in `global.ts` and
+  again as `Shell.tsx`'s `<Glow>` div, same gradient, same size, same position. A declared peak
+  of `a` renders as `1-(1-a)²`, so 0.45 drew 0.70. Nothing looks wrong, because the result is
+  simply a stronger glow; it bites the moment anyone *measures* the layer, because the figure
+  computed from the token is not the figure on the screen. Ticket 18 dimmed the glow once
+  against the wrong number before review found the second paint. The general form: before
+  measuring against a decorative layer, count how many times it is painted.
+- **A contrast surface is every layer under the ink, not the nearest one.** The failure banner is
+  a rose wash, and it is the first thing inside `<main>`, which is inside the glow's 720px band —
+  so its labels sit on ink-over-wash-over-glow-over-page, and the pairing this dashboard actually
+  shipped was **1.33:1**. A test that asserts inks × washes and inks × glow but never the two
+  together leaves exactly the region where both apply unmeasured, and passing.
+  `src/styles/contrast.test.ts` composes them now.
+- **A `<caption>` that is `position: absolute` can stop naming its table.** The house
+  `VisuallyHidden` is absolutely positioned, and `as="caption"` computes the element away from
+  `table-caption` display; several browser and screen-reader pairs then drop it from the table's
+  accessible name, so the element added to name the grid does nothing. `dom-accessibility-api`
+  computes the name from the element either way, so no jsdom test can see it. Use a real
+  `<caption>` with a `VisuallyHidden` *inside* it.
+- **`outline: none` does not suppress this repo's focus ring.** The design system's ring is
+  `outline: none` plus a `--ring-focus` **box-shadow**, so a component writing `outline: none` to
+  stop a ring being drawn suppresses nothing at all. It matters wherever a container takes
+  programmatic focus — Chrome matches `:focus-visible` on a scripted focus when the last
+  interaction was a keyboard one, so `<main>` taking focus on a route change would have drawn a
+  2px halo round the whole view. Suppress `box-shadow`, and do it on `:focus-visible`.
 - **An interpolation inside a CSS comment is still evaluated, exactly as a backtick there still
   closes the template.** The sibling of the trap below and found the same way — by writing a
   careful comment. `/* this read "outline: ${theme.focusRing}" */` inside a `styled.x` block is

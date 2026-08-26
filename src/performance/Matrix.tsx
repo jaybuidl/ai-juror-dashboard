@@ -5,7 +5,7 @@ import { DisputeRow, type DisputeRowSlots } from "../disputes/DisputeList";
 import type { Dispute } from "../disputes/disputes";
 import { isFinalised } from "../disputes/liveness";
 import type { RosterView } from "../roster/useRoster";
-import { belowCompactGrid, COMPACT_GRID_MIN_PX } from "../styles/breakpoints";
+import { belowCompactGrid, COMPACT_GRID_MIN_PX, useFitsCompactGrid } from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
 import { type Tone, toneInk, toneLine, toneWash } from "../styles/tones";
 import {
@@ -735,6 +735,10 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
   // seam, and there is no control on the page for a reader to set this with.
   const density = densityOf(rows.length);
   const compact = density === "compact";
+  // Whether the grid's own box is a scroll container right now, which is the only condition
+  // under which it should be a tab stop. Mirrors `TableScroll`'s `overflow-x` exactly.
+  const fitsCompactGrid = useFitsCompactGrid();
+  const scrolls = !compact || !fitsCompactGrid;
   const unread = commitCoverage.expected - commitCoverage.resolved;
   const identityOf = new Map(
     roster.entries.map(({ agentJuror, identity }) => [agentJuror.address, identity]),
@@ -856,17 +860,24 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
             )}
           </Legend>
 
-          {/* Focusable and named, because it scrolls. The comfortable grid is wider than most
-              viewports and this box is what moves; a scroll container with nothing focusable
-              inside it that a keyboard can reach is a region only a pointer can pan (WCAG 2.1.1),
-              and the far columns simply do not exist for anyone else. `role="region"` is what
-              makes the name announceable, and the name is what makes the new tab stop explicable
-              rather than a mystery stop on an empty box. */}
+          {/* Focusable and named *when it scrolls*, and only then. The comfortable grid is wider
+              than most viewports and this box is what moves; a scroll container with nothing
+              focusable inside it that a keyboard can reach is a region only a pointer can pan
+              (WCAG 2.1.1), and the far columns do not exist for anyone else. `role="region"` is
+              what makes the name announceable, and the name is what makes the tab stop
+              explicable rather than a mystery stop on an empty box.
+
+              The condition mirrors the `overflow-x` rule on `TableScroll` exactly, because at
+              the compact density the box is only a scroll container below `compactGrid` — ticket
+              17 had to drop it above that width, since a scroll container breaks the sticky
+              header inside it. Unconditional attributes here would leave a named, focusable
+              region on the ordinary desktop compact case that cannot scroll at all: a dead tab
+              stop whose accessible name says it is scrollable. */}
           <TableScroll
             $compact={compact}
-            role="region"
-            aria-label="The matrix, scrollable"
-            tabIndex={0}
+            {...(scrolls
+              ? { role: "region" as const, "aria-label": "The matrix, scrollable", tabIndex: 0 }
+              : {})}
           >
             <Table $compact={compact}>
               {/* The table's own name, and the first child of <table> because a caption may be

@@ -126,6 +126,16 @@ describe("transitionsBetween", () => {
     expect(transitionsBetween(before, after)).toEqual(["12 draws advanced across 2 disputes."]);
   });
 
+  it("names a draw that failed to vote", () => {
+    // Review found this one falling through the verb map in silence. A draw resolves to no-vote
+    // when the vote period closes with nothing revealed — an agent juror failing to act, which
+    // is the loudest thing that can happen to a cell and the least excusable to leave unsaid.
+    const before = snapshot([[166, false, [["007", "committed"]]]]);
+    const after = snapshot([[166, false, [["007", "no-vote"]]]]);
+
+    expect(transitionsBetween(before, after)).toEqual(["007 did not vote in dispute 166."]);
+  });
+
   it("says nothing about a dispute that arrived, or one whose draws were not read", () => {
     // A new dispute is not a transition — nothing moved, the court grew — and an unread row is
     // an absence rather than an event. Both would otherwise read as activity.

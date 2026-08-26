@@ -584,7 +584,7 @@ export function MatrixPage(props: MatrixPageProps) {
       {/* First in the view and empty almost always. It says what moved between two reads of a
           court that re-reads itself every five seconds, so a reader who cannot see a cell change
           is told that one did. It never contains a figure — see the component. */}
-      <CourtAnnouncer performance={measured ?? null} />
+      <CourtAnnouncer performance={measured ?? null} readAt={props.performance.readAt} />
       <Hero narrow={isNarrow} />
       <StatTiles
         totals={measured?.totals ?? null}

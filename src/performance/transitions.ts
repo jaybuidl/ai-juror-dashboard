@@ -46,10 +46,19 @@ function stageOf(state: DrawState): string {
   return state.kind === "live" ? state.stage : state.kind;
 }
 
-/** The live stages, in the order a draw passes through them. */
-const LIVE_VERBS: Record<string, string> = {
+/**
+ * The stages worth saying, and what to say about each.
+ *
+ * `no-vote` is here and it is not a live stage: a draw resolves to it when the vote period
+ * closes with nothing revealed, which is an agent juror failing to act — the loudest thing that
+ * can happen to a cell and, before review caught it, the one transition that fell through this
+ * map in silence. `coherent` and `diverged` are deliberately absent: they resolve from the
+ * ruling and are announced as the ruling, once, rather than once per draw.
+ */
+const TRANSITION_VERBS: Record<string, string> = {
   committed: "committed",
   revealed: "revealed",
+  "no-vote": "did not vote",
 };
 
 export function snapshotOf(performance: CourtPerformance): CourtSnapshot {
@@ -109,7 +118,7 @@ export function transitionsBetween(
     // The consequence of a ruling, not an event of its own: see the docblock.
     if (ruledNow.has(disputeId)) continue;
 
-    const verb = LIVE_VERBS[stage];
+    const verb = TRANSITION_VERBS[stage];
     if (verb === undefined) continue;
     moved.push({ disputeId, nickname, verb });
   }

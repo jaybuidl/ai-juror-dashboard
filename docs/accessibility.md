@@ -182,6 +182,50 @@ other about punctuation — a drawn slot ended in a comma and a blank one in not
 which left a reader with a paragraph and no handle on it, while the figures upstairs carry links
 reading "Why 007's median reveal is marked". Each footnote now names itself.
 
+## Found by review, after the first pass
+
+A `/code-review` over the finished branch raised ten findings; seven were real and are fixed
+here. They are listed separately rather than folded in above, because what they have in common is
+worth seeing: **every one was a claim that looked verified and was not.**
+
+- **The glow was painted twice**, so the contrast figures the first pass computed from the token
+  were not the figures on the screen — 4.10 where the comment said 4.86. `docs/contrast.md` has
+  it in full, including the 1.33:1 the failure banner actually shipped with.
+- **The contrast test measured inks against washes, and inks against the glow, but never both**,
+  which left the one region where they overlap unmeasured and passing. The surface list now
+  composes them, and it bites: at the first pass's 0.22 glow it fails on three washes.
+- **`Main`'s `outline: none` suppressed nothing.** The design system's focus ring is a
+  `box-shadow`, so the rule added to stop a ring being drawn around the whole view on every
+  navigation did not stop it — and Chrome matches `:focus-visible` on a scripted focus when the
+  last interaction was a keyboard one, which is exactly how a reader arrives.
+- **The hash branch returned before the new focus move**, so `/method#window`,
+  `/method#caveats` and `/method#partial` — the links a careful reader follows out of a figure's
+  caveat — dropped focus on `<body>`: the precise defect the change was written to fix,
+  reintroduced on the subset of links most likely to be used. Fixed for same-page anchors too,
+  which the first version would also have missed.
+- **The scroll region's tab stop was unconditional**, but the compact grid only scrolls below
+  1160px — ticket 17 had to drop its overflow box above that width, because a scroll container
+  breaks the sticky header inside it. On an ordinary desktop past forty disputes that left a
+  focusable, named region that could not scroll. The gate now mirrors the CSS, which needed the
+  media-query hook in `breakpoints.ts` generalised from one hard-wired query to any.
+- **The announcer would have read history as news.** The dispute and draw payloads are
+  persisted, so on a return visit the first diff is restored-against-fresh and everything that
+  happened while the reader was away is announced on arrival. It now compares the two reads'
+  own timestamps and speaks only across a gap short enough to be one poll following another.
+- **Two identical announcements in a row were silent**, because a live region is announced when
+  its text changes and "5 draws advanced across 1 dispute." twice running is ordinary.
+- **A missed vote transitioned silently** — it fell through the verb map with no comment, which
+  is the loudest thing that can happen to a cell.
+- **A `<caption>` styled `position: absolute`** computes away from `table-caption` display, and
+  several browser and screen-reader pairs then drop it from the table's name — so the element
+  added to name the grid may not have named it. Both tables now hide from inside a real caption.
+
+The remaining finding is answered rather than fixed: see the "not drawn" dot in
+`docs/contrast.md` § Exemptions.
+
+None of the ten was caught by 832 passing tests, lint, types, a build, or an axe audit returning
+zero violations on seven routes.
+
 ## Checked in a browser, because jsdom lays nothing out
 
 `agent-browser` against system Chrome, on the dev server at a fixed port. An axe audit returned
