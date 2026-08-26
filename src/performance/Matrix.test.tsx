@@ -796,10 +796,12 @@ describe("Matrix", () => {
       renderMatrix();
 
       // Dispute 155 was decided by columbo alone, where being the majority took no agreement.
+      // The reason is read off the mark's accessible name: it is drawn under the figure at
+      // neither density now, and the six columns share one baseline because of it.
       expect(header("columbo").getByText("‡")).toBeInTheDocument();
       expect(
-        header("columbo").getByText(/of \d+ draws sat on a panel of one/i),
-      ).toBeInTheDocument();
+        header("columbo").getByRole("link", { name: /coherence count is marked/i }),
+      ).toHaveAccessibleName(/of \d+ draws sat on a panel of one/i);
       expect(header("blaise").queryByText("‡")).not.toBeInTheDocument();
     });
 
@@ -1444,21 +1446,23 @@ describe("Matrix", () => {
       expect(screen.getByText(/was decided by a panel of one/i)).toBeInTheDocument();
     });
 
-    it("trades the reason lines for the marker's own name, so the freeze fits a screen", () => {
-      // Ticket 06's hand-off, taken: columbo's three reason lines made the frozen header 295px
-      // of a 900px viewport, over rows 43px tall. What a sighted reader loses is the fourth
-      // telling of a caveat already on the figure, in the footnote and at /method; what a
-      // reader hearing the page gets is the same sentence, on the mark itself.
-      renderMatrix(comfortableCourt());
-      expect(screen.getAllByText(/draws ran under a vote window of/i).length).toBeGreaterThan(0);
-
-      cleanup();
-      renderMatrix(compactCourt());
-      expect(screen.queryByText(/draws ran under a vote window of/i)).not.toBeInTheDocument();
-      expect(
-        screen.getAllByRole("link", { name: /why .*median reveal is marked: .*draws ran under/i })
-          .length,
-      ).toBeGreaterThan(0);
+    it("draws no reason line at either density, and carries it on the marker at both", () => {
+      // Ticket 06's hand-off, taken at the compact density by ticket 17 and at the comfortable
+      // one once this block was measured on the live court: five near-duplicate paragraphs and
+      // 350px of column header, and — because a paragraph's height varies with its own wrapping
+      // — the six columns' figures on three different baselines, which is the one comparison a
+      // block of marginals exists to allow. What a sighted reader loses is the fourth telling of
+      // a caveat already on the figure, in the footnote below the grid and at /method; what a
+      // reader hearing the page gets is the same sentence, on the mark itself, at both.
+      for (const court of [comfortableCourt(), compactCourt()]) {
+        renderMatrix(court);
+        expect(screen.queryByText(/draws ran under a vote window of/i)).not.toBeInTheDocument();
+        expect(
+          screen.getAllByRole("link", { name: /why .*median reveal is marked: .*draws ran under/i })
+            .length,
+        ).toBeGreaterThan(0);
+        cleanup();
+      }
     });
 
     it("freezes the column header and nothing else", () => {

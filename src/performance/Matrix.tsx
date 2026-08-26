@@ -262,12 +262,27 @@ const AgentNickname = styled(Link)<{ $drawn: boolean }>`
   }
 `;
 
+/* The line-height inside `--type-mono-sm`, named so the reserved height below is derived from
+   the token rather than transcribed from a browser. */
+const STACK_LINE_HEIGHT = 1.2;
+
 const AgentStack = styled.span`
   font: ${({ theme }) => theme.typeMonoSm};
   font-feature-settings: ${({ theme }) => theme.featureMono};
   letter-spacing: ${({ theme }) => theme.trackingMono};
   text-transform: uppercase;
   color: ${({ theme }) => theme.textPending};
+
+  /* Two lines held whether this one needs them or not, because the slot carries two different
+     kinds of string: a stack name for an agent juror the court has drawn, and the words "never
+     drawn" for one it has not. The longer of those wraps at this column width and the shorter
+     does not, which put baskerville's six figures 13px below the five columns beside it — one
+     measure at two heights across a header whose whole purpose is to be read across. Reserving
+     the taller case makes that baseline a property of the layout rather than of whichever
+     strings the roster happens to hold, so a longer stack name cannot reintroduce it either.
+     The slot is set to display block because a bare inline box ignores a min-height. */
+  display: block;
+  min-height: ${STACK_LINE_HEIGHT * 2}em;
 `;
 
 /**

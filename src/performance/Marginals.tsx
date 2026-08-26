@@ -14,8 +14,15 @@ import type { PeriodWindows } from "./windows";
  * Built against `canvas/Main.dc.html:136-152` — a hairline under the identity block, then one
  * line per figure with its key on the left and its value on the right — and
  * `canvas/JurorEmpty.dc.html:66-76` for what an agent juror that has never been drawn shows.
- * The markers come from `canvas/Errors.dc.html:201-217`: the mark on the number, the reason one
- * line below it, the full account one click away.
+ * The markers are the mark on the number and the full account one click away — and deliberately
+ * not the reason line under it. `canvas/Errors.dc.html:201-217` does draw that line, but it draws
+ * it on a standalone 400px card explaining the pattern; the artboard for *this* block,
+ * `canvas/Main.dc.html:136-152`, is six bare key-value lines and no prose at all. The line was
+ * built here from the wrong artboard and measured 350px of column header on the live court, with
+ * five near-duplicate paragraphs in it — and because a paragraph's height varies with its own
+ * wrapping, it put the six columns' figures on three different baselines, which is the one thing
+ * a block of marginals exists to let a reader compare. The reason keeps three voices: the mark's
+ * accessible name, the footnote below the grid, and `/method`.
  *
  * Agent jurors are the columns of this matrix, so a column's summary belongs to the column. There
  * is no seventh column and no margin of its own, and nothing here is sorted or ranked: these are
@@ -103,18 +110,6 @@ const Mark = styled(Link)`
   }
 `;
 
-const Reason = styled.p`
-  margin-top: ${({ theme }) => theme.space1};
-  font: ${({ theme }) => theme.typeBodySm};
-  font-size: 10px;
-  line-height: 1.45;
-  /* It counts draws, so the shorthand above has to be undone here too. */
-  font-feature-settings: ${({ theme }) => theme.featureNumeric};
-  font-weight: 400;
-  color: ${({ theme }) => theme.textMeta};
-  text-wrap: pretty;
-`;
-
 export type MarginalsProps = {
   marginals: AgentJurorMarginals;
   /** See `MarginalContext.scanned`. */
@@ -128,8 +123,9 @@ export type MarginalsProps = {
    *
    * The same flag the cell and the dispute row read, so the three cannot come to disagree about
    * which density the reader is in. At the compact density this block keeps three of its six
-   * figures and every marker on the three it keeps: a caveat is never among what density drops,
-   * and the reason line under a marked figure is the thing that makes the marker mean something.
+   * figures and every marker on the three it keeps: a caveat is never among what density drops.
+   * What a marker means is carried by its own accessible name at both densities, so density
+   * changes how many figures are shown and never how well a shown one is qualified.
    */
   density: Density;
 };
@@ -145,47 +141,26 @@ export function Marginals({ marginals, scanned, payouts, current, density }: Mar
   return (
     <Block>
       {slots.map((slot) => (
-        <div key={slot.key}>
-          <Line>
-            <Key>
-              <span aria-hidden="true">{slot.label}</span>
-              <VisuallyHidden>{slot.name}</VisuallyHidden>
-            </Key>
-            <Value $tone={slot.figure.tone} $loss={slot.loss}>
-              {slot.figure.text}
-              {slot.caveat && (
-                <Mark
-                  to={slot.caveat.href}
-                  // The reason joins the mark's own name at the compact density, where it is no
-                  // longer drawn below the figure. Nothing is lost to a reader who is hearing
-                  // this page; what changes is how many pixels of a frozen header it costs one
-                  // who is looking at it.
-                  aria-label={
-                    compact ? `${slot.caveat.about}: ${slot.caveat.reason}` : slot.caveat.about
-                  }
-                >
-                  <span aria-hidden="true">{slot.caveat.mark}</span>
-                </Mark>
-              )}
-            </Value>
-          </Line>
-          {/*
-            The trade ticket 06 pointed this ticket at, taken.
-
-            Its hand-off: "a sticky header that is a third of a viewport on the widest column",
-            answered "by a compact density that trades the reason lines for the footnotes below
-            the grid, by a header that collapses on scroll, or by something else". Measured in a
-            browser at this density the header was 295px of a 900px viewport, frozen, over rows
-            43px tall — seven rows of matrix behind a header that never moves. Eight of those
-            lines were columbo's three reasons.
-
-            **The marker is what survives, and it is not the caveat's only voice.** It stays on
-            the figure, it stays a link to the full account at `/method`, its reason is in its
-            accessible name, and the ‡ and † footnotes below the grid state both facts in full
-            at either density. What density drops here is the fourth telling.
-          */}
-          {slot.caveat && !compact && <Reason>{slot.caveat.reason}</Reason>}
-        </div>
+        <Line key={slot.key}>
+          <Key>
+            <span aria-hidden="true">{slot.label}</span>
+            <VisuallyHidden>{slot.name}</VisuallyHidden>
+          </Key>
+          <Value $tone={slot.figure.tone} $loss={slot.loss}>
+            {slot.figure.text}
+            {slot.caveat && (
+              <Mark
+                to={slot.caveat.href}
+                // The reason is the mark's own name, at both densities, because it is no longer
+                // drawn under the figure at either. A reader hearing this page meets it here and
+                // loses nothing; one looking at it meets it in the footnote below the grid.
+                aria-label={`${slot.caveat.about}: ${slot.caveat.reason}`}
+              >
+                <span aria-hidden="true">{slot.caveat.mark}</span>
+              </Mark>
+            )}
+          </Value>
+        </Line>
       ))}
     </Block>
   );

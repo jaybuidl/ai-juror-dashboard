@@ -263,9 +263,15 @@ describe("Marginals", () => {
       // would be a caveat a reader can see is misplaced, which is one they stop reading.
       renderMarginals({ changedWindows: [EARLIER] });
 
-      // Two daggers: the reveal median and the commit median, and neither reward figure.
+      // Two daggers: the reveal median and the commit median, and neither reward figure. The
+      // reason each carries is read off its accessible name rather than off the page: it is the
+      // mark's own name at both densities now, and drawn under the figure at neither.
       expect(screen.getAllByText("†")).toHaveLength(2);
-      expect(screen.getAllByText(/ran under a .* window of 8h/i)).toHaveLength(2);
+      for (const name of [/median reveal is marked/i, /median commit is marked/i]) {
+        expect(screen.getByRole("link", { name })).toHaveAccessibleName(
+          /ran under a .* window of 8h/i,
+        );
+      }
       expect(screen.queryByRole("link", { name: /eth|pnk/i })).not.toBeInTheDocument();
     });
   });
@@ -277,9 +283,9 @@ describe("Marginals", () => {
       });
 
       // The reason names how many of the counted draws are affected, not merely that some are.
-      expect(
-        screen.getByText(/1 of 4 draws sat on a panel of one, where coherence is tautological/i),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /coherence count is marked/i })).toHaveAccessibleName(
+        /1 of 4 draws sat on a panel of one, where coherence is tautological/i,
+      );
       expect(screen.getByRole("link", { name: /coherence count is marked/i })).toHaveAttribute(
         "href",
         "/method#caveats",
@@ -289,6 +295,9 @@ describe("Marginals", () => {
     it("leaves the coherence count unmarked where no panel of one is behind it", () => {
       renderMarginals();
 
+      // The marker, not the prose: the reason lives on an accessible name now, so a
+      // queryByText here would pass whether or not a marker was wrongly added.
+      expect(screen.queryByRole("link", { name: /coherence count is marked/i })).toBeNull();
       expect(screen.queryByText(/panel of one/i)).not.toBeInTheDocument();
     });
 
@@ -298,14 +307,12 @@ describe("Marginals", () => {
       // longer holds. Marking only one would have the page comparing and declining to compare.
       renderMarginals({ changedWindows: [EARLIER] });
 
-      expect(
-        screen.getByText(/1 of 4 draws ran under a vote window of 8h, which the court has since/i),
-      ).toBeInTheDocument();
-      expect(
-        screen.getByText(
-          /1 of 4 draws ran under a commit window of 8h, which the court has since/i,
-        ),
-      ).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /median reveal is marked/i })).toHaveAccessibleName(
+        /1 of 4 draws ran under a vote window of 8h, which the court has since/i,
+      );
+      expect(screen.getByRole("link", { name: /median commit is marked/i })).toHaveAccessibleName(
+        /1 of 4 draws ran under a commit window of 8h, which the court has since/i,
+      );
     });
 
     it("points each latency marker at the court's own account of the change", () => {
@@ -331,8 +338,10 @@ describe("Marginals", () => {
         ],
       });
 
-      expect(screen.getByText(/ran under a commit window of 8h/i)).toBeInTheDocument();
-      expect(screen.queryByText(/ran under a vote window/i)).not.toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /median commit is marked/i })).toHaveAccessibleName(
+        /ran under a commit window of 8h/i,
+      );
+      expect(screen.queryByRole("link", { name: /median reveal is marked/i })).toBeNull();
     });
 
     it("marks nothing where the column contributed no draw to the changed window", () => {
@@ -410,6 +419,26 @@ describe("Marginals", () => {
 
       const keys = screen.getAllByText(/^(Med rev|Coherent|Draws)$/).map((key) => key.textContent);
       expect(keys).toEqual(["Med rev", "Coherent", "Draws"]);
+    });
+
+    it("draws no reason under a figure at the comfortable density either", () => {
+      // The change ticket 17 made at the compact density, applied at this one. The reason line
+      // was built from `canvas/Errors.dc.html:201-217`, which draws the dagger pattern on a
+      // standalone 400px card; the artboard for this block, `canvas/Main.dc.html:136-152`, is
+      // six bare key-value lines. Inside a 145px column it measured 350px of header on the live
+      // court and — because a paragraph's height varies with its wrapping — put the six columns
+      // on three different baselines. The reason keeps three voices: this mark's accessible
+      // name, the footnote below the grid, and /method.
+      renderMarginals({
+        coherence: { coherent: 4, resolved: 4, lonePanelDisputes: [155] },
+        changedWindows: [EARLIER],
+      });
+
+      expect(screen.queryByText(/draws ran under a vote window of/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/sat on a panel of one/i)).not.toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /median reveal is marked/i })).toHaveAccessibleName(
+        /draws ran under a vote window of/i,
+      );
     });
 
     it("keeps the marker on a figure it keeps, and says why on the marker itself", () => {
