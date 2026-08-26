@@ -113,7 +113,7 @@ rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines 
 | `DESIGN_PROMPT.md` | The UI brief. Answered — read the canvas below rather than re-deriving it |
 | `.scratch/juror-performance-dashboard/canvas/README.md` | The design canvas: eight artboards, and which figures on them are real |
 | `docs/contrast.md` | Every contrast ratio, both themes, and the two exemptions. Read before changing a colour |
-| `docs/accessibility.md` | Ticket 18's sweep: what was checked on each surface, what changed, and the four things left |
+| `docs/accessibility.md` | Ticket 18's sweep: what was checked on each surface, what changed, the four things left — and what the sweep missed |
 
 Ticket **05** was the keystone, and it has landed: `src/performance/` holds the seam,
 `buildCourtPerformance(RawCourtData) → KlerosResult<CourtPerformance>`, which is where every
@@ -561,6 +561,27 @@ Things that cost real effort to discover and are easy to get wrong again:
   more than forty disputes and court 34 holds thirty-one, so it was checked by lowering
   `COMPACT_FROM_ROWS` in the dev server, reading the page, and putting it back. A fixture cannot
   stand in — jsdom lays nothing out, which is the whole reason the browser is being opened.
+- **A green axe run is not an accessibility sweep, and no test here can measure a hit area.**
+  Clicking a dispute row did nothing, and it was a reader who said so rather than the suite. The
+  ID was the only link: 40x21px inside an 1104x80px row — one per cent of its area, under the 24px
+  WCAG 2.5.8 asks for — with the title beside it inert text, so the row read as the way in
+  everywhere except the forty pixels where it was. It shipped **through** ticket 18, whose axe
+  audit returned zero violations on seven routes, because **axe does not check target size at
+  all**; and no offline test could have caught it either, because jsdom lays nothing out and a hit
+  area is a layout. Two rules come out of it. The first is ticket 16's, one level further on: the
+  phone's card had the right target the whole time (`CardLink::after` at `inset: 0` over a
+  positioned `Card`) and the desktop row never got it, so **two renderings of one record fork in
+  the affordance as readily as in the prose** — and the fork the automated tool cannot see is the
+  one that survives eighteen tickets. The second is about what a clean tool run licenses you to
+  claim: an audit's silence covers what it tests, and naming the criteria it does *not* test is
+  part of reporting it. The fix, for anything else that needs one, is the stretched pseudo-element
+  rather than a second link — it adds no element, no second accessible name and no second tab
+  stop, and inside the matrix it scopes itself, because `DisputeRow` renders into `RowHeaderCell`
+  and the overlay stops at that cell. Its one load-bearing half is `position: relative` on the
+  row, and that half fails *without a bound*: an absolutely positioned box with no positioned
+  ancestor resolves against the initial containing block, so dropping the line does not shrink the
+  target back to the digits but spreads one dispute's link across the viewport. A test pins the
+  declaration; the area still needs a browser.
 - **A `position: sticky` element sticks to its nearest *scroll container*, and `overflow: hidden`
   makes one.** Ticket 17's frozen column header needed two unrelated things fixed before it could
   freeze at all, neither of them in the matrix: `Shell.tsx`'s `Ground` wrapped every view in

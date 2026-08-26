@@ -236,7 +236,45 @@ The cell lead-in, the row-header separator, the caption, the scroll region's `ta
 
 An audit passing is weak evidence and is recorded as such: axe checks what can be checked
 mechanically, and most of what this sweep changed — whether a cell says whose it is, whether focus
-lands somewhere a reader chose — is not in that set.
+lands somewhere a reader chose — is not in that set. **It is also weak evidence about things that
+*are* mechanical**, because a rule the tool does not implement is silence rather than a pass: axe
+does not check target size, and the section below is what that silence was covering.
+
+## Found after the sweep, by a reader rather than by the sweep
+
+**The dispute row's target was one per cent of the row.** Clicking a dispute did nothing, which is
+how it was reported. The ID is the only link on the row — deliberately, and for two reasons that
+still hold: every dispute has an ID and not every dispute has a title, so a link on the title would
+make an untitled row the one row nobody could open; and a second link to the same place gives a
+screen-reader user two indistinguishable destinations on every row. What did not follow from those
+reasons is that the *pointer* should be given three digits to aim at. It measured 40x21px inside an
+1104x80px row, under the 24px floor of WCAG 2.5.8, with the title beside it inert.
+
+Two things let it through this sweep, and both are worth stating because neither was a lapse in
+care. Axe returned zero violations because it does not implement target size at all. And no
+offline test could see it, because jsdom lays nothing out and a hit area is a layout — the same
+reason this document already has a section headed with that sentence.
+
+The third thing is the one that generalises. **The phone's card had the right target the whole
+time.** Ticket 16 stretched `CardLink::after` to `inset: 0` over a positioned `Card`, so a tap
+anywhere on a card opens its dispute; the desktop row simply never got the same treatment. Ticket
+16's rule was that two renderings of one record must not fork in their model or their prose. They
+fork in their *affordances* too, and that fork is quieter than the other two: no figure disagrees,
+no sentence is false, and each layout is defensible read on its own.
+
+Fixed by giving the row the card's pattern rather than a second link, which keeps the accessible
+name, the tab order and the element count exactly as the reasoning above requires. Inside the
+matrix it scopes itself: `DisputeRow` renders into `RowHeaderCell`, so the target ends where that
+cell does and every measurement cell beside it stays unclickable and keeps its own meaning.
+
+Two notes for anyone extending it. `position: relative` on the row is load-bearing and fails
+without a bound — an absolutely positioned box with no positioned ancestor resolves against the
+initial containing block, so dropping it spreads one dispute's link across the viewport instead of
+shrinking the target back; a test pins the declaration and the area is left to a browser. And
+suppressing the system focus ring on the link needs **both** halves — `outline: none` alone leaves
+the `--ring-focus` box-shadow drawing a second, smaller ring around the digits inside the one on
+the overlay, which is exactly the defect the entry below counts twelve of. The row's ID link is no
+longer one of them.
 
 ## Not done, and why
 
@@ -245,7 +283,8 @@ breakpoints follow it; a text-size-only setting changes nothing. The fix is a tw
 the `--type-*` tokens *and* the fixed-px boxes holding that text — and doing the first alone
 creates the clipping the criterion forbids. `docs/contrast.md` has the detail.
 
-**The focus ring is drawn twice on twelve components.** The design system sets
+**The focus ring is drawn twice on eleven components** (twelve at the time of the sweep; the
+dispute row's ID link left the set when its target was fixed, see above)**.** The design system sets
 `outline: none` plus a `box-shadow` ring; twelve components override the outline and get both.
 Both are cyan, both are visible, and forced colours is handled, so this is a consistency question
 rather than a barrier. Left alone because ticket 14 chose that ring deliberately and unpicking it
