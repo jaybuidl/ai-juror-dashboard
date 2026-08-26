@@ -153,12 +153,6 @@ const SummaryValue = styled.dd`
   color: ${({ theme }) => theme.textHeading};
 `;
 
-const Caption = styled.p`
-  font: ${({ theme }) => theme.typeBodySm};
-  font-feature-settings: ${({ theme }) => theme.featureNumeric};
-  color: ${({ theme }) => theme.textMeta};
-`;
-
 const Nothing = styled.p`
   font: ${({ theme }) => theme.typeBodySm};
   color: ${({ theme }) => theme.textMeta};
@@ -259,12 +253,6 @@ export function LatencyStrip({
           <SummaryValue>{formatLatencySeconds(latency.slowest)}</SummaryValue>
         </div>
       </Summary>
-
-      <Caption>
-        Each mark is one draw, placed by how long it took to reveal after the vote period opened.
-        The comparison band is illustrative: ordinary Kleros courts run their periods over hours and
-        days, and court 34 does not. It measures no court.
-      </Caption>
     </Card>
   );
 }

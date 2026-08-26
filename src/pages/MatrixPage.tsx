@@ -13,6 +13,7 @@ import { arbitrumSource } from "../performance/arbitrum";
 import { CourtAnnouncer } from "../performance/CourtAnnouncer";
 import { DisputeCards } from "../performance/DisputeCards";
 import { densityOf } from "../performance/density";
+import { SparsityNote } from "../performance/Footnotes";
 import { LatencyStrip } from "../performance/LatencyStrip";
 import { formatWindowSeconds } from "../performance/latency";
 import { Matrix } from "../performance/Matrix";
@@ -585,7 +586,30 @@ export function MatrixPage(props: MatrixPageProps) {
     // it scrolled sideways in its own box on every desktop. Unconditional because below the
     // narrow breakpoint the grid is not rendered at all and a max-width above the viewport costs
     // the card list nothing.
-    <View provenance={provenanceOf(props, isNarrow, isDense)} failures={failures} measure="grid">
+    <View
+      provenance={provenanceOf(props, isNarrow, isDense)}
+      failures={failures}
+      measure="grid"
+      /* The sparsity note, which reads as one of the footer's lines rather than as a footnote
+         under the grid: the † and ‡ notes below the matrix decode marks the reader can see in
+         it, and this one says what the whole record is like — the same kind of claim as the
+         two lines it now sits between.
+
+         `!isNarrow` because the phone already carries it, as a card at the head of the card
+         list, which is where ticket 16 put it on purpose: it prevents a misreading rather than
+         answering a question, and a reader who does not know they have been misled never
+         scrolls to the foot of the page to find out. Passing it here as well would be the one
+         caveat this dashboard cannot afford to lose, said twice.
+
+         And only with a matrix on screen. Where nothing was measured the page shows the
+         dispute list instead, and a note counting blank cells would be counting a grid that is
+         not there. */
+      footerNote={
+        !isNarrow && measured ? (
+          <SparsityNote performance={measured} noun="cell" presentation="footnote" />
+        ) : undefined
+      }
+    >
       {/* First in the view and empty almost always. It says what moved between two reads of a
           court that re-reads itself every five seconds, so a reader who cannot see a cell change
           is told that one did. It never contains a figure — see the component. */}
@@ -599,8 +623,14 @@ export function MatrixPage(props: MatrixPageProps) {
       />
       {/* Absent below the breakpoint, and no measured figure leaves the page with it: the
           strip's headline figure is the median reveal, which the tiles now lead with, and its
-          comparison band is illustrative by its own caption rather than a reading of any
-          court. The caveat naming that band goes with it — see `provenanceOf`. */}
+          comparison band is not a reading of any court.
+
+          The strip carried a caption saying so, and the caption is gone. What says it now is
+          the provenance footer's caveat, which said the same thing already — the strip was
+          stating it a second time, immediately above a figure that is measured, which is the
+          duplication `CLAUDE.md` warns costs a reader their attention for the caveats that are
+          load-bearing. The caveat is still gated on `!narrow` alongside this, for the reason
+          `provenanceOf` gives: below the breakpoint there is no band to name. */}
       {!isNarrow && (
         <LatencyStrip latency={measured?.totals.revealLatency ?? null} partial={partial} />
       )}

@@ -26,6 +26,7 @@ import {
   staleDraws,
   unmeasured,
   unresolvedRoster,
+  waitingCourt,
 } from "../test/court";
 import { PHONE_WIDTH, stubViewportWidth } from "../test/viewport";
 
@@ -107,6 +108,91 @@ describe("the matrix view", () => {
     // they stop reading once.
     expect(screen.queryByText(/nothing measured yet/i)).not.toBeInTheDocument();
     expect(screen.getByText(/never as a fraction of the window it ran in/i)).toBeInTheDocument();
+  });
+
+  /**
+   * The sparsity note, which this page composes rather than the matrix.
+   *
+   * It was the third footnote below the grid until it moved into the provenance footer, above
+   * the identity line. The move is the reason these live here: `Matrix` no longer renders it,
+   * and a caveat is tested where it is composed. The words themselves are unchanged and still
+   * come from the one `SparsityNote` the phone's card list reads from, which is what keeps the
+   * two renderings from forking.
+   */
+  describe("the sparsity note", () => {
+    it("says that a blank cell is the normal case", () => {
+      renderAt("/");
+
+      // Worded about the *record* rather than about the matrix since ticket 16, because the
+      // phone says the same sentence over a layout with no grid and no columns in it. What
+      // stays is the noun for the position itself: a cell here, a slot there, one figure behind
+      // both.
+      expect(screen.getByText(/sparsity is the normal state of this record/i)).toBeInTheDocument();
+      expect(screen.getByText(/one agent juror is blank end to end/i)).toBeInTheDocument();
+      expect(screen.getByText(/cells here are blank/i)).toBeInTheDocument();
+    });
+
+    it("sits in the footer, above the line naming how agent jurors are identified", () => {
+      // The placement is the whole of this change and nothing else asserts it. Both are in the
+      // footer's own element, and in this order: the note says what the record as a whole is
+      // like, which is the same kind of claim as the lines around it, and the identity line
+      // stays last of the prose as it was.
+      renderAt("/");
+
+      const footer = screen.getByRole("contentinfo");
+      const note = within(footer).getByText(/sparsity is the normal state of this record/i);
+      const identity = within(footer).getByText(/identified by nickname, avatar and stack/i);
+
+      expect(note.compareDocumentPosition(identity)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
+    });
+
+    it("is not also under the grid, where it used to be", () => {
+      // The † and ‡ footnotes stay there — they decode marks the reader can see in the grid —
+      // and this one no longer joins them. Said twice it would be the one caveat this dashboard
+      // cannot afford to lose, halved in weight.
+      renderAt("/");
+
+      expect(screen.getAllByText(/sparsity is the normal state of this record/i)).toHaveLength(1);
+      expect(screen.getByText(/never as a fraction of the window it ran in/i)).toBeInTheDocument();
+    });
+
+    it("keeps a dispute whose draws were never read out of the count", () => {
+      // The note's claim — that every blank means an agent juror was not drawn — is true of the
+      // rows that were read and false of the one that was not. Folding the unread row's six
+      // nulls into that count would make the sentence false about six of them.
+      renderAt("/", { disputes: disputesWithNewcomer, performance: staleDraws });
+
+      expect(screen.getByText(/not counted here at all/i, { selector: "p" })).toBeInTheDocument();
+    });
+
+    it("separates the two kinds of blank where the blanks are counted", () => {
+      // The sentence that was wrong about eighteen cells: the note goes on saying that a blank
+      // means an agent juror was not drawn, and now says which of the blanks it is counting
+      // mean something else, by dispute id and as a count.
+      renderAt("/", { performance: waitingCourt });
+
+      const note = screen.getByText(/sparsity is the normal state of this record/i);
+
+      expect(note).toHaveTextContent(/6 of those blanks are a different absence/);
+      expect(note).toHaveTextContent(/dispute 167 has no panel at all yet/);
+      expect(note).toHaveTextContent(/the draw has not happened/);
+    });
+
+    it("goes on saying it at the compact density, where the grid drops most else", () => {
+      renderAt("/", { performance: denseCourt });
+
+      expect(screen.getByText(/sparsity is the normal state of this record/i)).toBeInTheDocument();
+    });
+
+    it("is absent with no matrix on screen, having no cells left to count", () => {
+      // The dispute list replaces the grid there, and a note counting blank cells would be
+      // counting a grid that is not on the page.
+      renderAt("/", { performance: unmeasured });
+
+      expect(
+        screen.queryByText(/sparsity is the normal state of this record/i),
+      ).not.toBeInTheDocument();
+    });
   });
 
   it("hangs the matrix off the court's disputes, newest first", () => {
@@ -218,10 +304,21 @@ describe("the totals above the matrix", () => {
   });
 
   it("calls the comparison band illustrative on the page, not only in the source", () => {
+    // It is said once, in the provenance footer. The strip carried a caption saying it a
+    // second time and no longer does — but the claim itself must stay *on the page* rather
+    // than only in the source, because `CLAUDE.md` requires a caveat to be visible in the UI
+    // and this is the one figure on this view that never came from a read. So this test kept
+    // its name and changed where it looks.
     renderAt("/");
 
-    expect(screen.getByText(/the comparison band is illustrative/i)).toBeInTheDocument();
-    expect(screen.getByText(/it measures no court/i)).toBeInTheDocument();
+    const footer = screen.getByRole("contentinfo");
+
+    expect(
+      within(footer).getByText(/the comparison band on the latency strip is illustrative/i),
+    ).toBeInTheDocument();
+    expect(within(footer).getByText(/measures no court/i)).toBeInTheDocument();
+    // And not beside the strip, where it used to be.
+    expect(screen.queryByText(/each mark is one draw/i)).not.toBeInTheDocument();
   });
 
   it("says it has nothing rather than showing zeros, when nothing was measured", () => {
@@ -871,6 +968,22 @@ describe("the matrix view on a phone", () => {
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
     expect(screen.getAllByRole("listitem").length).toBeGreaterThan(0);
     expect(screen.getByRole("link", { name: /^Dispute 163\b/ })).toBeInTheDocument();
+  });
+
+  it("carries the sparsity note once, at the head of the cards rather than in the footer", () => {
+    // Ticket 16 put it there deliberately: it prevents a misreading rather than answering a
+    // question, and a reader who does not know they have been misled never scrolls to the foot
+    // of the page to find out. So the footer slot the desktop uses is gated on `!narrow`, and
+    // the count is what proves the two did not both fire.
+    stubViewportWidth(PHONE_WIDTH);
+    renderAt("/");
+
+    expect(screen.getAllByText(/sparsity is the normal state of this record/i)).toHaveLength(1);
+    expect(
+      within(screen.getByRole("contentinfo")).queryByText(/sparsity is the normal state/i),
+    ).not.toBeInTheDocument();
+    // The phone's noun, which is the one thing the two renderings differ in.
+    expect(screen.getByText(/slots here are blank/i)).toBeInTheDocument();
   });
 
   it("keeps the matrix above the breakpoint", () => {

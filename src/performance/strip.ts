@@ -26,9 +26,15 @@ export const STRIP_MAX_SECONDS = DAY;
 /**
  * Where an ordinary Kleros court's periods begin: an hour.
  *
- * Illustrative, and labelled as such wherever it is drawn. It measures no court — no reading of
- * any court produced this number — and it exists because "85 seconds" means nothing to a reader
- * with no sense of what arbitration normally takes.
+ * Illustrative. It measures no court — no reading of any court produced this number — and it
+ * exists because "85 seconds" means nothing to a reader with no sense of what arbitration
+ * normally takes.
+ *
+ * Said on the page in exactly one place: the provenance footer's caveat, which names the band
+ * as the only thing above it that did not come from a read. The strip used to carry a caption
+ * saying it a second time and no longer does. Tickets 22 and 23 are open against this number
+ * itself — an hour understates an ordinary Kleros court by about two orders of magnitude — so
+ * whoever takes those is changing what the band means, not only where it is disclosed.
  */
 export const ORDINARY_COURT_FROM_SECONDS = HOUR;
 
