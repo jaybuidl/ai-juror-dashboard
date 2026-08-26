@@ -4,6 +4,7 @@ import { Breadcrumb } from "../chrome/Breadcrumb";
 import { Notice } from "../chrome/Failure";
 import { type Failures, olderOf, present } from "../chrome/failures";
 import { type Provenance, rangeOf } from "../chrome/provenance";
+import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import { COURT_ID } from "../disputes/court-subgraph";
 import type { DisputesView } from "../disputes/useDisputes";
@@ -518,6 +519,9 @@ function disputeIdOf(raw: string | undefined): number | null {
  */
 export function DisputePage(props: DisputePageProps) {
   const { disputeId: pathId } = useParams();
+  // The id as it was typed, so an address naming nothing still titles the tab with what was
+  // asked for rather than with a name this view has just refused to give it.
+  useDocumentTitle(`Dispute ${pathId ?? ""}`.trim());
   const detail = useDisputeDetail(disputeIdOf(pathId));
 
   return <DisputeView {...props} pathId={pathId} detail={detail} />;

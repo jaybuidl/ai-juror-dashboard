@@ -1,11 +1,12 @@
 import { fireEvent, render, screen, within } from "@testing-library/react";
 import { BrowserRouter } from "react-router";
 import { ThemeProvider } from "styled-components";
-import { describe, expect, it } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 import { DESTINATIONS, isCurrent } from "./chrome/Nav";
 import { DashboardRoutes } from "./routes";
 import { theme } from "./styles/theme";
 import { renderAt, unmeasured, views } from "./test/court";
+import { PHONE_WIDTH, stubViewportWidth } from "./test/viewport";
 
 /**
  * The shell, and the routes it wraps.
@@ -50,6 +51,74 @@ function renderInBrowserAt(path: string) {
     </ThemeProvider>,
   );
 }
+
+describe("a route change", () => {
+  /*
+   * Ticket 18. A client-side route change is silent: the URL moves, React swaps a subtree, and
+   * nothing tells a screen reader that the page it was reading is gone. The two things a real
+   * page load would have done are the two done here — the document is retitled, and focus moves
+   * into the new view so the next thing read is the new view rather than wherever the reader's
+   * caret happened to be in a document that no longer exists.
+   */
+  it("gives every view its own document title", () => {
+    const titles = new Set<string>();
+
+    for (const path of [...ROUTES, "/nowhere"]) {
+      const { unmount } = renderAt(path);
+      expect(document.title, `title at ${path}`).toMatch(/AI Juror Dashboard$/);
+      titles.add(document.title);
+      unmount();
+    }
+
+    // Seven routes, seven titles. One shared title is what the tab strip, the history menu and
+    // a screen reader's page-change announcement all had before this.
+    expect(titles.size).toBe(ROUTES.length + 1);
+  });
+
+  it("names the dispute and the agent juror in the title, not just the view", () => {
+    const { unmount } = renderAt("/disputes/156");
+    expect(document.title).toMatch(/^Dispute 156\b/);
+    unmount();
+
+    renderAt("/agent-jurors/blaise");
+    expect(document.title).toMatch(/^blaise\b/);
+  });
+
+  it("hands focus back to the menu button when the folded panel is dismissed", () => {
+    // Escape unmounts the panel and whichever of its links had focus with it, so without this
+    // the reader is dropped on `<body>` — the top of the tab order, and nowhere they chose.
+    // Ticket 16 added Escape precisely so a keyboard reader would not be stuck in the panel;
+    // this is the other half of that.
+    stubViewportWidth(PHONE_WIDTH);
+    try {
+      renderAt("/");
+      const button = screen.getByRole("button", { name: /open the menu/i });
+      fireEvent.click(button);
+      expect(screen.getByRole("button", { name: /close the menu/i })).toBeInTheDocument();
+
+      fireEvent.keyDown(document, { key: "Escape" });
+
+      expect(screen.queryByRole("button", { name: /close the menu/i })).not.toBeInTheDocument();
+      expect(document.activeElement).toBe(button);
+    } finally {
+      vi.unstubAllGlobals();
+    }
+  });
+
+  it("moves focus into the view when you navigate, and not on first render", () => {
+    // The "not on first render" half matters as much as the other: a page that grabs focus on
+    // load takes it away from the browser's own chrome, which is where a keyboard reader who
+    // just typed a URL is standing.
+    renderInBrowserAt("/");
+    expect(document.activeElement).toBe(document.body);
+
+    fireEvent.click(screen.getByRole("link", { name: "Method" }));
+
+    const main = screen.getByRole("main");
+    expect(document.activeElement).toBe(main);
+    expect(main).toHaveAttribute("tabindex", "-1");
+  });
+});
 
 describe("the shell", () => {
   it("states what this dashboard is in the nav, on every view", () => {

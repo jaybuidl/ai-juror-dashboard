@@ -6,6 +6,9 @@ import { App } from "./App";
 // styles/theme.ts is only aliases over the custom properties these declare.
 import "./styles/webfonts";
 import "./styles/kleros-ai/styles.css";
+// Last, and the order is the whole of it: contrast.css re-declares tokens colors.css already
+// declares, at equal specificity, so the later one wins. See the file for what moved and why.
+import "./styles/contrast.css";
 
 const container = document.getElementById("root");
 if (!container) {

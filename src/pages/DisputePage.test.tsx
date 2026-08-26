@@ -263,8 +263,11 @@ describe("the justification band", () => {
     expect(within(column).getByText("OpenClaw")).toBeInTheDocument();
     expect(within(column).getByText("Diverged")).toBeInTheDocument();
     expect(within(column).getByText("Choice 0")).toBeInTheDocument();
-    expect(within(column).getByTitle("Reveal latency")).toBeInTheDocument();
-    expect(within(column).getByTitle("Commit latency")).toBeInTheDocument();
+    // The phrases, not the tooltips. Ticket 18 moved these off `title` — a tooltip on a
+    // non-focusable span reaches a pointer and nothing else — so what to assert is the text a
+    // reader is actually given, which is also what the matrix's own keys have always carried.
+    expect(within(column).getByText("Reveal latency")).toBeInTheDocument();
+    expect(within(column).getByText("Commit latency")).toBeInTheDocument();
   });
 
   it("carries the justification's length and what it is", () => {
@@ -336,8 +339,9 @@ describe("the justification band", () => {
     expect(screen.getByText(/bold/)).toBeInTheDocument();
   });
 
-  it("warns before a link inside a justification takes you away", () => {
-    const withLink: DisputeDetailView = read({
+  /** One justification holding one outbound link, which is all three tests below need. */
+  function withLinkFixture(): DisputeDetailView {
+    return read({
       detail: {
         ...detail156,
         justifications: [
@@ -353,14 +357,16 @@ describe("the justification band", () => {
         ],
       },
     });
+  }
 
-    renderDispute({ detail: withLink });
+  it("warns before a link inside a justification takes you away", () => {
+    renderDispute({ detail: withLinkFixture() });
 
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("link", { name: "published here" }));
 
-    const warning = screen.getByRole("alert");
+    const warning = screen.getByRole("alertdialog");
     expect(warning).toHaveTextContent(/not part of this dashboard/i);
     // The host, so a reader can check where they are actually going: the link's own text is
     // written by the same agent that wrote the prose.
@@ -369,6 +375,42 @@ describe("the justification band", () => {
       "href",
       "https://example.org/policy",
     );
+  });
+
+  /*
+   * Ticket 18. The panel replaces a navigation the reader asked for, so it is a question, and a
+   * question has to arrive where the reader is standing. It was announced assertively and left
+   * focus on the link that opened it — which sits inside the prose, above the panel, sometimes
+   * thousands of characters and a dozen other links above it. A keyboard reader had to tab
+   * through the rest of the justification to reach the Cancel button of a panel their own
+   * keypress had just opened.
+   */
+  it("moves focus into the warning, and back to the link when it is dismissed", () => {
+    renderDispute({ detail: withLinkFixture() });
+
+    const link = screen.getByRole("link", { name: "published here" });
+    fireEvent.click(link);
+
+    const warning = screen.getByRole("alertdialog");
+    expect(document.activeElement).toBe(warning);
+
+    fireEvent.click(within(warning).getByRole("button", { name: /cancel/i }));
+
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    // Back where they were, so the next Tab continues from the link rather than from the top of
+    // a document they never left.
+    expect(document.activeElement).toBe(link);
+  });
+
+  it("dismisses the warning on Escape, and returns focus then too", () => {
+    renderDispute({ detail: withLinkFixture() });
+
+    const link = screen.getByRole("link", { name: "published here" });
+    fireEvent.click(link);
+    fireEvent.keyDown(screen.getByRole("alertdialog"), { key: "Escape" });
+
+    expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
+    expect(document.activeElement).toBe(link);
   });
 });
 

@@ -1,0 +1,64 @@
+/*
+ * The measured corrections to the Kleros ×AI palette. Ticket 18.
+ *
+ * The design system was rebuilt from rendered pages and screenshots and its own readme says the
+ * values were "matched by eye"; `tokens/themes.css` claims the light accents were "darkened to
+ * hold 4.5:1 on white" and no ratio in it, in either theme, had ever been measured. This file is
+ * the first measurement, and it is a *layer over* the vendored tokens rather than an edit to
+ * them: ticket 14 vendored the eight token files verbatim so that this ticket would have a clean
+ * before, and the copy under `kleros-ai/` stays a faithful record of the system as published.
+ * Everything that departs from it is here, with the number that forced the departure.
+ *
+ * The full record, both themes, every surface, is `docs/contrast.md`. `src/styles/contrast.test.ts`
+ * re-derives every figure below from the token files and fails if one stops holding, because a
+ * ratio that was true once and a ratio that is true are different claims.
+ *
+ * Imported after `kleros-ai/styles.css` in `main.tsx`, so these win on order at equal specificity.
+ */
+
+:root {
+  /*
+   * The two dimmest steps of the text ramp, raised until every string they ink clears 4.5:1
+   * against the surface it actually sits on.
+   *
+   * `--text-4` was the trap named in CLAUDE.md and it was the only ink in the shipped dark
+   * palette that failed: 2.91 on the page, 2.78 on a card, and 2.38 on a mint wash — against a
+   * 4.5 target, at 9px, on figures. It inks roughly thirty sites that carry meaning: the rail
+   * keys, the vote count, the pending em dash, `PanelLabel`, the marginals' `Key`, the phone
+   * slot's figure, the failure banner's `FactKey`, and the nav's own "Read only" statement.
+   * A second carrier is not available to most of them — a number's meaning is the number — so
+   * the answer for every one of those is the same one, and it is taken here once.
+   *
+   * `--text-3` moves with it and only because of it. Raising `--text-4` alone to a value that
+   * clears the worst surface puts it *brighter* than `--text-3` (5.59 against 5.43 on the page),
+   * which inverts two steps of the ramp — the flattening the ticket warns about, arrived at from
+   * the other direction. Both were lifted along their own hue, so the ramp keeps its order and
+   * its spacing: 17.81 / 10.11 / 7.35 / 5.59 on the page, each step about 1.3x the next.
+   *
+   * `--text-5` is deliberately unchanged. It is not text: it inks the 3px "not drawn" dot and
+   * nothing else, and that dot has to read as nearly nothing, because the emptiest state on this
+   * page and the loudest must never be confused (ADR-0006). Its meaning travels in the words
+   * "Not drawn" in the cell's accessible name instead. Recorded as exempt, not skipped.
+   */
+  --text-3: #9e98bc; /* was #8681a0 — 5.43 on the page, 4.43 on a mint wash */
+  --text-4: #8981b0; /* was #5b5675 — 2.91 on the page, 2.38 on a mint wash */
+
+  /*
+   * The violet glow, dimmed from 0.45 to 0.22 at its peak.
+   *
+   * `Shell.tsx` calls this layer decoration that carries "no contrast anything else depends on",
+   * and that was the one claim in it that was false: the glow is 720px tall, sits behind
+   * `Content`, and is therefore the actual ground under the nav, the hero, the breadcrumb and
+   * the stat tiles. At its declared peak it lifted the page from #08060f to #301f69, which took
+   * `--text-meta` from 5.43 to 3.71 — so the nav's own destination links failed 4.5:1 while every
+   * measurement taken against `--page` said they passed. A gradient means the ratio varies
+   * continuously across the layer, so the number that matters is the peak, and 0.22 is where the
+   * dimmest ink used in that region still clears the target (4.86 for `--text-4`, 6.40 for
+   * `--text-3`). The glow is still visibly there; it is no longer load-bearing.
+   */
+  --glow-violet: radial-gradient(
+    60% 60% at 50% 0%,
+    rgba(96, 62, 214, 0.22) 0%,
+    rgba(18, 10, 47, 0) 70%
+  );
+}

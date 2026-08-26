@@ -177,8 +177,16 @@ const LoneMark = styled(Link)`
   color: ${({ theme }) => theme.stateWork};
   text-decoration: none;
 
-  &:hover,
+  &:hover {
+    text-decoration: underline;
+  }
+
   &:focus-visible {
+    /* The house ring, not an underline. Underlining is a fine hover affordance and a poor focus
+       one when the whole link is a single dagger: a 7px glyph gaining a 7px rule under it is not
+       a discernible indicator, and it is the only thing marking where the keyboard is. */
+    outline: 2px solid ${({ theme }) => theme.focusRing};
+    outline-offset: 3px;
     text-decoration: underline;
   }
 `;

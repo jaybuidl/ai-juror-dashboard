@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import styled from "styled-components";
+import { VisuallyHidden } from "../styles/hidden";
 import { formatWindowSeconds } from "./latency";
 import type { CourtPerformance } from "./performance";
 
@@ -104,7 +105,12 @@ export function WindowFootnote({ performance }: { performance: CourtPerformance 
 
   return (
     <Footnote>
+      {/* The dagger is drawn and the note is named. The mark is hidden because "†" is announced
+          as "dagger" where it is announced at all, but hiding it alone left a reader who cannot
+          see the glyph with a paragraph and no handle on it — while the figures upstairs carry
+          links reading "Why 007's median reveal is marked". This is the other end of that. */}
       <FootnoteMark aria-hidden="true">†</FootnoteMark>
+      <VisuallyHidden>Note on the window change. </VisuallyHidden>
       <span>
         {current === null ? (
           <>
@@ -176,6 +182,7 @@ export function LonePanelFootnote({ performance }: { performance: CourtPerforman
   return (
     <Footnote>
       <FootnoteMark aria-hidden="true">‡</FootnoteMark>
+      <VisuallyHidden>Note on lone panels. </VisuallyHidden>
       <span>
         {lonePanels.length === 1 ? "Dispute" : "Disputes"} {listOf(lonePanels)}{" "}
         {lonePanels.length === 1 ? "was" : "were"} decided by a panel of one. A lone agent juror is

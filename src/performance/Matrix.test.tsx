@@ -55,20 +55,29 @@ function build(raw: Partial<RawCourtData> = {}): CourtPerformance {
  */
 const NOW = (1787604932 + 192) * 1000;
 
-function renderMatrix(
+/** The tree under test, so a rerender can hand over a fresh model the way a poll does. */
+function harness(
   performance: CourtPerformance = build(),
   slotsFor?: (dispute: Dispute) => DisputeRowSlots,
   now: number = NOW,
 ) {
   // Inside a router since ticket 08: the window footnote links to the method page's account of
   // the two period regimes, which is a part of the matrix and not of the page around it.
-  return render(
+  return (
     <ThemeProvider theme={theme}>
       <MemoryRouter>
         <Matrix performance={performance} roster={roster} slotsFor={slotsFor} now={now} />
       </MemoryRouter>
-    </ThemeProvider>,
+    </ThemeProvider>
   );
+}
+
+function renderMatrix(
+  performance: CourtPerformance = build(),
+  slotsFor?: (dispute: Dispute) => DisputeRowSlots,
+  now: number = NOW,
+) {
+  return render(harness(performance, slotsFor, now));
 }
 
 /**
@@ -156,6 +165,109 @@ function blankCellOf(id: number): HTMLElement {
   if (blank === null || blank === undefined) throw new Error(`no blank cell in dispute ${id}`);
   return blank;
 }
+
+describe("the matrix's own structure", () => {
+  /*
+   * Ticket 18. A cell is a measurement of one agent juror in one dispute, and a reader who
+   * cannot see the grid has to be told which — the two facts the geometry carries for everyone
+   * else. `scope` alone does not do it: it associates the cell with headers, but a screen reader
+   * announces those only when the reader crosses into a new row or column, and never at all in
+   * the linear browse mode most reading is done in. So the pair is said in the cell.
+   *
+   * The roster nickname and not the ENS one, deliberately. What the column header *displays* is
+   * whatever ENS resolved — `blaise` carries a name record reading "Blaise" — but the nickname
+   * this dashboard keys, routes and joins on is the roster's, and a name a wallet can change is
+   * not the thing to identify a measurement by.
+   */
+  it("says which agent juror and which dispute every cell belongs to", () => {
+    renderMatrix();
+
+    const row = rowOrThrow(151);
+    for (const agentJuror of ROSTER) {
+      expect(
+        within(row).getByText(new RegExp(`^${agentJuror.nickname}, dispute 151\\b`)),
+      ).toBeInTheDocument();
+    }
+  });
+
+  it("says it on a cell that was never drawn, and on one that was never read", () => {
+    // The two empty states, which are the ones that most need it: "not drawn" and "not read"
+    // are both silence on the page, and a reader hearing either without knowing whose column
+    // it is has been told nothing at all. They are also the two the matrix must never let a
+    // reader confuse, so each has to arrive attached to a name.
+    renderMatrix();
+    expect(blankCellOf(151).textContent).toMatch(/^\w+, dispute 151\. ?Not drawn$/);
+
+    cleanup();
+    // A dispute created after the draws were last read: its cells are all null and the row is
+    // Unknown rather than not drawn. Same construction as the drift suite further down.
+    const readAt = Number(disputeFixture[0]?.createdAt ?? 0) * 1000;
+    const newcomer = {
+      ...(disputeFixture[0] as RawDispute),
+      id: "170",
+      disputeID: "170",
+      createdAt: String(readAt / 1000 + 600),
+    } as RawDispute;
+    renderMatrix(
+      build({ disputes: [newcomer, ...(disputeFixture as RawDispute[])], drawsReadAt: readAt }),
+    );
+    const unreadCell = within(rowOrThrow(170)).getAllByRole("cell")[0] as HTMLElement;
+    expect(unreadCell.textContent).toMatch(/^\w+, dispute 170\./);
+  });
+
+  it("separates the dispute id from the title in the row header's accessible name", () => {
+    // Before ticket 18 these ran together — dispute 151 announced as "151x402 escrow dispute",
+    // because the two sit in separate grid tracks and a `column-gap` contributes nothing to an
+    // accessible name. `Matrix.test.tsx` had to route around it, which is the tell left in code.
+    renderMatrix(build(), (dispute) => ({
+      title: dispute.id === 151 ? "x402 escrow dispute" : undefined,
+      category: "Escrow",
+    }));
+
+    // The comma and not a space: accessible-name computation trims the whitespace out from
+    // between adjacent nodes, so a hidden ", " contributes its punctuation and loses its space.
+    // That is enough — a comma is a pause to a speech synthesiser, which is the whole ask — but
+    // it means the assertion has to be written against what the algorithm actually produces.
+    expect(
+      screen.getByRole("rowheader", { name: /^151,\s?x402 escrow dispute\b/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("gives the grid a name of its own", () => {
+    // A `<table>` with no caption and no label is announced as "table" and nothing else.
+    renderMatrix();
+    expect(screen.getByRole("table", { name: /one row per dispute/i })).toBeInTheDocument();
+  });
+
+  it("leaves focus where it was when the court is re-read under it", () => {
+    // Ticket 12 re-reads the disputes and the draws every five seconds while anything is
+    // unruled, which means the whole grid rerenders under whoever is standing in it. A reader
+    // parked on a dispute link has to still be on that dispute link afterwards — losing focus
+    // to `<body>` every five seconds makes the page unusable by keyboard, and it is exactly the
+    // failure the interstitial had for a different reason: a rerender that replaces a node.
+    const { rerender } = renderMatrix();
+
+    const link = screen.getByRole("link", { name: "151" });
+    link.focus();
+    expect(document.activeElement).toBe(link);
+
+    // A fresh model object, as react-query hands over on every poll: never reference-equal to
+    // the last one, and almost always the same court.
+    rerender(harness(build()));
+
+    expect(document.activeElement).toBe(screen.getByRole("link", { name: "151" }));
+    expect(document.activeElement).toBe(link);
+  });
+
+  it("lets a keyboard reach the matrix's sideways scroll", () => {
+    // The comfortable grid is wider than the viewport and scrolls in a container of its own.
+    // A scroll container that is not focusable cannot be scrolled without a pointer (WCAG 2.1.1),
+    // and there is nothing else in it to tab to that would bring the far columns into view.
+    renderMatrix();
+    const region = screen.getByRole("region", { name: "The matrix, scrollable" });
+    expect(region).toHaveAttribute("tabindex", "0");
+  });
+});
 
 describe("Matrix", () => {
   it("puts disputes down the rows and agent jurors across the columns", () => {

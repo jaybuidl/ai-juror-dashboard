@@ -4,8 +4,14 @@ A public, read-only dashboard measuring six AI agent jurors in Kleros v2 court 3
 on two dimensions: **speed** (commit and reveal latency) and **coherence** (voting with the final
 ruling).
 
-**Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01, 02, 03, 04,
-05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 15, 16 and 17 are done — every ticket but 18: Vite + React
+**Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>, and **all eighteen
+tickets are done**. Ticket 18 was the last, and it was a sweep rather than a feature: the palette
+measured for the first time in either theme, the matrix given the two facts its cells were not
+saying, a route change made audible, and the five-second poll given a voice that is not the grid.
+What it did not do is honour a browser text-size preference — the vendored type scale is px
+throughout — and that is stated in the ticket, in `docs/contrast.md` and below under § Traps.
+Tickets 01, 02, 03, 04,
+05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 15, 16, 17 and 18 are done: Vite + React
 + TypeScript, yarn 4, Biome,
 Vitest, a
 `netlify.toml`
@@ -106,6 +112,8 @@ rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines 
 | `.scratch/juror-performance-dashboard/issues/` | 18 tickets, blockers-first, `01` upward |
 | `DESIGN_PROMPT.md` | The UI brief. Answered — read the canvas below rather than re-deriving it |
 | `.scratch/juror-performance-dashboard/canvas/README.md` | The design canvas: eight artboards, and which figures on them are real |
+| `docs/contrast.md` | Every contrast ratio, both themes, and the two exemptions. Read before changing a colour |
+| `docs/accessibility.md` | Ticket 18's sweep: what was checked on each surface, what changed, and the four things left |
 
 Ticket **05** was the keystone, and it has landed: `src/performance/` holds the seam,
 `buildCourtPerformance(RawCourtData) → KlerosResult<CourtPerformance>`, which is where every
@@ -141,6 +149,13 @@ rather than that an agent juror was not selected. It also lifted `panel.ts` besi
 worded twice, in two files, and one of the two wordings was wrong in both. The density flag itself
 is `density.ts` — pure, checked rather than looked at, and the one place the crossing point is
 written down.
+Ticket 18 added the seventh, and it is a derivation over *two* reads rather than one:
+`transitionsBetween` in `transitions.ts`, the diff between one poll and the next, which
+`CourtAnnouncer` speaks and nothing else consumes. It is below the seam for the reason every
+other reduction is — which transitions are worth hearing is a judgement, and a judgement in a
+component is one nobody can test. The rule it exists to keep is that a live region must never
+contain the matrix: a hundred and sixty-eight cells announced every five seconds is a region a
+reader switches off inside a minute.
 Ticket 09 added the **second model** beside it rather than inside it —
 `buildDisputeDetail` in `src/performance/dispute-detail.ts`, under the same discipline (pure, no
 network, no clock) at a different altitude: one dispute rather than the court, joining the row, the
@@ -407,12 +422,28 @@ Things that cost real effort to discover and are easy to get wrong again:
   `import.meta.env`, run the suite both ways: `yarn test` and
   `VITE_ARBITRUM_RPC_URL=… yarn test`. This applies to the other three overrides the moment
   anything derives from them.
-- **The Kleros ×AI palette has never had its contrast measured, and misses its own stated target.**
-  `tokens/themes.css` claims "accents darkened to hold 4.5:1 on white"; measured, `--cyan-600` is
-  3.95, `--mint-600` 3.65 and `--amber-600` 4.10 — only `--rose-600` (5.08) clears. In the dark
-  theme `--text-4` (`#5b5675`) is 2.68–2.91:1 across page, card and raised, and it inks the pending
-  dash, the rail keys and the vote count at 9px. Consistent with the system's own readme, which
-  says its values were matched by eye from screenshots. Ticket 18 owns fixing it.
+- **The Kleros ×AI palette is measured now, and the numbers this file used to quote were the
+  wrong theme's.** `--cyan-600` at 3.95, `--mint-600` at 3.65 and `--amber-600` at 4.10 are real
+  and they disprove `tokens/themes.css`'s claim that its accents "hold 4.5:1 on white" — but they
+  are the **light** theme, which is vendored and wired to nothing. The shipped dark accents are
+  the `-400`s and all four clear 4.5:1 on every surface including their own washes, worst 5.29.
+  Reading those figures as though they described the live page is the trap now.
+  What did fail was `--text-4` (2.38–2.91 everywhere it inks, at 9px, on about thirty sites that
+  carry meaning) and the **violet glow**, which `Shell.tsx` still describes as decoration carrying
+  "no contrast anything else depends on" and which is the actual ground under the top 720px of
+  every view — at its old 0.45 peak it took `--text-meta` from 5.43 to 3.71, so the nav's own
+  links failed while every measurement taken against `--page` said they passed. Both are fixed in
+  `src/styles/contrast.css`, a repo-owned layer *over* the vendored tokens so the copy under
+  `kleros-ai/` stays a faithful record of the system as published. `--text-3` moved with
+  `--text-4` and only because of it: lifting one far enough to clear its worst surface puts it
+  brighter than the other and inverts the ramp. Every figure, both themes, is `docs/contrast.md`;
+  `src/styles/contrast.test.ts` re-derives all of it from the token files on every run.
+  **Two things about that test are the trap.** Vitest stubs stylesheets to the empty string
+  unless `vite.config.ts` names them in `test.css.include`, silently — so a token file nobody
+  listed declares nothing, the vendored value stands, and the wrong palette is measured by a
+  passing test. And `--text-5` is asserted to stay **below** 3:1, because it inks the 3px "not
+  drawn" dot and a well-meant fix that raised it would stop that mark being the quietest thing on
+  the page, which is the whole of what it says (ADR-0006).
 - **`Round.timeline` writes `0` for a period that has not opened yet** — and `0` is a real instant in
   1970, one subtraction away from a latency of fifty-six years. Every dispute still in `appeal` has
   it in the execution slot today. Parse it to null at the edge, as `src/disputes/disputes.ts` does,
@@ -662,6 +693,42 @@ Things that cost real effort to discover and are easy to get wrong again:
   the one on disk. The cheap prevention is to pick a port and refuse to move off it —
   `yarn dev --port 5199 --strictPort` fails loudly instead of serving somebody else's branch,
   which is what ticket 17's browser pass ran on.
+- **An interpolation inside a CSS comment is still evaluated, exactly as a backtick there still
+  closes the template.** The sibling of the trap below and found the same way — by writing a
+  careful comment. `/* this read "outline: ${theme.focusRing}" */` inside a `styled.x` block is
+  not a comment as far as the template literal is concerned: `${theme...}` is interpolated, and
+  where the comment sits at module scope rather than inside the tagged template's own scope the
+  error is `theme is not defined` at import time, taking down every test file that reaches the
+  module. Name the token in prose (`theme.focusRing`) rather than quoting the code.
+- **`title` is never the sole carrier of a fact.** It needs a pointer hovering the element, so a
+  keyboard reader cannot reach it, a touch reader cannot reach it, and screen readers disagree
+  about whether to announce it at all. Ticket 18 found three — `DisputePanel`'s `R`/`C` measure
+  keys, whose phrases existed nowhere else, and the full agent juror address on
+  `AgentJurorPage` — and the pattern that replaces it is the one the matrix already used:
+  `aria-hidden` on the abbreviation, `VisuallyHidden` beside it with the words. A `title` that
+  *duplicates* text already in the DOM is fine and the dispute row's is exactly that.
+- **Accessible-name computation normalises the whitespace out from between adjacent nodes.**
+  Two elements side by side in a grid track with a `column-gap` contribute their text with
+  nothing between it: the matrix's row header announced as `"151x402 escrow dispute"` and its
+  second line as `"EscrowRuling 1Panel 2"`, invisibly, because the gap is layout and the visible
+  separator is a `·` that is `aria-hidden` (spoken as "middle dot" otherwise). The fix is a
+  `VisuallyHidden` comma between them — and note that its trailing *space* is trimmed too, so
+  the name reads `"151,x402…"`. That is enough, because a comma is a pause to a speech
+  synthesiser, but an assertion written against `"151, x402"` will fail. The phone's six slot
+  labels had the same defect for the same reason.
+- **An inline `components` object for `ReactMarkdown` remounts every node it maps, on every
+  render.** A new function identity for `a` is a new component *type* to React, so every anchor
+  in a justification was unmounted and rebuilt whenever anything in `Justification` rendered —
+  a state change, a parent re-render, ticket 12's five-second poll. Nothing looks wrong, because
+  the links are rebuilt identically. It surfaces only when something holds a reference to one:
+  ticket 18's interstitial could not hand focus back to the link it interrupted because the ref
+  pointed at a detached node. Hoist the map and the plugin array to module scope.
+- **Restoring focus has to happen after the thing holding focus is gone.** Calling `.focus()` on
+  the element you want in the same handler that unmounts the currently-focused one leaves the
+  document falling back to `<body>`: the unmount happens second and takes the focus with it. Do
+  it in an effect keyed on the state that closed the panel, so the two orderings cannot be got
+  the wrong way round. Ticket 18 hit this on the justification interstitial and again on the
+  folded nav's Escape.
 - **A backtick inside a CSS comment ends the styled-components template.** This repo's house style
   puts long prose comments inside `styled.x\`…\`` blocks, and the moment one of them quotes an
   identifier the way the rest of the codebase does — around a filename, say — the template literal

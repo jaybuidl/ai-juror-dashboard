@@ -2,6 +2,7 @@ import styled from "styled-components";
 import { type Failures, olderOf, present } from "../chrome/failures";
 import type { Provenance } from "../chrome/provenance";
 import { rangeOf } from "../chrome/provenance";
+import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import { DisputeList } from "../disputes/DisputeList";
 import type { DisputesView } from "../disputes/useDisputes";
@@ -102,6 +103,7 @@ function provenanceOf(disputes: DisputesView): Provenance {
 }
 
 export function DisputesPage({ disputes }: { disputes: DisputesView }) {
+  useDocumentTitle("The disputes");
   return (
     <View provenance={provenanceOf(disputes)} failures={failuresOf(disputes)}>
       {/* The title, and nothing under it: `DisputeList` carries its own heading and lede, and a

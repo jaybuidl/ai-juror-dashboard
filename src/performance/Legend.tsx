@@ -51,7 +51,12 @@ export const Dot = styled.span`
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background-color: ${({ theme }) => theme.textPending};
+  /* theme.textDisabled, not theme.textPending. Ticket 18 raised the pending ink until every
+     figure it carries clears 4.5:1, and this dot is the one mark that must not come with it — it
+     says "nothing happened here" by being the faintest thing on the page, and the artboard inks
+     it at the disabled step for exactly that reason. It is exempt from the ratio because it is
+     not text: the words "Not drawn" in the cell's accessible name are what a reader gets. */
+  background-color: ${({ theme }) => theme.textDisabled};
 `;
 
 /**

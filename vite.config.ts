@@ -11,8 +11,14 @@ export default defineConfig({
     // Vitest stubs CSS imports to the empty string by default, and does so by extension —
     // a `?raw` import of a stylesheet comes back empty too, with no error. src/styles/theme.test.ts
     // reads the vendored design-system tokens that way to check every var() theme.ts names is
-    // really declared, so those files, and only those, are processed for real.
-    css: { include: [/kleros-ai/] },
+    // really declared, and src/styles/contrast.test.ts reads those *and* our override to compute
+    // the contrast ratios the page actually ships, so both are processed for real.
+    //
+    // Anything declaring a token has to be listed here, and the cost of forgetting is not a
+    // failing test: a stylesheet that comes back empty declares nothing, so an override nobody
+    // parsed leaves the vendored value standing and the wrong palette is measured, in silence,
+    // by a test that passes. contrast.test.ts carries a guard naming this line for that reason.
+    css: { include: [/kleros-ai/, /styles\/contrast\.css/] },
     environment: "jsdom",
     setupFiles: ["./src/test/setup.ts"],
     // Vitest's default is 5s, and the first test in a file pays the transform cost of every

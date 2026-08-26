@@ -41,81 +41,81 @@ states and the not-drawn dot), `../canvas/Errors.dc.html:42-64` (the banner and 
 `../canvas/Dispute.dc.html:110-278` (the justification band and the links inside it),
 `../canvas/Mobile.dc.html` (the phone reflow), `../canvas/README.md` for provenance
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Every colour in the shipped dark palette that carries text clears 4.5:1 against the surface it
+- [x] Every colour in the shipped dark palette that carries text clears 4.5:1 against the surface it
       actually sits on — the page, the card, the raised card, and the wash behind a tinted cell — or
       is changed until it does. A measurement that is merely recorded is not a pass
-- [ ] The four accents are measured on the tinted fills they pair with and not only on the page: a
+- [x] The four accents are measured on the tinted fills they pair with and not only on the page: a
       state word sits on its own wash inside the cell, which is not the surface the accent was
       picked against
-- [ ] Where a string that carries meaning misses the target it is either raised or given a second
+- [x] Where a string that carries meaning misses the target it is either raised or given a second
       carrier, and which was chosen is recorded per use. `--text-4` is the trap: it inks the pending
       dash, the rail keys and the vote count, and lightening the ramp wholesale would flatten the
       hierarchy the cell depends on
-- [ ] The not-drawn dot is exempt, and recorded as exempt rather than quietly skipped: it is
+- [x] The not-drawn dot is exempt, and recorded as exempt rather than quietly skipped: it is
       `--text-5` on the page precisely because it has to read as nearly nothing, so its meaning
       cannot travel in ink and travels in the text alternative below instead
-- [ ] Every measured figure is written down in the repo, both themes. Nothing in the design system
+- [x] Every measured figure is written down in the repo, both themes. Nothing in the design system
       has been measured before, and not every accent holds the ratio its own light theme claims — so
       whoever changes a colour next, or adopts the light tokens for an embed, needs to know what was
       checked and against what
-- [ ] The reachable set is named rather than assumed, and every member of it is operable from the
+- [x] The reachable set is named rather than assumed, and every member of it is operable from the
       keyboard: the nav and whatever ticket 15 puts beside it, the row header and column header, which
       this ticket makes the entry points into a dispute and into an agent juror since tickets 09 and 11
       create those routes without linking to them, the retry on ticket 13's banner, the on-chain
       links, and the links inside a justification
-- [ ] Focus order follows reading order — chrome, then legend, then the matrix top to bottom and
+- [x] Focus order follows reading order — chrome, then legend, then the matrix top to bottom and
       across each row — and nothing is focusable that does nothing: the `Read only` pill is a label,
       not a control
-- [ ] The matrix does not spend a tab stop per cell. A cell is not a control, and a reader who wants
+- [x] The matrix does not spend a tab stop per cell. A cell is not a control, and a reader who wants
       to walk the cells gets one tab stop into the matrix and the arrow keys inside it, rather than
       six stops per dispute
-- [ ] Whichever focus ring ticket 14 settles on — `src/styles/global.ts` outlines today, the design
+- [x] Whichever focus ring ticket 14 settles on — `src/styles/global.ts` outlines today, the design
       system ships `--ring-focus` — is visible against every surface it can land on, the tinted cell
       fills included, and survives forced-colors mode, where a `box-shadow` ring disappears and an
       `outline` does not
-- [ ] The warning ticket 09 puts in front of a link inside a justification is operable from the
+- [x] The warning ticket 09 puts in front of a link inside a justification is operable from the
       keyboard and returns focus to the link it interrupted
-- [ ] A route change is announced: opening a dispute or an agent juror moves focus into the new view
+- [x] A route change is announced: opening a dispute or an agent juror moves focus into the new view
       and retitles the document, because a client-side route change is silent by default and the
       breadcrumb ticket 15 draws is only read by someone who saw it change
-- [ ] The matrix carries its own structure: rows are disputes and columns are agent jurors, and a
+- [x] The matrix carries its own structure: rows are disputes and columns are agent jurors, and a
       cell is announced with the core dispute ID and the roster nickname it belongs to. A cell
       announcing only `✓ COHERENT` has dropped the two facts that make it a measurement
-- [ ] The glyphs are never announced as punctuation: `✓`, `✕`, `∅` and `⋯` are hidden from the
+- [x] The glyphs are never announced as punctuation: `✓`, `✕`, `∅` and `⋯` are hidden from the
       accessible tree and the word carries the state — beside the glyph in the matrix cell, and in the
       accessible name where the surface has no room for it, as on ticket 16's phone slot. This follows
       from ADR-0006 rather
       than adding to it — the glyph is the visual half of a pair whose other half is already text
-- [ ] The state words are uppercased in CSS and not in the DOM, so `COHERENT` is announced as a word
+- [x] The state words are uppercased in CSS and not in the DOM, so `COHERENT` is announced as a word
       rather than spelled out a letter at a time
-- [ ] A not-drawn cell announces the legend's own words, "not drawn", and nothing else — no latency,
+- [x] A not-drawn cell announces the legend's own words, "not drawn", and nothing else — no latency,
       no coherence state, no glyph. It never announces as blank, as empty, or as silence: silence is
       what ticket 13's Unknown cell and a rendering failure also sound like, and those two words are
       all that keeps not drawn apart from failed to act for a reader who cannot see that one is the
       quietest thing on the page and the other the loudest
-- [ ] The rails are decoration and are hidden from the accessible tree. The latency beside each is
+- [x] The rails are decoration and are hidden from the accessible tree. The latency beside each is
       already the accessible content, and it reaches a reader in seconds or minutes rather than as
       the fraction of a window this page refuses to show anyone — see ADR-0005
-- [ ] The rail keys reach a reader as the words they stand for rather than as the letters `R` and
+- [x] The rail keys reach a reader as the words they stand for rather than as the letters `R` and
       `C`, and a vote count on a cell holding more than one vote ID says what it is counting
-- [ ] The `prefers-reduced-motion` block ticket 14 vendors with `tokens/motion.css` is confirmed to
+- [x] The `prefers-reduced-motion` block ticket 14 vendors with `tokens/motion.css` is confirmed to
       still bite after adoption: it collapses the duration tokens and its universal rule catches an
       animation written inside a component, not only one driven by a token
-- [ ] No state is carried by motion alone. With motion off a live row is still a glyph, a word and a
+- [x] No state is carried by motion alone. With motion off a live row is still a glyph, a word and a
       flag pill, and a figure that animates on refresh still lands on the value it would have shown
-- [ ] The refresh ticket 12 runs while a dispute is unfinalised does not change figures under a
+- [x] The refresh ticket 12 runs while a dispute is unfinalised does not change figures under a
       reader in silence. A polite live region announces the transitions worth hearing — a draw
       committing or revealing, a dispute finalising, ticket 13's banner appearing or clearing — and
       never re-announces the matrix
-- [ ] A refresh moves nothing: a keyboard or screen reader user parked on a cell, on a row header or
+- [x] A refresh moves nothing: a keyboard or screen reader user parked on a cell, on a row header or
       on the retry action is still there after the data under them changes
-- [ ] The `role="status"` regions already on the page are reviewed against that rule. A live region
+- [x] The `role="status"` regions already on the page are reviewed against that rule. A live region
       is for content that changes; a block carrying a heading and a paragraph from first render is
       page furniture, and announcing it on load spends the reader's attention on something that is
       not news
-- [ ] Zoomed until the viewport is as narrow as the `Mobile.dc.html` artboard, the page reaches the
+- [x] Zoomed until the viewport is as narrow as the `Mobile.dc.html` artboard, the page reaches the
       phone treatment ticket 16 builds — one card per dispute — rather than clipping the last
       columns or leaving a reader to scroll the whole page sideways. Zoom and a phone have to land
       in the same place: a zoomed desktop reports the same width, so a breakpoint that only answers
@@ -124,7 +124,7 @@ states and the not-drawn dot), `../canvas/Errors.dc.html:42-64` (the banner and 
       raised, at either density. `DESIGN_PROMPT.md:195` makes the desktop dense matrix the primary context,
       and a number that is scannable is one still whole at the reader's text size — which is where
       ticket 17's compact cell, half the height of the ordinary one, is the case that bites
-- [ ] The sweep leaves a record of which surfaces were checked, what was found on each and what
+- [x] The sweep leaves a record of which surfaces were checked, what was found on each and what
       changed. Where a check can become a test in the existing Vitest and Testing Library suite — a
       cell's accessible name, the not-drawn wording, focus surviving a refresh — it is written as
       one, so it stays true rather than having been true once
@@ -332,3 +332,34 @@ Two things that are not contrast and are yours:
   trade — but it means a caveat that a sighted reader gets from the footnote below the grid, a
   screen-reader user gets from the link. Worth confirming it reads well rather than as one long
   unbroken name.
+
+## Outcome, 2026-08-26
+
+Done, with one criterion explicitly not met and one correction to this ticket's own premises.
+
+**Not met: the text-size criterion.** Every `--type-*` token in the vendored system is an
+absolute px size, as are the thirteen local `font-size` overrides, so a reader who raises their
+browser's default font size gets no change at all — nothing clips because nothing grows. Page
+*zoom* works and the breakpoints follow it, so the criterion above it is met. Honouring a
+text-size preference is a two-part change: the tokens (safe on their own — at a 16px base the
+`rem` conversion renders identically) and the fixed-px boxes holding that text (the phone's 52px
+slot with `nowrap` inside a card that clips, the 148px cell, `AgentJurorDraws`' fixed `colgroup`,
+the 26px and 36px avatars). Moving the first without the second *creates* the clipping this
+criterion forbids, so it was left whole rather than half-done. `docs/contrast.md` § What is still
+not honoured carries the detail.
+
+**Three of this ticket's own figures were wrong**, found while inventorying the sites and
+corrected in `docs/contrast.md`: the failure banner's `FactKey` is `textPending`, not `stateFail`;
+the `$loss` amber in `Marginals` is 11px on the *page*, not 9px on a card; and the absent-figure
+em dashes are 20px and 13px in `AgentJurorEmpty`, not 30px in `AgentJurorPage` — there is no 30px
+anywhere in `src/`. The compact cell's glyph is 12px and its duration 13px, not 11 and 11.5.
+
+**And the contrast baseline was better than the trap said, in the half that matters.** All four
+dark accents clear 4.5:1 everywhere including on their own washes; the numbers `CLAUDE.md` quotes
+are the light theme's, and the light theme is wired to nothing. Two things failed that no ticket
+had named: `--text-4` everywhere it inks, and the violet glow, which `Shell.tsx` documents as
+carrying no contrast anything depends on and which is the actual ground under the top 720px of
+every view.
+
+Records: `docs/contrast.md` (the numbers, both themes) and `docs/accessibility.md` (what was
+checked on each surface, what changed, and the four things deliberately left).

@@ -1,6 +1,7 @@
 import type { ReactNode } from "react";
 import styled from "styled-components";
 import type { Provenance } from "../chrome/provenance";
+import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import { COURT_ID } from "../disputes/court-subgraph";
 
@@ -165,6 +166,7 @@ const provenance: Provenance = {
 };
 
 export function MethodPage() {
+  useDocumentTitle("Method");
   return (
     <View provenance={provenance} measure="prose">
       <Header>

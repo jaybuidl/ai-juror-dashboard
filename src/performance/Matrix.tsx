@@ -523,7 +523,33 @@ export type MatrixProps = {
  * row must be the loudest thing in the grid, not the emptiest — the emptiest thing here already
  * means something else, and means it about an agent juror.
  */
-function UnreadCell({ density }: { density: Density }) {
+/**
+ * Which draw this is, said at the head of every cell.
+ *
+ * A cell carries a state and two latencies and nothing that says whose they are: the grid says
+ * that, in two dimensions, to a reader who can see it. `scope` gets a screen reader most of the
+ * way — the row header and the column header are associated — but they are announced on crossing
+ * into a new row or column, not on every cell, and not at all in the linear browse mode most
+ * reading happens in. A cell that announces "Coherent, reveal latency 46s" has dropped the two
+ * facts that make it a measurement rather than a number.
+ *
+ * The roster nickname, never the resolved one. The column header above displays whatever ENS
+ * returned, because that is the name its operator publishes; this is the name the dashboard
+ * keys, routes and joins on, and CONTEXT.md is explicit that the two are different things.
+ */
+function CellWhere({ nickname, disputeId }: { nickname: string; disputeId: number }) {
+  return <VisuallyHidden>{`${nickname}, dispute ${disputeId}. `}</VisuallyHidden>;
+}
+
+function UnreadCell({
+  density,
+  nickname,
+  disputeId,
+}: {
+  density: Density;
+  nickname: string;
+  disputeId: number;
+}) {
   const compact = density === "compact";
 
   return (
@@ -532,6 +558,7 @@ function UnreadCell({ density }: { density: Density }) {
       $filled={UNREAD_PRESENTATION.filled}
       $compact={compact}
     >
+      <CellWhere nickname={nickname} disputeId={disputeId} />
       {!compact && (
         <CellHead>
           <Glyph $tone={UNREAD_PRESENTATION.tone} aria-hidden="true">
@@ -582,7 +609,19 @@ function UnreadCell({ density }: { density: Density }) {
  * The `R` key goes because one latency needs no key to name it. The commit figure is not lost
  * with it — the dispute row carries the median over that row's draws, per the corner cell.
  */
-function DrawCell({ draw, scanned, density }: { draw: Draw; scanned: boolean; density: Density }) {
+function DrawCell({
+  draw,
+  scanned,
+  density,
+  nickname,
+  disputeId,
+}: {
+  draw: Draw;
+  scanned: boolean;
+  density: Density;
+  nickname: string;
+  disputeId: number;
+}) {
   const presentation = presentationOf(draw.state);
   const figure = revealFigureOf(draw);
   const commit = commitFigureOf(draw, scanned);
@@ -590,6 +629,7 @@ function DrawCell({ draw, scanned, density }: { draw: Draw; scanned: boolean; de
 
   return (
     <CellBox $tone={presentation.tone} $filled={presentation.filled} $compact={compact}>
+      <CellWhere nickname={nickname} disputeId={disputeId} />
       {!compact && (
         <CellHead>
           <Glyph $tone={presentation.tone} aria-hidden="true">
@@ -816,11 +856,36 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
             )}
           </Legend>
 
-          <TableScroll $compact={compact}>
+          {/* Focusable and named, because it scrolls. The comfortable grid is wider than most
+              viewports and this box is what moves; a scroll container with nothing focusable
+              inside it that a keyboard can reach is a region only a pointer can pan (WCAG 2.1.1),
+              and the far columns simply do not exist for anyone else. `role="region"` is what
+              makes the name announceable, and the name is what makes the new tab stop explicable
+              rather than a mystery stop on an empty box. */}
+          <TableScroll
+            $compact={compact}
+            role="region"
+            aria-label="The matrix, scrollable"
+            tabIndex={0}
+          >
             <Table $compact={compact}>
+              {/* The table's own name, and the first child of <table> because a caption may be
+                  nothing else. Without it the grid announces as "table" and a reader has to
+                  infer the two axes from the headers. The corner cell below carries prose that
+                  is close to this, but it is prose about the *density* and it is drawn; this
+                  says what the thing is. */}
+              <VisuallyHidden as="caption">
+                The matrix. One row per dispute, newest first; one column per agent juror, in roster
+                order; one cell per draw.
+              </VisuallyHidden>
               <thead>
                 <tr>
-                  <CaptionCell scope="col" $compact={compact}>
+                  {/* No `scope`. It is the corner cell — it sits above the row headers and to the
+                      left of the column headers, and heads neither. With `scope="col"` on it the
+                      paragraph inside became the declared column header of every row header in
+                      the grid, so a reader moving down the disputes met this sentence again and
+                      again as though it named them. */}
+                  <CaptionCell $compact={compact}>
                     {/* Read off the model rather than reduced here. It is a court-wide count,
                         and those live on `CourtTotals` beside the ones the stat tiles print —
                         a caption that reduced the rows itself would be a second definition of
@@ -967,7 +1032,14 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                         // cells are all null, so testing for null first would draw six "not
                         // drawn" dots — an unread state rendering as a fact about the court.
                         if (!row.read) {
-                          return <UnreadCell key={agentJuror.address} density={density} />;
+                          return (
+                            <UnreadCell
+                              key={agentJuror.address}
+                              density={density}
+                              nickname={agentJuror.nickname}
+                              disputeId={row.dispute.id}
+                            />
+                          );
                         }
 
                         return cell === null ? (
@@ -976,6 +1048,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                           // stay unconfusable however far the matrix is compressed, which is
                           // what compacting the *drawn* cell towards it must never cost.
                           <EmptyCell key={agentJuror.address} $compact={compact}>
+                            <CellWhere nickname={agentJuror.nickname} disputeId={row.dispute.id} />
                             <Dot aria-hidden="true" />
                             <VisuallyHidden>Not drawn</VisuallyHidden>
                           </EmptyCell>
@@ -985,6 +1058,8 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                             draw={cell}
                             scanned={commitCoverage.read}
                             density={density}
+                            nickname={agentJuror.nickname}
+                            disputeId={row.dispute.id}
                           />
                         );
                       })}

@@ -2,6 +2,7 @@ import styled from "styled-components";
 import type { AgentJurorIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
 import { narrow } from "../styles/breakpoints";
+import { VisuallyHidden } from "../styles/hidden";
 import { type Tone, toneInk, toneLine, toneWash } from "../styles/tones";
 import { commitFigureOf, type Figure, presentationOf, revealFigureOf } from "./cell";
 import type { DisputeReading, PanelColumn } from "./dispute-detail";
@@ -396,12 +397,20 @@ function PanelMember({
           </Mark>
         </Who>
         <Measures>
+          {/* The key is drawn as a letter and said as the phrase, which is the pattern the
+              matrix already uses for the same two keys. It was a `title` here, and a `title` is
+              a tooltip: it needs a pointer hovering a non-focusable span, so a keyboard reader
+              cannot reach it, a touch reader cannot reach it, and screen readers disagree about
+              whether to announce it at all. The letter is the abbreviation; the phrase is what
+              it abbreviates, and both should exist. */}
           <Measure>
-            <MeasureKey title="Reveal latency">R</MeasureKey>
+            <MeasureKey aria-hidden="true">R</MeasureKey>
+            <VisuallyHidden>Reveal latency</VisuallyHidden>
             <MeasureValue $tone={reveal.tone}>{reveal.text}</MeasureValue>
           </Measure>
           <Measure>
-            <MeasureKey title="Commit latency">C</MeasureKey>
+            <MeasureKey aria-hidden="true">C</MeasureKey>
+            <VisuallyHidden>Commit latency</VisuallyHidden>
             <MeasureValue $tone={commit.tone}>{commit.text}</MeasureValue>
           </Measure>
           {choice !== null && <Choice $tone={presentation.tone}>{choice}</Choice>}

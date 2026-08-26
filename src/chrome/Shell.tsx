@@ -133,6 +133,27 @@ function useScrollForLocation(): void {
 
     const scrolled = document.scrollingElement?.scrollTop ?? 0;
     if (scrolled > 0) window.scrollTo({ top: 0 });
+
+    /*
+     * And take the reader with it. A route change here swaps a subtree and nothing else, so a
+     * keyboard or screen-reader user is left focused on a link inside a document that no longer
+     * exists — or, once React unmounts it, on `<body>`, which is the top of the tab order and
+     * tells them nothing about where they have arrived. A real page load would have put them at
+     * the start of the new document; this does the same thing.
+     *
+     * `<main>` and not the heading, because focusing the landmark starts the reading at the top
+     * of the view and leaves the heading to be announced as part of it. It runs under the same
+     * two guards as the scroll above, and for the same reasons: not on first render, where the
+     * visitor is already where they asked to be and focus belongs to the browser's own chrome;
+     * and not on `POP`, where the browser is restoring a position the reader chose.
+     *
+     * The other half of the announcement is `useDocumentTitle`, which each view calls for
+     * itself. Neither half is enough alone: a title change is what a reader hears on arrival
+     * and reads back out of a history menu, and this is what decides where they are standing
+     * once they get there.
+     */
+    const main = document.querySelector("main");
+    if (main instanceof HTMLElement) main.focus();
   }, [pathname, hash, navigationType]);
 }
 

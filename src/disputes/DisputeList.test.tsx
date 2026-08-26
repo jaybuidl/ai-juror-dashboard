@@ -272,13 +272,15 @@ describe("DisputeList", () => {
     // list shifts the moment the titles arrive.
     renderList({ slotsFor: () => ({}) });
 
-    // The row is id, title, second line — in that order, and the title slot is present
-    // even with nothing in it, which is the whole point of this test.
+    // The row is id, the hidden separator ticket 18 put between the id and the title, the
+    // title, then the second line — in that order, and the title slot is present even with
+    // nothing in it, which is the whole point of this test. The separator carries no layout
+    // (it is absolutely positioned) but it is a child, so it counts here.
     const untitled = row(163);
 
-    expect(untitled.children).toHaveLength(3);
+    expect(untitled.children).toHaveLength(4);
 
-    const title = getComputedStyle(untitled.children[1] as HTMLElement);
+    const title = getComputedStyle(untitled.children[2] as HTMLElement);
 
     // One line reserved, and the same multiple the line box uses, so an empty title holds
     // the row open to exactly the height a filled one would take.

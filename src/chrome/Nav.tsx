@@ -1,4 +1,4 @@
-import { useEffect, useId, useState } from "react";
+import { useEffect, useId, useRef, useState } from "react";
 import { Link, useLocation } from "react-router";
 import styled, { css } from "styled-components";
 import { useIsNarrow } from "../styles/breakpoints";
@@ -265,14 +265,37 @@ function FoldedNav({ pathname }: { pathname: string }) {
     setOpen(false);
   }
 
+  const button = useRef<HTMLButtonElement | null>(null);
+  // Whether the panel was dismissed rather than navigated away from. Only a dismissal gets the
+  // focus back: a navigation is already taking the reader somewhere, and `Shell` moves focus
+  // into the new view, so grabbing it for a button in the old chrome would fight that.
+  const dismissed = useRef(false);
+
   useEffect(() => {
     if (!open) return;
 
     const close = (event: KeyboardEvent) => {
-      if (event.key === "Escape") setOpen(false);
+      if (event.key !== "Escape") return;
+      dismissed.current = true;
+      setOpen(false);
     };
     document.addEventListener("keydown", close);
     return () => document.removeEventListener("keydown", close);
+  }, [open]);
+
+  useEffect(() => {
+    if (open || !dismissed.current) return;
+    dismissed.current = false;
+
+    /*
+     * Escape unmounts the panel, and with it whichever of its four links had focus — so focus
+     * fell to `<body>`, silently, at the top of the tab order. The comment above says Escape
+     * exists so that a keyboard reader is not stuck inside the disclosure; without this it only
+     * moved the problem one step later, because the reader is then somewhere they did not
+     * choose with nothing on screen saying where. Focus belongs on the control that owns the
+     * panel, which is also where a reader who opened it started.
+     */
+    button.current?.focus();
   }, [open]);
 
   return (
@@ -285,6 +308,7 @@ function FoldedNav({ pathname }: { pathname: string }) {
               for width. */}
           <NarrowReadOnly>Read only</NarrowReadOnly>
           <MenuButton
+            ref={button}
             type="button"
             aria-expanded={open}
             aria-controls={panelId}

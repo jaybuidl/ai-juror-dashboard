@@ -150,7 +150,14 @@ const Retry = styled.button`
   cursor: pointer;
 
   &:focus-visible {
-    outline: ${({ theme }) => theme.focusRing};
+    /* "2px solid" and not the colour alone. This rule used to interpolate the focus-ring colour
+       straight into the outline shorthand, which is valid CSS whose outline-style then falls
+       back to its initial value, none — so no outline was ever drawn here. Under forced colours
+       that mattered: the UA drops box-shadows, this rule outranks the CanvasText restoration in
+       global.ts on specificity, and the one control on a page that had failed to load was left
+       with no focus indicator at all. Same shape as the borderCardColor naming note in theme.ts:
+       a colour where a shorthand was wanted draws nothing and warns about nothing. */
+    outline: 2px solid ${({ theme }) => theme.focusRing};
     outline-offset: 3px;
   }
 `;

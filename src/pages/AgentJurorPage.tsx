@@ -4,6 +4,7 @@ import { Breadcrumb } from "../chrome/Breadcrumb";
 import { Notice } from "../chrome/Failure";
 import { type Failures, olderOf, present } from "../chrome/failures";
 import { type Provenance, rangeOf } from "../chrome/provenance";
+import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import type { Dispute } from "../disputes/disputes";
 import type { DisputesView } from "../disputes/useDisputes";
@@ -21,6 +22,7 @@ import { ensNameOf } from "../roster/agent-jurors";
 import { ensFallbackOf } from "../roster/ens-fallback";
 import type { RosterView } from "../roster/useRoster";
 import { narrow } from "../styles/breakpoints";
+import { VisuallyHidden } from "../styles/hidden";
 
 /**
  * One agent juror on its own: what it runs, what it has done, and what it has been paid.
@@ -574,6 +576,8 @@ export type AgentJurorViewProps = AgentJurorPageProps & {
  */
 export function AgentJurorPage(props: AgentJurorPageProps) {
   const { nickname } = useParams();
+  // The roster nickname from the path, for the reason DisputePage titles with the raw id.
+  useDocumentTitle(nickname ?? "Agent juror");
   return <AgentJurorView {...props} pathNickname={nickname} now={Date.now()} />;
 }
 
@@ -658,7 +662,15 @@ export function AgentJurorView({
                 <Facts>
                   <Fact $accent>{agentJuror.stack.label}</Fact>
                   <Fact>{ensNameOf(agentJuror)}</Fact>
-                  <Fact title={agentJuror.address}>{shortAddress(agentJuror.address)}</Fact>
+                  {/* The short form is drawn; the whole address is said. It was reachable only
+                      through a `title` tooltip, so the one identifier that distinguishes this
+                      agent juror from any other was available to a mouse and to nothing else.
+                      The abbreviation stays visible — the full 42 characters would take the
+                      line — and the Arbiscan link beside it goes to the same address. */}
+                  <Fact title={agentJuror.address}>
+                    <span aria-hidden="true">{shortAddress(agentJuror.address)}</span>
+                    <VisuallyHidden>Address {agentJuror.address}</VisuallyHidden>
+                  </Fact>
                   <OnChain
                     href={`https://arbiscan.io/address/${agentJuror.address}`}
                     target="_blank"

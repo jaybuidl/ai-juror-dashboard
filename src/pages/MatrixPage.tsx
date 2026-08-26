@@ -5,10 +5,12 @@ import { Hero } from "../chrome/Hero";
 import type { Provenance } from "../chrome/provenance";
 import { rangeOf } from "../chrome/provenance";
 import { StatTiles } from "../chrome/StatTiles";
+import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import { DisputeList } from "../disputes/DisputeList";
 import type { DisputesView } from "../disputes/useDisputes";
 import { arbitrumSource } from "../performance/arbitrum";
+import { CourtAnnouncer } from "../performance/CourtAnnouncer";
 import { DisputeCards } from "../performance/DisputeCards";
 import { densityOf } from "../performance/density";
 import { LatencyStrip } from "../performance/LatencyStrip";
@@ -547,6 +549,8 @@ function provenanceOf(
 }
 
 export function MatrixPage(props: MatrixPageProps) {
+  // null: the matrix is what this dashboard is, not a section of it.
+  useDocumentTitle(null);
   const { roster, disputes, performance } = props;
   const measured = performance.performance;
   const core = coreFailureOf(props);
@@ -577,6 +581,10 @@ export function MatrixPage(props: MatrixPageProps) {
 
   return (
     <View provenance={provenanceOf(props, isNarrow, isDense)} failures={failures}>
+      {/* First in the view and empty almost always. It says what moved between two reads of a
+          court that re-reads itself every five seconds, so a reader who cannot see a cell change
+          is told that one did. It never contains a figure — see the component. */}
+      <CourtAnnouncer performance={measured ?? null} />
       <Hero narrow={isNarrow} />
       <StatTiles
         totals={measured?.totals ?? null}
@@ -602,7 +610,14 @@ export function MatrixPage(props: MatrixPageProps) {
             Which is also why it has two forms. Describing cells and coherence above a
             page that is showing neither, because the read failed, would be the same
             mistake in the other direction. */}
-      <Caveat role="status">
+      {/* Not a live region, and it was one until ticket 18. `role="status"` means "this is news",
+          and it carries `aria-atomic` with it — so a hundred and twenty words of standing
+          explanation were registered as a status message, announced on every load, and announced
+          again in full whenever any branch inside flipped: the first read landing, the viewport
+          crossing the narrow breakpoint, the court crossing into the compact density. A live
+          region is for content that changes. This is furniture, and a reader who meets it as an
+          interruption learns to talk over the regions that are not. */}
+      <Caveat>
         {measured ? (
           <>
             <CaveatTitle>Three measures, and what is missing from them</CaveatTitle>

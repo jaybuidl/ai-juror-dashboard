@@ -2,6 +2,7 @@ import { Fragment, type ReactNode } from "react";
 import { Link } from "react-router";
 import styled from "styled-components";
 import { Notice } from "../chrome/Failure";
+import { VisuallyHidden } from "../styles/hidden";
 import { type Tone, toneInk, toneLine } from "../styles/tones";
 import type { Dispute, Ruling } from "./disputes";
 
@@ -123,6 +124,14 @@ const DisputeId = styled(Link)`
     outline: 2px solid ${({ theme }) => theme.focusRing};
     outline-offset: 3px;
   }
+
+  /* Room for the matrix's frozen column header, which is the one thing that can sit on top of
+     this link. Past forty disputes that header is sticky, and tabbing down the dispute column
+     scrolls each link flush to the top of the scrollport — underneath it. The focus ring is
+     then drawn behind an opaque header and a keyboard reader loses their place with nothing on
+     screen to say where it went (WCAG 2.4.11). Costless on the standalone dispute index, where
+     nothing is sticky and nothing scrolls this into view. */
+  scroll-margin-top: 8rem;
 `;
 
 /*
@@ -412,6 +421,14 @@ export function DisputeRow({
       <DisputeId to={`/disputes/${dispute.id}`} title={`Dispute ${dispute.id}`}>
         {dispute.id}
       </DisputeId>
+      {/* A separator that exists only in the accessible name. The id and the title sit in
+          separate grid tracks with a `column-gap` between them, and a gap contributes nothing
+          to an accessible name — so dispute 151 announced as "151x402 escrow dispute", one
+          run-on string, and the matrix's own tests had to find rows by title because there was
+          no word boundary after the id to match on. It cannot go inside the link: the link's
+          name is the bare id by design, and anything added there renames the `rowheader` around
+          it and every cell that answers to it (see the note above). So it goes between them. */}
+      <VisuallyHidden>{", "}</VisuallyHidden>
       {/* Always rendered, empty or not — see `Title`. An empty one holds the line so the
           row does not change height when a title arrives or fails to. */}
       <Title title={titleText}>{isFilled(slots.title) ? slots.title : null}</Title>
@@ -420,7 +437,17 @@ export function DisputeRow({
       <Details>
         {details.map((detail, index) => (
           <Fragment key={detail.key}>
-            {index > 0 && <Separator aria-hidden="true">·</Separator>}
+            {/* The middot is drawn and the comma is heard. Accessible-name computation
+                concatenates adjacent nodes and normalises the whitespace out from between them,
+                so without this the second line announced as "EscrowRuling 1Panel 2" — three
+                facts as one word. The visible separator cannot do the job, because "·" spoken is
+                "middle dot" on every screen reader that says it at all. */}
+            {index > 0 && (
+              <>
+                <Separator aria-hidden="true">·</Separator>
+                <VisuallyHidden>{", "}</VisuallyHidden>
+              </>
+            )}
             {detail.node}
           </Fragment>
         ))}

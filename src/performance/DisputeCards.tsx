@@ -359,7 +359,9 @@ const SlotDot = styled.span`
   width: 3px;
   height: 3px;
   border-radius: 50%;
-  background-color: ${({ theme }) => theme.textPending};
+  /* theme.textDisabled, for the reason Legend's own Dot gives: the two are one mark at two
+     sizes, and they cannot drift apart in ink any more than they may in meaning. */
+  background-color: ${({ theme }) => theme.textDisabled};
 `;
 
 const Empty = styled.p`
@@ -640,7 +642,12 @@ function Slot({
   if (draw === null) {
     return (
       <SlotBox>
-        <VisuallyHidden>{nickname}: Not drawn</VisuallyHidden>
+        {/* The full stop is doing the same job as the comma the matrix's row header carries:
+            the six slots are siblings with no whitespace between them, and accessible-name
+            computation normalises whitespace out from between adjacent nodes — so without it the
+            strip announced as one run-on string and a reader could not tell where one agent
+            juror's reading ended and the next began. */}
+        <VisuallyHidden>{`${nickname}: Not drawn. `}</VisuallyHidden>
         <SlotDot aria-hidden="true" />
       </SlotBox>
     );
@@ -683,10 +690,10 @@ function SlotState({
   return (
     <SlotBox $tone={presentation.tone} $filled={filled}>
       {/* First, so a screen reader hears which agent juror and what happened before the
-          duration it happened in. */}
-      <VisuallyHidden>
-        {nickname}: {presentation.word},
-      </VisuallyHidden>
+          duration it happened in — and terminated, so the six slots do not run together into
+          one string. The blank slot above is punctuated the same way; the two used to disagree,
+          one ending in a comma and one in nothing. */}
+      <VisuallyHidden>{`${nickname}: ${presentation.word}, `}</VisuallyHidden>
       <SlotAvatar
         $tone={presentation.tone}
         $awaiting={awaiting}

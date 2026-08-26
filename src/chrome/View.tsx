@@ -49,6 +49,10 @@ const Main = styled.main`
   ${narrow} {
     gap: ${({ theme }) => theme.space9};
   }
+
+  &:focus {
+    outline: none;
+  }
 `;
 
 export function View({
@@ -64,7 +68,13 @@ export function View({
 }) {
   return (
     <Frame $measure={measure}>
-      <Main>
+      {/*
+        `tabIndex={-1}` so `Shell` can move focus here after a route change. Not reachable by
+        Tab — a negative index is programmatic focus only — so it costs no tab stop, and the
+        ring is suppressed below because a container focused by script is not a control anyone
+        pointed at and drawing a 2px cyan box around the whole view would say it was.
+      */}
+      <Main tabIndex={-1}>
         <FailureBanner failures={failures} />
         {/* Below the banner and above the content, in the same place on every view — so the
             reader learns one location for "something is not right here" and the two tiers are

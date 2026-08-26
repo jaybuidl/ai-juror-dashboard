@@ -1,6 +1,7 @@
 import styled from "styled-components";
 import type { Failures } from "../chrome/failures";
 import type { Provenance } from "../chrome/provenance";
+import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import { ensFallbackOf } from "../roster/ens-fallback";
 import { Roster } from "../roster/Roster";
@@ -81,6 +82,7 @@ function provenanceOf(roster: RosterView): Provenance {
 }
 
 export function AgentJurorsPage({ roster }: { roster: RosterView }) {
+  useDocumentTitle("The agent jurors");
   return (
     <View provenance={provenanceOf(roster)} failures={failuresOf(roster)}>
       <Header>

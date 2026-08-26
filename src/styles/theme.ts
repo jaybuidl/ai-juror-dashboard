@@ -48,6 +48,15 @@ export const theme = {
   textBody: "var(--text-body)",
   textMeta: "var(--text-meta)",
   textPending: "var(--text-pending)",
+  /*
+   * The dimmest step, and the one thing on this page that is *meant* to be near-invisible: the
+   * 3px "not drawn" dot, and nothing else. It is not text and is exempt from 4.5:1 by
+   * construction — a dot that cleared it would no longer be the emptiest mark in the matrix,
+   * which is the whole of what it says (ADR-0006). The meaning travels in the words "Not drawn"
+   * in the cell's accessible name. Reach for it only for a mark whose job is to be almost
+   * nothing; anything carrying a string wants `textPending` or brighter. See `docs/contrast.md`.
+   */
+  textDisabled: "var(--text-5)",
 
   // Cyan, and only for a value, a verified state, or focus. Not decoration.
   accent: "var(--accent)",

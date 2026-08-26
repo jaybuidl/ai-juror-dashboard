@@ -1,6 +1,7 @@
 import { Link, useLocation } from "react-router";
 import styled from "styled-components";
 import type { Provenance } from "../chrome/provenance";
+import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 
 /**
@@ -76,6 +77,7 @@ const provenance: Provenance = {
 };
 
 export function NotFoundPage() {
+  useDocumentTitle("Not found");
   const { pathname } = useLocation();
 
   return (
