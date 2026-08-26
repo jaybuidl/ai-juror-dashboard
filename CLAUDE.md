@@ -92,6 +92,21 @@ has **no panel yet** says so in words on both layouts, is counted separately on
 `CourtTotals.sparsity`, and `Panel 0` is gone. The three figures its header drops are the two
 reward sums and the commit median, so the caveat's compact branch borrows ticket 11's pointer for
 the first two — which is why that sentence says "wherever" rather than "below the breakpoint".
+**A later pass cut the matrix page's prose, and several paragraphs below describe elements it
+removed.** Read them as history. Gone from `/`: the caveat card titled "Three measures, and what
+is missing from them" (every claim in it was `/method`'s said a second time — checked claim by
+claim, including the appeal-period one, which that page puts better), the matrix's lede, the
+visible "The matrix" heading (the `h2` stays, visually hidden, because it names the section and is
+a stop in the heading order), and the reason paragraph under the median-reveal stat tile, whose
+dagger is a link carrying that reason in its own name now. The panel size went from the matrix row,
+the phone's card and the dispute view — a row is six cells and a card six slots, so the number
+counted what the reader was already looking at, and on dispute 155 it stood beside a `‡ Lone panel`
+flag saying the same thing better. It survives on `/agent-jurors/:nickname`, which has no cells to
+count and reads coherence against it. The headline names the dashboard rather than stating a
+finding, and `aletheia` sits second from the right — a layout call about one rose column, **not** a
+ranking, as `ROSTER` says at length. So: where a sentence below names the caveat card, its
+branches, or a panel pill, it is describing what was there.
+
 The design work behind it (glossary, seven ADRs, a spec, eighteen tickets) came out of a full
 grilling session and a later pass that rebuilt the tracker on the finished design — ADR-0007 is the
 one that came from implementation rather than design, and it overrode the spec. Start by reading, not by
@@ -631,7 +646,9 @@ Things that cost real effort to discover and are easy to get wrong again:
 - **Two layouts share their model by construction and their *prose* by hand, and the prose is
   where they drift.** Ticket 16 gave the matrix a second rendering; `cell.ts`, `row-flags.ts`,
   `Legend.tsx` and `Footnotes.tsx` are shared so the states, the flag precedence and the caveats
-  cannot fork — and review then found five sentences copied from the desktop that were false on
+  cannot fork. **The caveat card this entry is worked through no longer exists** (§ Status) — the
+  rule outlived it, and the shape to look for is any sentence naming a cell, a column, a row or an
+  element of the chrome — and review then found five sentences copied from the desktop that were false on
   the phone. The provenance footer named the latency strip's comparison band on a page with no
   strip (and the comment beside the strip's removal claimed otherwise); the caveat card said "each
   column header" and "a blank cell" on a layout with neither, two hundred lines from a
