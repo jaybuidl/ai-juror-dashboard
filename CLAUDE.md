@@ -578,6 +578,20 @@ Things that cost real effort to discover and are easy to get wrong again:
   named for what it actually asks — and the caveat card has a third branch. The next reduction adds
   a fourth: the question to ask of any sentence here is not "which layout" but "is the figure this
   names on the screen the reader has".
+- **Narrowing a set is a change to every sentence quantified over it, and gating the figure does
+  not gate the prose.** The reverse direction of the trap above, found by the 11 + 17 merge and
+  the one no gate on either branch could have caught. Ticket 17 split `Sparsity.undrawnDisputes`
+  out of the read disputes, because a dispute the court has not drawn a panel for has no draw in
+  *any* column — and it held those rows out of `Sparsity.emptyColumns`, whose own comment calls
+  that "the one figure not gated on it". It was not: ticket 11 had built a page that states the
+  same quantity **in words** — "across the N disputes whose draws have been read, this agent
+  juror has not come up" — on the one view whose entire subject is a column being empty. Merged,
+  a court in its opening hours would tell a reader that all six agent jurors had been passed over
+  on the strength of a draw that has not happened, which is exactly the misreading `undrawnDisputes`
+  exists to close. Both parents were correct alone, 809 tests were green, and nothing but reading
+  found it. So when a ticket narrows a set, the sweep is not "which figures are computed from it"
+  — the compiler finds those — but **which sentences anywhere are quantified over it**, including
+  on views that ticket never opened. The tell is a number in prose with a noun after it.
 - **A page can say something true of every figure on it and false about the thing it is naming.**
   Ticket 11's footer told a reader of `/agent-jurors/nope` that "the court has drawn it in none of
   the disputes read" and that "not being drawn is the measured record" — sentences written for
