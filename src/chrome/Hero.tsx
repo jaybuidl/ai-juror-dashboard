@@ -48,13 +48,12 @@ const Headline = styled.h1`
 `;
 
 const Deck = styled.p`
-  /* The page's one prose measure, shared with the matrix's lede below it and with the width the
-     method page is set at. It used to be 62ch, which at this element's 19px came to 719px while
-     the lede under the grid came to 664 at 68ch of 16px — two measures that were each defensible
-     alone and visibly disagreed on one page, against a body that is now 1328px wide. A ch unit
-     is a function of the font size it is declared at, so two elements set at different sizes
-     cannot share a measure expressed in one. */
-  max-width: ${({ theme }) => theme.containerNarrow};
+  /* No measure. The deck takes the body's width — about 145 characters a line at this size,
+     past the 45-75 that suits a page read through, and set that way on the maintainer's call
+     after 62ch and then 1000px: it is three sentences under a full-width headline, read in one
+     glance, and any narrower column left a ragged edge against the full-width strip and legend
+     below it. Not rendered at all below the narrow breakpoint, so this is a desktop measure or
+     none. */
   font: ${({ theme }) => theme.typeBodyLg};
   color: ${({ theme }) => theme.textBody};
   text-wrap: pretty;
