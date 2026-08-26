@@ -1,3 +1,4 @@
+import { Link } from "react-router";
 import styled, { css } from "styled-components";
 import { Notice } from "../chrome/Failure";
 import { DisputeRow, type DisputeRowSlots } from "../disputes/DisputeList";
@@ -236,13 +237,29 @@ const AgentNames = styled.span`
   min-width: 0;
 `;
 
-const AgentNickname = styled.span<{ $drawn: boolean }>`
+/* A link to that agent juror's own view, and no `aria-label` on it. The name of a
+   `columnheader` is built from its content, so labelling the link would rename the column and
+   with it every cell that answers to it — the same trap `DisputeRow` records against the
+   dispute id. The text is the name; the destination is where the six figures below it are
+   printed at length. Keyed on the roster nickname while it displays the resolved one. */
+const AgentNickname = styled(Link)<{ $drawn: boolean }>`
   font: ${({ theme }) => theme.typeTitle3};
   letter-spacing: ${({ theme }) => theme.trackingTitle};
   color: ${({ theme, $drawn }) => ($drawn ? theme.textHeading : theme.textMeta)};
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  text-decoration: none;
+
+  &:hover {
+    color: ${({ theme }) => theme.accent};
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.focusRing};
+    outline-offset: 3px;
+  }
 `;
 
 const AgentStack = styled.span`
@@ -860,7 +877,10 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                                 "Blaise". Keyed on the roster address regardless: the resolved
                                 name is a display name, and joining a matrix on one would key it
                                 on something an operator can change from a wallet. */}
-                            <AgentNickname $drawn={drawn}>
+                            <AgentNickname
+                              to={`/agent-jurors/${agentJuror.nickname}`}
+                              $drawn={drawn}
+                            >
                               {identity?.nickname ?? agentJuror.nickname}
                             </AgentNickname>
                             <AgentStack>

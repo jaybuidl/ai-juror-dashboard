@@ -150,7 +150,9 @@ function coreFailureOf({
   // Ticket 10's payouts, read from this same deployment — so an outage takes all four reads and
   // listing them separately would report one source as four faults. It ranks below every branch
   // above because it costs the least of them: two of the six figures in each column header,
-  // where those cost the matrix itself.
+  // where those cost the matrix itself. It costs less still on the two renderings that carry
+  // neither of those figures — the phone's card list and, since ticket 17, the compact density —
+  // so the ordering holds a fortiori rather than needing a case of its own.
   //
   // It ranks **above** the stale read below, though, and that ordering is load-bearing rather
   // than aesthetic. This is the only entry here with no second voice: a failed payout read
@@ -195,16 +197,22 @@ function coreFailureOf({
   // as the failure above and, unlike it, the column headers already say "Not read" where those
   // figures belong — so this is the second voice rather than the only one.
   //
-  // That second voice is the desktop's. Below the breakpoint there are no column headers and no
-  // payout figure at all, so on a phone this banner is the only voice *and* it reports the loss
-  // of something the reader was never shown. Ticket 13's rule tiers a failure by whether it costs
-  // a figure, and on this layout it costs none. Left as it stands rather than re-tiered inside a
-  // merge: it is a design call, and ticket 11 is where these two figures get a phone home.
+  // That second voice is the *comfortable* desktop's, and only that one: it is the single
+  // rendering of the three that still prints these two figures, so it is the only one whose
+  // header can say "Not read" about them. Below the breakpoint there are no column headers and no
+  // payout figure at all, so on a phone this banner is the only voice for it. Ticket 16 left the
+  // tier open on those grounds — a failure that costs a figure nobody was shown. Ticket 11
+  // settles it and the tier stands: the two sums now have a phone home on each agent juror's own
+  // view, which renders them at every width, so a phone reader who follows a nickname from
+  // `/agent-jurors` does lose a figure to this failure. It is one link away rather than on this
+  // page, and a banner that went quiet would leave them to find that out by arriving.
   //
-  // Ticket 17 leaves it on the same terms and for the same reason. Past forty disputes the column
-  // header keeps three of its six figures, so the compact density loses these two exactly as the
-  // phone does — and the wording above already says "below" rather than naming the column
-  // headers, which is the half ticket 16 fixed. The tier is the open question in both cases.
+  // Ticket 17's compact density is the same case a second time and takes the same answer. Past
+  // forty disputes the column header keeps three of its six figures, so these two leave this page
+  // exactly as they leave the phone — and they are reachable exactly as they are from the phone,
+  // on the agent juror view, which has one density and prints all six. What both readers lose is
+  // the figure on *this* page, which is why the wording above says "below" rather than naming the
+  // column headers: that half is ticket 16's, and it holds at either density.
   if (measured?.rewards.short === true) {
     return {
       read: {
@@ -615,21 +623,26 @@ export function MatrixPage(props: MatrixPageProps) {
                   so naming the two sums here would credit the phone with figures it does not
                   carry. Saying instead that they have not been read would be ticket 10's retired
                   falsehood in reverse: they were read, and a desktop reader is looking at them.
-                  Neither claim is available, so the phone makes none.
+                  Neither claim is available — but ticket 11 gave the phone branch a third thing
+                  to say, which is where the two sums *are*: each agent juror's own view prints all
+                  six figures at every width and at its one density, so the sentence points there
+                  rather than claiming or denying anything about this page.
 
                   The compact density is the third branch and the same rule again, one width up:
                   past forty disputes the column header keeps three of its six figures, so the
                   sentence naming six would describe a header the reader is not looking at. This
                   one *can* say where the commit median went, because it went somewhere on this
                   page — onto the dispute row — which is the difference between a reduction and
-                  an absence, and the reason the grid's corner cell says the same thing. */}
+                  an absence, and the reason the grid's corner cell says the same thing. The two
+                  reward sums went nowhere on this page, so that branch borrows the phone's
+                  pointer for them and for the same reason. */}
               {isNarrow
-                ? "Each card summarises one dispute, and each slot along its foot one agent juror's draw."
+                ? "Each card summarises one dispute, and each slot along its foot one agent juror's draw; what an agent juror amounts to across all of them, including what the court has paid it, is on that agent juror's own page."
                 : isDense
                   ? // No number in this sentence, deliberately: the threshold is a heuristic about
                     // screen height that is meant to be movable, and prose naming forty would go
                     // quietly false the day someone moved it.
-                    "Each column header summarises that agent juror's own draws in median reveal latency and coherence. With this many disputes the matrix is compacted, so the commit median moves onto each dispute's row and neither reward figure is shown."
+                    "Each column header summarises that agent juror's own draws in median reveal latency and coherence. With this many disputes the matrix is compacted, so the commit median moves onto each dispute's row and neither reward figure is shown; what the court has paid an agent juror is on that agent juror's own page."
                   : "Each column header summarises that agent juror's own draws in the same three measures, and states what that column has been paid: cumulative ETH and net PNK, which are context beside the measures rather than a fourth dimension anyone is ranked on."}{" "}
               No figure here is a fraction of a period's window. Coherence is asserted only where
               the court has ruled, a blank {isNarrow ? "slot" : "cell"} means an agent juror was not

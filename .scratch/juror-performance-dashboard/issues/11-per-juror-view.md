@@ -10,37 +10,37 @@ reveal-only latency profile at `:86-110`, the drawn-in table at `:113-134`),
 `../canvas/JurorEmpty.dc.html:56-97` (the agent juror never drawn), `../canvas/README.md` for
 provenance
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Each agent juror has its own route, linkable and reloadable, keyed on the roster nickname and not
+- [x] Each agent juror has its own route, linkable and reloadable, keyed on the roster nickname and not
       on the one ENS resolves, so a `name` text record cannot change the URL
-- [ ] The view shows nickname, avatar, address and stack, with the one-line description where present
-- [ ] It shows that agent juror's own metrics: latencies, coherence, draws and cumulative rewards, with
+- [x] The view shows nickname, avatar, address and stack, with the one-line description where present
+- [x] It shows that agent juror's own metrics: latencies, coherence, draws and cumulative rewards, with
       the vote count beside the draw count, since one draw may hold several vote IDs
-- [ ] It lists the disputes that agent juror was drawn in, each linking to the dispute view
-- [ ] Every coherence mark on the view is accompanied by the panel size of the dispute it came from — a
+- [x] It lists the disputes that agent juror was drawn in, each linking to the dispute view
+- [x] Every coherence mark on the view is accompanied by the panel size of the dispute it came from — a
       standing requirement of `spec.md` § Further Notes, because coherence in a panel of one is
       tautological
-- [ ] That list of disputes carries a `Panel` column alongside its coherence column
-- [ ] The aggregate coherence figure says whether any panel behind it held a single agent juror, so a
+- [x] That list of disputes carries a `Panel` column alongside its coherence column
+- [x] The aggregate coherence figure says whether any panel behind it held a single agent juror, so a
       count that includes a tautological draw cannot be read as if it did not
-- [ ] The comparison of this agent juror's draws against the whole court plots reveal latency only, and
+- [x] The comparison of this agent juror's draws against the whole court plots reveal latency only, and
       says on the chart why: commit latency is not comparable across dispute 151, which ran an 8-hour
       commit window
-- [ ] Commit latency is excluded from that comparison rather than normalised into it — see
+- [x] Commit latency is excluded from that comparison rather than normalised into it — see
       ADR-0005
-- [ ] The agent juror that has never been drawn renders an honest empty state rather than an error: it
+- [x] The agent juror that has never been drawn renders an honest empty state rather than an error: it
       says draws are random and weighted by stake, that this agent juror has not come up, and that
       there is nothing here to measure
-- [ ] On that page every unmeasurable figure is a dash, and the page says a dash means "no draws to
+- [x] On that page every unmeasurable figure is a dash, and the page says a dash means "no draws to
       measure" — never zero, and never a failed read, which is loud and looks nothing like this state
       (ticket 13)
-- [ ] Its draw and vote counts still render as real zeros there, because zero draws is a measured fact
+- [x] Its draw and vote counts still render as real zeros there, because zero draws is a measured fact
       rather than an absent measurement
-- [ ] That page names what will appear on the agent juror's first draw: commit and reveal latency, its
+- [x] That page names what will appear on the agent juror's first draw: commit and reveal latency, its
       published justification beside the rest of the panel, and coherence — which stays undefined until the
       appeal period closes and a ruling exists
-- [ ] The view is structured so deferred telemetry could later join it without rearrangement
+- [x] The view is structured so deferred telemetry could later join it without rearrangement
 
 ## From ticket 15: the chrome, the route and the breadcrumb are waiting
 
@@ -243,3 +243,143 @@ What the merge wants, stated so the integrating session does not have to re-deri
 changed how the view reaches the marginals, ticket 17 threaded `isDense` through `provenanceOf` and
 added a third branch to the caveat card. Both parents are correct alone, which is the merge shape
 that produced four prose defects the last time it happened here.
+
+**Resolved in the merge of 2026-08-26**, in the order this note argued for: ticket 17
+fast-forwarded onto `master` and ticket 11 merged on top, because `commitMedianFigureOf` exists
+only on 17's branch and the note asks 11's copy to become it. `dense` went onto
+`MarginalFigure` beside the figure it describes rather than onto `Marginals`, so the agent
+juror view keeps taking all six and the column header filters; the reason line's compact
+branch travelled with `<Reason>`; and the private `commitFigure` is gone.
+
+## Comments
+
+### 2026-08-26 — what it reads, what it decides, and the artboard line it refuses
+
+**It reads nothing of its own, exactly as ticket 06 said it need not.** Every figure comes from
+`CourtPerformance.marginals`, and the only new pure code is a *join*:
+`buildAgentJurorReading` in `src/performance/agent-juror-detail.ts` — the third model in that
+directory and the shallowest. It exists for one reason, which is that the join is on an array
+index: `marginals` and every row's `cells` are both in roster order, so an off-by-one shows one
+agent juror's draws under another's avatar with every figure on the page internally consistent, no
+error and nothing in the console. `agent-juror-detail.test.ts` pins that the draws, the marginal
+and the identity on one reading are the same agent juror's, and that assertion fails on a
+deliberate `column + 1`.
+
+**The six figures were lifted out of `Marginals.tsx` rather than re-read.** They are now
+`marginalFiguresOf` in `marginal-figures.ts`, which the matrix's column header and this view's stat
+card both render — ticket 16's rule applied one level down. Four of the six are figures with three
+or four absences behind them, and each absence is a sentence about what was read; a second
+implementation here would have been a second set of those judgements, free to print `0.0000` under
+a subgraph that returned nothing on the one page where an agent juror is named at the top. The file
+is `marginal-figures.ts` and not `marginals.ts` because `Marginals.tsx` sits beside it (TS1149).
+
+**The plot excludes commit latency and gives a different reason than the artboard does.**
+`Juror.dc.html:108` says "commit latency is not comparable across dispute 151, which ran an 8-hour
+window". That premise is false — court 34 moved its *vote* window from 8h to 30m in the same
+`CourtModified` — and `canvas/README.md` already records the defect it produced, the same artboard
+printing a median commit at `:73` while excluding commit from the chart below it as incomparable.
+So the exclusion stands (ADR-0005, and the canvas wins on design) and the reason is rewritten: the
+two are measured from different periods, so pooling them would compare durations against different
+clocks. What the window change actually costs is disclosed as a `†` over the plotted draws that ran
+under a superseded *vote* window, placed by `markedWindows(…, "reveal")` rather than by group. This
+is the canvas's own recorded defect being honoured, not the canvas being overridden.
+
+**This view is where ticket 16's open question is answered: the phone form is no reduction at
+all.** The stat card, the latency profile and the disputes all render at 390pt — the last as one
+block per dispute rather than a seven-column table, which cannot fit without pushing the page
+sideways. That makes this the only place below the breakpoint where cumulative ETH and net PNK are
+legible, since the matrix's card layout drops the column headers whole. Two consequences elsewhere,
+both small: `MatrixPage`'s phone caveat now points here instead of saying nothing, and the deferred
+question of whether the payout failure banner should be re-tiered on a phone is settled — the tier
+stands, because a phone reader now does lose a figure to that failure, one link away.
+
+**Nothing in `provenanceOf` is gated on the width**, and that is a finding rather than an omission:
+every sentence this view writes names something both layouts have. The `!narrow` gates on
+`MatrixPage` exist because that page drops the strip and the column headers; this one drops
+nothing.
+
+**Two defects found by opening the page, neither visible to 731 green tests.**
+
+1. The footer on `/agent-jurors/nope` read "the court has drawn it in none of the disputes read…
+   that it has not been drawn is the measured record" — a reading of the court about something the
+   court has never heard of. An agent juror never drawn *has* a measured record; an address naming
+   nobody has none, and its `read` range is now `null` rather than the court's.
+2. The stat card's three values sat on three different baselines at 390pt, because
+   `flex-direction: column-reverse` lays a column out from the bottom and "Median reveal" wraps
+   where "Coherent" does not. `order: -1` on the value does the same job without moving the
+   baseline. The `dd` also preceded its own `dt` until this was fixed.
+
+**The backtick-in-a-CSS-comment trap fired three times** while writing this, each time breaking the
+parse hundreds of lines below the comment. It is already in `CLAUDE.md`; this is the confirmation
+that it is not a once-off.
+
+**Left alone:** `JurorEmpty.dc.html`'s ◇ glyph tile beside the empty heading, which is decoration
+the criteria do not ask for and the card reads without.
+
+### 2026-08-26 — what the two-axis review changed
+
+A standards pass and a spec pass, run in parallel against the working tree. Both found the same
+worst defect and it was real.
+
+**The missing-address branch raised the full banner stack.** `failuresOf` was composed before the
+`entry === undefined` return and passed into both branches, so `/agent-jurors/nope` under a failing
+read was topped by "the draws could not be read, so nothing on this page is a measurement of
+**nope**'s" — a banner about an agent juror the address had just failed to name, over a page
+carrying no figure to have lost. It is the footer defect from the session above, one layer up, and
+the same rule settles it: a page showing no figure cannot have lost one, so that branch now passes
+no failures at all, exactly as `NotFoundPage` does. `provenanceOf` lost its `names` flag with it;
+`NAMES_NOTHING` is a constant, because none of that function's inputs is about a page that rests on
+no read.
+
+**`NeverDrawn` was reachable on a join failure.** The branch was `reading === null ||
+draws.length === 0` over a measured court, and `reading === null` there means the seam's roster
+does not hold this nickname — two lists of six disagreeing, not a fact about the court's random
+selection. It drew "Never drawn. Nothing has gone wrong." over a defect in this dashboard. It now
+falls to the rose notice with the other unbuildable-record cases.
+
+**Four smaller things, all fixed:** the empty state re-did the roster→column join by hand instead
+of taking the reading; `choiceOf` returned an em dash that both renderings then string-compared to
+pick an ink, so it returns a `Figure`; `AgentJurorDraws`'s heading and the plot's scale label both
+typed through a `--type-*` token without re-declaring `font-feature-settings`, which is the trap
+`CLAUDE.md` records; and `flagContextOf` was a one-line middle man, now inlined.
+
+**Two sentences were false and are rewritten.** The deck said "Panel size sits beside every
+coherence mark" — positional, and true of neither layout, since the table puts Panel third and
+Coherence seventh and the card puts the state above the figures. It now says "given with". And it
+claimed "the footer says it once more for the figures" about a caveat `provenanceOf` never pushed.
+
+**`StateLegend` was owed and missing.** Ticket 16's hand-off: "any view that shows a draw's state
+owes its reader the first". This view shows five state words and had no decoder. It is now above
+the list, shared, with `unknown={false}` — the sixth state cannot occur here, because an unread row
+has no cell for anybody and so contributes no line at all.
+
+**The other three shared caveats are deliberately not used, and here is why.**
+`WindowFootnote`, `LonePanelFootnote` and `SparsityNote` all take the court-wide
+`CourtPerformance` and state court-wide facts. Every caveat on this view is sliced to one column —
+the † counts *this* agent juror's affected draws against *its* median, the ‡ counts *its* lone
+panels — and rendering the court-wide versions would name disputes this agent juror was never
+drawn in, beside figures measured only from the ones it was. That is the same reason `SparsityNote`
+was parameterised rather than copied: a caveat has to be about what is on the page.
+
+**Two canvas deviations, recorded rather than left in code comments.** The plot's key reads "Every
+draw in the court" where `Juror.dc.html:107` says "All other draws" — the artboard's label would
+need this column subtracted out of the court's distribution, a second reduction that would leave
+the plot and the court median beside it counting different draws. And the empty state drops
+`JurorEmpty.dc.html:60`'s "It is staked" clause: baskerville has never staked, which is precisely
+why it has no on-chain presence at all. Both are the canvas's *data* rather than its design, which
+the canvas-wins rule does not cover.
+
+**On "structured so deferred telemetry could later join it without rearrangement":** what carries
+that is `marginalFiguresOf` returning a list rather than six hard-coded blocks — a seventh measure
+is an entry, and both the card and the matrix's column header pick it up — and `DrawLine`, which is
+one record per dispute read once and drawn twice. The seven columns of the table itself are
+hard-coded in both renderings, so a *new column* is a real edit in two places. Ticked on the first
+half and stated here rather than left to look like more than it is.
+
+**The page was split.** `AgentJurorSummary.tsx` and `AgentJurorEmpty.tsx` now sit beside the model
+in `src/performance/`, the way `DisputePanel` sits beside `DisputePage`; the page composes and no
+longer runs to 1,100 lines.
+
+Three tests were added for the three defects above, and each was verified to fail with its fix
+removed. 735 offline tests, lint, types and `vite build` green; re-checked in system Chrome at 1280
+and 390 afterwards.

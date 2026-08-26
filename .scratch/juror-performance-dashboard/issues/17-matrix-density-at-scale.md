@@ -257,6 +257,26 @@ thirty-one today. It is this ticket's question in the other layout, and the two 
 probably be decided together: whatever the grid does past forty rows, the card list needs a story
 past the same number, and neither may quietly stop showing disputes it has read.
 
+## From ticket 11, 2026-08-26 — the column now has somewhere to go
+
+`/agent-jurors/:nickname` exists, and every column header in the matrix links to it. That changes
+one option on this ticket's table: a denser grid no longer has to carry a column's own figures,
+because six marginals at length are one click from the header. If density costs the column headers
+their summary block, what replaces it is a link rather than an omission — and the sentence saying
+so is the phone caveat's, which ticket 11 already wrote for the card layout.
+
+Two smaller things ticket 11 leaves you.
+
+- **`rowFlagOf` now has a third caller** (`AgentJurorDraws`), so the flag precedence is read in
+  three places and defined in one. A density pass that adds or reorders a flag changes all three at
+  once, which is the point of the table.
+- **The dispute with a panel of nobody is still yours and still unfixed.** Disputes arriving in
+  `evidence` with no panel render as blanks under a note saying every blank is random draw
+  sparsity. The agent juror view inherits the same gap in a different shape: such a dispute is
+  simply absent from every agent juror's list, which is correct — nobody was drawn — but the count
+  in "Drawn in N disputes." is over a court that holds more than N. Only the unread case is
+  disclosed there today.
+
 ## What landed
 
 **One flag, `src/performance/density.ts`.** `COMPACT_FROM_ROWS = 40` with its own paragraph

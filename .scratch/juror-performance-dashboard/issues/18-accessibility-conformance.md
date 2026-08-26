@@ -274,6 +274,32 @@ those headers whole — so it is a **desktop-only** site and a 390pt audit will 
 four sites in this note are the phone's. Nothing here appears on both, which means this ticket's
 sweep is two sweeps and a surface checked at one width is not checked at the other.
 
+## From ticket 11, 2026-08-26 — four things on the new view that are yours
+
+`/agent-jurors/:nickname` is the seventh route and it adds a little surface for this ticket.
+
+- **A `dl` whose visual order is not its DOM order.** The stat card's six figures put the value
+  above its own key, which the artboard asks for and a description list forbids in markup — a `dd`
+  may not precede its `dt`. The markup is therefore `dt` then `dd` and `order: -1` on the value
+  moves it, in `Item`/`MetricValue` in `AgentJurorPage.tsx`. Nothing there is focusable, so no tab
+  order is reversed, but it is exactly the pattern this ticket should check rather than assume, and
+  it is the second place in this repository where what is read and what is seen are ordered
+  differently (`VisuallyHidden` in the matrix's column headers is the first).
+- **An absent figure at 30px in `textPending`.** `canvas/JurorEmpty.dc.html` inks its em dashes at
+  `#3d3952`, which is dimmer than its own labels; ticket 11 used `textPending` instead so that one
+  ink means "nothing here to measure" across the matrix's column header and this card both. That
+  is a deliberate improvement on the artboard and still very likely short of 4.5:1 — it is on your
+  list of sites, and the never-drawn page is where five of them appear at once.
+- **A seventh route and a second table.** `AgentJurorDraws` renders a real `<table>` with a
+  visually hidden `<caption>` above the breakpoint and a `<ul>` of blocks below it — the same
+  two-renderings shape `Matrix`/`DisputeCards` has, so whatever you conclude for one applies here.
+  The ‡ beside a coherence mark is a link with its own `aria-label`, and the state itself is a
+  glyph plus a word (ADR-0006), never colour alone.
+- **The nickname in the matrix's column header is now a link**, deliberately with no `aria-label`:
+  the accessible name of a `columnheader` is built from its content, and labelling the link renames
+  the column and every cell that answers to it. `DisputeRow` records the same trap for the dispute
+  id. Worth a regression check rather than a rewrite.
+
 ## From ticket 17, 2026-08-26 — a third rendering to sweep, and four more inks under 12px
 
 The compact density landed: past `COMPACT_FROM_ROWS` (40) the matrix drops the cell's commit line,

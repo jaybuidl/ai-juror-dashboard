@@ -1097,6 +1097,34 @@ describe("the matrix view past the density threshold", () => {
     expect(caveat).not.toHaveTextContent(/moves onto each dispute's row/);
   });
 
+  /**
+   * The one thing the compact branch can say about the two figures it drops: where they are.
+   *
+   * A merge-created sentence, and the reason it exists is that neither branch could write it.
+   * Ticket 17 dropped the reward figures from the compact header and could only say they were
+   * gone; ticket 11 built the view that prints them at every width and pointed the *phone* at
+   * it. Merged, the compact density is the phone's case a second time and takes the same
+   * answer — otherwise a reader past forty disputes is told a figure vanished and not that it
+   * moved.
+   */
+  it("points a compacted reader at the view that still prints the two sums", () => {
+    renderAt("/", { performance: denseCourt });
+
+    const caveat = screen.getByText(/This page measures how long each agent juror took/);
+    expect(caveat).toHaveTextContent(
+      /what the court has paid an agent juror is on that agent juror's own page/i,
+    );
+  });
+
+  it("makes no such promise below the threshold, where the figures are on this page", () => {
+    // The other direction: a pointer to somewhere else, on a page that shows the figure itself,
+    // sends a reader away from what they are looking at.
+    renderAt("/", { performance: roomyCourt });
+
+    const caveat = screen.getByText(/This page measures how long each agent juror took/);
+    expect(caveat).not.toHaveTextContent(/on that agent juror's own page/i);
+  });
+
   it("states no payout provenance on a density that shows no payout figure", () => {
     renderAt("/", { performance: denseCourt });
 

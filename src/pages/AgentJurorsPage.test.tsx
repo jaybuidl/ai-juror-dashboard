@@ -22,6 +22,21 @@ describe("the agent-juror index", () => {
     expect(screen.getByText("baskerville")).toBeInTheDocument();
   });
 
+  it("takes a visitor from a nickname to that agent juror's own view", () => {
+    // The click the ticket is written around, and the route it lands on is keyed on the roster
+    // nickname rather than the one ENS resolves: `blaise` carries a `name` record reading
+    // "Blaise", and a URL built from what is on screen would be a URL an operator can change
+    // from a wallet.
+    renderAt("/agent-jurors");
+
+    for (const agentJuror of ROSTER) {
+      expect(
+        screen.getByRole("link", { name: agentJuror.nickname }),
+        agentJuror.nickname,
+      ).toHaveAttribute("href", `/agent-jurors/${agentJuror.nickname}`);
+    }
+  });
+
   it("shows each agent juror's stack", () => {
     renderAt("/agent-jurors");
 

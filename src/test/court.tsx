@@ -465,6 +465,45 @@ export const roomyCourt: CourtPerformanceView = {
   performance: padded(COMPACT_FROM_ROWS),
 };
 
+/**
+ * The court with one dispute read and no panel drawn for it yet.
+ *
+ * The state a live court produces continually — 167, 168 and 169 arrived in their evidence
+ * period on 2026-08-25 with nobody drawn — and the captured court stops at 166 and holds none,
+ * so it is hand-built the same way `Matrix.test.tsx` builds one. `drawsReadAt` stays null, so
+ * this row is *read*: its six blanks are a fact about the court rather than a gap in the read,
+ * which is the distinction ticket 17 exists to keep.
+ */
+const waitingDispute = {
+  id: "167",
+  disputeID: "167",
+  period: "evidence",
+  ruled: false,
+  currentRuling: "0",
+  createdAt: "1787620000",
+  lastPeriodChange: "1787620000",
+  currentRoundIndex: "0",
+  rounds: [{ id: "167-0", timeline: ["0", "0", "0", "0"] }],
+  templateId: null,
+} as RawDispute;
+
+export const waitingCourt: CourtPerformanceView = {
+  ...measured,
+  performance: (() => {
+    const result = buildCourtPerformance({
+      disputes: [waitingDispute, ...(fixture as RawDispute[])],
+      draws: drawFixture as RawDraw[],
+      commits: commitFixture as RawCommitCast[],
+      parameters: parameterFixture as RawCourtParameters[],
+      rewards: rewardFixture as RawRewardShift[],
+      roster: ROSTER,
+      drawsReadAt: null,
+    });
+    if (!result.success) throw new Error(`${result.code}: ${result.message}`);
+    return result.data;
+  })(),
+};
+
 /** A compacted court whose payouts have not come back — the cold load, past the threshold. */
 export const denseUnpaidCourt: CourtPerformanceView = {
   ...measured,
