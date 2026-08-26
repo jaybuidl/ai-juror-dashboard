@@ -15,6 +15,15 @@ import { formatReadAt, type Provenance } from "./provenance";
  * read and what has not, which is the sentence a citing reader actually needs.
  */
 
+/*
+ * No measure on anything below.
+ *
+ * These lines ran to 90ch and wrapped well short of the page, which put a ragged column of
+ * short lines under a grid that uses the full width — deliberately reverted on the
+ * maintainer's call. A `max-width` reintroduced here is a regression, not a typographic
+ * improvement: the footer is scanned rather than read through, and it is the last thing on the
+ * page rather than a body of prose someone reads at length.
+ */
 const Bar = styled.footer`
   display: flex;
   flex-direction: column;
@@ -26,7 +35,6 @@ const Bar = styled.footer`
 `;
 
 const Line = styled.p`
-  max-width: 90ch;
   font: ${({ theme }) => theme.typeBodySm};
   font-feature-settings: ${({ theme }) => theme.featureNumeric};
   color: ${({ theme }) => theme.textMeta};
@@ -35,26 +43,6 @@ const Line = styled.p`
 /** The one sentence that is the same on every view, because the invariant is. */
 const ReadOnly = styled(Line)`
   color: ${({ theme }) => theme.textBody};
-`;
-
-/*
- * Where a view may put one caveat of its own, in the footer's voice rather than in its own.
- *
- * Exactly one thing uses it today — the matrix's sparsity note, which moved down here from the
- * footnotes below the grid. It belongs in this order rather than in that one: the † and ‡ notes
- * decode marks the reader can see *in* the grid, and this one says what the record as a whole
- * is like, which is the same kind of claim as the two lines above it and the identity line below.
- *
- * The note brings its own words and this brings the measure, because a paragraph in a column
- * flex has no width of its own and would run the full grid measure while every line beside it
- * stopped at 90ch. The child selector is the paragraph the note renders at its bare
- * presentation; it stays a selector rather than a prop so the note goes on being dressed where
- * it is used, which is the rule `Footnotes.tsx` states.
- */
-const Note = styled.div`
-  > p {
-    max-width: 90ch;
-  }
 `;
 
 const Caveats = styled.ul`
@@ -69,7 +57,6 @@ const Caveats = styled.ul`
 const Caveat = styled.li`
   display: flex;
   gap: ${({ theme }) => theme.space4};
-  max-width: 90ch;
   font: ${({ theme }) => theme.typeBodySm};
   /* The shorthand above resets it, and these carry counts — "5 of 16 titles", "Dispute 155". */
   font-feature-settings: ${({ theme }) => theme.featureNumeric};
@@ -116,7 +103,7 @@ export function Footer({ provenance, note }: { provenance: Provenance; note?: Re
         )}
       </Line>
 
-      {note !== undefined && <Note>{note}</Note>}
+      {note}
 
       {identifiesAgentJurors && (
         <Line>
