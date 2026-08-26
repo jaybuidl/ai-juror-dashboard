@@ -1465,6 +1465,27 @@ describe("Matrix", () => {
       }
     });
 
+    it("holds its declared measurements at both densities rather than asking for them", () => {
+      // The defect this pins is three tickets old and was invisible to every test here, because
+      // jsdom lays nothing out and a width is a layout. The comfortable table was table-layout
+      // auto, so its 440px row header and 148px columns were a suggestion: the page had 1104px
+      // to give a grid asking for 1328, and an auto table resolves that by shrinking whatever
+      // can shrink. Six columns of identity and figures cannot; the dispute title can, and did,
+      // down to 180px of its natural 836 — a 1440px desktop showing a fifth of a question the
+      // 390pt phone showed whole. What is assertable offline is the declaration; the width it
+      // produces was measured in a browser.
+      for (const [court, floor] of [
+        [comfortableCourt(), "1328px"],
+        [compactCourt(), "1064px"],
+      ] as const) {
+        renderMatrix(court);
+        const table = screen.getByRole("table");
+        expect(getComputedStyle(table).tableLayout).toBe("fixed");
+        expect(getComputedStyle(table).minWidth).toBe(floor);
+        cleanup();
+      }
+    });
+
     it("freezes the column header and nothing else", () => {
       renderMatrix(compactCourt());
 

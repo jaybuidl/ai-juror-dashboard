@@ -1,10 +1,13 @@
 import type { ReactNode } from "react";
 import styled from "styled-components";
-import { narrow } from "../styles/breakpoints";
+import { COMFORTABLE_GRID_MIN_PX, narrow } from "../styles/breakpoints";
 import { DegradedPanel, FailureBanner } from "./Failure";
 import { Footer } from "./Footer";
 import { type Failures, NO_FAILURES } from "./failures";
 import type { Provenance } from "./provenance";
+
+/** How wide a view may be. See the note on `measure` below. */
+export type Measure = "wide" | "prose" | "grid";
 
 /**
  * One view: what could not be read, its content, and the footer saying what that content rests on.
@@ -21,19 +24,30 @@ import type { Provenance } from "./provenance";
  * every unknown path with the app shell at HTTP 200, and that view's whole job is to say the
  * address is wrong and nothing failed to load.
  *
- * `measure` is for pages that are read rather than scanned. The matrix wants the full 1200px;
- * the method page is prose, and prose set to 1200px is prose nobody finishes.
+ * `measure` is how wide the view is allowed to be, and there are three answers because there are
+ * three kinds of page here. "prose" is for a page that is read rather than scanned — the method
+ * page, where 1200px is prose nobody finishes. "wide" is the 1200px default. "grid" is wider
+ * still and belongs to exactly one view: the matrix declares a 440px row header and six 148px
+ * columns, and at "wide" the page had 1104px of content to give it, so it scrolled sideways in
+ * its own box on every desktop. The width is derived from that measurement rather than chosen —
+ * the grid's own minimum plus the gutters either side of it — so it cannot drift from the grid
+ * it exists to fit.
  */
 
-const Frame = styled.div<{ $measure: "wide" | "prose" }>`
+const Frame = styled.div<{ $measure: Measure }>`
   display: flex;
   flex: 1;
   flex-direction: column;
   width: 100%;
   margin: 0 auto;
   padding: ${({ theme }) => `${theme.space11} ${theme.gutter} 0`};
-  max-width: ${({ theme, $measure }) =>
-    $measure === "prose" ? theme.containerNarrow : theme.container};
+  max-width: ${({ theme, $measure }) => {
+    if ($measure === "prose") return theme.containerNarrow;
+    /* border-box is global, so this includes the gutters rather than adding to them — the
+       distinction between a page that fits and one that scrolls sideways. */
+    if ($measure === "grid") return `calc(${COMFORTABLE_GRID_MIN_PX}px + 2 * ${theme.gutter})`;
+    return theme.container;
+  }};
 
   ${narrow} {
     padding-top: ${({ theme }) => theme.space9};
@@ -72,7 +86,7 @@ export function View({
 }: {
   provenance: Provenance;
   failures?: Failures;
-  measure?: "wide" | "prose";
+  measure?: Measure;
   children: ReactNode;
 }) {
   return (

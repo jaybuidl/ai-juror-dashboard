@@ -5,7 +5,12 @@ import { DisputeRow, type DisputeRowSlots } from "../disputes/DisputeList";
 import type { Dispute } from "../disputes/disputes";
 import { isFinalised } from "../disputes/liveness";
 import type { RosterView } from "../roster/useRoster";
-import { belowCompactGrid, COMPACT_GRID_MIN_PX, useFitsCompactGrid } from "../styles/breakpoints";
+import {
+  belowCompactGrid,
+  COMFORTABLE_GRID_MIN_PX,
+  COMPACT_GRID_MIN_PX,
+  useFitsCompactGrid,
+} from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
 import { type Tone, toneInk, toneLine, toneWash } from "../styles/tones";
 import {
@@ -112,15 +117,20 @@ const COLUMN_SHARE = "10%";
 const Table = styled.table<{ $compact: boolean }>`
   border-collapse: collapse;
   border-top: ${({ theme }) => theme.borderHairline};
-  ${({ $compact }) =>
-    $compact &&
-    css`
-      table-layout: fixed;
-      width: 100%;
-      /* The floor a compact cell needs — a glyph, a duration and its rail — six times over,
-         beside the row header. Under it the box above scrolls rather than crushing them. */
-      min-width: ${COMPACT_GRID_MIN_PX}px;
-    `}
+
+  /* Fixed at both densities, so the widths declared below are held rather than merely asked for.
+     Auto layout was the comfortable density's silent failure: a table short of room shrinks
+     whatever can shrink, and the only thing in this grid that can is the dispute title, so the
+     row header rendered at 239px of the 440 it declared and the question inside it at 180px of
+     its natural 836. Fixed layout also reads every column width off this header alone, which is
+     what stops one long cell anywhere in the body from moving a column. See
+     COMFORTABLE_GRID_MIN_PX for the arithmetic and for how long it went unheld. */
+  table-layout: fixed;
+  width: 100%;
+  /* The floor each density needs — six columns beside the row header. Under it the box above
+     scrolls sideways rather than crushing them, which is the one thing this grid may do with a
+     page too narrow for it: no dispute leaves, no column moves, nothing is windowed away. */
+  min-width: ${({ $compact }) => ($compact ? COMPACT_GRID_MIN_PX : COMFORTABLE_GRID_MIN_PX)}px;
 `;
 
 /**

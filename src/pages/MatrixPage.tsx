@@ -580,7 +580,12 @@ export function MatrixPage(props: MatrixPageProps) {
     failures.offline || (affects(failures, SOURCES.core) && core?.costsTiles === true);
 
   return (
-    <View provenance={provenanceOf(props, isNarrow, isDense)} failures={failures}>
+    // measure="grid" and not "wide": this is the one view whose content has a measurement of its
+    // own — a 440px row header and six 148px columns — and at "wide" the page gave it 1104px, so
+    // it scrolled sideways in its own box on every desktop. Unconditional because below the
+    // narrow breakpoint the grid is not rendered at all and a max-width above the viewport costs
+    // the card list nothing.
+    <View provenance={provenanceOf(props, isNarrow, isDense)} failures={failures} measure="grid">
       {/* First in the view and empty almost always. It says what moved between two reads of a
           court that re-reads itself every five seconds, so a reader who cannot see a cell change
           is told that one did. It never contains a figure — see the component. */}

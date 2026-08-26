@@ -46,6 +46,18 @@ describe("the matrix view", () => {
     );
   });
 
+  it("takes the grid measure, so the grid is not asked to fit a prose page", () => {
+    // The matrix is the one view whose content has a measurement of its own — a 440px row
+    // header and six 148px columns, 1328px — and the shared "wide" measure gives 1104px of
+    // content on a 1440px screen. Under it the grid scrolled sideways in its own box on every
+    // desktop, and before ticket 19 it did something worse than scroll: the table was laid out
+    // auto, so it absorbed the 224px shortfall by crushing the dispute title to 180px.
+    renderAt("/");
+
+    const frame = screen.getByRole("main").parentElement as HTMLElement;
+    expect(getComputedStyle(frame).maxWidth).toContain("1328px");
+  });
+
   it("says what it measures and, in the same breath, that it does nothing else", () => {
     renderAt("/");
 

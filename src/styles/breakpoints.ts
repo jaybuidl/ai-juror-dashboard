@@ -40,6 +40,26 @@ export const breakpoints = {
 export const COMPACT_GRID_MIN_PX = 1064;
 
 /**
+ * The same arithmetic for the comfortable grid: a 440px row header and six 148px columns, which
+ * is what `canvas/Main.dc.html` draws and what `Matrix.tsx` has declared since ticket 15.
+ *
+ * It is here because for three tickets it was declared and not held. The comfortable table was
+ * laid out `auto`, so those widths were a suggestion: the page container is 1104px, the grid
+ * asks for 1328, and an auto table resolves that shortfall by shrinking whatever *can* shrink.
+ * Six columns of identity and figures cannot, so the row header took all 224px of it and
+ * rendered at 239 — 54% of what it declared — with the dispute title inside it clipped to 180px
+ * of its natural 836. On a 1440px screen the desktop was showing a fifth of a question the
+ * 390pt phone showed whole. Nothing reported it: `text-overflow: ellipsis` is what a title is
+ * *supposed* to do, and jsdom lays nothing out, so no test could see a width at all.
+ *
+ * The note on `compactGrid` above already described the fix as the status quo — the compact grid
+ * "keeps its min-width and scrolls sideways in its own box exactly as the comfortable grid always
+ * does". The comfortable grid never did. With this and `table-layout: fixed` beside it, it now
+ * does, and that sentence is true for the first time.
+ */
+export const COMFORTABLE_GRID_MIN_PX = 1328;
+
+/**
  * The condition itself, so the media query and the hook below cannot come to disagree.
  *
  * Two ways of asking one question is how a page ends up rendering the phone's card list under
