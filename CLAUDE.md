@@ -688,6 +688,17 @@ Things that cost real effort to discover and are easy to get wrong again:
   named for what it actually asks — and the caveat card has a third branch. The next reduction adds
   a fourth: the question to ask of any sentence here is not "which layout" but "is the figure this
   names on the screen the reader has".
+  **Ticket 22 added that fourth, and it is not a reduction at all** — which is why stating the
+  rule was not enough to follow it. The matrix's comparison-band caveat was gated on `!narrow`,
+  because the strip is the element the phone drops; but `LatencyStrip` has an empty branch of its
+  own and draws a *sentence* instead of a plot wherever nothing has revealed. So on a cold load,
+  or a subgraph that is down, a desktop reader was told about a band on the one page where nothing
+  above came from a read either. The gate a caveat needs is on the **element**, not on the
+  condition that usually removes it: `!narrow && measured?.totals.revealLatency != null`. The
+  sibling page got this right in the same diff (`AgentJurorPage` gates on
+  `marginals.revealLatency`), which is the tell that the rule was known and the *width* was still
+  the thing that came to mind. `/code-review` found it; no test did, because every test asserting
+  the caveat rendered a court that had reveals.
 - **Narrowing a set is a change to every sentence quantified over it, and gating the figure does
   not gate the prose.** The reverse direction of the trap above, found by the 11 + 17 merge and
   the one no gate on either branch could have caught. Ticket 17 split `Sparsity.undrawnDisputes`
@@ -772,6 +783,15 @@ Things that cost real effort to discover and are easy to get wrong again:
   the one on disk. The cheap prevention is to pick a port and refuse to move off it —
   `yarn dev --port 5199 --strictPort` fails loudly instead of serving somebody else's branch,
   which is what ticket 17's browser pass ran on.
+  **And the far side of that advice: a later session finds the port taken and should look before
+  killing or moving.** Ticket 22 did — `lsof -nP -iTCP:5199 -sTCP:LISTEN` named a vite process
+  whose argv pointed at *this* checkout's `node_modules`, and a vite **dev** server compiles from
+  source, so it was already serving that session's own edits. Reusing it is right and starting a
+  second one on another port is the thing that reintroduces the trap above. Confirm rather than
+  assume: `agent-browser console` prints a `[vite] hot updated: /src/…` line naming each file as
+  you save it, which is proof the server on that port is compiling the tree you are editing. A
+  `yarn preview` server is the opposite case and has to be restarted, because it serves a built
+  `dist` that no edit reaches.
 - **Two translucent layers of the same gradient composite, and the token then lies about the
   page.** `--glow-violet` was painted twice — as a `body` `background-image` in `global.ts` and
   again as `Shell.tsx`'s `<Glow>` div, same gradient, same size, same position. A declared peak
