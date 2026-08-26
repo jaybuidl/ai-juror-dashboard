@@ -17,6 +17,7 @@ import { SparsityNote } from "../performance/Footnotes";
 import { LatencyStrip } from "../performance/LatencyStrip";
 import { formatWindowSeconds } from "../performance/latency";
 import { Matrix } from "../performance/Matrix";
+import { ORDINARY_COURT_PROSE } from "../performance/strip";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type FailedRead, failureOf, SOURCES } from "../read-failure";
 import { ensFallbackOf } from "../roster/ens-fallback";
@@ -433,9 +434,17 @@ function provenanceOf(
   // matter: the card layout drops the column headers too, and ticket 10 had just put two figures
   // in them. So the same gate is on the three payout caveats below, for the same reason and not
   // a weaker one — the difference is only that the band was never a read and the payouts were.
-  if (!narrow) {
+  //
+  // And on there being a *plot*, which is not the same question as the width. `LatencyStrip`
+  // draws a sentence instead of an axis wherever nothing has revealed — every cold load before
+  // the first read lands, and every load where the subgraph is down — so a caveat gated on the
+  // viewport alone names a band on a page that has none, and does it hardest on the page where
+  // nothing above came from a read either. Ticket 22 gated the sibling view on exactly this and
+  // left this one on `!narrow` for a day; the question to ask of a caveat is never "which
+  // layout" but "is the thing this names on the screen the reader has".
+  if (!narrow && measured?.totals.revealLatency != null) {
     caveats.push(
-      "The comparison band on the latency strip is illustrative and measures no court; it is the only thing above that did not come from a read.",
+      `The comparison band on the latency strip is illustrative and measures no court: it marks the ${ORDINARY_COURT_PROSE} an ordinary Kleros court takes at minimum over a single-round dispute, before any appeal, which makes it longer still. It is the only thing above that did not come from a read.`,
     );
   }
   // Retired by ticket 10, which read them. It said "Cumulative ETH and PNK rewards per agent

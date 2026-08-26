@@ -144,7 +144,8 @@ export const theme = {
   easeOut: "var(--ease-out)",
 
   // Atmosphere: the violet glow the ground is lit by, the orbit lines drawn over it, and the
-  // violet wash the latency strip's illustrative comparison band is filled with.
+  // violet wash the illustrative comparison band is filled with — on both latency plots, which
+  // draw it through one shared `StripBand` rather than a copy each.
   glowViolet: "var(--glow-violet)",
   orbitLine: "var(--orbit-line)",
   washViolet: "var(--wash-violet)",

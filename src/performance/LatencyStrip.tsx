@@ -1,7 +1,8 @@
 import styled from "styled-components";
 import { narrow } from "../styles/breakpoints";
 import { formatLatencySeconds } from "./latency";
-import { ORDINARY_COURT_FROM_SECONDS, STRIP_TICKS, stripFraction, stripMarks } from "./strip";
+import { StripBand } from "./StripBand";
+import { STRIP_TICKS, stripFraction, stripMarks } from "./strip";
 import type { LatencySummary } from "./totals";
 
 /**
@@ -57,31 +58,6 @@ const Plot = styled.div`
   ${narrow} {
     height: 132px;
   }
-`;
-
-/** The illustrative band. Decoration behind the marks, and never in front of them. */
-const Band = styled.div<{ $from: number }>`
-  position: absolute;
-  left: ${({ $from }) => `${$from * 100}%`};
-  right: 0;
-  top: 0;
-  bottom: 26px;
-  background-color: ${({ theme }) => theme.washViolet};
-  border-left: 1px solid ${({ theme }) => theme.orbitLine};
-  border-radius: 0 ${({ theme }) => theme.radiusChip} ${({ theme }) => theme.radiusChip} 0;
-`;
-
-const BandLabel = styled.div<{ $from: number }>`
-  position: absolute;
-  left: calc(${({ $from }) => `${$from * 100}%`} + 10px);
-  top: 4px;
-  font: ${({ theme }) => theme.typeMonoSm};
-  letter-spacing: ${({ theme }) => theme.trackingMonoTight};
-  color: ${({ theme }) => theme.textBody};
-`;
-
-const BandLabelQuiet = styled.span`
-  color: ${({ theme }) => theme.textMeta};
 `;
 
 const Axis = styled.div`
@@ -194,7 +170,6 @@ export function LatencyStrip({
 
   const marks = stripMarks(latency.seconds);
   const median = stripFraction(latency.median);
-  const band = stripFraction(ORDINARY_COURT_FROM_SECONDS);
 
   return (
     <Card aria-labelledby="strip-heading">
@@ -210,12 +185,7 @@ export function LatencyStrip({
       {/* The plot is decoration over a figure that is printed in full below it: every value
           here is in the summary, and the marks carry no information the durations do not. */}
       <Plot aria-hidden="true">
-        <Band $from={band} />
-        <BandLabel $from={band}>
-          Ordinary Kleros court
-          <br />
-          <BandLabelQuiet>hours to days</BandLabelQuiet>
-        </BandLabel>
+        <StripBand />
         <Axis />
 
         {marks.map((mark) => (

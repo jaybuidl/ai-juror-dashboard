@@ -83,27 +83,77 @@ which this ticket **amends** rather than builds against — see the data excepti
 `../canvas/Juror.dc.html:89-109` for the agent juror view's plot, which shares the scale and
 whose own axis label is already superseded by the code.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The comparison band begins at five days, and the figure lives in `strip.ts` beside the scale
+- [x] The comparison band begins at five days, and the figure lives in `strip.ts` beside the scale
       rather than in either component
-- [ ] The axis reaches far enough that the band reads as a region and not as the right-hand edge
-- [ ] The ticks name the marks a reader thinks in past a day, and every tick is legible at the
+- [x] The axis reaches far enough that the band reads as a region and not as the right-hand edge
+- [x] The ticks name the marks a reader thinks in past a day, and every tick is legible at the
       width the strip is drawn at
-- [ ] The label and the caption say the five days is an ordinary Kleros court's **single-round**
+- [x] The label and the caption say the five days is an ordinary Kleros court's **single-round**
       dispute — court 34 is single-round throughout, so the comparison is like-for-like, and a
       reader learns that an appeal makes it longer still
-- [ ] No latency anywhere is drawn as a fraction of the band or of anything else (ADR-0005)
-- [ ] The band is still described as illustrative, on the page and not only in the source
-- [ ] `MatrixPage.tsx`'s provenance caveat still names the band, is still absent below the
+- [x] No latency anywhere is drawn as a fraction of the band or of anything else (ADR-0005)
+- [x] The band is still described as illustrative, on the page and not only in the source
+- [x] `MatrixPage.tsx`'s provenance caveat still names the band, is still absent below the
       breakpoint, and is still tested in both directions
-- [ ] The agent juror view's plot is dealt with deliberately: its scale, its band or its absence
+- [x] The agent juror view's plot is dealt with deliberately: its scale, its band or its absence
       of one is a decision recorded in the code, not a side effect
-- [ ] No element anywhere states an axis range the axis does not have — the agent juror view's
+- [x] No element anywhere states an axis range the axis does not have — the agent juror view's
       "1s to 1d" is the one that exists today, and a test pins whatever replaces it against the
       constant rather than against a copied string
-- [ ] Verified in a browser at the widths both plots are claimed to work at — the band label fits,
+- [x] Verified in a browser at the widths both plots are claimed to work at — the band label fits,
       the distribution is still readable, and the median marker still has room for its value
-- [ ] `Main.dc.html`'s band is amended to five days so nothing built against it reintroduces one
+- [x] `Main.dc.html`'s band is amended to five days so nothing built against it reintroduces one
       hour, and `../canvas/README.md` § Known defects records what was wrong and why the artboard
       was changed rather than the code
+
+
+## What was built
+
+The axis maximum is **thirty days**, the ticket's own recommendation: the band begins at 87.9% and
+is the last eighth of the plot, and court 34's own record keeps about three quarters of the width
+it had. Verified in a browser at 1440 and at 390pt — the band reads as a region, the distribution
+still spans a third of the axis rather than clotting at the origin, and all nine ticks clear each
+other with 15px to spare at the narrower of the two.
+
+`strip.ts` holds the boundary, the maximum, the ticks and now three things it did not: the
+boundary's own spellings (`ORDINARY_COURT_LABEL` for the plot, `ORDINARY_COURT_PROSE` for a
+footer) and `STRIP_RANGE_LABEL`, built from the ends of the axis. Ticket 23 moves one object.
+
+**Two decisions, and one place the ticket was already stale.**
+
+- **The agent juror plot gets the band.** Of the three ways out the ticket named, a scale of its
+  own was the one that had to go: the background series on that plot *is* the court's
+  distribution, the same seconds `LatencyStrip` draws, so a second scale would give one set of
+  numbers two shapes on two pages. Between the remaining two, a bare wider axis leaves the right
+  third empty with nothing to say why, and the band is what that emptiness means. Recorded in
+  `AgentJurorLatency.tsx`'s own doc comment, and it brings the disclosure with it: that view's
+  provenance footer now carries the same sentence the matrix view's does, gated on the plot being
+  on the screen rather than on the agent juror having draws — `AgentJurorLatency` shows words
+  instead of a picture where nothing has revealed. Tested in both directions, plus the
+  never-drawn case.
+- **The band is one component, not two copies.** `StripBand.tsx`, for the reason `cell.ts`,
+  `row-flags.ts` and `panel.ts` were each lifted out: two renderings of one thing fork in the
+  prose long before they fork in the model, and a band saying five days on one page and something
+  else on the other would be that defect on the one element whose whole purpose is a comparison.
+- **There is no caption to keep saying it.** This ticket says "the caption keeps saying so", and
+  `cf72fea` deleted the latency strip's caption a few commits before this was taken — deliberately,
+  because the provenance footer was already making the same claim one element above three measured
+  figures. So the criterion is met by the label plus that footer caveat rather than by re-adding
+  what was just removed, and the caveat is where "before any appeal, which makes it longer still"
+  now lives. `strip.ts` says this in the constant's own comment.
+
+**One layout defect found in the browser and fixed, invisible to 862 passing tests.** Both plots
+print their median as text at `top: 0`, and at 1440 that text ends a third of the way across while
+the band label's ink begins at three quarters — no contact. At 390pt the agent juror plot is 300px
+wide: the median value ran 95→211 and the label's first line 103→256, so a measured figure was
+overprinted by an illustrative one. The label sits a line lower now, which clears it on both plots
+at both widths; the marks cannot reach it, because they stack up from the axis and the tallest
+stack the live court has is 75px of a 132px plot.
+
+**Not done, and reported rather than folded in:** the previous session's finding that the
+lavender band reads heavier than the teal data it is a foil for. The band was 45% of the plot at
+one hour and is 12% at five days, so the boundary move is most of that complaint; re-toning
+`--wash-violet` is a palette change with a contrast suite behind it and did not belong in this
+ticket's diff.

@@ -2,6 +2,7 @@ import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { arbitrumSource } from "../performance/arbitrum";
 import { formatLatencySeconds } from "../performance/latency";
+import { ORDINARY_COURT_PROSE } from "../performance/strip";
 import { formatAgo, SOURCES } from "../read-failure";
 import { ROSTER } from "../roster/agent-jurors";
 import {
@@ -319,6 +320,38 @@ describe("the totals above the matrix", () => {
     expect(within(footer).getByText(/measures no court/i)).toBeInTheDocument();
     // And not beside the strip, where it used to be.
     expect(screen.queryByText(/each mark is one draw/i)).not.toBeInTheDocument();
+  });
+
+  it("names no band on a load where the strip is a sentence rather than a plot", () => {
+    // The other direction, and the gate this caveat was missing for a day. `LatencyStrip` draws
+    // its "no distribution to plot" card wherever nothing has revealed — a cold load, or a
+    // subgraph that is down — and a footer naming a band there sends a reader looking for one on
+    // the very page where nothing above came from a read at all. `!narrow` answers a question
+    // about the viewport, not about whether the thing being named is on the screen.
+    renderAt("/", { performance: unmeasured });
+
+    expect(screen.getByText(/no draw has revealed in what was read/i)).toBeVisible();
+    expect(screen.queryByText(/comparison band on the latency strip/i)).not.toBeInTheDocument();
+  });
+
+  it("says what the band's boundary is, in the scale's own words rather than transcribed", () => {
+    // Ticket 22 moved the boundary from an hour to five days, and the sentence has to carry the
+    // number rather than the adjective it used to: "hours to days" was true of nothing and was
+    // wrong by about two orders of magnitude. Read from `strip.ts` so that ticket 23, which may
+    // measure this, moves the caveat with the band instead of leaving the footer behind.
+    renderAt("/");
+
+    const footer = screen.getByRole("contentinfo");
+    const caveat = within(footer).getByText(
+      /the comparison band on the latency strip is illustrative/i,
+    );
+
+    expect(caveat).toHaveTextContent(ORDINARY_COURT_PROSE);
+    // Single-round, because court 34 is single-round throughout and the comparison is only
+    // like-for-like if the reader knows it — and an appeal makes an ordinary court longer still.
+    expect(caveat).toHaveTextContent(/at minimum/i);
+    expect(caveat).toHaveTextContent(/single-round/i);
+    expect(caveat).toHaveTextContent(/appeal/i);
   });
 
   it("says it has nothing rather than showing zeros, when nothing was measured", () => {

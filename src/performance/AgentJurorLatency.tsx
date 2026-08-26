@@ -1,7 +1,8 @@
 import styled from "styled-components";
 import { narrow } from "../styles/breakpoints";
 import { formatLatencySeconds, formatWindowSeconds } from "./latency";
-import { STRIP_TICKS, stripFraction, stripMarks } from "./strip";
+import { StripBand } from "./StripBand";
+import { STRIP_RANGE_LABEL, STRIP_TICKS, stripFraction, stripMarks } from "./strip";
 import { type LatencySummary, markedWindows, type WindowChange } from "./totals";
 import type { PeriodWindows } from "./windows";
 
@@ -15,6 +16,18 @@ import type { PeriodWindows } from "./windows";
  * series and its own. Merging them would put a second, optional series and a second median
  * through a component the matrix page relies on; keeping the *scale* separate would let one page
  * quietly place 85 seconds somewhere the other page does not.
+ *
+ * **This plot carries the comparison band, and that is a decision rather than a side effect.**
+ * Ticket 22 moved the band to five days and had to widen the shared axis to a month to hold it,
+ * which moves every mark on this page too. The three ways out were a scale of this plot's own, a
+ * wider axis with nothing on it past an hour, or the band. A scale of its own is the one that
+ * had to go: the background series here *is* the court's distribution, the same seconds
+ * `LatencyStrip` plots, so a second scale would draw one set of numbers two shapes on two pages
+ * — the fork `CLAUDE.md` records the matrix and the card list being lifted apart to prevent. Of
+ * the remaining two, a bare wider axis leaves the right third of the plot empty with nothing to
+ * say why, and the band is what that emptiness *means*: it is the distance this page exists to
+ * measure. It is illustrative here exactly as it is on the matrix page, and said so in the same
+ * place — this view's provenance footer, gated on this plot being on the screen at all.
  *
  * **What is plotted is reveal latency, and the reason on the artboard is false.**
  * `Juror.dc.html:108` gives it as "commit latency is not comparable across dispute 151, which ran
@@ -248,12 +261,13 @@ export function AgentJurorLatency({
           Its {own.seconds.length} {own.seconds.length === 1 ? "reveal" : "reveals"} against the
           whole court
         </Heading>
-        <Scale>Log scale · 1s to 1d</Scale>
+        <Scale>Log scale · {STRIP_RANGE_LABEL}</Scale>
       </Head>
 
       {/* Decoration over figures printed in full beneath it: the medians are in the reading
           below and in the stat card above, and the marks carry nothing the durations do not. */}
       <Plot aria-hidden="true">
+        <StripBand />
         <Axis />
 
         {courtMarks.map((mark) => (

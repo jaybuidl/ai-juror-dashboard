@@ -117,8 +117,9 @@ column flex has none of its own. It stays gated on `!narrow`, so the phone still
 card at the head of the card list, which is ticket 16's call and unchanged. What went for good
 is the **latency strip's caption** — "each mark is one draw … the comparison band is
 illustrative … it measures no court" — whose last claim the provenance footer was already
-making, one element below three figures that are measured. The band is still disclosed, once, in
-that caveat. So a sentence below naming the sparsity note as a footnote, or the band as
+making, one element below three figures that are measured. The band is still disclosed once **per
+page** in that caveat — ticket 22 put the band on the agent juror plot too, so there are two of
+them now, each gated on its own plot having drawn one rather than on the viewport. So a sentence below naming the sparsity note as a footnote, or the band as
 labelled by its own caption, is describing what was there too.
 
 The design work behind it (glossary, seven ADRs, a spec, eighteen tickets) came out of a full

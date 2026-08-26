@@ -16,6 +16,7 @@ import { type AgentJurorReading, buildAgentJurorReading } from "../performance/a
 import { arbitrumSource } from "../performance/arbitrum";
 import { formatWindowSeconds } from "../performance/latency";
 import type { CourtPerformance } from "../performance/performance";
+import { ORDINARY_COURT_PROSE } from "../performance/strip";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type FailedRead, failureOf, SOURCES } from "../read-failure";
 import { ensNameOf } from "../roster/agent-jurors";
@@ -411,12 +412,28 @@ function provenanceOf({
     );
   }
 
-  // Everything below qualifies a figure measured from this agent juror's own draws, so none of
-  // it is sayable about an agent juror that has none: a caveat about a median that does not
-  // exist reads as a caveat about the whole page. `canvas/JurorEmpty.dc.html` is the state, and
-  // its own card carries the only sentence it needs — a dash means no draws to measure.
+  // Everything below qualifies something measured from this agent juror's own draws — every
+  // entry but the first a figure, and the first the one piece of decoration drawn beside them —
+  // so none of it is sayable about an agent juror that has none: a caveat about a median that
+  // does not exist reads as a caveat about the whole page. `canvas/JurorEmpty.dc.html` is the
+  // state, and its own card carries the only sentence it needs — a dash means no draws to
+  // measure.
   if (drawn && reading !== null) {
     const { marginals } = reading;
+
+    // The one thing on this page that is not a read, said in the one place this page says such
+    // things — the same rule and the same words as the matrix view's, because it is the same
+    // band on a plot sharing the same axis, and two pages disagreeing about what it stands for
+    // is the prose fork `CLAUDE.md` records over and over.
+    //
+    // Gated on the plot being on the screen and not merely on the agent juror having draws:
+    // `AgentJurorLatency` shows a sentence instead of a picture where none of those draws has
+    // revealed, and a footer naming a band nobody can see sends a reader looking for it.
+    if (marginals.revealLatency !== null) {
+      caveats.push(
+        `The comparison band on the latency plot is illustrative and measures no court: it marks the ${ORDINARY_COURT_PROSE} an ordinary Kleros court takes at minimum over a single-round dispute, before any appeal, which makes it longer still. It is the only thing above that did not come from a read.`,
+      );
+    }
 
     const lone = marginals.coherence.lonePanelDisputes;
     if (lone.length > 0) {

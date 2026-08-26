@@ -76,6 +76,35 @@ Lesser, noted in passing: `Main.dc.html:118`'s legend words the live state `Acti
 words it `Committed`/`Awaiting`, and `Dispute.dc.html`'s justification columns are not in roster
 order despite its caption saying they are.
 
+## Fixed, by amending the artboard
+
+- **`Main.dc.html`'s comparison band began at one hour and read "hours to days".** An ordinary
+  Kleros court takes **five days at minimum** over a single-round dispute, so the artboard
+  understated the distance the whole chart exists to show by about two orders of magnitude — and
+  in the direction that weakens the experiment's own case, which is what made it worth a ticket
+  rather than a note here. The artboard and the code agreed to the decimal, because `72.4%` is
+  exactly `log10(3600)/log10(86400)`: one wrong number expressed twice, not a drawing decision
+  and an implementation of it.
+
+  Ticket 22 amended **the artboard**, which inverts this repo's standing rule that the canvas
+  wins where a ticket and an artboard disagree. That rule has an exception for the canvas's
+  *data* — `CLAUDE.md` records it — and this is the fifth time it has been tested and the first
+  time the exception has been invoked. The reading, so nobody re-argues it: the disagreement was
+  about a fact the artboard **asserts**, not about how to draw an element, and an artboard is
+  authoritative about the second and no more authoritative than anything else about the first.
+
+  What moved with it: `STRIP_MAX` to thirty days (the band is the last eighth of the axis at that
+  maximum, where it reads as a region rather than as the right-hand edge), the ticks to nine so
+  the axis names `5d` and `30d`, the median line to the position the new scale puts 85s at, and
+  the label to the left of the boundary — at 12% of the plot it no longer fits inside the band.
+
+- **`Juror.dc.html:89` still labels its plot "Log scale · 1s to 1h", and is superseded.** It was
+  already wrong before ticket 22: ticket 11 had that plot share the court strip's scale, which
+  ran to a day. It now runs to thirty days and the code derives the words from the scale itself
+  rather than printing them, so the artboard is a record of a range the axis has not had for two
+  tickets. Left as it is — the plot's own geometry is unchanged and re-seeding it buys nothing —
+  but do not resolve the disagreement by narrowing the code back to the artboard.
+
 ## What is measured and what is sampled
 
 Real, and safe to reason from: the 13×6 occupancy grid, panel sizes, 44 draws / 61 votes,

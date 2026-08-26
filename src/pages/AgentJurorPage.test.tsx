@@ -1,5 +1,6 @@
 import { screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { ORDINARY_COURT_PROSE, STRIP_RANGE_LABEL } from "../performance/strip";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { ROSTER } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
@@ -210,6 +211,66 @@ describe("the latency profile", () => {
     // The marker is a claim about the draws behind *this* figure. blaise was never drawn in
     // dispute 151, so the court's own change says nothing about its median.
     expect(within(plot).queryByText(/ran under a vote window/i)).not.toBeInTheDocument();
+  });
+
+  it("names the axis's real range rather than a range it used to have", () => {
+    // This is the sentence ticket 22 was written around: the plot printed "1s to 1d" as a
+    // literal, so widening the shared axis to hold a five-day band would have left one line of
+    // text contradicting the picture immediately beneath it. Pinned against the scale rather
+    // than against the words, which is the only version of this test that cannot rot the same
+    // way — `Juror.dc.html:89` still says "1s to 1h" and has been superseded since ticket 11.
+    renderAt("/agent-jurors/columbo");
+    const plot = screen.getByRole("region", { name: /reveals against the whole court/i });
+
+    expect(within(plot).getByText(`Log scale · ${STRIP_RANGE_LABEL}`)).toBeVisible();
+  });
+
+  it("says the comparison band on it is illustrative, on the page and not only in the source", () => {
+    // The band is on this plot as well as the matrix's, deliberately — the two share one axis
+    // and the court's own distribution is drawn on both, so a scale of this page's own would
+    // draw one set of numbers two shapes. What comes with it is the disclosure, said in this
+    // page's own footer exactly as the matrix view says it in its own.
+    renderAt("/agent-jurors/columbo");
+
+    const footer = screen.getByRole("contentinfo");
+    const caveat = within(footer).getByText(
+      /the comparison band on the latency plot is illustrative/i,
+    );
+
+    expect(caveat).toHaveTextContent(/measures no court/i);
+    expect(caveat).toHaveTextContent(ORDINARY_COURT_PROSE);
+    expect(caveat).toHaveTextContent(/at minimum/i);
+    expect(caveat).toHaveTextContent(/single-round/i);
+    expect(caveat).toHaveTextContent(/appeal/i);
+  });
+
+  it("does not name a band on a page whose plot is a sentence instead of a picture", () => {
+    // The other direction, and the one this repo keeps relearning: a caveat is gated on the
+    // figure being on the reader's screen, not on the reader having got this far. An agent
+    // juror drawn but with nothing revealed yet gets `AgentJurorLatency`'s empty state — words
+    // where the plot would be — and a footer naming a band there sends a reader looking for one
+    // that was never drawn.
+    const built = measured.performance;
+    if (built === null) throw new Error("no fixture");
+    const unrevealed: CourtPerformanceView = {
+      ...measured,
+      performance: {
+        ...built,
+        marginals: built.marginals.map((marginals) => ({ ...marginals, revealLatency: null })),
+      },
+    };
+
+    renderAt("/agent-jurors/columbo", { performance: unrevealed });
+
+    expect(screen.getByText(/no draw of this agent juror's has revealed/i)).toBeVisible();
+    expect(screen.queryByText(/comparison band on the latency plot/i)).not.toBeInTheDocument();
+  });
+
+  it("names no band on a page with no plot at all", () => {
+    // baskerville has never been drawn, so there is no plot and nothing to disclose about one.
+    renderAt("/agent-jurors/baskerville");
+
+    expect(screen.queryByText(/comparison band/i)).not.toBeInTheDocument();
   });
 });
 
