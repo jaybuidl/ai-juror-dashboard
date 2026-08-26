@@ -190,3 +190,23 @@ row, because coherence is meaningless without it and repeating it in every cell 
 it tells. A blank cell means the agent juror was not drawn, and must never be readable as a failure
 to act.
 _Avoid_: tile, square (both name something drawn — a blank cell is still a cell), data point
+
+**Density** (comfortable, compact):
+How tightly the matrix is drawn, and the only thing that changes with the row count. **Comfortable**
+is the two-line cell and the two-line row; **compact** is what the matrix becomes past
+`COMPACT_FROM_ROWS` — the cell drops its commit line and halves, the row drops its second line, the
+column header keeps three of its six figures and freezes. Density is a legibility change and never
+an edit to the record: no dispute leaves the page, no column moves, nothing is filtered, paginated,
+collapsed or windowed away. It is a *desktop* word — below `breakpoints.narrow` there is no grid to
+compact, and a phone shows cards at any row count.
+_Avoid_: view, mode, zoom (all imply something the reader chose — there is no control for this),
+truncation, pagination (both name things density explicitly does not do)
+
+**No panel yet**:
+A dispute that was read and for which the court has drawn nobody, because it is still in its
+evidence period. Its positions are blank and they mean *the draw has not happened* rather than *this
+agent juror was not selected* — a different fact from sparsity, and a different fact again from a
+dispute whose draws were never read, which is **Unknown**. Panel size is `0` and must never be
+printed: a zero there claims the court drew a panel of nobody.
+_Avoid_: empty panel, Panel 0, unread (that is the third state and belongs to the read, not the
+court), pending panel

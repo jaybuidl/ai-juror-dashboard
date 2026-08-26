@@ -4,22 +4,27 @@ import { DisputeRow, type DisputeRowSlots } from "../disputes/DisputeList";
 import type { Dispute } from "../disputes/disputes";
 import { isFinalised } from "../disputes/liveness";
 import type { RosterView } from "../roster/useRoster";
+import { belowCompactGrid, COMPACT_GRID_MIN_PX } from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
 import { type Tone, toneInk, toneLine, toneWash } from "../styles/tones";
 import {
   commitFigureOf,
+  commitMedianFigureOf,
   type Figure,
   presentationOf,
   revealFigureOf,
   UNREAD_FIGURE,
   UNREAD_PRESENTATION,
 } from "./cell";
+import { CELL_HEIGHT_PX, COMPACT_CELL_HEIGHT_PX, type Density, densityOf } from "./density";
 import { Footnotes, LonePanelFootnote, SparsityNote, WindowFootnote } from "./Footnotes";
 import { Dot, Legend, LegendGroup, LegendItem, StateLegend } from "./Legend";
 import { railFraction } from "./latency";
 import { Marginals } from "./Marginals";
-import type { CourtPerformance, Draw } from "./performance";
+import { panelPillOf } from "./panel";
+import type { CourtPerformance, Draw, MatrixRow } from "./performance";
 import { type RowFlagContext, rowFlagOf } from "./row-flags";
+import { rowCommitLatencyOf } from "./totals";
 
 /**
  * The dispute matrix: one row per dispute, one column per agent juror, one cell per draw.
@@ -53,26 +58,96 @@ const Lede = styled.p`
   color: ${({ theme }) => theme.textBody};
 `;
 
-/* The matrix is 1328px at the canvas's measurements and the page is not. It scrolls in its
-   own box rather than pushing the page sideways; ticket 16 gives the phone a real answer and
-   ticket 17 the density past forty rows. */
-const TableScroll = styled.div`
-  overflow-x: auto;
+/**
+ * How the grid meets a page narrower than it is, which is every page at the comfortable density.
+ *
+ * The matrix is 1328px at the canvas's measurements — a 440px row header and six 148px columns —
+ * and this page's container is 1200. So it scrolls sideways in its own box rather than pushing
+ * the page, which is what ticket 16 spared the phone and what this keeps for the desktop.
+ *
+ * **Absent at the compact density, and it has to be.** `overflow-x: auto` makes this element a
+ * scroll container in *both* axes: `overflow-y`'s computed value beside it is `auto` rather than
+ * `visible`, per CSS Overflow 3. A `position: sticky` header inside a scroll container sticks to
+ * that container's scrollport and not to the page — and this box never scrolls vertically, so the
+ * frozen column header would simply never freeze. Nothing throws, nothing warns, and jsdom lays
+ * nothing out, so no test here could see it. The compact grid fits its container instead of
+ * overflowing it (see `Table`), which is what leaves nothing to scroll.
+ *
+ * Below `breakpoints.compactGrid` it comes back, because there the compact grid does not fit
+ * either: its columns would fall under the width a compact cell needs and the durations would
+ * spill into the column beside them. The reader gets the sideways box the comfortable density
+ * always has, and loses the freeze with it — every other reduction still holds.
+ */
+const TableScroll = styled.div<{ $compact: boolean }>`
+  ${({ $compact }) =>
+    $compact
+      ? css`
+          ${belowCompactGrid} {
+            overflow-x: auto;
+          }
+        `
+      : css`
+          overflow-x: auto;
+        `}
 `;
 
-const Table = styled.table`
+/**
+ * Fixed and full-width at the compact density, fixed-pixel at the comfortable one.
+ *
+ * The artboard draws both densities on a 1440px page where 1328px of grid fits with room to
+ * spare. This page's container is 1200, so at the compact density the columns take a share of
+ * what there is rather than a measurement that does not fit — which is what lets the header
+ * freeze against the page rather than inside a sideways-scrolling box. Nothing about the record
+ * changes with it: six columns, in roster order, every one of them on screen.
+ *
+ * 40% and six of 10% is 100%, and at this page's container that is a 441px row header against the
+ * artboard's 440 and 110px columns against its 148. The row header keeps the artboard's width
+ * because that is where the shortfall bites: a one-line row carries an id, a title, a flag, a
+ * panel and a figure, and it was measured in a browser at 34% with the title down to nothing.
+ */
+const ROW_HEADER_SHARE = "40%";
+const COLUMN_SHARE = "10%";
+
+const Table = styled.table<{ $compact: boolean }>`
   border-collapse: collapse;
   border-top: ${({ theme }) => theme.borderHairline};
+  ${({ $compact }) =>
+    $compact &&
+    css`
+      table-layout: fixed;
+      width: 100%;
+      /* The floor a compact cell needs — a glyph, a duration and its rail — six times over,
+         beside the row header. Under it the box above scrolls rather than crushing them. */
+      min-width: ${COMPACT_GRID_MIN_PX}px;
+    `}
 `;
 
-const CaptionCell = styled.th`
-  width: 440px;
+/**
+ * The corner cell, which freezes with the header it is part of.
+ *
+ * Sticky at the compact density and given a background of its own, since a transparent cell that
+ * outlives the rows scrolling under it shows them through. With `border-collapse: collapse` the
+ * table paints the borders rather than the cell, and a sticky cell leaves its bottom border
+ * behind as it moves — so the hairline travels as an inset shadow instead.
+ */
+const CaptionCell = styled.th<{ $compact: boolean }>`
+  width: ${({ $compact }) => ($compact ? ROW_HEADER_SHARE : "440px")};
   box-sizing: border-box;
   padding: ${({ theme }) => `${theme.space6} ${theme.space6} ${theme.space5} 0`};
   border-bottom: 1px solid ${({ theme }) => theme.lineStrongColor};
   text-align: left;
   vertical-align: bottom;
   font-weight: inherit;
+  ${({ theme, $compact }) =>
+    $compact &&
+    css`
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background-color: ${theme.page};
+      border-bottom: none;
+      box-shadow: inset 0 -1px 0 ${theme.lineStrongColor};
+    `}
 `;
 
 const CaptionCount = styled.div`
@@ -93,8 +168,8 @@ const CaptionBody = styled.div`
    carrying a marker's reason line is taller than the five beside it, and bottom alignment would
    push that column's nickname and avatar down while the other five stayed put — six identity
    blocks at five different heights, from one footnote. */
-const AgentColumn = styled.th`
-  width: 148px;
+const AgentColumn = styled.th<{ $compact: boolean }>`
+  width: ${({ $compact }) => ($compact ? COLUMN_SHARE : "148px")};
   box-sizing: border-box;
   padding: ${({ theme }) => `${theme.space6} ${theme.space5} ${theme.space5}`};
   border-left: ${({ theme }) => theme.borderHairline};
@@ -102,6 +177,19 @@ const AgentColumn = styled.th`
   text-align: left;
   vertical-align: top;
   font-weight: inherit;
+  /* Frozen at the compact density, so a reader hundreds of rows down still knows which agent
+     juror each column belongs to. The freeze is this row's alone — the dispute rows, the legend
+     and the footnotes scroll past it, and the page keeps one scroll context. */
+  ${({ theme, $compact }) =>
+    $compact &&
+    css`
+      position: sticky;
+      top: 0;
+      z-index: 1;
+      background-color: ${theme.page};
+      border-bottom: none;
+      box-shadow: inset 0 -1px 0 ${theme.lineStrongColor};
+    `}
 `;
 
 const AgentIdentity = styled.div`
@@ -202,8 +290,8 @@ const BodyRow = styled.tr<{ $live: boolean; $rail?: Tone }>`
     `}
 `;
 
-const RowHeaderCell = styled.th`
-  width: 440px;
+const RowHeaderCell = styled.th<{ $compact: boolean }>`
+  width: ${({ $compact }) => ($compact ? ROW_HEADER_SHARE : "440px")};
   box-sizing: border-box;
   padding: 0;
   text-align: left;
@@ -211,10 +299,22 @@ const RowHeaderCell = styled.th`
   font-weight: inherit;
 `;
 
-const CellBox = styled.td<{ $tone?: Tone; $filled?: boolean }>`
-  width: 148px;
+/**
+ * The cell, at whichever height the density stands at.
+ *
+ * `height` on a table cell is a minimum, so declaring the comfortable one changes nothing about
+ * what it already drew — three lines and their padding come to about this on their own. It is
+ * declared so that the compact cell can be half of it and be seen to be: the artboards give two
+ * different pixels for the compact cell (44px on `Cell.dc.html`, a 40px row on
+ * `MatrixDense.dc.html`), so ticket 17 asks for the ratio and leaves the pixel open.
+ */
+const CellBox = styled.td<{ $tone?: Tone; $filled?: boolean; $compact?: boolean }>`
+  width: ${({ $compact }) => ($compact === true ? COLUMN_SHARE : "148px")};
+  height: ${({ $compact }) =>
+    $compact === true ? `${COMPACT_CELL_HEIGHT_PX}px` : `${CELL_HEIGHT_PX}px`};
   box-sizing: border-box;
-  padding: ${({ theme }) => `${theme.space4} ${theme.space5}`};
+  padding: ${({ theme, $compact }) =>
+    $compact === true ? `0 ${theme.space5}` : `${theme.space4} ${theme.space5}`};
   border-left: ${({ theme }) => theme.borderHairline};
   border-bottom: ${({ theme }) => theme.borderHairline};
   vertical-align: middle;
@@ -258,13 +358,15 @@ const VoteCount = styled.span`
   color: ${({ theme }) => theme.textPending};
 `;
 
-const Measure = styled.div<{ $context?: boolean }>`
+const Measure = styled.div<{ $context?: boolean; $compact?: boolean }>`
   display: flex;
   align-items: center;
   gap: ${({ theme }) => theme.space3};
   /* Tighter above the commit line than above the reveal, so the two read as one block with a
-     headline and its context rather than as two measurements of equal standing. */
-  margin-top: ${({ theme, $context }) => ($context ? theme.space2 : theme.space4)};
+     headline and its context rather than as two measurements of equal standing. The compact
+     cell has one measure and nothing above it, so it has nothing to be spaced from. */
+  margin-top: ${({ theme, $context, $compact }) =>
+    $compact === true ? "0" : $context === true ? theme.space2 : theme.space4};
 `;
 
 const MeasureKey = styled.span`
@@ -297,9 +399,13 @@ const MeasureValue = styled.span<{ $tone: Figure["tone"] }>`
 /* Decoration, and only ever beside the number it echoes: logarithmic from 1s to 1h, because
    the record spans 7 seconds to 54 minutes and a linear bar renders most of it as nothing.
    Ticket 07 hangs commit latency on the same scale. */
-const Rail = styled.span`
-  flex: none;
-  width: 42px;
+const Rail = styled.span<{ $compact?: boolean }>`
+  /* Allowed to shrink at the compact density and never to grow: the column is a share of the
+     page there rather than 148px, and a rail that refused to give way would push the duration
+     beside it out of a narrow window — the figure is the carrier and the rail is the decoration,
+     so the rail is what yields. */
+  flex: ${({ $compact }) => ($compact === true ? "0 1 34px" : "none")};
+  width: ${({ $compact }) => ($compact === true ? "34px" : "42px")};
   height: 3px;
   border-radius: 999px;
   overflow: hidden;
@@ -334,6 +440,34 @@ const CommitValue = styled(MeasureValue)`
    54-minute commit be compared by eye at all. */
 const CommitRailFill = styled(RailFill)`
   background-color: ${({ theme }) => theme.accentQuiet};
+`;
+
+/* The one sentence the dense artboard adds to the legend row, at its right-hand end. */
+const VolumeNote = styled.p`
+  margin-left: auto;
+  max-width: 46ch;
+  font: ${({ theme }) => theme.typeBodySm};
+  /* It counts columns and disputes, so the shorthand's reset has to be undone here too. */
+  font-feature-settings: ${({ theme }) => theme.featureNumeric};
+  color: ${({ theme }) => theme.textMeta};
+  text-wrap: pretty;
+`;
+
+/* The row's own measure, at the end of the one line a compact row has. Nothing about it is new
+   ink: the key and the value are the cell's, at the grain of a dispute.
+
+   The key is widened here rather than in `MeasureKey`, which is 7px because a cell's key is one
+   letter. "MED C" in 7px overlapped the duration beside it — legible in a browser, invisible to
+   jsdom, and exactly the class of defect this repo keeps finding by opening the page. */
+const RowMeasure = styled.span`
+  display: inline-flex;
+  align-items: baseline;
+  gap: ${({ theme }) => theme.space3};
+  white-space: nowrap;
+
+  ${MeasureKey} {
+    width: auto;
+  }
 `;
 
 const Empty = styled.p`
@@ -372,77 +506,178 @@ export type MatrixProps = {
  * row must be the loudest thing in the grid, not the emptiest — the emptiest thing here already
  * means something else, and means it about an agent juror.
  */
-function UnreadCell() {
+function UnreadCell({ density }: { density: Density }) {
+  const compact = density === "compact";
+
   return (
-    <CellBox $tone={UNREAD_PRESENTATION.tone} $filled={UNREAD_PRESENTATION.filled}>
-      <CellHead>
-        <Glyph $tone={UNREAD_PRESENTATION.tone} aria-hidden="true">
-          {UNREAD_PRESENTATION.glyph}
-        </Glyph>
-        <Verdict $tone={UNREAD_PRESENTATION.tone}>{UNREAD_PRESENTATION.word}</Verdict>
-      </CellHead>
-      <Measure>
-        <MeasureKey aria-hidden="true">R</MeasureKey>
-        <VisuallyHidden>Reveal latency</VisuallyHidden>
+    <CellBox
+      $tone={UNREAD_PRESENTATION.tone}
+      $filled={UNREAD_PRESENTATION.filled}
+      $compact={compact}
+    >
+      {!compact && (
+        <CellHead>
+          <Glyph $tone={UNREAD_PRESENTATION.tone} aria-hidden="true">
+            {UNREAD_PRESENTATION.glyph}
+          </Glyph>
+          <Verdict $tone={UNREAD_PRESENTATION.tone}>{UNREAD_PRESENTATION.word}</Verdict>
+        </CellHead>
+      )}
+      <Measure $compact={compact}>
+        {compact ? (
+          <>
+            <Glyph $tone={UNREAD_PRESENTATION.tone} aria-hidden="true">
+              {UNREAD_PRESENTATION.glyph}
+            </Glyph>
+            {/* The word the compact cell stops drawing is still said, because the glyph beside
+                it is decoration and a reader hearing this page has nothing else to go on. What
+                density costs is the ink, never the record. */}
+            <VisuallyHidden>{UNREAD_PRESENTATION.word}. Reveal latency</VisuallyHidden>
+          </>
+        ) : (
+          <>
+            <MeasureKey aria-hidden="true">R</MeasureKey>
+            <VisuallyHidden>Reveal latency</VisuallyHidden>
+          </>
+        )}
         <MeasureValue $tone={UNREAD_FIGURE.tone}>{UNREAD_FIGURE.text}</MeasureValue>
       </Measure>
-      <Measure $context>
-        <MeasureKey aria-hidden="true">C</MeasureKey>
-        <VisuallyHidden>Commit latency</VisuallyHidden>
-        <CommitValue $tone={UNREAD_FIGURE.tone}>{UNREAD_FIGURE.text}</CommitValue>
-      </Measure>
+      {!compact && (
+        <Measure $context>
+          <MeasureKey aria-hidden="true">C</MeasureKey>
+          <VisuallyHidden>Commit latency</VisuallyHidden>
+          <CommitValue $tone={UNREAD_FIGURE.tone}>{UNREAD_FIGURE.text}</CommitValue>
+        </Measure>
+      )}
     </CellBox>
   );
 }
 
-function DrawCell({ draw, scanned }: { draw: Draw; scanned: boolean }) {
+/**
+ * One draw, at whichever density the grid is in.
+ *
+ * One component behind one flag rather than two components, per ticket 17 — and the reduction is
+ * closed: the commit line goes with its figure, its `C` key and its rail; the state word, the
+ * vote-count annotation and the `R` key go with it. What survives is reveal latency and the
+ * coherence state, the reveal rail riding the figure it belongs to, and the glyph, fill and
+ * border that keep the five states apart with hue removed (ADR-0006).
+ *
+ * The `R` key goes because one latency needs no key to name it. The commit figure is not lost
+ * with it — the dispute row carries the median over that row's draws, per the corner cell.
+ */
+function DrawCell({ draw, scanned, density }: { draw: Draw; scanned: boolean; density: Density }) {
   const presentation = presentationOf(draw.state);
   const figure = revealFigureOf(draw);
   const commit = commitFigureOf(draw, scanned);
+  const compact = density === "compact";
 
   return (
-    <CellBox $tone={presentation.tone} $filled={presentation.filled}>
-      <CellHead>
-        <Glyph $tone={presentation.tone} aria-hidden="true">
-          {presentation.glyph}
-        </Glyph>
-        <Verdict $tone={presentation.tone}>{presentation.word}</Verdict>
-        {draw.voteCount > 1 && (
-          <VoteCount>
-            <VisuallyHidden>{draw.voteCount} vote IDs</VisuallyHidden>
-            <span aria-hidden="true">×{draw.voteCount}</span>
-          </VoteCount>
+    <CellBox $tone={presentation.tone} $filled={presentation.filled} $compact={compact}>
+      {!compact && (
+        <CellHead>
+          <Glyph $tone={presentation.tone} aria-hidden="true">
+            {presentation.glyph}
+          </Glyph>
+          <Verdict $tone={presentation.tone}>{presentation.word}</Verdict>
+          {draw.voteCount > 1 && (
+            <VoteCount>
+              <VisuallyHidden>{draw.voteCount} vote IDs</VisuallyHidden>
+              <span aria-hidden="true">×{draw.voteCount}</span>
+            </VoteCount>
+          )}
+        </CellHead>
+      )}
+      <Measure $compact={compact}>
+        {compact ? (
+          <>
+            <Glyph $tone={presentation.tone} aria-hidden="true">
+              {presentation.glyph}
+            </Glyph>
+            <VisuallyHidden>{presentation.word}. Reveal latency</VisuallyHidden>
+          </>
+        ) : (
+          <>
+            <MeasureKey aria-hidden="true">R</MeasureKey>
+            <VisuallyHidden>Reveal latency</VisuallyHidden>
+          </>
         )}
-      </CellHead>
-      <Measure>
-        <MeasureKey aria-hidden="true">R</MeasureKey>
-        <VisuallyHidden>Reveal latency</VisuallyHidden>
         <MeasureValue $tone={figure.tone}>{figure.text}</MeasureValue>
         {draw.revealLatencySeconds !== null && (
-          <Rail aria-hidden="true">
+          <Rail aria-hidden="true" $compact={compact}>
             <RailFill style={{ width: `${railFraction(draw.revealLatencySeconds) * 100}%` }} />
           </Rail>
         )}
       </Measure>
-      <Measure $context>
-        <MeasureKey aria-hidden="true">C</MeasureKey>
-        <VisuallyHidden>Commit latency</VisuallyHidden>
-        <CommitValue $tone={commit.tone}>{commit.text}</CommitValue>
-        {draw.commitLatencySeconds !== null && (
-          <Rail aria-hidden="true">
-            <CommitRailFill
-              style={{ width: `${railFraction(draw.commitLatencySeconds) * 100}%` }}
-            />
-          </Rail>
-        )}
-      </Measure>
+      {!compact && (
+        <Measure $context>
+          <MeasureKey aria-hidden="true">C</MeasureKey>
+          <VisuallyHidden>Commit latency</VisuallyHidden>
+          <CommitValue $tone={commit.tone}>{commit.text}</CommitValue>
+          {draw.commitLatencySeconds !== null && (
+            <Rail aria-hidden="true">
+              <CommitRailFill
+                style={{ width: `${railFraction(draw.commitLatencySeconds) * 100}%` }}
+              />
+            </Rail>
+          )}
+        </Measure>
+      )}
     </CellBox>
+  );
+}
+
+/**
+ * The commit figure the compact grid moves onto the dispute row.
+ *
+ * `MatrixDense.dc.html:64` states the move in the corner cell and does not draw it, so this is
+ * where the ticket fixes what it says: the median over *this row's* dated commitments, named as
+ * a median and counted, because a row holds up to six draws and one figure cannot be all of
+ * them. An unlabelled duration on a row of six cells is a number a reader would have to guess at.
+ *
+ * Absent where there is nothing to say and never blank where there is: the three absences are
+ * the ones every commit figure on this page tells apart, in `commitMedianFigureOf`.
+ *
+ * **`MED C` is doing the naming, and the count of draws behind it is said rather than drawn.**
+ * The row is 441px wide and already carries an id, a title, a flag and a panel; "· 4 draws"
+ * measured 40 of those pixels, and they come out of the title. What the criterion is protecting
+ * against is a bare duration read as *the* commit latency of a dispute holding up to six draws,
+ * and "MED" is what prevents that — a median is by construction not one draw's figure. The count
+ * is in the accessible name, where it costs nothing, and the panel size sits beside it either way.
+ */
+function RowCommit({ row, scanned }: { row: MatrixRow; scanned: boolean }) {
+  const { latency, commitments } = rowCommitLatencyOf(row);
+  // An unread row's cells are all null, so the reduction above counts no commitment and the
+  // figure would fall through to the em dash this design defines as "nothing to measure" — an
+  // unread state stating a fact about the court, in the one figure the row carries. Its six
+  // cells and its flag all say "Not read"; so does this. The same order `Matrix` draws the row
+  // in, and for the same reason: read first, then anything the cells could tell you.
+  const figure = row.read
+    ? commitMedianFigureOf(latency?.median, commitments, scanned)
+    : UNREAD_FIGURE;
+  const counted = row.read ? (latency?.seconds.length ?? 0) : 0;
+
+  return (
+    <RowMeasure>
+      <MeasureKey aria-hidden="true">MED C</MeasureKey>
+      <VisuallyHidden>
+        {counted > 0
+          ? `Median commit latency across ${counted} ${counted === 1 ? "draw" : "draws"} in this dispute`
+          : "Median commit latency in this dispute"}
+      </VisuallyHidden>
+      <CommitValue $tone={figure.tone}>{figure.text}</CommitValue>
+    </RowMeasure>
   );
 }
 
 export function Matrix({ performance, roster, slotsFor, now = Date.now() }: MatrixProps) {
   const { agentJurors, rows, totals, marginals, commitCoverage, parameters, rewards } = performance;
   const flagContext: RowFlagContext = { current: parameters.current, now };
+  // One flag, read by the cell, the dispute row and the column header alike. It switches on how
+  // many disputes the model holds, so the matrix crosses into the compact density on its own as
+  // the court grows — no upper bound on the dispute range is written anywhere, here or below the
+  // seam, and there is no control on the page for a reader to set this with.
+  const density = densityOf(rows.length);
+  const compact = density === "compact";
   const unread = commitCoverage.expected - commitCoverage.resolved;
   const identityOf = new Map(
     roster.entries.map(({ agentJuror, identity }) => [agentJuror.address, identity]),
@@ -457,14 +692,27 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
   // about it. This one stays because it is a rendering decision — which legend entries to name,
   // and whether "never drawn" is sayable at all.
   const unreadRows = totals.unreadDisputes.length;
+  // Read off the model and never reduced here, for the reason ticket 16 moved these figures onto
+  // `CourtTotals` in the first place: this is now a third rendering of one record, and three
+  // reductions of "how much of this court is blank" are three chances to disagree about it.
+  const sparsity = totals.sparsity;
+  // Read disputes the court has actually drawn a panel for — what a claim about who has never
+  // been drawn has to rest on. Subtracted from the model's own two counts rather than scanned
+  // for here, so it is the same set `emptyColumns` is taken over.
+  const panelled = sparsity.disputes - sparsity.undrawnDisputes.length;
 
   return (
     <Section aria-labelledby="matrix-heading">
       <Heading id="matrix-heading">The matrix</Heading>
+      {/* Two forms, for the reason the caveat card above this page has two: a sentence naming a
+          figure is a claim about the rendering the reader is looking at, and past the threshold
+          the cell has no commit figure in it. The corner cell says where that figure went; this
+          would have gone on promising it in the cell, two elements above the correction. */}
       <Lede>
-        One row per dispute, one column per agent juror, one cell per draw. Each cell says how long
-        that agent juror took to reveal its vote after the vote period opened, how long it took to
-        commit after the commit period opened, and whether it voted with the dispute's final ruling.
+        One row per dispute, one column per agent juror, one cell per draw.{" "}
+        {compact
+          ? "Each cell says how long that agent juror took to reveal its vote after the vote period opened, and whether it voted with the dispute's final ruling; commit latency is on the row at this density, as a median over that dispute's draws."
+          : "Each cell says how long that agent juror took to reveal its vote after the vote period opened, how long it took to commit after the commit period opened, and whether it voted with the dispute's final ruling."}{" "}
         Both durations are absolute and neither is a fraction of its window, because this court
         changed its period lengths midway through the experiment. Coherence is only asserted where
         the court has ruled: a dispute still in its appeal period has votes in it and no ruling, and
@@ -493,9 +741,18 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                   at the figures it affects. A truncating endpoint returns fewer logs and no
                   error, so without this sentence the page would simply show fewer commit
                   latencies — an absence indistinguishable from a fact. */}
+              {/* Where the missing figures actually are, which the density moved. At the
+                  comfortable density every draw has a commit slot and the short ones say so in
+                  words; past the threshold no cell carries a commit figure at all, and a row's
+                  median goes quietly short instead — it is taken over the commitments that were
+                  dated, and only says "Not read" where none of that row's could be. Sending a
+                  reader to look for cells that read "Not read" on a grid whose cells have no
+                  commit line is ticket 16's own review finding, one reduction later. */}
               {commitCoverage.resolved === 0
                 ? `None of the ${commitCoverage.expected} commitments this court recorded could be read from Arbitrum, so no commit latency below is a measurement.`
-                : `${unread} of the ${commitCoverage.expected} commitments this court recorded could not be found on Arbitrum, and those cells read "Not read".`}{" "}
+                : compact
+                  ? `${unread} of the ${commitCoverage.expected} commitments this court recorded could not be found on Arbitrum, so each row's median commit is taken over fewer draws than that dispute holds, and a row where none could be found reads "Not read".`
+                  : `${unread} of the ${commitCoverage.expected} commitments this court recorded could not be found on Arbitrum, and those cells read "Not read".`}{" "}
               That is a read that came back short, not an agent juror that failed to commit. Reveal
               latency and coherence come from the subgraph and are unaffected.
             </Notice>
@@ -506,28 +763,47 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                 ADR-0006's vocabulary rather than the grid's. The rails below are not: they
                 annotate a cell, and a card has neither. */}
             <StateLegend unknown={unreadRows > 0} />
+            {/* The rails, keyed to what the cells actually carry at this density. The compact
+                cell has one rail and no key beside it, so keying a `C` rail here would decode a
+                mark no cell wears — ticket 07 left that instruction against this very group. */}
             <LegendGroup>
               <LegendItem>
-                <span aria-hidden="true">R</span>Reveal
-                <Rail aria-hidden="true">
+                {!compact && <span aria-hidden="true">R</span>}Reveal
+                <Rail aria-hidden="true" $compact={compact}>
                   <RailFill style={{ width: "62%" }} />
                 </Rail>
               </LegendItem>
-              <LegendItem>
-                <span aria-hidden="true">C</span>Commit
-                <Rail aria-hidden="true">
-                  <CommitRailFill style={{ width: "71%" }} />
-                </Rail>
-              </LegendItem>
+              {!compact && (
+                <LegendItem>
+                  <span aria-hidden="true">C</span>Commit
+                  <Rail aria-hidden="true">
+                    <CommitRailFill style={{ width: "71%" }} />
+                  </Rail>
+                </LegendItem>
+              )}
               <LegendItem>Rail: 1s — 1h, log</LegendItem>
             </LegendGroup>
+            {/* `MatrixDense.dc.html:117`, and it earns its place at this density and not at the
+                other: a reader who has scrolled through hundreds of rows of mostly-empty grid is
+                the one who starts reading the blanks as a fault. The counts themselves are the
+                sparsity note's below — this says the one thing volume tempts a reader to assume
+                away, and it says it from the same `totals.sparsity` the note quotes so the two
+                can never disagree about one court. */}
+            {compact && (
+              <VolumeNote>
+                {sparsity.emptyColumns > 0 &&
+                  `${sparsity.emptyColumns === 1 ? "One agent juror is" : `${sparsity.emptyColumns} agent jurors are`} still blank across all ${sparsity.disputes} disputes read here. `}
+                Sparsity does not resolve with volume — a longer matrix is a taller sparse matrix,
+                not a fuller one.
+              </VolumeNote>
+            )}
           </Legend>
 
-          <TableScroll>
-            <Table>
+          <TableScroll $compact={compact}>
+            <Table $compact={compact}>
               <thead>
                 <tr>
-                  <CaptionCell scope="col">
+                  <CaptionCell scope="col" $compact={compact}>
                     {/* Read off the model rather than reduced here. It is a court-wide count,
                         and those live on `CourtTotals` beside the ones the stat tiles print —
                         a caption that reduced the rows itself would be a second definition of
@@ -535,9 +811,14 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                     <CaptionCount>
                       {totals.finalised} finalised · {totals.live} live
                     </CaptionCount>
+                    {/* What the density did, said where a reader meets the grid rather than left
+                        to be noticed. A figure that is simply gone is a figure a reader who knew
+                        it was there will go looking for; this is the corner cell of
+                        `MatrixDense.dc.html:62-65`, which states the reduction as a choice. */}
                     <CaptionBody>
-                      Newest first. One row per dispute, one column per agent juror, one cell per
-                      draw.
+                      {compact
+                        ? "Newest first. Reveal latency and coherence survive at this density; commit latency moves to the row, as a median over that dispute's own draws."
+                        : "Newest first. One row per dispute, one column per agent juror, one cell per draw."}
                     </CaptionBody>
                   </CaptionCell>
                   {agentJurors.map((agentJuror, column) => {
@@ -556,10 +837,15 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                     // newly-arrived dispute routinely sits unread beside a fresh dispute list —
                     // and this dashboard exists partly to record the day baskerville is drawn
                     // for the first time, which would land in exactly such a row.
-                    const neverDrawn = !drawn && unreadRows === 0;
+                    //
+                    // `panelled` is the second half of the same guard, and ticket 17 is what made
+                    // it reachable: a dispute the court has not drawn a panel for has no draw in
+                    // any column, so a page whose read rows were all of that kind would call all
+                    // six agent jurors never drawn over a draw that has not happened.
+                    const neverDrawn = !drawn && unreadRows === 0 && panelled > 0;
 
                     return (
-                      <AgentColumn key={agentJuror.address} scope="col">
+                      <AgentColumn key={agentJuror.address} scope="col" $compact={compact}>
                         <AgentIdentity>
                           {identity?.avatarUrl ? (
                             <Avatar src={identity.avatarUrl} alt="" loading="lazy" />
@@ -594,6 +880,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                             scanned={commitCoverage.read}
                             payouts={rewards}
                             current={parameters.current}
+                            density={density}
                           />
                         )}
                       </AgentColumn>
@@ -604,18 +891,19 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
               <tbody>
                 {rows.map((row) => {
                   const flag = rowFlagOf(row, flagContext);
-                  const lone = row.panelSize === 1;
                   // Read from the same predicate the flag and the caption use. The row wears
                   // the treatment even where a higher-precedence flag took the pill: a lone
                   // panel that is still being decided is both, and the rail is not the flag.
                   const isLive = !isFinalised(row.dispute);
+                  const panel = panelPillOf(row);
 
                   return (
                     <BodyRow key={row.dispute.id} $live={isLive} $rail={flag?.tone}>
-                      <RowHeaderCell scope="row">
+                      <RowHeaderCell scope="row" $compact={compact}>
                         <DisputeRow
                           as="div"
                           dispute={row.dispute}
+                          compact={compact}
                           slots={{
                             ...slotsFor?.(row.dispute),
                             // Content, not a pill: the row draws its own, and a pill passed in
@@ -623,20 +911,31 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                             //
                             // Panel size lives on the row and never in a cell: coherence cannot
                             // be read without it, and repeating it in every cell would cost more
-                            // than it tells.
-                            //
-                            // An unread row's panel size is 0 because nobody asked, not because
-                            // the court drew nobody, and "Panel 0" is exactly the sort of zero
-                            // this ticket exists to keep off the page. It says what it knows.
-                            panel: row.read ? `Panel ${row.panelSize}` : "Draws not read",
-                            panelTone: !row.read ? "fail" : lone ? "work" : undefined,
+                            // than it tells. What it says is `panelPillOf`'s, shared with the
+                            // phone's card — including the case neither layout had right until
+                            // ticket 17: a dispute that was read and has no panel yet is not a
+                            // panel of nobody.
+                            panel: panel.text,
+                            panelTone: panel.tone,
+                            // Abbreviated at the compact density, per `MatrixDense.dc.html:213`
+                            // against `Main.dc.html:302` — the one place the two artboards word
+                            // one thing twice, and the reason is a row 375px wide. Which flag it
+                            // is never changes; what goes is the qualifier after it.
                             flag: flag && (
                               <>
                                 <span aria-hidden="true">{flag.glyph}</span>
-                                {flag.label(row, flagContext)}
+                                {compact
+                                  ? flag.shortLabel(row, flagContext)
+                                  : flag.label(row, flagContext)}
                               </>
                             ),
                             flagTone: flag?.tone,
+                            // The commit figure the compact cell gave up, at the grain the corner
+                            // cell promises. Absent at the comfortable density, where every cell
+                            // carries its own.
+                            measure: compact ? (
+                              <RowCommit row={row} scanned={commitCoverage.read} />
+                            ) : undefined,
                           }}
                         />
                       </RowHeaderCell>
@@ -647,10 +946,16 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                         // Order matters, and this is the whole point of the row: an unread row's
                         // cells are all null, so testing for null first would draw six "not
                         // drawn" dots — an unread state rendering as a fact about the court.
-                        if (!row.read) return <UnreadCell key={agentJuror.address} />;
+                        if (!row.read) {
+                          return <UnreadCell key={agentJuror.address} density={density} />;
+                        }
 
                         return cell === null ? (
-                          <EmptyCell key={agentJuror.address}>
+                          // Identical at both densities, and deliberately: one 3px dot, no tile,
+                          // no border and no glyph. The emptiest state and the loudest have to
+                          // stay unconfusable however far the matrix is compressed, which is
+                          // what compacting the *drawn* cell towards it must never cost.
+                          <EmptyCell key={agentJuror.address} $compact={compact}>
                             <Dot aria-hidden="true" />
                             <VisuallyHidden>Not drawn</VisuallyHidden>
                           </EmptyCell>
@@ -659,6 +964,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                             key={agentJuror.address}
                             draw={cell}
                             scanned={commitCoverage.read}
+                            density={density}
                           />
                         );
                       })}

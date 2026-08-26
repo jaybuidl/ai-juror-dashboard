@@ -17,9 +17,11 @@ import parameterFixture from "../performance/court-34-parameters.fixture.json" w
   type: "json",
 };
 import rewardFixture from "../performance/court-34-rewards.fixture.json" with { type: "json" };
+import { COMPACT_FROM_ROWS } from "../performance/density";
 import {
   buildCourtPerformance,
   type RawCommitCast,
+  type RawCourtData,
   type RawDraw,
   type RawRewardShift,
 } from "../performance/performance";
@@ -370,6 +372,103 @@ export const staleDraws: CourtPerformanceView = {
   readAt: READ_AT - 60 * 60 * 1000,
   isPaused: false,
   retry: () => {},
+};
+
+/**
+ * The same court, grown to a given number of disputes.
+ *
+ * The captured court holds sixteen and ticket 17's threshold is in the region of forty, so the
+ * density that ticket is about cannot be reached from a fixture — court 34 has not reached it
+ * either. Dispute 156 is cloned under fresh ids, with its draws and its commitments, so the extra
+ * rows are ordinary rows: ruled, drawn, revealed and dated, rather than empty scaffolding that
+ * could be compacted without proving anything about a cell.
+ *
+ * Its payouts are deliberately *not* cloned. A ruled dispute the court has not executed pays
+ * nothing, which is a legitimate state lasting hours (`CLAUDE.md`), and `RewardCoverage.short` is
+ * built not to cry shortfall over it — so this adds rows without adding a banner.
+ *
+ * Here rather than in one suite because two of them need it: `Matrix.test.tsx` checks what the
+ * grid does at either density, and `MatrixPage.test.tsx` checks what the page says about it.
+ */
+const CLONE_SOURCE = "156";
+
+export function padCourt(
+  disputeCount: number,
+): Pick<RawCourtData, "disputes" | "draws" | "commits"> {
+  const raw = fixture as RawDispute[];
+  const draws = drawFixture as RawDraw[];
+  const commits = commitFixture as RawCommitCast[];
+
+  const source = raw.find((dispute) => dispute.disputeID === CLONE_SOURCE);
+  if (source === undefined) throw new Error(`No dispute ${CLONE_SOURCE} in the fixture`);
+  const sourceDraws = draws.filter((draw) => draw.dispute.disputeID === CLONE_SOURCE);
+  const sourceCommits = commits.filter((commit) => commit.disputeID === CLONE_SOURCE);
+  const highest = Math.max(...raw.map((dispute) => Number(dispute.disputeID)));
+
+  const extraDisputes: RawDispute[] = [];
+  const extraDraws: RawDraw[] = [];
+  const extraCommits: RawCommitCast[] = [];
+
+  for (let n = 1; raw.length + extraDisputes.length < disputeCount; n += 1) {
+    const id = String(highest + n);
+    extraDisputes.push({
+      ...source,
+      id,
+      disputeID: id,
+      rounds: source.rounds.map((round) => ({ ...round, id: `${id}-0` })),
+    });
+    extraDraws.push(
+      ...sourceDraws.map((draw) => ({
+        ...draw,
+        id: `${id}${draw.id.slice(CLONE_SOURCE.length)}`,
+        dispute: { disputeID: id },
+        round: { id: `${id}-0` },
+      })),
+    );
+    extraCommits.push(...sourceCommits.map((commit) => ({ ...commit, disputeID: id })));
+  }
+
+  return {
+    disputes: [...extraDisputes, ...raw],
+    draws: [...draws, ...extraDraws],
+    commits: [...commits, ...extraCommits],
+  };
+}
+
+function padded(disputeCount: number, over: Partial<RawCourtData> = {}) {
+  const result = buildCourtPerformance({
+    ...padCourt(disputeCount),
+    parameters: parameterFixture as RawCourtParameters[],
+    rewards: rewardFixture as RawRewardShift[],
+    roster: ROSTER,
+    drawsReadAt: null,
+    ...over,
+  });
+  if (!result.success) throw new Error(`${result.code}: ${result.message}`);
+  return result.data;
+}
+
+/** What the page has once the court has grown past the density threshold. */
+export const denseCourt: CourtPerformanceView = {
+  ...measured,
+  performance: padded(COMPACT_FROM_ROWS + 1),
+};
+
+/**
+ * The same court one dispute short of it.
+ *
+ * Every case about the compact density is paired with one about this, because a sentence that is
+ * absent for the wrong reason proves nothing — including the reason that somebody deleted it.
+ */
+export const roomyCourt: CourtPerformanceView = {
+  ...measured,
+  performance: padded(COMPACT_FROM_ROWS),
+};
+
+/** A compacted court whose payouts have not come back — the cold load, past the threshold. */
+export const denseUnpaidCourt: CourtPerformanceView = {
+  ...measured,
+  performance: padded(COMPACT_FROM_ROWS + 1, { rewards: null }),
 };
 
 /** What every view has when the browser reports no connection: no error, and no read either. */

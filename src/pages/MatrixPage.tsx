@@ -10,6 +10,7 @@ import { DisputeList } from "../disputes/DisputeList";
 import type { DisputesView } from "../disputes/useDisputes";
 import { arbitrumSource } from "../performance/arbitrum";
 import { DisputeCards } from "../performance/DisputeCards";
+import { densityOf } from "../performance/density";
 import { LatencyStrip } from "../performance/LatencyStrip";
 import { formatWindowSeconds } from "../performance/latency";
 import { Matrix } from "../performance/Matrix";
@@ -199,6 +200,11 @@ function coreFailureOf({
   // of something the reader was never shown. Ticket 13's rule tiers a failure by whether it costs
   // a figure, and on this layout it costs none. Left as it stands rather than re-tiered inside a
   // merge: it is a design call, and ticket 11 is where these two figures get a phone home.
+  //
+  // Ticket 17 leaves it on the same terms and for the same reason. Past forty disputes the column
+  // header keeps three of its six figures, so the compact density loses these two exactly as the
+  // phone does — and the wording above already says "below" rather than naming the column
+  // headers, which is the half ticket 16 fixed. The tier is the open question in both cases.
   if (measured?.rewards.short === true) {
     return {
       read: {
@@ -328,13 +334,26 @@ function failuresOf(
   };
 }
 
-/** What this view says its figures rest on. Composed here, printed by `View`. */
+/**
+ * What this view says its figures rest on. Composed here, printed by `View`.
+ *
+ * `narrow` and `dense` are both here for one reason: this footer may only state the provenance of
+ * something the reader can see. Ticket 16 dropped the column headers below the breakpoint and
+ * ticket 17 reduces them past forty rows, and the two reductions take the same figures with them
+ * — so a caveat about a payout figure is gated on both, and the test for it runs in both
+ * directions, because a caveat that is absent for the wrong reason tests nothing.
+ */
 function provenanceOf(
   { roster, disputes, performance }: MatrixPageProps,
   narrow: boolean,
+  dense: boolean,
 ): Provenance {
   const caveats: string[] = [];
   const measured = performance.performance;
+  // Whether the two reward sums are on screen at all. The column header is the only place this
+  // view prints them, and neither layout below carries that header: the phone replaces it with
+  // cards, and the compact density keeps three of its six figures.
+  const payoutsShown = !narrow && !dense;
 
   if (disputes.error !== null) {
     caveats.push(
@@ -423,7 +442,7 @@ function provenanceOf(
   // saying what it covers: the banner owns that one, and the column headers say "Not read" where
   // the figures belong. And on `!narrow`, because "these two lag the rest of this page" names two
   // figures that are not on a phone at all.
-  if (!narrow && measured?.rewards.read === true && !measured.rewards.short) {
+  if (payoutsShown && measured?.rewards.read === true && !measured.rewards.short) {
     caveats.push(
       `Cumulative ETH and net PNK are summed over the ${measured.rewards.paidDraws} draws the court has executed and paid out. A dispute it has ruled but not yet executed is counted in the coherence figures above and in neither reward figure, so these two lag the rest of this page rather than disagreeing with it.`,
     );
@@ -437,7 +456,7 @@ function provenanceOf(
   // phone none is shown. A reader sent looking for a figure that is not on the page is the fault
   // ticket 16's own review caught in the commit-shortfall notice.
   const feeTokenDraws = measured?.rewards.feeTokenDraws ?? 0;
-  if (!narrow && feeTokenDraws > 0) {
+  if (payoutsShown && feeTokenDraws > 0) {
     caveats.push(
       `${feeTokenDraws} ${feeTokenDraws === 1 ? "draw was" : "draws were"} paid in a fee token rather than in ETH, and no figure above carries that value. The ETH shown for those agent jurors is therefore less than what they were paid.`,
     );
@@ -447,7 +466,12 @@ function provenanceOf(
   // the banner's, and saying it twice would make one outage two voices.
   // "…is shown yet" promises a figure that is coming. On a phone none is coming, because this
   // layout has nowhere to put one — so the promise is the misleading half rather than the wait.
-  if (!narrow && measured !== null && !measured.rewards.read && performance.rewardsError === null) {
+  if (
+    payoutsShown &&
+    measured !== null &&
+    !measured.rewards.read &&
+    performance.rewardsError === null
+  ) {
     caveats.push(
       "The court's payouts are still being read, so no cumulative ETH or PNK figure is shown yet.",
     );
@@ -524,6 +548,11 @@ export function MatrixPage(props: MatrixPageProps) {
   // ever in the DOM: a `display: none` table is still 168 cells of it on the device least able
   // to afford them, and still there in a page a reader saves or prints.
   const isNarrow = useIsNarrow();
+  // The third rendering of this record, and the second that drops elements the prose above names:
+  // past forty disputes the matrix compacts, which takes the commit median and both reward sums
+  // out of every column header. Read from the same function the matrix switches on, so the page
+  // and the grid inside it can never disagree about which density the reader is looking at.
+  const isDense = measured !== null && densityOf(measured.rows.length) === "compact";
   // Asked of the core subgraph specifically, because that is the only source the tiles and the
   // strip read: disputes, draws, votes and reveal latency all come from it, and none of them
   // touches the template subgraph or Arbitrum. Labelling them partial over a missing title would
@@ -539,7 +568,7 @@ export function MatrixPage(props: MatrixPageProps) {
     failures.offline || (affects(failures, SOURCES.core) && core?.costsTiles === true);
 
   return (
-    <View provenance={provenanceOf(props, isNarrow)} failures={failures}>
+    <View provenance={provenanceOf(props, isNarrow, isDense)} failures={failures}>
       <Hero narrow={isNarrow} />
       <StatTiles
         totals={measured?.totals ?? null}
@@ -586,10 +615,22 @@ export function MatrixPage(props: MatrixPageProps) {
                   so naming the two sums here would credit the phone with figures it does not
                   carry. Saying instead that they have not been read would be ticket 10's retired
                   falsehood in reverse: they were read, and a desktop reader is looking at them.
-                  Neither claim is available, so the phone makes none. */}
+                  Neither claim is available, so the phone makes none.
+
+                  The compact density is the third branch and the same rule again, one width up:
+                  past forty disputes the column header keeps three of its six figures, so the
+                  sentence naming six would describe a header the reader is not looking at. This
+                  one *can* say where the commit median went, because it went somewhere on this
+                  page — onto the dispute row — which is the difference between a reduction and
+                  an absence, and the reason the grid's corner cell says the same thing. */}
               {isNarrow
                 ? "Each card summarises one dispute, and each slot along its foot one agent juror's draw."
-                : "Each column header summarises that agent juror's own draws in the same three measures, and states what that column has been paid: cumulative ETH and net PNK, which are context beside the measures rather than a fourth dimension anyone is ranked on."}{" "}
+                : isDense
+                  ? // No number in this sentence, deliberately: the threshold is a heuristic about
+                    // screen height that is meant to be movable, and prose naming forty would go
+                    // quietly false the day someone moved it.
+                    "Each column header summarises that agent juror's own draws in median reveal latency and coherence. With this many disputes the matrix is compacted, so the commit median moves onto each dispute's row and neither reward figure is shown."
+                  : "Each column header summarises that agent juror's own draws in the same three measures, and states what that column has been paid: cumulative ETH and net PNK, which are context beside the measures rather than a fourth dimension anyone is ranked on."}{" "}
               No figure here is a fraction of a period's window. Coherence is asserted only where
               the court has ruled, a blank {isNarrow ? "slot" : "cell"} means an agent juror was not
               drawn rather than that it failed to act, and a dispute decided by a panel of one is

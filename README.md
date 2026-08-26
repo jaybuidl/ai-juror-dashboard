@@ -54,6 +54,18 @@ too — the legend and the note that sparsity is normal are rendered inline abov
 rather than behind a control, because a reader who does not know a blank means "not drawn" will not
 go looking for the sentence that says so.
 
+**On a desktop it compacts as the court grows, and compacting is not editing.** Past a threshold in
+the region of forty rows the matrix drops to a denser form of itself: the cell keeps its reveal
+latency and its coherence state and gives up its commit line, halving in height; the row gives up
+its second line and gains the median commit over that dispute's own draws; each column header keeps
+its median reveal, its coherence count and its draw count, and freezes at the top of the page so a
+reader hundreds of rows down still knows which agent juror each column is. Nothing leaves: every
+dispute the court has held is still a row, every column is where it was, and no figure is
+paginated, filtered or collapsed away. The threshold is a guess about how much screen a reader has
+rather than a fact about this court, so it is one named constant with a comment saying so, and
+there is no control on the page for a reader to set — the matrix crosses over on its own as
+disputes arrive.
+
 Commit latency is the one figure not read from a subgraph: it comes from `CommitCast` logs on an
 Arbitrum RPC, because the subgraph records only *whether* a juror committed and never *when*. Every
 draw the subgraph calls committed is cross-checked against a matching log, and any shortfall is

@@ -3,6 +3,7 @@ import disputeFixture from "../disputes/court-34.fixture.json" with { type: "jso
 import type { RawDispute } from "../disputes/disputes";
 import { isFinalised } from "../disputes/liveness";
 import { ROSTER } from "../roster/agent-jurors";
+import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import rewardFixture from "./court-34-rewards.fixture.json" with { type: "json" };
@@ -11,10 +12,11 @@ import {
   type CourtPerformance,
   type Draw,
   type MatrixRow,
+  type RawCommitCast,
   type RawDraw,
   type RawRewardShift,
 } from "./performance";
-import { agentJurorMarginalsOf, courtTotalsOf, markedWindows } from "./totals";
+import { agentJurorMarginalsOf, courtTotalsOf, markedWindows, rowCommitLatencyOf } from "./totals";
 import type { RawCourtParameters } from "./windows";
 
 /**
@@ -240,6 +242,153 @@ describe("sparsity", () => {
     expect(sparsity.emptyColumns).toBe(0);
     expect(sparsity.positions).toBe(0);
     expect(sparsity.blank).toBe(0);
+  });
+
+  it("counts the blanks that mean the court has not drawn yet, separately", () => {
+    // Ticket 17's distinction, and the state a live court produces continually: a dispute in
+    // its evidence period was read and has no panel, so its six blanks mean the draw has not
+    // happened rather than that these agent jurors were not selected.
+    const waiting: MatrixRow = {
+      ...(built.rows[0] as MatrixRow),
+      dispute: { ...(built.rows[0] as MatrixRow).dispute, id: 167 },
+      panelSize: 0,
+      cells: ROSTER.map(() => null),
+    };
+    const { sparsity } = courtTotalsOf([waiting, ...built.rows], ROSTER);
+
+    expect(sparsity.undrawnDisputes).toEqual([167]);
+    expect(sparsity.undrawnPositions).toBe(ROSTER.length);
+    // Counted *in* the record, unlike an unread row: this is a fact about the court, so the
+    // dispute is one of the disputes and its positions are among the positions.
+    expect(sparsity.disputes).toBe(built.rows.length + 1);
+    expect(sparsity.blank).toBeGreaterThanOrEqual(sparsity.undrawnPositions);
+  });
+
+  it("says nothing about undrawn panels on a court where every dispute has one", () => {
+    const { sparsity } = courtTotalsOf(built.rows, ROSTER);
+
+    expect(sparsity.undrawnDisputes).toEqual([]);
+    expect(sparsity.undrawnPositions).toBe(0);
+  });
+
+  it("claims no empty column over a court that has drawn no panel at all", () => {
+    // The degenerate case review found: every read dispute still in its evidence period. Six
+    // agent jurors "blank end to end" there is a claim about a draw that has not happened, which
+    // is the misreading `undrawnDisputes` exists to close — and `emptyColumns` was the one figure
+    // not gated on it. The guard is the same one an all-unread court already had.
+    const waiting = built.rows.slice(0, 3).map((row) => ({
+      ...row,
+      panelSize: 0,
+      cells: ROSTER.map(() => null),
+    }));
+    const { sparsity } = courtTotalsOf(waiting, ROSTER);
+
+    expect(sparsity.emptyColumns).toBe(0);
+    // The blanks themselves are still counted, and still explained: they are a fact about a
+    // court that has not drawn yet rather than about six agent jurors.
+    expect(sparsity.blank).toBe(waiting.length * ROSTER.length);
+    expect(sparsity.undrawnDisputes).toHaveLength(waiting.length);
+  });
+
+  it("still names the agent juror no drawn dispute picked, beside disputes with no panel", () => {
+    // The other direction: an undrawn row among drawn ones must not suppress the claim, or a
+    // court in its ordinary state would stop saying the one thing this dashboard was built to
+    // record. baskerville is blank across every dispute that has a panel.
+    const waiting = {
+      ...(built.rows[0] as MatrixRow),
+      dispute: { ...(built.rows[0] as MatrixRow).dispute, id: 167 },
+      panelSize: 0,
+      cells: ROSTER.map(() => null),
+    };
+
+    expect(courtTotalsOf([waiting, ...built.rows], ROSTER).sparsity.emptyColumns).toBe(1);
+  });
+
+  it("never counts an unread row as a dispute with no panel", () => {
+    // Its panel size is 0 too, because nobody asked. Both are blank and only one of them is a
+    // fact about the court, which is the whole reason there are two counts.
+    const unread: MatrixRow = {
+      ...(built.rows[0] as MatrixRow),
+      read: false,
+      panelSize: 0,
+      cells: ROSTER.map(() => null),
+    };
+    const { sparsity } = courtTotalsOf([...built.rows.slice(1), unread], ROSTER);
+
+    expect(sparsity.undrawnDisputes).toEqual([]);
+  });
+});
+
+describe("rowCommitLatencyOf", () => {
+  /**
+   * The same court with the commitments read, which the suite-wide `built` deliberately omits.
+   *
+   * Every other figure here is reveal-only and must hold whether or not the log scan came back;
+   * this one is the commit half, so it needs the scan.
+   */
+  const scanned = ((): CourtPerformance => {
+    const result = buildCourtPerformance({
+      disputes: disputeFixture as RawDispute[],
+      draws: drawFixture as RawDraw[],
+      commits: commitFixture as RawCommitCast[],
+      parameters: parameterFixture as RawCourtParameters[],
+      rewards: rewardFixture as RawRewardShift[],
+      roster: ROSTER,
+      drawsReadAt: null,
+    });
+    if (!result.success) throw new Error(`${result.code}: ${result.message}`);
+    return result.data;
+  })();
+
+  /** The row the compact grid puts a commit figure on, and the draws behind it. */
+  function rowFor(id: number): MatrixRow {
+    const row = scanned.rows.find((candidate) => candidate.dispute.id === id);
+    if (row === undefined) throw new Error(`no row for dispute ${id}`);
+    return row;
+  }
+
+  it("summarises one dispute's own commitments", () => {
+    const { latency, commitments } = rowCommitLatencyOf(rowFor(156));
+    const cells = rowFor(156).cells.filter((cell) => cell !== null);
+
+    expect(commitments).toBe(cells.filter((cell) => cell.committed).length);
+    expect(latency?.seconds).toEqual(
+      cells
+        .map((cell) => cell.commitLatencySeconds)
+        .filter((seconds) => seconds !== null)
+        .sort((a, b) => a - b),
+    );
+    // The lower of the two middle values, as every median in this file is taken.
+    expect(latency?.median).toBe(
+      latency?.seconds[Math.ceil((latency?.seconds.length ?? 0) / 2) - 1],
+    );
+  });
+
+  it("returns nothing to measure rather than a zero", () => {
+    // A dispute nobody was drawn in has no commitment and no median, and a `0` here would be a
+    // latency nobody measured — the same rule every summary in this file follows.
+    const empty: MatrixRow = { ...rowFor(156), cells: ROSTER.map(() => null) };
+    const { latency, commitments } = rowCommitLatencyOf(empty);
+
+    expect(latency).toBeNull();
+    expect(commitments).toBe(0);
+  });
+
+  it("counts a commitment the scan could not date, so the view can tell the two absences apart", () => {
+    // The distinction the whole commit half of this page rests on: a draw the subgraph records
+    // as committed and Arbitrum could not date is a read that came back short, and one that
+    // never committed is an agent juror that did not act. Counted here; worded in `cell.ts`.
+    const row = rowFor(156);
+    const undated: MatrixRow = {
+      ...row,
+      cells: row.cells.map((cell) =>
+        cell === null ? null : { ...cell, commitLatencySeconds: null },
+      ),
+    };
+    const { latency, commitments } = rowCommitLatencyOf(undated);
+
+    expect(latency).toBeNull();
+    expect(commitments).toBeGreaterThan(0);
   });
 });
 

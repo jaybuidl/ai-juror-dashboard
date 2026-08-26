@@ -1,7 +1,8 @@
 import { Link } from "react-router";
 import styled from "styled-components";
 import { VisuallyHidden } from "../styles/hidden";
-import { type Figure, UNREAD_FIGURE } from "./cell";
+import { commitMedianFigureOf, type Figure, UNREAD_FIGURE } from "./cell";
+import type { Density } from "./density";
 import { formatLatencySeconds, formatWindowSeconds } from "./latency";
 import type { RewardCoverage } from "./performance";
 import { formatEthWei, formatPnkWei } from "./rewards";
@@ -53,6 +54,16 @@ type Slot = {
   caveat?: Caveat;
   /** Whether this figure is a net loss, which takes amber on top of its own sign character. */
   loss?: boolean;
+  /**
+   * Whether this figure survives the compact density.
+   *
+   * Three of the six do, per ticket 17: the median reveal, the coherence count and the draw
+   * count. What goes is the median commit — which the compact grid moves onto the dispute row
+   * rather than losing — and the two reward sums, which are supporting context beside the
+   * measures rather than a dimension anyone is ranked on. A flag on the slot rather than a
+   * second list, because a second list is a second order and the order is the artboard's.
+   */
+  dense: boolean;
 };
 
 /* The hairline the artboard puts between the identity block and the figures under it. */
@@ -149,12 +160,26 @@ export type MarginalsProps = {
   payouts: RewardCoverage;
   /** The windows the court is configured with today, against which an earlier one is named. */
   current: PeriodWindows | null;
+  /**
+   * How tightly the matrix around this header is drawn — `densityOf(rows.length)`.
+   *
+   * The same flag the cell and the dispute row read, so the three cannot come to disagree about
+   * which density the reader is in. At the compact density this block keeps three of its six
+   * figures and every marker on the three it keeps: a caveat is never among what density drops,
+   * and the reason line under a marked figure is the thing that makes the marker mean something.
+   */
+  density: Density;
 };
 
-export function Marginals({ marginals, scanned, payouts, current }: MarginalsProps) {
+export function Marginals({ marginals, scanned, payouts, current, density }: MarginalsProps) {
+  const compact = density === "compact";
+  const slots = slotsOf(marginals, scanned, payouts, current).filter(
+    (slot) => !compact || slot.dense,
+  );
+
   return (
     <Block>
-      {slotsOf(marginals, scanned, payouts, current).map((slot) => (
+      {slots.map((slot) => (
         <div key={slot.key}>
           <Line>
             <Key>
@@ -164,13 +189,37 @@ export function Marginals({ marginals, scanned, payouts, current }: MarginalsPro
             <Value $tone={slot.figure.tone} $loss={slot.loss}>
               {slot.figure.text}
               {slot.caveat && (
-                <Mark to={slot.caveat.href} aria-label={slot.caveat.about}>
+                <Mark
+                  to={slot.caveat.href}
+                  // The reason joins the mark's own name at the compact density, where it is no
+                  // longer drawn below the figure. Nothing is lost to a reader who is hearing
+                  // this page; what changes is how many pixels of a frozen header it costs one
+                  // who is looking at it.
+                  aria-label={
+                    compact ? `${slot.caveat.about}: ${slot.caveat.reason}` : slot.caveat.about
+                  }
+                >
                   <span aria-hidden="true">{slot.caveat.mark}</span>
                 </Mark>
               )}
             </Value>
           </Line>
-          {slot.caveat && <Reason>{slot.caveat.reason}</Reason>}
+          {/*
+            The trade ticket 06 pointed this ticket at, taken.
+
+            Its hand-off: "a sticky header that is a third of a viewport on the widest column",
+            answered "by a compact density that trades the reason lines for the footnotes below
+            the grid, by a header that collapses on scroll, or by something else". Measured in a
+            browser at this density the header was 295px of a 900px viewport, frozen, over rows
+            43px tall — seven rows of matrix behind a header that never moves. Eight of those
+            lines were columbo's three reasons.
+
+            **The marker is what survives, and it is not the caveat's only voice.** It stays on
+            the figure, it stays a link to the full account at `/method`, its reason is in its
+            accessible name, and the ‡ and † footnotes below the grid state both facts in full
+            at either density. What density drops here is the fourth telling.
+          */}
+          {slot.caveat && !compact && <Reason>{slot.caveat.reason}</Reason>}
         </div>
       ))}
     </Block>
@@ -188,6 +237,11 @@ export function Marginals({ marginals, scanned, payouts, current }: MarginalsPro
  * Nothing here is ranked and nothing reorders: the order is the artboard's, and the rewards sit
  * last because they are supporting context beside the marginals rather than a dimension this
  * dashboard measures agent jurors on.
+ *
+ * All six are built at either density and three are filtered out at the compact one. Building
+ * them and dropping them, rather than branching on density inside this function, is what keeps
+ * the order and the arithmetic one thing: a compact header is the comfortable header with three
+ * lines removed, and never a second block that happens to agree with it.
  */
 function slotsOf(
   marginals: AgentJurorMarginals,
@@ -201,6 +255,7 @@ function slotsOf(
   return [
     {
       key: "reveal",
+      dense: true,
       label: "Med rev",
       name: "Median reveal latency",
       figure: latencyFigure(revealLatency?.median),
@@ -218,9 +273,15 @@ function slotsOf(
     },
     {
       key: "commit",
+      // The one figure this block loses at the compact density that is not lost to the page: the
+      // grid moves it onto the dispute row, over that row's own draws, per the corner cell at
+      // `MatrixDense.dc.html:64`. The reveal median stays because reveal latency is the figure
+      // the experiment is about, and dispute 151's 8-hour commit window makes the commit the
+      // least comparable measure here — the same trade ADR-0005 records being made once already.
+      dense: false,
       label: "Med com",
       name: "Median commit latency",
-      figure: commitFigure(marginals, scanned),
+      figure: commitMedianFigureOf(marginals.commitLatency?.median, marginals.commitments, scanned),
       caveat: windowCaveat({
         changes: changedWindows,
         current,
@@ -231,6 +292,7 @@ function slotsOf(
     },
     {
       key: "coherence",
+      dense: true,
       label: "Coherent",
       name: "Coherent draws, of the draws the court has ruled on",
       // A count and never a rate, and a dash where there is no ruled draw to count over —
@@ -243,6 +305,7 @@ function slotsOf(
     },
     {
       key: "draws",
+      dense: true,
       label: "Draws",
       name: "Draws, and the vote IDs they hold",
       // The one figure that reads as a real zero: never having been drawn is a measurement of
@@ -252,12 +315,18 @@ function slotsOf(
     },
     {
       key: "eth",
+      // Both reward sums go at the compact density, and they are the two that can go without
+      // moving anywhere: they are context beside the measures rather than measures, nothing on
+      // this page orders by them, and `/disputes/:id` prints what each draw was paid. Ticket 10
+      // put them here; this reduces that block and does not build a second one.
+      dense: false,
       label: "Eth",
       name: "Cumulative ETH earned",
       figure: rewardFigure(marginals, payouts, (rewards) => formatEthWei(rewards.ethWei)),
     },
     {
       key: "pnk",
+      dense: false,
       label: "Pnk",
       name: "Net PNK gained or lost",
       figure: rewardFigure(marginals, payouts, (rewards) => formatPnkWei(rewards.pnkWei)),
@@ -316,21 +385,6 @@ function latencyFigure(median: number | undefined): Figure {
   return median === undefined
     ? { text: "—", tone: "pending" }
     : { text: formatLatencySeconds(median), tone: "value" };
-}
-
-/**
- * The commit median, and the one place a missing log must not read as a missing commitment.
- *
- * Three absences, exactly as `commitFigureOf` tells them apart one level down. A median that has
- * not been read yet is a step not reached and takes pending ink; a median that could not be read
- * over commitments the subgraph says exist is ticket 13's Unknown, which is rose and says so in
- * words; and no commitments at all is nothing to measure, which is the em dash again.
- */
-function commitFigure(marginals: AgentJurorMarginals, scanned: boolean): Figure {
-  const median = marginals.commitLatency?.median;
-  if (median !== undefined) return { text: formatLatencySeconds(median), tone: "value" };
-  if (scanned && marginals.commitments > 0) return { text: "Not read", tone: "unread" };
-  return { text: "—", tone: "pending" };
 }
 
 /**

@@ -57,66 +57,66 @@ single-line cell at `:94-107`, the legend and the sparsity line at `:111-118`),
 `../canvas/Main.dc.html:176-196` (the comfortable cell, whose commit line at `:188-194` is already
 conditional on the density flag), `../canvas/README.md` for provenance
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Past a row-count threshold the matrix renders at the compact density; below it the comfortable
+- [x] Past a row-count threshold the matrix renders at the compact density; below it the comfortable
       density of `Main.dc.html` renders unchanged
-- [ ] Both densities are one matrix behind one flag, not two components: the cell, the dispute row and
+- [x] Both densities are one matrix behind one flag, not two components: the cell, the dispute row and
       the column header each read the same flag
-- [ ] The row count that drives the switch is the number of disputes in the model, so the matrix crosses
+- [x] The row count that drives the switch is the number of disputes in the model, so the matrix crosses
       into the compact density on its own as disputes arrive, and no upper bound on the dispute range is
       written anywhere
-- [ ] The threshold is one named constant with a documented default in the region of forty rows,
+- [x] The threshold is one named constant with a documented default in the region of forty rows,
       referenced from one place, and commented as a heuristic about screen height rather than a fact
       about the court
-- [ ] The matrix renders comfortable at a row count below the threshold and compact at one above it,
+- [x] The matrix renders comfortable at a row count below the threshold and compact at one above it,
       whichever value that constant takes
-- [ ] The compact cell drops its commit line — the figure, its `C` key and its rail — and halves in
+- [x] The compact cell drops its commit line — the figure, its `C` key and its rail — and halves in
       height, measured against whatever the comfortable cell stands at. The artboards disagree on the
       exact compact height, so the ratio is the requirement and the pixel is not
-- [ ] Reveal latency and the coherence state are the only things that survive into the compact cell,
+- [x] Reveal latency and the coherence state are the only things that survive into the compact cell,
       the reveal rail riding the figure it belongs to. The state word, the vote-count annotation and the
       `R` key go with the commit line, the key because one latency needs no key to name it
-- [ ] The compact cell keeps the state's glyph, its fill and its border, so the five states stay
+- [x] The compact cell keeps the state's glyph, its fill and its border, so the five states stay
       distinguishable in greyscale once the word is gone, and the legend goes on naming all five by
       glyph, word and colour — no state is carried by colour alone at any density, per ADR-0006
-- [ ] A cell for an agent juror not drawn in that dispute is identical at both densities — one 3px dot,
+- [x] A cell for an agent juror not drawn in that dispute is identical at both densities — one 3px dot,
       no tile, no border, no glyph — so the emptiest state and the loudest stay unconfusable however far
       the matrix is compressed
-- [ ] At the compact density commit latency is carried on the dispute row and in no cell, per the corner
+- [x] At the compact density commit latency is carried on the dispute row and in no cell, per the corner
       cell: "commit latency moves to the row"
-- [ ] The row's commit figure names what it summarises over the draws in that row rather than standing
+- [x] The row's commit figure names what it summarises over the draws in that row rather than standing
       as an unlabelled number, since a row holds up to six draws and one figure cannot be all of them
-- [ ] The column header stays on screen while the matrix scrolls, so a reader hundreds of rows down can
+- [x] The column header stays on screen while the matrix scrolls, so a reader hundreds of rows down can
       still see which agent juror each column is
-- [ ] The freeze is the column header's alone: the dispute rows, the legend and the footnotes do not
+- [x] The freeze is the column header's alone: the dispute rows, the legend and the footnotes do not
       stick, and the page keeps one scroll context
-- [ ] The frozen column header keeps three of its six figures — median reveal latency, coherence as a
+- [x] The frozen column header keeps three of its six figures — median reveal latency, coherence as a
       count of coherent draws over resolved draws, and total draws — and drops the other three
-- [ ] The three it drops are median commit latency, which is one of ticket 06's four, and the cumulative
+- [x] The three it drops are median commit latency, which is one of ticket 06's four, and the cumulative
       ETH and PNK that ticket 10 adds to the same block
-- [ ] This ticket reduces the column header tickets 06 and 10 build and does not build a second one: the
+- [x] This ticket reduces the column header tickets 06 and 10 build and does not build a second one: the
       identity block, the hairline, the six figures and the computation behind them are theirs and are
       unchanged here
-- [ ] The `†` and `‡` markers ticket 06 puts on a marked aggregate survive the reduction on the figures
+- [x] The `†` and `‡` markers ticket 06 puts on a marked aggregate survive the reduction on the figures
       that are kept, and the full account of each stays one click from the marker — a caveat is never
       among what density drops
-- [ ] The grid's corner cell says what this density did — that reveal latency and coherence survive it,
+- [x] The grid's corner cell says what this density did — that reveal latency and coherence survive it,
       and that commit latency moved to the row — so a reader meets the reduction as a stated choice and
       not as a figure that went missing
-- [ ] What the row loses is closed and listed: the second line goes, taking the category and the ruling
+- [x] What the row loses is closed and listed: the second line goes, taking the category and the ruling
       with it, and the commit figure this ticket moves onto the row takes their place. Nothing beyond
       that list changes — the six columns and their order, the newest-first row order, every row's flag
       and the documented flag precedence, and every dispute, draw and blank cell all render as they do
       at the comfortable density
-- [ ] Density never filters, paginates, collapses, reorders or windows away a row. Every dispute in the
+- [x] Density never filters, paginates, collapses, reorders or windows away a row. Every dispute in the
       model is in the compact matrix, which is the whole reason for compacting it
-- [ ] The matrix goes on saying at this density that a blank cell is the normal case, and says that
+- [x] The matrix goes on saying at this density that a blank cell is the normal case, and says that
       sparsity does not resolve with volume — one agent juror has still never been drawn, and a longer
       matrix is a taller sparse matrix, not a fuller one
-- [ ] Tested by rendering one fixture at both densities and asserting the difference is exactly the
+- [x] Tested by rendering one fixture at both densities and asserting the difference is exactly the
       reductions above: every state keeps its glyph, every row is present in both, and no column moves
-- [ ] Tested at a row count either side of the threshold, so the switch itself is covered and not only
+- [x] Tested at a row count either side of the threshold, so the switch itself is covered and not only
       the two layouts it switches between
 
 ## Comments
@@ -256,3 +256,156 @@ of several hundred *cards* should do is unsettled — the canvas draws four and 
 thirty-one today. It is this ticket's question in the other layout, and the two answers should
 probably be decided together: whatever the grid does past forty rows, the card list needs a story
 past the same number, and neither may quietly stop showing disputes it has read.
+
+## What landed
+
+**One flag, `src/performance/density.ts`.** `COMPACT_FROM_ROWS = 40` with its own paragraph
+saying it is a heuristic about screen height rather than a fact about this court, and
+`densityOf(rows)` — "past forty rows", so forty is comfortable and forty-one is not. It switches
+on `performance.rows.length`, so the matrix crosses over on its own as the court grows, and no
+upper bound on the dispute range is written anywhere. The cell, the dispute row and the column
+header all read that one value. `CELL_HEIGHT_PX` and `COMPACT_CELL_HEIGHT_PX` live beside it as
+76 and half of it, derived rather than typed, because the artboards disagree about the compact
+pixel and the ratio is what the ticket asks for.
+
+**The cell keeps two things and loses four.** Reveal latency and the coherence state survive with
+the reveal rail riding the figure; the commit figure, its `C` key and its rail go, and so do the
+`R` key and the vote-count annotation. The state's word leaves the ink and stays in the accessible
+name beside the glyph — the glyph is `aria-hidden` decoration, so removing the word outright would
+have left a reader hearing the page with a bare duration. A not-drawn position is byte-identical
+at both densities: one 3px dot, no tile, no border, no glyph.
+
+**Commit latency moves to the row**, which is what the corner cell had been promising since
+`MatrixDense.dc.html:64` without drawing it. `rowCommitLatencyOf` in `totals.ts` is the reduction —
+below the seam, like every other figure — and the row prints `MED C` and the median. A row's draws
+all ran under one set of windows, so unlike the column medians this one needs no `†` of its own.
+
+**The column header keeps three of six figures and freezes.** `Marginals` filters on a `dense`
+flag per slot rather than branching, so a compact header is the comfortable one with three lines
+removed and never a second block. The freeze needed two things that had nothing to do with this
+grid: `Shell.tsx`'s `Ground` went from `overflow: hidden` to `overflow: clip`, and the matrix's
+own scroll box is absent at this density — both are scroll containers, and a `position: sticky`
+element sticks to its nearest scroll container rather than to the page.
+
+**The row loses its second line.** `DisputeRow` gained a `compact` form: one line, no category and
+no ruling, the pills inline and a `measure` slot at the end of them. `panelPillOf` in
+`panel.ts` is new and shared with the phone's card, which is where the three panel states are now
+worded once — including the one both layouts had wrong.
+
+## What the browser found, and none of it was findable in jsdom
+
+Three defects, all with 736 tests green, all of them positional. `CLAUDE.md` already says anything
+positional here needs a browser at the width it is claimed to work at; this is the fourth ticket
+to prove it.
+
+- **An `auto` grid track takes its content before a `1fr` sibling gets anything.** The compact row
+  was `2.5rem minmax(0, 1fr) auto`, and the title measured **zero pixels wide** on every row: a
+  dispute id, some pills, and no subject. `minmax(7rem, 1fr)` on the title track is the floor that
+  fixes it. It is the same family as the `text-overflow: ellipsis` failure `DisputeList.tsx`
+  already carries a comment about, one column over.
+- **`MeasureKey` is 7px wide, because a cell's key is one letter.** `MED C` in 7px overlapped the
+  duration beside it. The row's measure widens it through a component selector rather than
+  changing the cell's key.
+- **The frozen header was 295px of a 900px viewport**, over rows 43px tall — seven rows of matrix
+  behind a header that never moves. Eight of those lines were columbo's three caveat reason lines,
+  which is exactly the trade ticket 06 handed this ticket.
+
+Measured against the live court at 1440, 1280, 900 and 390: the comfortable density is unchanged
+to the pixel (239px row header, 145px columns, 142px rows, a static header and a sideways-scrolling
+box), the compact one is 442/110/43 with the header stuck at `top: 0` after a 2,588px scroll, and
+no width scrolls the page sideways.
+
+## Where the canvas, the criteria and a browser disagreed
+
+Four calls, each recorded here because each is a place a reviewer will otherwise read a criterion
+as unmet.
+
+- **The flag abbreviates at this density, against criterion 19.** `Main.dc.html:302` gives
+  "† 8h window", "‡ Lone panel" and "⋯ Live · commit 3m 12s"; `MatrixDense.dc.html:213` gives
+  "† 8h", "‡ Lone" and "⋯ Live" for the same rows. It is the one place the two artboards
+  deliberately word one thing twice, the canvas wins over a ticket (`CLAUDE.md`), and here it has
+  to: the live pill was 175px of a 375px row, and it was the title that paid. `ROW_FLAGS` carries
+  both labels so the two densities cannot fork.
+- **The reason line under a marked figure goes; the marker, its link and its reason do not.**
+  Ticket 06's own hand-off offered this trade — "by a compact density that trades the reason lines
+  for the footnotes below the grid" — and the 295px header is what makes it necessary. The mark
+  stays on the number, its `aria-label` now carries the reason in full, `/method` has the account,
+  and the `†` and `‡` footnotes below the grid state both facts at either density. What density
+  drops is the fourth telling.
+- **The row's commit figure names itself and counts its draws only in its accessible name.**
+  "· 4 draws" measured 40px of a 441px row and they came out of the title. What criterion 11
+  protects against is a bare duration read as *the* commit latency of a dispute holding up to six
+  draws, and `MED` is what prevents that: a median is by construction not one draw's figure.
+- **The freeze needs `breakpoints.compactGrid` (1160px) and says so.** The compact grid has a
+  `min-width` of 1064px — 440 for the row header and six columns a compact cell needs about 104px
+  each for — and below that width the box scrolls sideways again, exactly as the comfortable
+  density always does. A sticky header inside a scroll container does not stick, so between 720px
+  and 1160px the column header scrolls away with the rows. Every other reduction holds at every
+  width. Left rather than solved because the alternatives are worse: a bounded-height box is a
+  second scroll context, which criterion 14 forbids, and crushing the columns spills durations
+  into the column beside them.
+
+## The blank-row reading three tickets handed here, closed
+
+Disputes 167, 168 and 169 arrived in their evidence period with nobody drawn, and both layouts
+drew them as six blanks under a note saying every blank is random draw sparsity. That claim is
+true of a dispute with a panel and false of one without.
+
+- `panelPillOf` gives it words on the row and on the card: **"No panel yet"**, quiet, neither rose
+  nor Unknown, per ticket 13's instruction. `Panel 0` is gone from both layouts.
+- `Sparsity.undrawnDisputes` and `undrawnPositions` count them below the seam, so the matrix and
+  the card list cannot disagree, and `SparsityNote` names them by id: "6 of those blanks are a
+  different absence: dispute 167 has no panel at all yet, so there the draw has not happened
+  rather than an agent juror not having been selected."
+- The third absence is still counted out entirely and still says so: a dispute whose draws were
+  never *read* is ticket 13's Unknown.
+
+## Left for other tickets
+
+- **What a stack of several hundred cards should do is still open**, and this ticket did not close
+  it. The grid's answer is a density; the card list's cannot be the same one, because a card is
+  already one line per dispute at the only density it has. It is ticket 16's question and it is
+  still worth settling before the record grows into it.
+- **The frozen header below 1160px**, above.
+- **Ticket 18 inherits four new inks at 9-11px**: the row's `MED C` key and its median, the
+  compact cell's glyph and duration at 11.5px, and `PanelLabel` — which is `textPending`
+  (`--text-4`, measured at 2.68-2.91:1 in the dark theme) on a plain background rather than inside
+  a pill. The palette's contrast is that ticket's, and the compact density puts more weight on it.
+
+## What review found, and the shape four of the six shared
+
+Six findings, all real, all fixed. Four of them are the same fault at four grains: **a claim that
+was true of the comfortable density and false of the compact one**, which is `CLAUDE.md`'s
+cross-layout prose trap with a third rendering added to it.
+
+- **The commit-shortfall notice sent readers to look for cells that carry no commit figure.** It
+  said `those cells read "Not read"` — true of a two-line cell, false of a one-line one. Worse,
+  the compact grid has no place for a *partial* shortfall to show at all: a row's median is taken
+  over the commitments that were dated and says "Not read" only where none of them could be. The
+  notice now says exactly that. `DisputeCards.tsx` even carried a comment claiming the grid could
+  safely say the old sentence "because every cell there has a commit slot", which this ticket had
+  just made untrue.
+- **The lede promised both latencies in every cell**, two elements above the corner cell that says
+  where the commit figure went.
+- **`RowCommit` printed an em dash on a row whose draws were never read** — the dash this design
+  defines as "nothing to measure", beside six cells and a flag all reading "Not read". It reads
+  "Not read" now, on the same read-first ordering the row itself is drawn in.
+- **`emptyColumns` and "Never drawn" were not gated on the undrawn rows this ticket introduced.**
+  On a court whose read disputes are all still in their evidence period — its opening hours, or a
+  page holding nothing else — all six agent jurors read "blank end to end" over a draw that has
+  not happened. The one figure that had not been given the guard the whole ticket is about.
+
+The other two are ordinary bugs, and both were invisible for the same reason: court 34's values
+happen to hide them.
+
+- **The flag's abbreviation truncated at the first space.** `formatWindowSeconds` returns two words
+  whenever the minutes do not divide by 60, so a court whose earlier window was 5,400s would have
+  been marked "1h" — a duration it never had, on the marker whose whole job is to name the one that
+  differs. Both labels are composed from one reduction now, and a 90-minute window is pinned.
+- **`overflow: clip` is dropped whole where it is unsupported**, which is Safari below 16 — and
+  what `Ground` clips is a 1,560px decorative orbit and a matrix wider than the page. It is behind
+  `@supports` with `hidden` as the fallback: losing the freeze on an old browser is a reduction,
+  letting the page scroll sideways is the thing this repo says a layout must never do.
+
+Every fix carries a test, and the two whose absence would be silent were checked by reverting the
+fix and watching the test fail.

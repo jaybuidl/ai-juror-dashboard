@@ -139,13 +139,47 @@ export type Sparsity = {
   /** How many of those hold no draw. Sparsity is normal: the court draws at random. */
   blank: number;
   /**
-   * Agent jurors with no draw in any read dispute.
+   * Agent jurors with no draw in any read dispute the court has drawn a panel for.
    *
-   * A claim about the whole record, so it is `0` where there is no read row to say it about
+   * A claim about the whole record, so it is `0` where there is no such row to say it about
    * rather than six: `every` on an empty array is vacuously true, and without the guard a court
    * whose every row was unread would report all six agent jurors as never drawn on no evidence.
+   *
+   * The undrawn rows are held out of it for the same reason and not a weaker one. A dispute the
+   * court has not drawn a panel for has no draw in *any* column, so a page whose read rows were
+   * all of that kind — a court in its opening hours, or a matrix scrolled to nothing else —
+   * would report all six agent jurors as blank end to end on the strength of a draw that has not
+   * happened. That is exactly the misreading `undrawnDisputes` exists to close, in the one figure
+   * that was not gated on it.
    */
   emptyColumns: number;
+  /**
+   * Disputes that were read and have no panel yet, by id — the second kind of blank.
+   *
+   * The distinction ticket 17 was handed by three tickets at once, and it is the difference
+   * between two sentences a reader could act on. A blank position in a dispute with a panel means
+   * *this agent juror was not selected*, which is the random sparsity the note beside the grid
+   * exists to explain. A blank in a dispute with no panel means *no selection has happened yet* —
+   * the court draws when a dispute leaves its evidence period, and 167, 168 and 169 were sitting
+   * in theirs on the day this was written, contributing 18 blanks the note was calling sparsity.
+   *
+   * Counted here rather than beside the note for the reason every figure in this file is: the
+   * matrix and the phone's card list are two renderings of one record, and each has to say the
+   * same thing about how much of it is empty and why.
+   *
+   * Distinct again from `CourtTotals.unreadDisputes`, which is a dispute whose draws were never
+   * *read*: that is a gap in this dashboard and is counted out of `positions` entirely, where
+   * this is a fact about the court and is counted in.
+   */
+  undrawnDisputes: readonly number[];
+  /**
+   * How many of `blank` sit in those disputes.
+   *
+   * One per agent juror per undrawn dispute, since a dispute with no panel has no draw in any
+   * column. Carried so the note can say what share of the blank it is quoting means "not drawn
+   * yet" rather than leaving a reader to multiply two numbers.
+   */
+  undrawnPositions: number;
 };
 
 /**
@@ -503,16 +537,64 @@ function sparsityOf(rows: readonly MatrixRow[], agentJurors: readonly AgentJuror
     (total, row) => total + row.cells.filter((cell) => cell !== null).length,
     0,
   );
+  // Read, and nobody drawn — the second kind of blank. `panelSize` is the whole panel and not
+  // this roster's share of it, so a dispute drawn entirely outside the roster is *not* one of
+  // these: it has a panel, and its blanks are the ordinary kind.
+  const undrawn = read.filter((row) => row.panelSize === 0);
+  // The rows a "never drawn" claim can rest on: read, and with a panel to have been left out of.
+  const panelled = read.filter((row) => row.panelSize > 0);
 
   return {
     disputes: read.length,
     positions,
     blank: positions - drawn,
     emptyColumns:
-      read.length === 0
+      panelled.length === 0
         ? 0
-        : agentJurors.filter((_, column) => read.every((row) => row.cells[column] === null)).length,
+        : agentJurors.filter((_, column) => panelled.every((row) => row.cells[column] === null))
+            .length,
+    // Ascending, because rows arrive newest first and a note naming "disputes 167, 168 and 169"
+    // reads forwards — the same reason every other list of ids in this file is sorted.
+    undrawnDisputes: undrawn.map((row) => row.dispute.id).sort((a, b) => a - b),
+    undrawnPositions: undrawn.length * agentJurors.length,
   };
+}
+
+/**
+ * One dispute's commit latencies, and how many commitments it holds.
+ *
+ * Ticket 17 moves the commit figure out of the compact cell and onto the row it belongs to
+ * (`MatrixDense.dc.html:64`, "commit latency moves to the row"), and this is the reduction behind
+ * it. Here rather than in the component that prints it for the reason every figure in this file
+ * is here: a median computed while rendering is a second definition of the word sitting one
+ * import away from the first, free to disagree with the column medians above it.
+ *
+ * A row's draws all ran under one set of windows — a dispute passes each period once — so unlike
+ * the column medians this one needs no `†` of its own. The row already carries the marker where
+ * the whole dispute ran under superseded durations, which is the same fact at the same grain.
+ *
+ * `commitments` is what separates the three absences a missing median can mean, exactly as it
+ * does on `AgentJurorMarginals`: no commitments at all is nothing to measure, commitments with no
+ * median is a read of Arbitrum that came back short, and neither may be worded as the other.
+ */
+export type RowCommitLatency = {
+  /** Commit latency across this row's dated commitments, or `null` where none is dated. */
+  latency: LatencySummary | null;
+  /** How many of this row's draws the subgraph records as committed, whatever the scan found. */
+  commitments: number;
+};
+
+export function rowCommitLatencyOf(row: MatrixRow): RowCommitLatency {
+  const seconds: number[] = [];
+  let commitments = 0;
+
+  for (const cell of row.cells) {
+    if (cell === null) continue;
+    if (cell.committed) commitments += 1;
+    if (cell.commitLatencySeconds !== null) seconds.push(cell.commitLatencySeconds);
+  }
+
+  return { latency: summaryOf(seconds), commitments };
 }
 
 /**

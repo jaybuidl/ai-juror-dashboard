@@ -192,3 +192,25 @@ view's stat card; ticket 16 leaves its phone form undecided — and the card lis
 column headers, so this view is the only place those two sums are legible below the breakpoint at
 all. Deciding the phone form is therefore deciding where a phone reader reads them, which is a
 question no other open ticket answers.
+
+## From ticket 17, 2026-08-26 — the column header now has two forms, and one of them is a prop
+
+The compact density landed, and three things in it touch this view.
+
+- **`Marginals` takes a `density` prop and it is required.** If this view reuses that block —
+  it should, `marginals` is exactly what it needs and it needs no read of its own — it passes
+  `"comfortable"` and gets all six figures. The compact form keeps three: the median reveal, the
+  coherence count and the draw count.
+- **The two reward sums are now dropped by *two* reductions, not one.** The card list drops them
+  below `breakpoints.narrow` and the compact density drops them past `COMPACT_FROM_ROWS`. That
+  strengthens rather than changes the question this ticket already carries: on a phone *and* on a
+  long matrix, this view is the only place cumulative ETH and net PNK are legible at all.
+- **`panelPillOf` is where the panel slot's words live**, shared by the matrix row and the phone
+  card. A dispute the court has not drawn a panel for yet reads "No panel yet" and never
+  "Panel 0" — if this view lists an agent juror's disputes, that is the wording to reuse rather
+  than restate.
+
+And the gating rule this ticket will meet the moment it writes a caveat about a figure: a sentence
+naming a figure is a claim about which rendering the reader is looking at, and there are now three.
+`provenanceOf` in `MatrixPage.tsx` takes `narrow` and `dense` for exactly that, and every gate has
+a test in both directions.

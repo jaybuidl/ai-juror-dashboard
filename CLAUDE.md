@@ -5,7 +5,7 @@ on two dimensions: **speed** (commit and reveal latency) and **coherence** (voti
 ruling).
 
 **Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>. Tickets 01, 02, 03, 04,
-05, 06, 07, 08, 09, 10, 12, 13, 14, 15 and 16 are done: Vite + React + TypeScript, yarn 4, Biome,
+05, 06, 07, 08, 09, 10, 12, 13, 14, 15, 16 and 17 are done: Vite + React + TypeScript, yarn 4, Biome,
 Vitest, a
 `netlify.toml`
 that is the single source of truth for the deploy, the Kleros ×AI tokens adopted and self-hosted
@@ -59,8 +59,20 @@ and the latency strip are absent without a measured figure leaving the page. It 
 own open question — the legend and the sparsity note reach a phone reader **inline at the head of
 the card list, always visible**, because the sparsity note prevents a misreading rather than
 answering a question, and a reader who does not know they have been misled never opens a
-disclosure. `narrow` is now the one width anything in this repo reduces at; the `600px` and `760px`
-literals are gone.
+disclosure. `narrow` is the one width the *layout* changes at; the `600px` and `760px` literals are
+gone.
+Ticket 17 then gave the surviving grid a second **density** rather than a second layout. Past
+`COMPACT_FROM_ROWS` — 40, in `src/performance/density.ts`, documented as a heuristic about screen
+height rather than a fact about this court — the cell drops its commit line and halves in height,
+the row drops its second line with the category and the ruling on it, the column header keeps three
+of its six figures and **freezes**, and the commit median moves onto the dispute row as a figure
+over that row's own draws. Nothing else changes: no dispute leaves the page, no column moves,
+nothing is filtered, paginated or windowed away, and the comfortable density renders to the pixel
+as it did. The switch is one flag read by the cell, the row and the header alike, driven by the row
+count in the model, with no control for a reader to set — so the matrix compacts itself as the court
+grows into it. It also closed the reading three tickets had handed it: a dispute that was read and
+has **no panel yet** says so in words on both layouts, is counted separately on
+`CourtTotals.sparsity`, and `Panel 0` is gone.
 The design work behind it (glossary, seven ADRs, a spec, eighteen tickets) came out of a full
 grilling session and a later pass that rebuilt the tracker on the finished design — ADR-0007 is the
 one that came from implementation rather than design, and it overrode the spec. Start by reading, not by
@@ -108,6 +120,14 @@ the flag precedence lifted out of `Matrix.tsx` whole. Both moved for the same re
 rule stated once more: the matrix and the phone's card list are two renderings of one record, and
 a figure or a ranking reduced inside either of them is two chances for a desktop and a phone to
 disagree about one court.
+Ticket 17 added the fifth and sixth, and made that rule count to **three**: `rowCommitLatencyOf` in
+`totals.ts` — the median commit over one dispute's own draws, which the compact row prints — and
+`Sparsity.undrawnDisputes`/`undrawnPositions`, the blanks that mean the court has not drawn yet
+rather than that an agent juror was not selected. It also lifted `panel.ts` beside `cell.ts` and
+`row-flags.ts` for the same reason ticket 16 lifted those: the panel slot's three states were
+worded twice, in two files, and one of the two wordings was wrong in both. The density flag itself
+is `density.ts` — pure, checked rather than looked at, and the one place the crossing point is
+written down.
 Ticket 09 added the **second** model beside it rather than inside it —
 `buildDisputeDetail` in `src/performance/dispute-detail.ts`, under the same discipline (pure, no
 network, no clock) at a different altitude: one dispute rather than the court, joining the row, the
@@ -136,6 +156,11 @@ and its line range, or, for ticket 14, the design system itself.
 - **Where the canvas and a ticket disagree, the canvas wins.** Ruled 2026-08-25, resolving three
   conflicts at once; the tickets were amended, not the artboards. Two of those resolutions are now
   ADR-0005 and ADR-0006. This does not extend to the canvas's *data*, which is largely sampled.
+  Ticket 17 is the fourth: its criteria say a row's flag renders identically at both densities,
+  and the artboards word it twice on purpose — `Main.dc.html:302` gives "† 8h window", "‡ Lone
+  panel", "⋯ Live · commit 3m 12s" and `MatrixDense.dc.html:213` gives "† 8h", "‡ Lone", "⋯ Live".
+  The canvas won, and a browser said why: the live pill was 175px of a 375px row and it was the
+  dispute's title that paid. `ROW_FLAGS` carries `label` and `shortLabel` so the two cannot fork.
 - Use `CONTEXT.md` vocabulary. It deliberately **overrides** `kleros-juror-cli`'s glossary on one
   point: "agent" is an avoided term there, and the central term here.
 
@@ -253,10 +278,13 @@ Things that cost real effort to discover and are easy to get wrong again:
   asserted `commitOpenedAt > 0` for every dispute the court returns, which was true until it wasn't;
   it now asserts null for `evidence` and a moment for everything else. Any assertion quantified over
   "every dispute the court holds" has this shape and will expire the same way. Ticket 13 fixed the
-  neighbouring case and **not** this one: a dispute whose draws were never *read* is now drawn as
-  Unknown and counted out of the sparsity figure, but a dispute that was read and genuinely has no
-  panel yet is still six blanks under a note saying every blank is random draw sparsity. That
-  remains ticket 17's, and it is the reading a live court produces today.
+  neighbouring case — a dispute whose draws were never *read* is drawn as Unknown and counted out
+  of the sparsity figures — and **ticket 17 closed this one**: there are now three absences and
+  each has its own words. A dispute that was read and has no panel yet says "No panel yet" on the
+  row and on the card (`panel.ts`, quiet, neither rose nor Unknown), its blanks are counted apart
+  on `Sparsity.undrawnDisputes` and `undrawnPositions`, and the sparsity note names them by id
+  before claiming that a blank means an agent juror was not selected. `Panel 0` is gone from both
+  layouts: a zero there claims the court drew a panel of nobody.
 - **Dispute 155 had a panel of one.** Coherence is tautological there. Any aggregate carries this.
 - **The offline suite goes red under CPU contention, and it looks like a bug you just introduced.**
   `yarn test` is ~450 tests across 27 files, many of them rendering the whole matrix, and vitest
@@ -475,7 +503,28 @@ Things that cost real effort to discover and are easy to get wrong again:
   when the container stretches it, which a flex row never does and the folded nav's column always
   does. None of the three throws, warns, or fails a test. Anything positional in this repo needs a
   browser at the width it is claimed to work at, and `agent-browser` with `--executable-path` is
-  how the rest of this ticket was checked.
+  how the rest of this ticket was checked. **Ticket 17 found three more the same way, with 736
+  green tests**, and two of them are worth knowing as rules rather than as anecdotes.
+- **A `position: sticky` element sticks to its nearest *scroll container*, and `overflow: hidden`
+  makes one.** Ticket 17's frozen column header needed two unrelated things fixed before it could
+  freeze at all, neither of them in the matrix: `Shell.tsx`'s `Ground` wrapped every view in
+  `overflow: hidden`, which is a scroll container even where nothing overflows, and the matrix's
+  own `overflow-x: auto` box is one in *both* axes — `overflow-y: visible` beside it computes to
+  `auto`, per CSS Overflow 3. A sticky header inside either sticks to a box that never scrolls
+  vertically, so it simply never freezes: no error, no warning, and nothing a jsdom test can see.
+  `Ground` is `overflow: clip` now, which clips identically and is not a scroll container; the
+  matrix drops its own box at the compact density and takes a `min-width` instead. Anything sticky
+  added here has to walk its ancestors first.
+- **An `auto` grid track takes its content's width before a `1fr` sibling gets anything.** The
+  compact row was `2.5rem minmax(0, 1fr) auto` — id, title, details — and the title measured
+  **zero pixels** on every row in a browser: an id, some pills and no subject. The floor is
+  `minmax(7rem, 1fr)` on the track that must survive. It is the same family as the
+  `text-overflow: ellipsis` failure `DisputeList.tsx` already carries a comment about, and it fails
+  in the same silence.
+- **A shared styled component sized for its first use is sized wrong for its second.**
+  `MeasureKey` is 7px wide because a cell's key is one letter; the row's `MED C` overlapped the
+  duration beside it. Fixed through a component selector where the second use is, rather than by
+  widening the first.
 - **Two layouts share their model by construction and their *prose* by hand, and the prose is
   where they drift.** Ticket 16 gave the matrix a second rendering; `cell.ts`, `row-flags.ts`,
   `Legend.tsx` and `Footnotes.tsx` are shared so the states, the flag precedence and the caveats
@@ -497,7 +546,13 @@ Things that cost real effort to discover and are easy to get wrong again:
   ticket that adds a figure to a desktop-only element adds every sentence about that figure to the
   phone's list of things to gate**, and the gate is `!narrow` in `provenanceOf`, tested in both
   directions because a caveat that is absent for the wrong reason tests nothing. `MatrixPage`'s
-  phone describe block carries those four.
+  phone describe block carries those four. **Ticket 17 made it three renderings rather than two**,
+  and the third is not a width: past `COMPACT_FROM_ROWS` the column header keeps three of its six
+  figures, so the same sentences that were false on a phone are false on a long matrix. The gate is
+  now `provenanceOf(props, narrow, dense)` with `payoutsShown = !narrow && !dense` — one predicate
+  named for what it actually asks — and the caveat card has a third branch. The next reduction adds
+  a fourth: the question to ask of any sentence here is not "which layout" but "is the figure this
+  names on the screen the reader has".
 - **jsdom has no `window.matchMedia` at all** — `undefined`, not a stub answering false. So
   `useIsNarrow` in `src/styles/breakpoints.ts` guards the read exactly as `useIsClipped` guards
   `ResizeObserver`, and returns false where there is nothing to ask; every test written before
@@ -510,6 +565,14 @@ Things that cost real effort to discover and are easy to get wrong again:
   chrome — broken only in the few pixels between two numbers, with nothing in the console. Ticket
   16 folded the last two strays (`600px` in `MatrixPage.tsx`, `760px` in `DisputePage.tsx`) into
   it. A new `@media` with a literal in it is a regression, not a local decision.
+  **Ticket 17 added a second number to that file and it is not a second `narrow`.**
+  `breakpoints.compactGrid` (1160px) asks a different question about a different element — whether
+  the compact grid's own measurements fit the page — and its value is arithmetic rather than a
+  choice: a 440px row header plus six columns a compact cell needs about 104px each for is
+  `COMPACT_GRID_MIN_PX`, 1064, which this page's gutters put at that viewport. The test for a new
+  width is not "is there already one" but "does it answer a question none of these do, and is its
+  value derived from something". Both live in `breakpoints.ts` because that is still the one place
+  a width anything reduces at is written down.
 - **Deciding whether to clip and then clipping never clips.** `useIsClipped` measured
   `scrollHeight > clientHeight` to decide whether to apply a `max-height` — and at the moment of
   the test nothing had bounded the element, so the two were always equal and the answer was always

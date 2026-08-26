@@ -45,6 +45,22 @@ export type RowFlag = {
    * the chain and the live flag counts elapsed time. A static flag ignores both arguments.
    */
   label: (row: MatrixRow, context: RowFlagContext) => string;
+  /**
+   * The same flag, abbreviated, for ticket 17's compact density.
+   *
+   * The canvas is what settles this, and it is the one place the two artboards deliberately word
+   * one thing twice: `Main.dc.html:302` gives "† 8h window", "‡ Lone panel" and
+   * "⋯ Live · commit 3m 12s", and `MatrixDense.dc.html:213` gives "† 8h", "‡ Lone" and "⋯ Live"
+   * for the same rows. Ticket 17's own criteria say the flag renders as it does at the other
+   * density; where the canvas and a ticket disagree the canvas wins (`CLAUDE.md`), and here it
+   * has to — a one-line row is 375px wide on this page and the live flag alone was 175 of them,
+   * which left the dispute's title with nothing and made the row unreadable rather than compact.
+   *
+   * **Every flag still says what it is.** What goes is the qualifier a reader can get from the
+   * row itself: which window, and how long the period has been open. Both are still on that
+   * dispute's own view, and the window footnote below the grid names the durations in full.
+   */
+  shortLabel: (row: MatrixRow, context: RowFlagContext) => string;
   tone: Tone;
 };
 
@@ -76,6 +92,8 @@ export const ROW_FLAGS: readonly RowFlag[] = [
     applies: (row) => !row.read,
     glyph: "?",
     label: () => "Not read",
+    // Already two words, and neither is a qualifier: an unread row abbreviates to itself.
+    shortLabel: () => "Not read",
     tone: "fail",
   },
   {
@@ -83,6 +101,14 @@ export const ROW_FLAGS: readonly RowFlag[] = [
     applies: (row) => row.underEarlierWindows,
     glyph: "†",
     label: (row, { current }) => windowFlagLabel(row, current),
+    // The duration without the word for which period it governs — "8h" against "8h window".
+    // Which window changed is the footnote's, and the footnote is on the page at both densities.
+    //
+    // Built from the same value the long label is rather than cut out of the finished string:
+    // `formatWindowSeconds` returns two words whenever the minutes do not divide by 60, so
+    // trimming at the first space would abbreviate a court's "1h 30m window" to "1h" — a
+    // duration it never had, on the marker whose whole job is to name the one that differs.
+    shortLabel: (row, { current }) => markedWindow(row, current)?.duration ?? "Earlier",
     tone: "work",
   },
   {
@@ -90,6 +116,7 @@ export const ROW_FLAGS: readonly RowFlag[] = [
     applies: (row) => row.panelSize === 1,
     glyph: "‡",
     label: () => "Lone panel",
+    shortLabel: () => "Lone",
     tone: "work",
   },
   {
@@ -109,6 +136,10 @@ export const ROW_FLAGS: readonly RowFlag[] = [
       const elapsed = open === null ? "" : ` ${formatElapsedSeconds(open)}`;
       return `Live · ${row.dispute.period}${elapsed}`;
     },
+    // "Live", and neither the period nor the elapsed time — 175px of a 375px row went here, and
+    // the row it sat on could not show which dispute it was. The live *treatment* is untouched:
+    // the tint and the rail still mark the row, and this pill still says it is live.
+    shortLabel: () => "Live",
     tone: "live",
   },
 ];
@@ -119,21 +150,38 @@ export function rowFlagOf(row: MatrixRow, context: RowFlagContext): RowFlag | un
 }
 
 /**
- * The window flag's label: the one that actually differs.
+ * Which of this row's two windows the marker is actually about, and how long it was.
  *
  * Naming the commit window unconditionally would be right for court 34's one reconfiguration
  * and wrong for the next one. A court that changed only its vote window would put `† 45m
  * window` on every older row — a duration identical to the one the court holds now, so the
  * marker would read as if it had been placed in error.
  *
- * `windows` is non-null wherever `underEarlierWindows` is true, the seam setting one from the
- * other; the fallback is here rather than a non-null assertion.
+ * `null` where the parameter history cannot place the row at all. `windows` is non-null wherever
+ * `underEarlierWindows` is true, the seam setting one from the other; the fallback is here rather
+ * than a non-null assertion.
+ *
+ * One reduction, two labels: both forms below are composed from this rather than one being cut
+ * out of the other, so the abbreviation can never name a duration the long form does not.
  */
-function windowFlagLabel(row: MatrixRow, current: PeriodWindows | null): string {
-  if (row.windows === null) return "Earlier window";
+function markedWindow(
+  row: MatrixRow,
+  current: PeriodWindows | null,
+): { duration: string; period: "commit" | "vote" } | null {
+  if (row.windows === null) return null;
 
   const commitChanged = current === null || row.windows.commitSeconds !== current.commitSeconds;
   return commitChanged
-    ? `${formatWindowSeconds(row.windows.commitSeconds)} window`
-    : `${formatWindowSeconds(row.windows.voteSeconds)} vote window`;
+    ? { duration: formatWindowSeconds(row.windows.commitSeconds), period: "commit" }
+    : { duration: formatWindowSeconds(row.windows.voteSeconds), period: "vote" };
+}
+
+/** The window flag's label: the one that actually differs, and which period it governs. */
+function windowFlagLabel(row: MatrixRow, current: PeriodWindows | null): string {
+  const marked = markedWindow(row, current);
+  if (marked === null) return "Earlier window";
+
+  return marked.period === "commit"
+    ? `${marked.duration} window`
+    : `${marked.duration} vote window`;
 }

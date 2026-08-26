@@ -187,17 +187,30 @@ export function LonePanelFootnote({ performance }: { performance: CourtPerforman
 }
 
 /**
- * Why so much of the record is empty, counted.
+ * Why so much of the record is empty, counted — and which of two things each blank means.
  *
  * The one caveat this dashboard cannot afford to lose on a phone, because it is the one that
  * prevents a *misreading* rather than answering a question: without it a blank position reads as
  * an agent juror that failed to act, which is the distinction ticket 05 exists to protect. It is
- * therefore always rendered and never behind a control on either layout.
+ * therefore always rendered and never behind a control on any layout or at any density.
  *
- * `noun` is the only thing that differs between them. The matrix draws a position as a table
- * cell and the phone draws it as a slot on a card, and calling a slot a cell on a page with no
- * grid on it would be describing something the reader cannot see. Every figure comes from
- * `totals.sparsity`, so the two layouts count the same court.
+ * **Two absences, separated by ticket 17, because one sentence was true of one of them.** A blank
+ * in a dispute with a panel means this agent juror was not selected — random sparsity, the normal
+ * state of this record. A blank in a dispute with *no* panel means no selection has happened yet:
+ * the court draws when a dispute leaves its evidence period, and 167, 168 and 169 sat in theirs
+ * on the day this was written, contributing 18 blanks this card was calling sparsity. Same words,
+ * different fact, on a page that may be cited. Ticket 09 worded the same state on the per-dispute
+ * view — "a panel is selected when the dispute leaves its evidence period" — and this is the same
+ * fact at the grain of a record rather than of one dispute.
+ *
+ * A third absence is *not* here and is counted out of every figure above: a dispute whose draws
+ * were never read is a gap in this dashboard rather than a fact about the court, and ticket 13
+ * draws it as Unknown. The last sentence says so, so the count is never left unexplained.
+ *
+ * `noun` is the only thing that differs between the layouts. The matrix draws a position as a
+ * table cell and the phone draws it as a slot on a card, and calling a slot a cell on a page with
+ * no grid on it would be describing something the reader cannot see. Every figure comes from
+ * `totals.sparsity`, so every layout counts the same court.
  */
 export function SparsityNote({
   performance,
@@ -208,6 +221,7 @@ export function SparsityNote({
 }) {
   const { sparsity, unreadDisputes } = performance.totals;
   const unread = unreadDisputes.length;
+  const undrawn = sparsity.undrawnDisputes;
 
   return (
     <SparsityCard>
@@ -227,6 +241,20 @@ export function SparsityNote({
             . Agent jurors are drawn at random: sparsity is the normal state of this record, not
             missing data. A blank {noun} is drawn as nothing at all, so it can never be read as a
             failure to act.
+            {/* The half of that claim that is false about a dispute the court has not drawn for.
+                Counted rather than described, because "some of these are different" is the sort
+                of caveat a reader cannot act on — and named by id, because the reader can then
+                see which rows it is about. */}
+            {undrawn.length > 0 && (
+              <>
+                {" "}
+                {sparsity.undrawnPositions} of those blanks are a different absence:{" "}
+                {undrawn.length === 1 ? "dispute" : "disputes"} {listOf(undrawn)}{" "}
+                {undrawn.length === 1 ? "has" : "have"} no panel at all yet, so there the draw has
+                not happened rather than an agent juror not having been selected. A panel is drawn
+                when a dispute leaves its evidence period.
+              </>
+            )}
           </>
         )}
         {/* The sentence above is true of a dispute that was read and false of one that was not,

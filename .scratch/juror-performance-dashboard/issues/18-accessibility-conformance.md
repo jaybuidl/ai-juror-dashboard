@@ -273,3 +273,36 @@ amber PNK-loss figure ticket 10 flags is in the matrix's column headers, and the
 those headers whole — so it is a **desktop-only** site and a 390pt audit will never meet it. The
 four sites in this note are the phone's. Nothing here appears on both, which means this ticket's
 sweep is two sweeps and a surface checked at one width is not checked at the other.
+
+## From ticket 17, 2026-08-26 — a third rendering to sweep, and four more inks under 12px
+
+The compact density landed: past `COMPACT_FROM_ROWS` (40) the matrix drops the cell's commit line,
+halves the cell, reduces the column header to three figures and freezes it. Your sweep was already
+two sweeps — desktop and phone — and this makes the desktop half two widths of its own, because
+these sites exist only past forty disputes and court 34 holds thirty-one today. `padCourt` in
+`src/test/court.tsx` builds a court past the threshold; lowering `COMPACT_FROM_ROWS` temporarily
+is how the compact density was checked in a browser.
+
+What is new and small:
+
+- **`PanelLabel` in `DisputeList.tsx`** — the panel, drawn as a plain right-aligned label rather
+  than a pill at this density, per `MatrixDense.dc.html:91`. Untoned it is `textPending`
+  (`--text-4`), which your own note measures at 2.68–2.91:1 in the dark theme, and unlike the pill
+  it has no border to carry the shape. It is the worst of the four.
+- **The row's `MED C` key at 9px** and its median at `typeMonoSm`, both in the row header.
+- **The compact cell's glyph and duration**, 11px and 11.5px, with the state's *word* moved into
+  the accessible name rather than drawn. So at this density the five states are told apart
+  visually by glyph, fill and border alone — ADR-0006 still holds, but the greyscale check is now
+  load-bearing in a way it was not when the word was beside every glyph.
+- **The volume note beside the legend**, `textMeta` at `typeBodySm`.
+
+Two things that are not contrast and are yours:
+
+- **The frozen header is `position: sticky` on six `th`s.** Check that it does not cover the
+  element a keyboard focus lands on when tabbing down the grid — a sticky header with no
+  `scroll-margin-top` on the focusable rows below it is the usual way that goes wrong.
+- **A marked figure's reason line is dropped at this density and its text moves onto the mark's
+  `aria-label`** (`Marginals.tsx`). That is deliberate — ticket 06's own hand-off asked for the
+  trade — but it means a caveat that a sighted reader gets from the footnote below the grid, a
+  screen-reader user gets from the link. Worth confirming it reads well rather than as one long
+  unbroken name.

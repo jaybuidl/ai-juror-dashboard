@@ -17,7 +17,27 @@ import { useSyncExternalStore } from "react";
 export const breakpoints = {
   /** The phone artboard is 390pt; this is the width below which the desktop chrome stops fitting. */
   narrow: "720px",
+  /**
+   * The width below which ticket 17's compact grid stops fitting, and scrolls sideways instead.
+   *
+   * A second number here and deliberately not a second `narrow`: it answers a different question
+   * about a different element. `narrow` asks which layout a reader gets — grid or cards — and is
+   * a fact about the chrome. This asks whether the compact grid's own measurements fit the page,
+   * and is arithmetic about the grid: a 440px row header and six columns that a compact cell
+   * needs about 104px each for, which is 1064px of content, which this page's gutters put at
+   * roughly this viewport.
+   *
+   * What it costs below itself is the freeze and nothing else. The compact grid keeps its
+   * `min-width` and scrolls sideways in its own box exactly as the comfortable grid always does,
+   * and a `position: sticky` header inside a scroll container sticks to that box rather than to
+   * the page — so between `narrow` and here, the column header scrolls away with the rows. Every
+   * other reduction the density makes holds at every width.
+   */
+  compactGrid: "1160px",
 };
+
+/** What the compact grid's six columns and its row header come to. See `breakpoints.compactGrid`. */
+export const COMPACT_GRID_MIN_PX = 1064;
 
 /**
  * The condition itself, so the media query and the hook below cannot come to disagree.
@@ -30,6 +50,9 @@ const NARROW_QUERY = `(max-width: ${breakpoints.narrow})`;
 
 /** `@media` prelude for the reduced form. Used as `${narrow} { … }` inside a styled template. */
 export const narrow = `@media ${NARROW_QUERY}`;
+
+/** `@media` prelude for a page too narrow to hold the compact grid at its own measurements. */
+export const belowCompactGrid = `@media (max-width: ${breakpoints.compactGrid})`;
 
 /**
  * Whether the viewport is below the breakpoint, as a value a component can branch on.

@@ -61,13 +61,35 @@ const ID_COLUMN = "2.5rem";
  * the title never truncates and the row overflows sideways. It is the usual way
  * `text-overflow: ellipsis` fails inside a grid, and it fails without a console warning.
  */
-const Row = styled.li`
+/*
+ * Two lines, or one.
+ *
+ * The compact form is ticket 17's, for a matrix past forty rows: the second line goes, taking the
+ * category and the ruling with it, and what was on it that a compacted grid still needs — the
+ * pills, and the commit figure the cell gave up — moves to the end of the first. One row rather
+ * than a second component, so the id column, the clipping and the separator logic cannot fork.
+ *
+ * A third track rather than letting the details wrap: `auto` sizes to what is in them, and the
+ * title beside it gives up the space.
+ *
+ * **The title's floor is not decoration.** An `auto` track takes its content's width before a
+ * `1fr` sibling gets anything, so with `minmax(0, 1fr)` the title measured zero pixels wide in a
+ * browser and every compact row was a dispute id, a pill and no subject — the same shape as the
+ * `text-overflow` failure above, and just as invisible to jsdom. `TITLE_FLOOR` is what the title
+ * keeps whatever else is on the line; the details give up the rest and clip.
+ */
+const TITLE_FLOOR = "7rem";
+
+const Row = styled.li<{ $compact?: boolean }>`
   display: grid;
-  grid-template-columns: ${ID_COLUMN} minmax(0, 1fr);
+  grid-template-columns: ${({ $compact }) =>
+    $compact === true
+      ? `${ID_COLUMN} minmax(${TITLE_FLOOR}, 1fr) minmax(0, auto)`
+      : `${ID_COLUMN} minmax(0, 1fr)`};
   align-items: baseline;
   column-gap: 10px;
   row-gap: 6px;
-  padding: 12px 4px;
+  padding: ${({ $compact }) => ($compact === true ? "8px 4px" : "12px 4px")};
   border-bottom: ${({ theme }) => theme.borderHairline};
 `;
 
@@ -143,6 +165,37 @@ const SecondLine = styled.div`
   color: ${({ theme }) => theme.textMeta};
 `;
 
+/* The same details, on the first line, where the compact form has no second one. Nothing here
+   may wrap — not the row, and not the text inside a pill: a label broken across two lines reads
+   as a rendering fault, and two lines is the one thing the compact row exists to avoid. */
+const InlineDetails = styled.div`
+  grid-column: 3;
+  grid-row: 1;
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  justify-content: flex-end;
+  gap: 8px;
+  min-width: 0;
+  font-size: 0.8125rem;
+  color: ${({ theme }) => theme.textMeta};
+
+  > * {
+    white-space: nowrap;
+  }
+`;
+
+/* The panel, as the dense artboard draws it: a plain right-aligned label rather than a pill
+   (`MatrixDense.dc.html:91`). It keeps its ink, so a panel of one still reads amber, and the
+   words are `panelPillOf`'s either way. */
+const PanelLabel = styled.span<{ $tone?: Tone }>`
+  font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, monospace;
+  font-size: 0.6875rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: ${({ theme, $tone }) => ($tone === undefined ? theme.textPending : toneInk(theme, $tone))};
+`;
+
 const Separator = styled.span`
   color: ${({ theme }) => theme.textPending};
 `;
@@ -202,6 +255,15 @@ export type DisputeRowSlots = {
   panelTone?: Tone;
   /** The state colour the flag pill carries, where a flag applies. */
   flagTone?: Tone;
+  /**
+   * A figure about this dispute, filled only where the row is the compact form's.
+   *
+   * Ticket 17's: past forty rows the matrix's cells drop their commit line, and the median over
+   * the row's own draws lands here instead — the one thing the compact row gains for the second
+   * line it loses. Empty at the comfortable density, where every cell carries its own commit
+   * figure and a row-level median would be a seventh reading of the same draws.
+   */
+  measure?: ReactNode;
 };
 
 /**
@@ -287,23 +349,48 @@ export function DisputeRow({
   dispute,
   slots,
   as = "li",
+  compact = false,
 }: {
   dispute: Dispute;
   slots: DisputeRowSlots;
   as?: "li" | "div";
+  /**
+   * Whether this row is drawn in ticket 17's compact form: one line, no category and no ruling,
+   * and the `measure` slot at the end of it.
+   *
+   * The same flag the compact cell and the compact column header read, threaded from the one
+   * place it is decided. What the compact row loses is closed and is exactly this: nothing else
+   * about it changes, including which pills it wears and in what order.
+   */
+  compact?: boolean;
 }) {
   // Collected in the order the artboard puts them, then joined with separators, so an
   // unfilled slot takes its separator with it and leaves no trace.
   const details: { key: string; node: ReactNode }[] = [];
-  if (isFilled(slots.category)) {
+  // The category and the ruling are the second line's content, and the compact row has no second
+  // line. Neither is lost to the reader: both are on that dispute's own view, which the id links
+  // to, and the ruling is what the coherence state in every cell of the row is measured against.
+  if (!compact && isFilled(slots.category)) {
     details.push({ key: "category", node: <Detail>{slots.category}</Detail> });
   }
-  details.push({ key: "ruling", node: <Detail>{rulingLabel(dispute.ruling)}</Detail> });
+  if (!compact) {
+    details.push({ key: "ruling", node: <Detail>{rulingLabel(dispute.ruling)}</Detail> });
+  }
   if (isFilled(slots.panel)) {
-    details.push({ key: "panel", node: <Pill $tone={slots.panelTone}>{slots.panel}</Pill> });
+    details.push({
+      key: "panel",
+      node: compact ? (
+        <PanelLabel $tone={slots.panelTone}>{slots.panel}</PanelLabel>
+      ) : (
+        <Pill $tone={slots.panelTone}>{slots.panel}</Pill>
+      ),
+    });
   }
   if (isFilled(slots.flag)) {
     details.push({ key: "flag", node: <Pill $tone={slots.flagTone}>{slots.flag}</Pill> });
+  }
+  if (compact && isFilled(slots.measure)) {
+    details.push({ key: "measure", node: slots.measure });
   }
 
   // The clipped title is unreadable past the row's width, so the full text goes on the
@@ -313,8 +400,10 @@ export function DisputeRow({
   // the part that need not wait for it.
   const titleText = typeof slots.title === "string" ? slots.title : undefined;
 
+  const Details = compact ? InlineDetails : SecondLine;
+
   return (
-    <Row as={as}>
+    <Row as={as} $compact={compact}>
       {/* `title` and deliberately not `aria-label`. An `aria-label` here would be the link's
           accessible name *and* the only thing it contributed to the name of the element around
           it — which in the matrix is a `rowheader`, whose name is designed to start with the
@@ -326,14 +415,16 @@ export function DisputeRow({
       {/* Always rendered, empty or not — see `Title`. An empty one holds the line so the
           row does not change height when a title arrives or fails to. */}
       <Title title={titleText}>{isFilled(slots.title) ? slots.title : null}</Title>
-      <SecondLine>
+      {/* The same details either way, and the same separators: what the compact form changes is
+          which of them are collected above and which line they sit on, never how they read. */}
+      <Details>
         {details.map((detail, index) => (
           <Fragment key={detail.key}>
             {index > 0 && <Separator aria-hidden="true">·</Separator>}
             {detail.node}
           </Fragment>
         ))}
-      </SecondLine>
+      </Details>
     </Row>
   );
 }

@@ -19,6 +19,7 @@ import {
 } from "./cell";
 import { Footnotes, LonePanelFootnote, SparsityNote, WindowFootnote } from "./Footnotes";
 import { Legend, StateLegend } from "./Legend";
+import { panelPillOf } from "./panel";
 import type { CourtPerformance, Draw, MatrixRow } from "./performance";
 import { type RowFlagContext, rowFlagOf } from "./row-flags";
 
@@ -521,6 +522,7 @@ function DisputeCard({
   const live = !isFinalised(dispute);
   const title = slots?.title;
   const category = slots?.category;
+  const panel = panelPillOf(row);
 
   const meta = (
     <CardMeta>
@@ -534,11 +536,11 @@ function DisputeCard({
           "Pending", and an empty slot there is indistinguishable from one that failed to load. */}
       <span>{rulingLabel(dispute.ruling)}</span>
       <MetaSeparator aria-hidden="true">·</MetaSeparator>
-      {/* On every card, as it is on every row. An unread dispute's panel size is 0 because
-          nobody asked rather than because the court drew nobody, so it says what it knows. */}
-      <Pill $tone={row.read ? (row.panelSize === 1 ? "work" : undefined) : "fail"}>
-        {row.read ? `Panel ${row.panelSize}` : "Draws not read"}
-      </Pill>
+      {/* On every card, as it is on every row, and in the same words: `panelPillOf` is where
+          they are decided now that there are three of them to keep apart. A dispute whose draws
+          were never read, one the court has not drawn a panel for yet, and one with a panel —
+          this card and the matrix row used to word the middle of those three as "Panel 0". */}
+      <Pill $tone={panel.tone}>{panel.text}</Pill>
     </CardMeta>
   );
 

@@ -170,6 +170,30 @@ export function commitFigureOf(draw: Draw, scanned: boolean): Figure {
 }
 
 /**
+ * The same three absences, for a commit *median* rather than for one draw's commitment.
+ *
+ * One implementation because there are now two figures that are a median commit latency over a
+ * set of draws — each column's, in the header, and each row's, which ticket 17 moves onto the
+ * dispute row at the compact density — and they are absent for exactly the same three reasons.
+ * Two copies would be two wordings of one gap, and the column header and the row beneath it
+ * would then explain one Arbitrum outage in different words.
+ *
+ * `commitments` is the subgraph's count of draws that committed, whatever the log scan found, and
+ * it is what tells "nothing to measure" from "read short". `scanned` is `commitCoverage.read` and
+ * keeps the rose honest: it is false while Arbitrum is being asked as well as after it refused,
+ * so without it every figure here would read "Not read" for the length of every cold load.
+ */
+export function commitMedianFigureOf(
+  median: number | undefined,
+  commitments: number,
+  scanned: boolean,
+): Figure {
+  if (median !== undefined) return { text: formatLatencySeconds(median), tone: "value" };
+  if (scanned && commitments > 0) return { text: "Not read", tone: "unread" };
+  return { text: "—", tone: "pending" };
+}
+
+/**
  * The one figure a phone's slot has room for: the latency of the most recent thing the draw did.
  *
  * A desktop cell shows both measures, one above the other. A 52pt slot shows one, so ticket 16

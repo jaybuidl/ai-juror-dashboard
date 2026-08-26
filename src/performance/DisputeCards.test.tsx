@@ -323,6 +323,43 @@ describe("DisputeCards", () => {
     expect(within(card(163)).getByText("Draws not read")).toBeInTheDocument();
   });
 
+  it("says a dispute the court has not drawn for has no panel yet, not a panel of nobody", () => {
+    // The third state, worded by ticket 17 in `panelPillOf` and shared with the matrix row. It
+    // is not rose and not Unknown: a court that has not drawn yet is not a read that failed, and
+    // the draws for this dispute were read — there are simply none.
+    renderCards(withRow(build(), 163, { panelSize: 0, cells: ROSTER.map(() => null) }));
+
+    expect(within(card(163)).queryByText(/Panel 0/)).not.toBeInTheDocument();
+    expect(within(card(163)).getByText("No panel yet")).toBeInTheDocument();
+    expect(within(card(163)).queryByText("Draws not read")).not.toBeInTheDocument();
+  });
+
+  it("separates the two kinds of blank slot where the blanks are counted", () => {
+    // The same sentence the matrix carries, over the same figures — one caveat, two layouts, and
+    // the noun is the only thing that differs. Built from a raw dispute rather than by editing a
+    // row, because the figures are the seam's: a row edited after the model was built would
+    // leave the note counting the court the fixture holds.
+    const waiting = {
+      id: "167",
+      disputeID: "167",
+      period: "evidence",
+      ruled: false,
+      currentRuling: "0",
+      createdAt: "1787620000",
+      lastPeriodChange: "1787620000",
+      currentRoundIndex: "0",
+      rounds: [{ id: "167-0", timeline: ["0", "0", "0", "0"] }],
+      templateId: null,
+    } as RawDispute;
+
+    renderCards(build({ disputes: [waiting, ...(disputeFixture as RawDispute[])] }));
+
+    const note = screen.getByText(/sparsity is the normal state of this record/i);
+    expect(note).toHaveTextContent(/blanks are a different absence/);
+    expect(note).toHaveTextContent(/dispute 167 has no panel at all yet/);
+    expect(note).toHaveTextContent(/A blank slot is drawn as nothing at all/);
+  });
+
   it("marks a live card as a whole rather than marking each of its slots", () => {
     renderCards();
 

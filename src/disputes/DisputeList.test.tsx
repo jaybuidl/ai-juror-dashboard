@@ -4,7 +4,7 @@ import { ThemeProvider } from "styled-components";
 import { describe, expect, it } from "vitest";
 import { theme } from "../styles/theme";
 import fixture from "./court-34.fixture.json" with { type: "json" };
-import { DisputeList } from "./DisputeList";
+import { DisputeList, DisputeRow } from "./DisputeList";
 import type { Dispute, RawDispute } from "./disputes";
 import { toDisputes } from "./disputes";
 
@@ -20,6 +20,13 @@ function renderList(view: Partial<Parameters<typeof DisputeList>[0]> = {}) {
       </MemoryRouter>
     </ThemeProvider>,
   );
+}
+
+/** One dispute out of the captured court, for the cases that render a row on its own. */
+function disputeOf(id: number): Dispute {
+  const dispute = disputes.find((candidate) => candidate.id === id);
+  if (dispute === undefined) throw new Error(`no dispute ${id} in the fixture`);
+  return dispute;
 }
 
 /** The row for one dispute, found by the core dispute ID that heads it. */
@@ -193,6 +200,52 @@ describe("DisputeList", () => {
     const grid = getComputedStyle(screen.getAllByRole("listitem")[0] as HTMLElement);
 
     expect(grid.gridTemplateColumns).toBe("2.5rem minmax(0, 1fr)");
+  });
+
+  it("gives the compact row a third track, so the pills never push the title off the end", () => {
+    // Ticket 17's one-line row. The details move onto the first line, and an `auto` track is
+    // what makes the title give up the space rather than the pills: the same `minmax(0, 1fr)`
+    // reasoning as above, one column over.
+    render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <DisputeRow dispute={disputeOf(163)} slots={{ title: "A dispute" }} compact />
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+
+    const grid = getComputedStyle(screen.getByRole("listitem"));
+    // The title's floor is the load-bearing half, and it was found in a browser: an `auto` track
+    // takes its content before a `1fr` sibling gets anything, so without a floor the title
+    // measured zero pixels and every compact row lost its subject.
+    expect(grid.gridTemplateColumns).toBe("2.5rem minmax(7rem, 1fr) minmax(0, auto)");
+  });
+
+  it("takes the category and the ruling off a compact row and leaves the pills on it", () => {
+    render(
+      <ThemeProvider theme={theme}>
+        <MemoryRouter>
+          <DisputeRow
+            dispute={disputeOf(163)}
+            compact
+            slots={{
+              title: "A dispute",
+              category: "Escrow",
+              panel: "Panel 5",
+              measure: <span>MED C 41s</span>,
+            }}
+          />
+        </MemoryRouter>
+      </ThemeProvider>,
+    );
+
+    // The reduction is closed: the second line goes, taking the category and the ruling with
+    // it, and the measure this ticket moves onto the row takes their place.
+    expect(screen.queryByText("Escrow")).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Ruling/)).not.toBeInTheDocument();
+    expect(screen.getByText("A dispute")).toBeInTheDocument();
+    expect(screen.getByText("Panel 5")).toBeInTheDocument();
+    expect(screen.getByText("MED C 41s")).toBeInTheDocument();
   });
 
   it("keeps the whole title reachable once it is clipped", () => {

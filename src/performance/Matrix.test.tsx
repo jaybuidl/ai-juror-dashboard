@@ -9,10 +9,12 @@ import { ROSTER } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
 import { theme } from "../styles/theme";
+import { padCourt } from "../test/court";
 import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import rewardFixture from "./court-34-rewards.fixture.json" with { type: "json" };
+import { COMPACT_FROM_ROWS } from "./density";
 import { Matrix } from "./Matrix";
 import {
   buildCourtPerformance,
@@ -108,6 +110,51 @@ function rawDispute(overrides: Partial<RawDispute>, timeline: readonly string[])
 /** The row of the matrix for one dispute, found the way a reader finds it. */
 function rowFor(id: number) {
   return screen.getByRole("rowheader", { name: new RegExp(`^${id}\\b`) }).closest("tr");
+}
+
+/**
+ * The same court, grown to a given number of disputes.
+ *
+ * `padCourt` is shared with `MatrixPage.test.tsx`, which checks what the page *says* about a
+ * compacted grid while this checks what the grid does — two suites reading one padded court, for
+ * the same reason both layouts read one model.
+ */
+function padTo(disputeCount: number, over: Partial<RawCourtData> = {}): CourtPerformance {
+  return build({ ...padCourt(disputeCount), ...over });
+}
+
+/** A court just below the crossing point, and one just above it. */
+const comfortableCourt = () => padTo(COMPACT_FROM_ROWS);
+const compactCourt = () => padTo(COMPACT_FROM_ROWS + 1);
+
+/** The same compact court with the Arbitrum scan still out, which is every cold load. */
+const padToUnscanned = () => padTo(COMPACT_FROM_ROWS + 1, { commits: null });
+
+/** Every dispute id the grid is drawing, read off the row headers in the order they appear. */
+function renderedIds(): number[] {
+  return screen
+    .getAllByRole("rowheader")
+    .map((header) => Number(/^\d+/.exec(header.textContent ?? "")?.[0]));
+}
+
+/**
+ * The same row, found by its own link rather than by the row header's accessible name.
+ *
+ * `rowFor` matches `^156\b`, and a row header whose title slot is filled has no word boundary
+ * there — the id and the title run together into "156An escrow dispute". The link is the row's
+ * one link and its name is exactly the id, at either density and with or without a title.
+ */
+function rowOrThrow(id: number): HTMLElement {
+  const row = screen.getByRole("link", { name: String(id) }).closest("tr");
+  if (row === null) throw new Error(`no row for dispute ${id}`);
+  return row;
+}
+
+/** A position in that row where an agent juror was not drawn. */
+function blankCellOf(id: number): HTMLElement {
+  const blank = within(rowOrThrow(id)).getAllByText("Not drawn")[0]?.closest("td");
+  if (blank === null || blank === undefined) throw new Error(`no blank cell in dispute ${id}`);
+  return blank;
 }
 
 describe("Matrix", () => {
@@ -965,6 +1012,16 @@ describe("Matrix", () => {
       expect(screen.getAllByText("Unknown").length).toBeGreaterThan(0);
     });
 
+    it("keeps an unread row's cells apart from a court that has not drawn yet", () => {
+      // Two absences that are one row apart on a live court, and this asserts they never read
+      // the same: the unread row says its draws were not read, and the dispute nobody has been
+      // drawn for yet says it has no panel. Neither is "Panel 0", and only one of them is rose.
+      const row = renderDrifted();
+
+      expect(within(row).getByText("Draws not read")).toBeInTheDocument();
+      expect(within(row).queryByText("No panel yet")).not.toBeInTheDocument();
+    });
+
     it("stops calling any column never drawn, because an unread row is not part of the record", () => {
       // The claim the marginals made reachable, and the one this page must never make wrongly:
       // baskerville reads "Never drawn · 0 · 0v" over a court that has been read whole, and the
@@ -982,5 +1039,472 @@ describe("Matrix", () => {
       // stands in — the column goes quiet about the record rather than blank about everything.
       expect(screen.getAllByText(ROSTER[5]?.stack.label ?? "").length).toBeGreaterThan(0);
     });
+  });
+
+  /**
+   * A dispute that was read and has no panel yet — the reading a live court produces today.
+   *
+   * Disputes 167, 168 and 169 arrived in their evidence period on 2026-08-25 with nobody drawn,
+   * and both layouts drew them as six blanks under a note saying every blank is random sparsity.
+   * That claim is true of a dispute with a panel and false of one without: the draw has not
+   * happened, rather than these agent jurors not having been selected. Hand-built, because the
+   * captured court stops at 166 and holds no such dispute.
+   */
+  describe("a dispute the court has not drawn a panel for yet", () => {
+    const waiting = {
+      id: "167",
+      disputeID: "167",
+      period: "evidence",
+      ruled: false,
+      currentRuling: "0",
+      createdAt: "1787620000",
+      lastPeriodChange: "1787620000",
+      currentRoundIndex: "0",
+      rounds: [{ id: "167-0", timeline: ["0", "0", "0", "0"] }],
+      templateId: null,
+    } as RawDispute;
+
+    function renderWaiting() {
+      // `drawsReadAt` stays null, so every row is *read*: this dispute's blank cells are a fact
+      // about the court and not a gap in the read, which is the whole distinction.
+      renderMatrix(build({ disputes: [waiting, ...(disputeFixture as RawDispute[])] }));
+      const row = rowFor(167);
+      if (row === null) throw new Error("no row for dispute 167");
+      return row;
+    }
+
+    it("never prints a panel of nobody", () => {
+      const row = renderWaiting();
+
+      expect(within(row).queryByText(/Panel 0/)).not.toBeInTheDocument();
+      expect(within(row).getByText("No panel yet")).toBeInTheDocument();
+    });
+
+    it("does not word it as a read that failed", () => {
+      // Ticket 13's instruction: a court that has not drawn yet is not a read that came up
+      // short, and ADR-0006 gives rose two meanings, neither of which is this.
+      const row = renderWaiting();
+
+      expect(within(row).queryByText("Draws not read")).not.toBeInTheDocument();
+      expect(within(row).queryByText("Unknown")).not.toBeInTheDocument();
+      expect(within(row).getAllByText("Not drawn")).toHaveLength(ROSTER.length);
+    });
+
+    it("separates the two kinds of blank where the blanks are counted", () => {
+      renderWaiting();
+
+      // The sentence that was wrong about eighteen cells: the note goes on saying that a blank
+      // means an agent juror was not drawn, and now says which of the blanks it is counting
+      // mean something else, by dispute id and as a count.
+      const note = screen.getByText(/sparsity is the normal state of this record/i);
+
+      expect(note).toHaveTextContent(/6 of those blanks are a different absence/);
+      expect(note).toHaveTextContent(/dispute 167 has no panel at all yet/);
+      expect(note).toHaveTextContent(/the draw has not happened/);
+    });
+
+    it("says nothing about it on a court where every dispute has a panel", () => {
+      // A caveat naming a case that does not apply reads as a caveat about the whole page.
+      renderMatrix();
+
+      expect(screen.queryByText(/a different absence/i)).not.toBeInTheDocument();
+    });
+  });
+
+  /**
+   * The two densities, and that the difference between them is exactly the stated reduction.
+   *
+   * Ticket 17. Every case here renders one court at both densities — the same fixture padded to
+   * either side of `COMPACT_FROM_ROWS` — because what has to hold is a *difference*, and a case
+   * that only ever saw the compact form could not tell a reduction from a bug.
+   */
+  describe("the two densities", () => {
+    it("compacts past the threshold and not at it, whatever the threshold is", () => {
+      // The switch itself, from the row count in the model rather than from anything a reader
+      // set: there is no control for this on the page.
+      renderMatrix(comfortableCourt());
+      expect(screen.getAllByText("Median commit latency")).toHaveLength(ROSTER.length);
+
+      cleanup();
+      renderMatrix(compactCourt());
+      expect(screen.queryByText("Median commit latency")).not.toBeInTheDocument();
+    });
+
+    it("keeps every dispute, in the same order, at both densities", () => {
+      // The whole reason for compacting: density never filters, paginates, collapses, reorders
+      // or windows away a row.
+      renderMatrix(comfortableCourt());
+      const comfortable = renderedIds();
+
+      cleanup();
+      renderMatrix(compactCourt());
+      const compact = renderedIds();
+
+      expect(comfortable).toHaveLength(COMPACT_FROM_ROWS);
+      expect(compact).toHaveLength(COMPACT_FROM_ROWS + 1);
+      // Newest first, and the compact list is the comfortable one with the extra row at its head.
+      expect([...compact].sort((a, b) => b - a)).toEqual(compact);
+      expect(compact).toEqual(expect.arrayContaining(comfortable));
+    });
+
+    it("keeps the six columns and their order", () => {
+      renderMatrix(compactCourt());
+
+      const columns = screen.getAllByRole("columnheader");
+      expect(columns).toHaveLength(ROSTER.length + 1);
+      expect(columns.slice(1).map((column) => column.textContent)).toEqual(
+        ROSTER.map((agentJuror) => expect.stringContaining(agentJuror.nickname)),
+      );
+    });
+
+    it("halves the cell rather than reflowing it", () => {
+      renderMatrix(comfortableCourt());
+      const tall = getComputedStyle(within(rowOrThrow(156)).getAllByRole("cell")[0] as HTMLElement);
+
+      cleanup();
+      renderMatrix(compactCourt());
+      const short = getComputedStyle(
+        within(rowOrThrow(156)).getAllByRole("cell")[0] as HTMLElement,
+      );
+
+      // The ratio is the requirement; the artboards disagree about the pixel.
+      expect(Number.parseFloat(short.height) * 2).toBe(Number.parseFloat(tall.height));
+    });
+
+    it("drops the commit line from the cell and nothing else that carries a figure", () => {
+      renderMatrix(compactCourt());
+      const row = rowOrThrow(156);
+      const cell = within(row).getAllByRole("cell")[0] as HTMLElement;
+
+      // What survives: the reveal, said as a duration, with the state it belongs to.
+      expect(within(cell).getByText("Reveal latency", { exact: false })).toBeInTheDocument();
+      expect(within(cell).getByText(/^\d+s$/)).toBeInTheDocument();
+      // What goes: the commit figure, its key and its rail. Never rendered empty — an empty slot
+      // beside a full one reads as missing data.
+      expect(within(cell).queryByText("Commit latency")).not.toBeInTheDocument();
+      expect(within(cell).queryByText("C")).not.toBeInTheDocument();
+      expect(within(cell).queryByText("R")).not.toBeInTheDocument();
+    });
+
+    it("keeps the coherence state in the compact cell, in a glyph and in words", () => {
+      renderMatrix(compactCourt());
+      const row = rowOrThrow(156);
+      const cell = within(row).getAllByRole("cell")[0] as HTMLElement;
+
+      // The word stops being drawn and does not stop being said: the glyph beside it is
+      // decoration, and a reader hearing this page would otherwise have a bare number. 007
+      // diverged in dispute 156, which is one of the two states that carry a fill.
+      expect(cell.textContent).toContain("Diverged");
+      expect(cell.textContent).toContain("✕");
+      // ADR-0006: the fill and the border are what keep the five states apart in greyscale, so
+      // a filled state stays filled at this density.
+      const filled = within(row)
+        .getAllByRole("cell")
+        .map((box) => getComputedStyle(box).boxShadow)
+        .filter((shadow) => shadow !== "" && shadow !== "none");
+      expect(filled.length).toBeGreaterThan(0);
+    });
+
+    it("drops the vote-count annotation with the rest of the cell's second voice", () => {
+      renderMatrix(comfortableCourt());
+      expect(screen.getAllByText(/^×\d+$/).length).toBeGreaterThan(0);
+
+      cleanup();
+      renderMatrix(compactCourt());
+      expect(screen.queryByText(/^×\d+$/)).not.toBeInTheDocument();
+    });
+
+    it("draws an agent juror that was not drawn identically at both densities", () => {
+      // The emptiest state and the loudest have to stay unconfusable however far the matrix is
+      // compressed — so the blank keeps its one dot, and gains no tile, border or glyph.
+      renderMatrix(comfortableCourt());
+      const comfortable = blankCellOf(155);
+
+      cleanup();
+      renderMatrix(compactCourt());
+      const compact = blankCellOf(155);
+
+      expect(compact.textContent).toBe(comfortable.textContent);
+      expect(getComputedStyle(compact).boxShadow).toBe(getComputedStyle(comfortable).boxShadow);
+      expect(getComputedStyle(compact).backgroundColor).toBe(
+        getComputedStyle(comfortable).backgroundColor,
+      );
+    });
+
+    it("carries commit latency on the row once the cell has stopped carrying it", () => {
+      renderMatrix(compactCourt());
+      const row = rowOrThrow(156);
+
+      // One figure on the row, and none in any of its six cells.
+      expect(
+        within(row).getByText(/^Median commit latency across \d+ draws in this dispute$/),
+      ).toBeInTheDocument();
+      for (const cell of within(row).getAllByRole("cell")) {
+        expect(within(cell).queryByText("Commit latency")).not.toBeInTheDocument();
+      }
+    });
+
+    it("names what the row's commit figure summarises rather than standing as a number", () => {
+      renderMatrix(compactCourt());
+      const row = rowOrThrow(156);
+
+      // A row holds up to six draws and one figure cannot be all of them. "MED" is what says so
+      // in the 40 pixels the row can spare; the count of draws behind it is in the accessible
+      // name, where it costs a reader who cannot see the row nothing.
+      expect(within(row).getByText("MED C")).toBeInTheDocument();
+      expect(
+        within(row).getByText(/^Median commit latency across \d+ draws in this dispute$/),
+      ).toBeInTheDocument();
+    });
+
+    it("says nothing on the row about a commit read that has not come back", () => {
+      // The `RosterView` trap in its fifth place: between the subgraph's answer and Arbitrum's,
+      // every commitment is unread, and a row reading "Not read" on every cold load would
+      // announce a failure before it happened.
+      renderMatrix(padToUnscanned());
+      const row = rowOrThrow(156);
+
+      expect(within(row).queryByText("Not read")).not.toBeInTheDocument();
+      expect(within(row).getByText("MED C").parentElement?.textContent).toContain("—");
+    });
+
+    it("keeps three of the six figures in the column header and drops three", () => {
+      renderMatrix(compactCourt());
+
+      for (const kept of [
+        "Median reveal latency",
+        "Coherent draws, of the draws the court has ruled on",
+        "Draws, and the vote IDs they hold",
+      ]) {
+        expect(screen.getAllByText(kept)).toHaveLength(ROSTER.length);
+      }
+      for (const dropped of [
+        "Median commit latency",
+        "Cumulative ETH earned",
+        "Net PNK gained or lost",
+      ]) {
+        expect(screen.queryByText(dropped)).not.toBeInTheDocument();
+      }
+    });
+
+    it("keeps every marker on the figures it keeps, and the full account one click away", () => {
+      // A caveat is never among what density drops. The mark stays on the number, it stays a
+      // link to the account at /method, and the two footnotes below the grid state both facts
+      // in full at either density.
+      renderMatrix(compactCourt());
+
+      expect(screen.getAllByText("†").length).toBeGreaterThan(0);
+      expect(screen.getAllByText("‡").length).toBeGreaterThan(0);
+      expect(
+        screen.getAllByRole("link", { name: /why .* median reveal is marked/i })[0],
+      ).toHaveAttribute("href", "/method#window");
+      expect(screen.getByText(/ran with a commit window of/i)).toBeInTheDocument();
+      expect(screen.getByText(/was decided by a panel of one/i)).toBeInTheDocument();
+    });
+
+    it("trades the reason lines for the marker's own name, so the freeze fits a screen", () => {
+      // Ticket 06's hand-off, taken: columbo's three reason lines made the frozen header 295px
+      // of a 900px viewport, over rows 43px tall. What a sighted reader loses is the fourth
+      // telling of a caveat already on the figure, in the footnote and at /method; what a
+      // reader hearing the page gets is the same sentence, on the mark itself.
+      renderMatrix(comfortableCourt());
+      expect(screen.getAllByText(/draws ran under a vote window of/i).length).toBeGreaterThan(0);
+
+      cleanup();
+      renderMatrix(compactCourt());
+      expect(screen.queryByText(/draws ran under a vote window of/i)).not.toBeInTheDocument();
+      expect(
+        screen.getAllByRole("link", { name: /why .*median reveal is marked: .*draws ran under/i })
+          .length,
+      ).toBeGreaterThan(0);
+    });
+
+    it("freezes the column header and nothing else", () => {
+      renderMatrix(compactCourt());
+
+      for (const column of screen.getAllByRole("columnheader")) {
+        expect(getComputedStyle(column).position).toBe("sticky");
+        expect(getComputedStyle(column).top).toBe("0px");
+      }
+      // The rows, the legend and the footnotes scroll past it: one scroll context, one frozen
+      // element. A row header that stuck would pin a dispute to the top of the viewport.
+      expect(getComputedStyle(screen.getByRole("rowheader", { name: /^156\b/ })).position).not.toBe(
+        "sticky",
+      );
+    });
+
+    it("leaves the column header unfrozen at the comfortable density", () => {
+      renderMatrix(comfortableCourt());
+
+      for (const column of screen.getAllByRole("columnheader")) {
+        expect(getComputedStyle(column).position).not.toBe("sticky");
+      }
+    });
+
+    it("says in the corner cell what the density did", () => {
+      renderMatrix(compactCourt());
+
+      // So a reader meets the reduction as a stated choice rather than as a figure that went
+      // missing, and knows where the one that moved has moved to.
+      const corner = screen.getAllByRole("columnheader")[0] as HTMLElement;
+      expect(corner.textContent).toContain("Reveal latency and coherence survive at this density");
+      expect(corner.textContent).toContain("commit latency moves to the row");
+    });
+
+    it("takes the second line off the row and leaves everything else on it", () => {
+      const slots = () => ({ title: "An escrow dispute", category: "Escrow" });
+
+      renderMatrix(comfortableCourt(), slots);
+      const comfortable = rowOrThrow(156);
+      expect(within(comfortable).getByText("Escrow")).toBeInTheDocument();
+      expect(within(comfortable).getByText("Ruling 2")).toBeInTheDocument();
+
+      cleanup();
+      renderMatrix(compactCourt(), slots);
+      const compact = rowOrThrow(156);
+      // What the row loses is closed: the category and the ruling, and nothing else.
+      expect(within(compact).queryByText("Escrow")).not.toBeInTheDocument();
+      expect(within(compact).queryByText("Ruling 2")).not.toBeInTheDocument();
+      expect(within(compact).getByText("An escrow dispute")).toBeInTheDocument();
+      expect(within(compact).getByText("Panel 4")).toBeInTheDocument();
+      expect(within(compact).getByRole("link", { name: "156" })).toBeInTheDocument();
+    });
+
+    it("keeps every flag and the precedence between them, abbreviated", () => {
+      renderMatrix(comfortableCourt());
+      expect(within(rowOrThrow(151)).getByText(/8h window/)).toBeInTheDocument();
+      expect(within(rowOrThrow(155)).getByText("Lone panel")).toBeInTheDocument();
+
+      cleanup();
+      renderMatrix(compactCourt());
+
+      // Dispute 151 still wears the window flag over its lone-panel neighbour: the precedence is
+      // `row-flags.ts`'s and density does not touch it. What density touches is the qualifier
+      // after the flag, which the dense artboard drops (`MatrixDense.dc.html:213`) — every row
+      // still says *which* flag it wears, and 175px of live pill stops eating the title.
+      expect(within(rowOrThrow(151)).getByText("8h")).toBeInTheDocument();
+      expect(within(rowOrThrow(155)).getByText("Lone")).toBeInTheDocument();
+      expect(within(rowOrThrow(166)).getByText("Live")).toBeInTheDocument();
+      expect(screen.queryByText(/Live · appeal/i)).not.toBeInTheDocument();
+    });
+
+    it("keys only the rails the compact cell actually carries", () => {
+      // Ticket 07's instruction against this legend group: a page that keys a commit rail no
+      // cell wears is decoding a mark the reader cannot find.
+      renderMatrix(comfortableCourt());
+      expect(screen.getByText("Commit")).toBeInTheDocument();
+
+      cleanup();
+      renderMatrix(compactCourt());
+      expect(screen.queryByText("Commit")).not.toBeInTheDocument();
+      expect(screen.getByText("Reveal")).toBeInTheDocument();
+      expect(screen.getByText("Rail: 1s — 1h, log")).toBeInTheDocument();
+    });
+
+    it("goes on saying that a blank is normal, and that volume does not resolve it", () => {
+      renderMatrix(compactCourt());
+
+      expect(screen.getByText(/sparsity is the normal state of this record/i)).toBeInTheDocument();
+      // The sentence a reader scrolling hundreds of rows needs and one reading sixteen does not.
+      const volume = screen.getByText(/sparsity does not resolve with volume/i);
+      expect(volume).toHaveTextContent(/still blank across all \d+ disputes/);
+    });
+
+    it("leaves the volume note off the comfortable density", () => {
+      renderMatrix(comfortableCourt());
+
+      expect(screen.queryByText(/sparsity does not resolve with volume/i)).not.toBeInTheDocument();
+    });
+
+    it("describes the cell the reader has, in the lede as well as in the corner", () => {
+      // The corner cell said where the commit figure went while the lede two elements above it
+      // went on promising that figure in the cell. Found by review, and it is the same rule as
+      // the caveat card's: a sentence naming a figure is a claim about this rendering.
+      renderMatrix(comfortableCourt());
+      expect(
+        screen.getByText(/how long it took to commit after the commit period opened/i),
+      ).toBeInTheDocument();
+
+      cleanup();
+      renderMatrix(compactCourt());
+      const lede = screen.getByText(/One row per dispute, one column per agent juror/);
+      expect(lede).toHaveTextContent(/commit latency is on the row at this density/);
+      expect(lede).not.toHaveTextContent(/how long it took to commit after the commit period/);
+    });
+
+    it("sends nobody looking for a shortfall in cells that carry no commit figure", () => {
+      // The shortfall notice named cells reading "Not read" — true of the comfortable cell and
+      // false of the compact one, which has no commit slot at all. At this density a partial
+      // shortfall shrinks each row's median instead, silently, so the notice has to say that.
+      const short = (commitFixture as RawCommitCast[]).slice(0, 5);
+
+      renderMatrix(padTo(COMPACT_FROM_ROWS, { commits: short }));
+      expect(screen.getByRole("status")).toHaveTextContent(/those cells read "Not read"/);
+
+      cleanup();
+      renderMatrix(padTo(COMPACT_FROM_ROWS + 1, { commits: short }));
+      const notice = screen.getByRole("status");
+      expect(notice).not.toHaveTextContent(/those cells read/);
+      expect(notice).toHaveTextContent(/each row's median commit is taken over fewer draws/);
+    });
+
+    it("says not read on the row of a dispute whose draws were never read", () => {
+      // An unread row has no cells, so the row's median has nothing to reduce and would fall
+      // through to the em dash this design defines as "nothing to measure" — an unread state
+      // stating a fact about the court, in the one figure a compact row carries.
+      const padded = padCourt(COMPACT_FROM_ROWS);
+      const newcomer = {
+        id: "300",
+        disputeID: "300",
+        period: "evidence",
+        ruled: false,
+        currentRuling: "0",
+        createdAt: String(NOW / 1000 + 600),
+        lastPeriodChange: String(NOW / 1000 + 600),
+        currentRoundIndex: "0",
+        rounds: [{ id: "300-0", timeline: ["0", "0", "0", "0"] }],
+        templateId: null,
+      } as RawDispute;
+
+      renderMatrix(
+        build({
+          ...padded,
+          disputes: [newcomer, ...padded.disputes],
+          drawsReadAt: NOW,
+        }),
+      );
+      const row = rowOrThrow(300);
+
+      expect(within(row).getByText("MED C").parentElement).toHaveTextContent("Not read");
+      expect(within(row).queryByText("—")).not.toBeInTheDocument();
+    });
+  });
+
+  it("never calls a column never drawn over a court that has drawn nobody at all", () => {
+    // Every read dispute still in its evidence period — a court in its opening hours, and the
+    // one case where "never drawn" and "blank end to end" are claims about a draw that has not
+    // happened rather than about six agent jurors. Found by review on this ticket's own figures.
+    const waiting = [167, 168, 169].map(
+      (id) =>
+        ({
+          id: String(id),
+          disputeID: String(id),
+          period: "evidence",
+          ruled: false,
+          currentRuling: "0",
+          createdAt: "1787620000",
+          lastPeriodChange: "1787620000",
+          currentRoundIndex: "0",
+          rounds: [{ id: `${id}-0`, timeline: ["0", "0", "0", "0"] }],
+          templateId: null,
+        }) as RawDispute,
+    );
+
+    renderMatrix(build({ disputes: waiting, draws: [], commits: [], rewards: [] }));
+
+    expect(screen.queryByText("Never drawn")).not.toBeInTheDocument();
+    expect(screen.queryByText(/blank end to end/i)).not.toBeInTheDocument();
+    // And it still says what it does know: nobody has been drawn for any of them.
+    expect(screen.getAllByText("No panel yet")).toHaveLength(waiting.length);
   });
 });

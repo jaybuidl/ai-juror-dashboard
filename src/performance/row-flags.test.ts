@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Dispute } from "../disputes/disputes";
 import { ROSTER } from "../roster/agent-jurors";
 import type { MatrixRow } from "./performance";
-import { rowFlagOf } from "./row-flags";
+import { ROW_FLAGS, rowFlagOf } from "./row-flags";
 import type { PeriodWindows } from "./windows";
 
 /**
@@ -121,6 +121,72 @@ describe("rowFlagOf", () => {
     expect(flag?.key).toBe("live");
     expect(flag?.tone).toBe("live");
     expect(flag?.label(live, context)).toBe("Live · commit 3m 12s");
+  });
+
+  describe("the abbreviated labels the compact density uses", () => {
+    /**
+     * `MatrixDense.dc.html:213` against `Main.dc.html:302`, which is the one place the two
+     * artboards deliberately word one thing twice. What has to hold is that the flag is still
+     * named: a compact row 441px wide has an id, a title, a panel and a figure on it too, and
+     * the live pill's 175px were coming out of the title.
+     */
+    it("keeps saying which flag it is, without the qualifier after it", () => {
+      const marked = row({ underEarlierWindows: true, windows: EARLIER });
+      const lone = row({ panelSize: 1 });
+      const live = row({ dispute: dispute({ period: "commit", ruling: { state: "pending" } }) });
+
+      expect(rowFlagOf(marked, context)?.shortLabel(marked, context)).toBe("8h");
+      expect(rowFlagOf(lone, context)?.shortLabel(lone, context)).toBe("Lone");
+      expect(rowFlagOf(live, context)?.shortLabel(live, context)).toBe("Live");
+    });
+
+    it("says a read that failed in full at either density", () => {
+      // The one flag that does not abbreviate. It is two words, neither of them a qualifier,
+      // and it is the one a reader most needs to not misread as a fact about the court.
+      const unread = row({ read: false });
+
+      expect(rowFlagOf(unread, context)?.shortLabel(unread, context)).toBe("Not read");
+    });
+
+    it("abbreviates whichever window the marker is actually about", () => {
+      // The same comparison the full label makes: a court that changed only its vote window
+      // would otherwise be marked with a duration identical to the one it holds now.
+      const voteOnly = row({
+        underEarlierWindows: true,
+        windows: { ...EARLIER, commitSeconds: CURRENT.commitSeconds },
+      });
+
+      expect(rowFlagOf(voteOnly, context)?.label(voteOnly, context)).toBe("8h vote window");
+      expect(rowFlagOf(voteOnly, context)?.shortLabel(voteOnly, context)).toBe("8h");
+    });
+
+    it("never abbreviates a duration into one the court never had", () => {
+      // `formatWindowSeconds` returns two words whenever the minutes do not divide by 60, so an
+      // abbreviation cut at the first space would turn a 90-minute window into "1h" — on the
+      // marker whose whole job is to name the window that differs. Court 34's 8h, 45m and 30m
+      // are all one token, which is what hid this until review.
+      const ninety = row({
+        underEarlierWindows: true,
+        windows: { ...EARLIER, commitSeconds: 5400 },
+      });
+
+      expect(rowFlagOf(ninety, context)?.label(ninety, context)).toBe("1h 30m window");
+      expect(rowFlagOf(ninety, context)?.shortLabel(ninety, context)).toBe("1h 30m");
+    });
+
+    it("says a row the history cannot place is from an earlier window, either way", () => {
+      const unplaced = row({ underEarlierWindows: true, windows: null });
+
+      expect(rowFlagOf(unplaced, context)?.label(unplaced, context)).toBe("Earlier window");
+      expect(rowFlagOf(unplaced, context)?.shortLabel(unplaced, context)).toBe("Earlier");
+    });
+
+    it("gives every flag both labels, so neither density can meet one that has none", () => {
+      for (const flag of ROW_FLAGS) {
+        expect(typeof flag.shortLabel).toBe("function");
+        expect(flag.shortLabel(row(), context).length).toBeGreaterThan(0);
+      }
+    });
   });
 
   it("still says a dispute is live when its period cannot be dated", () => {

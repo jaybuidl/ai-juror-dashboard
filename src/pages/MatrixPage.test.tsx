@@ -7,6 +7,8 @@ import { ROSTER } from "../roster/agent-jurors";
 import {
   arbitrumFailed,
   arbitrumPending,
+  denseCourt,
+  denseUnpaidCourt,
   disputes,
   disputesWithNewcomer,
   measured,
@@ -20,6 +22,7 @@ import {
   rewardsInFeeToken,
   rewardsPending,
   rewardsShort,
+  roomyCourt,
   staleDraws,
   unmeasured,
   unresolvedRoster,
@@ -1058,5 +1061,78 @@ describe("the matrix view on a phone", () => {
       "false",
     );
     expect(screen.queryByRole("link", { name: "Disputes" })).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * What the page says once the court has outgrown the comfortable density.
+ *
+ * The same rule ticket 16 met one width down, and the reason it is tested here rather than only
+ * in `Matrix.test.tsx`: past forty disputes the column header keeps three of its six figures, and
+ * every sentence on this page that names one of the other three is then describing a figure the
+ * reader cannot see. Both directions, because a caveat that is absent for the wrong reason tests
+ * nothing — every case here renders the same court one dispute short of the threshold as well.
+ */
+describe("the matrix view past the density threshold", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+    cleanup();
+  });
+
+  it("describes the column header the reader is actually looking at", () => {
+    renderAt("/", { performance: denseCourt });
+
+    const caveat = screen.getByText(/This page measures how long each agent juror took/);
+    expect(caveat).toHaveTextContent(/median reveal latency and coherence/);
+    expect(caveat).toHaveTextContent(/the commit median moves onto each dispute's row/);
+    // The two sums are not in this header, so the sentence naming them may not be either.
+    expect(caveat).not.toHaveTextContent(/cumulative ETH and net PNK/i);
+  });
+
+  it("keeps describing all six figures below the threshold", () => {
+    renderAt("/", { performance: roomyCourt });
+
+    const caveat = screen.getByText(/This page measures how long each agent juror took/);
+    expect(caveat).toHaveTextContent(/cumulative ETH and net PNK/i);
+    expect(caveat).not.toHaveTextContent(/moves onto each dispute's row/);
+  });
+
+  it("states no payout provenance on a density that shows no payout figure", () => {
+    renderAt("/", { performance: denseCourt });
+
+    expect(
+      screen.queryByText(/summed over the .* draws the court has executed/i),
+    ).not.toBeInTheDocument();
+  });
+
+  it("still states payout provenance below the threshold", () => {
+    // The other direction. Without this the gate above would pass just as well if the sentence
+    // had been deleted outright.
+    renderAt("/", { performance: roomyCourt });
+
+    expect(
+      screen.getByText(/summed over the 44 draws the court has executed and paid out/i),
+    ).toBeInTheDocument();
+  });
+
+  it("promises no payout figure while the payouts are being read", () => {
+    renderAt("/", { performance: denseUnpaidCourt });
+
+    // "…is shown yet" promises a figure that is coming, and at this density none is coming: the
+    // header has no row for it. The same sentence, the same reason, one width up from the phone.
+    expect(screen.queryByText(/payouts are still being read/i)).not.toBeInTheDocument();
+  });
+
+  it("goes on saying everything that is not about a dropped figure", () => {
+    // The gates are per figure and not per density: a caveat about the window change, the lone
+    // panel or the ENS read is as true at one density as at the other, and losing one of those
+    // to this reduction would be the reduction eating a caveat.
+    renderAt("/", { performance: denseCourt });
+
+    // The footnote beside the grid says the same fact in its own words, so both are on the page:
+    // what this is about is that the *footer* still carries them.
+    expect(screen.getAllByText(/decided by a panel of one/i).length).toBeGreaterThan(0);
+    expect(screen.getByText(/ran under a commit window of/i)).toBeInTheDocument();
+    expect(screen.getByText(/comparison band on the latency strip/i)).toBeInTheDocument();
   });
 });

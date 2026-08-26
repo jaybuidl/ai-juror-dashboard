@@ -4,6 +4,7 @@ import { ThemeProvider } from "styled-components";
 import { describe, expect, it } from "vitest";
 import { ROSTER } from "../roster/agent-jurors";
 import { theme } from "../styles/theme";
+import type { Density } from "./density";
 import { Marginals } from "./Marginals";
 import type { RewardCoverage } from "./performance";
 import type { AgentJurorMarginals, LatencySummary, WindowChange } from "./totals";
@@ -72,7 +73,11 @@ const PAID: RewardCoverage = { read: true, paidDraws: 4, feeTokenDraws: 0, short
 
 function renderMarginals(
   over: Partial<AgentJurorMarginals> = {},
-  { scanned = true, payouts = PAID }: { scanned?: boolean; payouts?: RewardCoverage } = {},
+  {
+    scanned = true,
+    payouts = PAID,
+    density = "comfortable",
+  }: { scanned?: boolean; payouts?: RewardCoverage; density?: Density } = {},
 ) {
   return render(
     <ThemeProvider theme={theme}>
@@ -82,6 +87,7 @@ function renderMarginals(
           scanned={scanned}
           payouts={payouts}
           current={CURRENT}
+          density={density}
         />
       </MemoryRouter>
     </ThemeProvider>,
@@ -370,6 +376,68 @@ describe("Marginals", () => {
       // The draw count takes neither: a window changes what a duration means and changes
       // nothing about how many times the court drew this agent juror.
       expect(within(screen.getByText("4 · 5v")).queryByText("†")).toBeNull();
+    });
+  });
+
+  /**
+   * The block ticket 17 reduces, checked here rather than only through a rendered matrix: what
+   * survives is a property of this list and its flags, not of the grid around it.
+   */
+  describe("the compact density", () => {
+    it("keeps three of the six figures and drops three", () => {
+      renderMarginals({}, { density: "compact" });
+
+      for (const kept of [
+        "Median reveal latency",
+        "Coherent draws, of the draws the court has ruled on",
+        "Draws, and the vote IDs they hold",
+      ]) {
+        expect(screen.getByText(kept)).toBeInTheDocument();
+      }
+      for (const dropped of [
+        "Median commit latency",
+        "Cumulative ETH earned",
+        "Net PNK gained or lost",
+      ]) {
+        expect(screen.queryByText(dropped)).not.toBeInTheDocument();
+      }
+    });
+
+    it("keeps the order of the three it keeps", () => {
+      // Nothing is ranked here and nothing reorders: a compact header is the comfortable one
+      // with three lines removed, never a second block that happens to agree with it.
+      renderMarginals({}, { density: "compact" });
+
+      const keys = screen.getAllByText(/^(Med rev|Coherent|Draws)$/).map((key) => key.textContent);
+      expect(keys).toEqual(["Med rev", "Coherent", "Draws"]);
+    });
+
+    it("keeps the marker on a figure it keeps, and says why on the marker itself", () => {
+      renderMarginals(
+        {
+          coherence: { coherent: 4, resolved: 4, lonePanelDisputes: [155] },
+          changedWindows: [EARLIER],
+        },
+        { density: "compact" },
+      );
+
+      // The reason line goes and the reason does not: it moves onto the mark's accessible name,
+      // where it costs a frozen header nothing. Ticket 06's own hand-off asked for this trade.
+      expect(screen.getAllByText("†")).toHaveLength(1);
+      expect(screen.getAllByText("‡")).toHaveLength(1);
+      expect(screen.queryByText(/draws ran under a vote window of/i)).not.toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /median reveal is marked/i })).toHaveAccessibleName(
+        /draws ran under a vote window of/i,
+      );
+    });
+
+    it("drops no marker with the figure it dropped", () => {
+      // The commit median carried a † of its own at the other density. It leaves with its
+      // figure, which is the one way a marker may go: the figure it qualified is not on screen.
+      renderMarginals({ changedWindows: [EARLIER] }, { density: "compact" });
+
+      expect(screen.queryByText("Median commit latency")).not.toBeInTheDocument();
+      expect(screen.queryByRole("link", { name: /median commit is marked/i })).toBeNull();
     });
   });
 });

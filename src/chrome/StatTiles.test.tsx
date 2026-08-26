@@ -41,7 +41,14 @@ function totalsOf(changedWindows: CourtTotals["changedWindows"]): CourtTotals {
     unreadDisputes: [],
     // Not a figure any tile prints — the sparsity note quotes it, on the matrix and on the
     // phone's card list. Present because `CourtTotals` is one object and a tile takes all of it.
-    sparsity: { disputes: 16, positions: 96, blank: 52, emptyColumns: 1 },
+    sparsity: {
+      disputes: 16,
+      positions: 96,
+      blank: 52,
+      emptyColumns: 1,
+      undrawnDisputes: [],
+      undrawnPositions: 0,
+    },
   };
 }
 

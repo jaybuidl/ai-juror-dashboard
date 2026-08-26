@@ -16,12 +16,33 @@ import { Nav } from "./Nav";
  * Built against the ground and nav of `canvas/Main.dc.html:34-50`.
  */
 
+/*
+ * `clip` where there is a `clip`, and `hidden` where there is not.
+ *
+ * The two clip identically. They differ in one thing that has nothing to do with clipping:
+ * `overflow: hidden` makes an element a scroll container — scrollable programmatically even
+ * where nothing overflows — and a `position: sticky` descendant sticks to its nearest scroll
+ * container rather than to the page. This element wraps every view, so `hidden` here meant no
+ * sticky element anywhere in this dashboard could ever stick: ticket 17's frozen column header
+ * would scroll away with the rows, silently, with nothing in the console and nothing a jsdom
+ * test could see.
+ *
+ * Behind `@supports` rather than declared outright, because an unsupported `overflow: clip` is
+ * dropped whole and leaves this element clipping nothing at all — and what it is clipping is a
+ * 1,560px decorative orbit and a matrix wider than the page. Safari below 16 is where that
+ * lands. Losing the freeze there is a reduction; letting the page scroll sideways is the one
+ * thing this repo says a layout must never do.
+ */
 const Ground = styled.div`
   position: relative;
   display: flex;
   flex-direction: column;
   min-height: 100dvh;
   overflow: hidden;
+
+  @supports (overflow: clip) {
+    overflow: clip;
+  }
 `;
 
 /**
