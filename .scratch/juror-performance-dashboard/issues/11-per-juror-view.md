@@ -214,3 +214,32 @@ And the gating rule this ticket will meet the moment it writes a caveat about a 
 naming a figure is a claim about which rendering the reader is looking at, and there are now three.
 `provenanceOf` in `MatrixPage.tsx` takes `narrow` and `dense` for exactly that, and every gate has
 a test in both directions.
+
+### And the collision, measured rather than guessed (2026-08-26)
+
+`git merge-tree worktree-ticket-17 worktree-ticket-11` exits 1 on six paths, and one of them is a
+design choice rather than a text merge — the shape `CLAUDE.md` records against tickets 04 and 05.
+Both branches restructured `Marginals.tsx` in different directions on the same day: this ticket
+lifted the six figures out into `marginal-figures.ts` (`marginalFiguresOf`, `MarginalFigure`,
+`MarginalContext`) so the agent juror view can reuse them, and ticket 17 added a `density` prop to
+`Marginals` and a `dense: boolean` to each of the six slots so the compact column header can drop
+three of them. Neither is wrong and neither can be taken whole.
+
+What the merge wants, stated so the integrating session does not have to re-derive it:
+
+- **`dense` belongs on `MarginalFigure`**, set on the same six entries — `true` for the median
+  reveal, the coherence count and the draw count, `false` for the median commit and the two reward
+  sums. `Marginals` keeps its `density` prop and filters what `marginalFiguresOf` returns; the
+  agent juror view passes nothing and takes all six, which is what it wants anyway.
+- **`marginal-figures.ts`'s private `commitFigure` should become `commitMedianFigureOf` from
+  `cell.ts`.** Ticket 17 deleted the copy in `Marginals.tsx` for a reason that now applies twice
+  over: there are two figures that are a median commit over a set of draws — each column's and, at
+  the compact density, each dispute row's — and two implementations of the three absences would
+  have the column header and the row beneath it explaining one Arbitrum outage in different words.
+- **The reason line's compact branch travels with the `<Reason>` element**, wherever it ends up.
+  At the compact density it is not rendered and its text joins the mark's `aria-label` instead.
+
+`MatrixPage.tsx` conflicts too, and there the merge is additive but needs reading: this ticket
+changed how the view reaches the marginals, ticket 17 threaded `isDense` through `provenanceOf` and
+added a third branch to the caveat card. Both parents are correct alone, which is the merge shape
+that produced four prose defects the last time it happened here.
