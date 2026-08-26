@@ -62,7 +62,11 @@ describe("one agent juror's own view", () => {
     expect(screen.getByText("0x7023…bF4C")).toBeInTheDocument();
     expect(screen.getByRole("link", { name: /arbiscan/i })).toHaveAttribute(
       "href",
-      `https://arbiscan.io/address/${ROSTER[3]?.address}`,
+      // By nickname and not by index. This read ROSTER[3] while the page above it is rendered at
+      // /agent-jurors/columbo — a named lookup and a positional one pointing at one agent juror,
+      // which held only while columbo happened to be fourth. It stopped being fourth, and this
+      // was the assertion that said so.
+      `https://arbiscan.io/address/${ROSTER.find((a) => a.nickname === "columbo")?.address}`,
     );
   });
 

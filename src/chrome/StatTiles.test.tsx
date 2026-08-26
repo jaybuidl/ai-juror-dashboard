@@ -76,9 +76,14 @@ describe("StatTiles", () => {
       },
     ]);
 
-    expect(
-      screen.getByText(/2 of 4 draws ran under a vote window of 8h, which the court has since/i),
-    ).toBeInTheDocument();
+    // On the mark, not under the figure. The reason left the page as a paragraph — four tiles
+    // in a row and only ever one of them marked gave the row no common baseline, and it put
+    // prose above the first figure anyone came to read — so the dagger carries it, as the
+    // marginals' marks have since ticket 17. It was aria-hidden before, so the paragraph was
+    // the caveat's only voice and deleting it alone would have deleted the caveat.
+    expect(screen.getByRole("link", { name: /median reveal is marked/i })).toHaveAccessibleName(
+      /2 of 4 draws ran under a vote window of 8h, which the court has since/i,
+    );
   });
 
   it("leaves it unmarked when only a window it is not measured from changed", () => {
@@ -117,12 +122,15 @@ describe("StatTiles", () => {
       null,
     );
 
-    expect(screen.getByText(/ran under a vote window of 8h/i)).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /median reveal is marked/i })).toHaveAccessibleName(
+      /ran under a vote window of 8h/i,
+    );
   });
 
   it("marks nothing when no dispute ran under a superseded window", () => {
     renderTiles([]);
 
+    expect(screen.queryByRole("link", { name: /median reveal is marked/i })).toBeNull();
     expect(screen.queryByText(/which the court has since changed/i)).not.toBeInTheDocument();
   });
 

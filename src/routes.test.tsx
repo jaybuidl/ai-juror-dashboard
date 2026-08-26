@@ -205,7 +205,7 @@ describe("the shell", () => {
     expect(window.location.pathname).toBe("/method");
 
     window.history.back();
-    await screen.findByRole("heading", { level: 1, name: /agents do not wait/i });
+    await screen.findByRole("heading", { level: 1, name: /kleros ai agent jurors dashboard/i });
 
     window.history.forward();
     await screen.findByRole("heading", { level: 1, name: "Method" });

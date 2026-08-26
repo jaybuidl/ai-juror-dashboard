@@ -38,11 +38,15 @@ import { PHONE_WIDTH, stubViewportWidth } from "../test/viewport";
  */
 
 describe("the matrix view", () => {
-  it("states the finding rather than naming the product", () => {
+  it("names what the page is", () => {
+    // It used to state a finding — "Agents do not wait for the deadline." — which is the
+    // artboard's headline and the more arresting of the two. Named rather than asserted now, on
+    // the maintainer's call: the page is a dashboard people return to rather than an essay they
+    // read once, and a title that says which dashboard is the one that survives a bookmark.
     renderAt("/");
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      /agents do not wait for the deadline/i,
+      /kleros ai agent jurors dashboard/i,
     );
   });
 
@@ -67,7 +71,13 @@ describe("the matrix view", () => {
   it("says what it has measured and, in the same breath, what it has not", () => {
     renderAt("/");
 
-    expect(screen.getByText(/three measures, and what is missing from them/i)).toBeInTheDocument();
+    // No caveat card. It was titled "Three measures, and what is missing from them" and every
+    // claim in it was the method page's said a second time — checked claim by claim, including
+    // the appeal-period one, which /method puts better. What is asserted here is the half that
+    // was never duplicated: the footer's account of what the reward figures are summed over.
+    expect(
+      screen.queryByText(/three measures, and what is missing from them/i),
+    ).not.toBeInTheDocument();
 
     // The list of what has *not* been read is now empty, and that is the whole of ticket 10.
     // The court's period durations left it with ticket 08, the per-agent-juror summaries with
@@ -92,10 +102,11 @@ describe("the matrix view", () => {
     // survive is the half that still is true: everything it has not read, said outright.
     renderAt("/");
 
+    // ADR-0005, in the footnote under the grid rather than in a caveat card above it. The card
+    // said it a third time, after /method and after this note; what a reader meets three times
+    // they stop reading once.
     expect(screen.queryByText(/nothing measured yet/i)).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/no figure here is a fraction of a period's window/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/never as a fraction of the window it ran in/i)).toBeInTheDocument();
   });
 
   it("hangs the matrix off the court's disputes, newest first", () => {
@@ -373,15 +384,13 @@ describe("the matrix view's footer", () => {
       // Above the matrix specifically. The matrix's own column headers carry the same sentence
       // over each column's draws since ticket 06, and this is the court-wide one — pooled over
       // every reveal in the read, which is what makes it the tile's figure and not a column's.
-      const [reason, ...rest] = aboveTheMatrix(/ran under a vote window of 8h/i);
-      if (reason === undefined) throw new Error("The median reveal tile carries the marker");
+      // On the mark rather than under the figure: four tiles stand in a row and only this one is
+      // ever marked, so a paragraph beneath it left the row without a common baseline and put
+      // prose above the first figure anyone came for.
+      const mark = screen.getByRole("link", { name: /the court's median reveal is marked/i });
 
-      expect(rest).toHaveLength(0);
-      expect(reason).toHaveTextContent(/2 of \d+ draws/i);
-      expect(within(reason).getByRole("link", { name: /the full account/i })).toHaveAttribute(
-        "href",
-        "/method#window",
-      );
+      expect(mark).toHaveAccessibleName(/2 of \d+ draws ran under a vote window of 8h/i);
+      expect(mark).toHaveAttribute("href", "/method#window");
     });
 
     it("leaves the counting tiles unmarked, because a window changes no count", () => {
@@ -389,7 +398,10 @@ describe("the matrix view's footer", () => {
 
       // One dagger above the matrix and no more: a window changes what a duration means and
       // changes nothing about how many disputes or draws there were.
-      expect(aboveTheMatrix(/ran under a vote window/i)).toHaveLength(1);
+      expect(
+        screen.getAllByRole("link", { name: /the court's median reveal is marked/i }),
+      ).toHaveLength(1);
+      expect(screen.queryByRole("link", { name: /disputes read is marked/i })).toBeNull();
     });
 
     it("marks no figure at all while the history is unread", () => {
@@ -839,19 +851,6 @@ describe("the failure banner", () => {
 });
 
 /**
- * What matches above the grid, which is where the court-wide figures are.
- *
- * The matrix's column headers carry marked figures of their own since ticket 06, worded from the
- * same caveats in deliberately the same words — so a page-wide count of "how many things say
- * this" now counts the columns too, and a test written before them silently changes its subject.
- * These are the tiles' and the strip's, and the grid states its own beside the cells they qualify.
- */
-function aboveTheMatrix(text: RegExp): HTMLElement[] {
-  const grid = screen.queryByRole("table");
-  return screen.getAllByText(text).filter((node) => grid === null || !grid.contains(node));
-}
-
-/**
  * The same view below the breakpoint.
  *
  * jsdom implements no `matchMedia` at all, so every test above renders the desktop form without
@@ -934,7 +933,7 @@ describe("the matrix view on a phone", () => {
     renderAt("/");
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
-      /^Agents do not wait for the deadline\.$/,
+      /^Kleros AI Agent Jurors Dashboard$/,
     );
   });
 
@@ -1046,19 +1045,6 @@ describe("the matrix view on a phone", () => {
     expect(banner).not.toHaveTextContent(/column header/i);
   });
 
-  it("describes cards and slots in the caveat card rather than columns and cells", () => {
-    stubViewportWidth(PHONE_WIDTH);
-    renderAt("/");
-
-    // The one place still speaking desktop-only after the fold, found by review. The whole point
-    // of this layout is that the two never say different things about one court; a caveat card
-    // describing furniture the reader cannot see is that fault in the other direction.
-    const caveat = screen.getByText(/This page measures how long each agent juror took/);
-    expect(caveat).toHaveTextContent(/each slot along its foot one agent juror's draw/);
-    expect(caveat).not.toHaveTextContent(/column header/);
-    expect(caveat).toHaveTextContent(/a blank slot means an agent juror was not drawn/);
-  });
-
   it("closes the folded menu on the way to the page it opened", () => {
     stubViewportWidth(PHONE_WIDTH);
     renderAt("/");
@@ -1091,24 +1077,6 @@ describe("the matrix view past the density threshold", () => {
     cleanup();
   });
 
-  it("describes the column header the reader is actually looking at", () => {
-    renderAt("/", { performance: denseCourt });
-
-    const caveat = screen.getByText(/This page measures how long each agent juror took/);
-    expect(caveat).toHaveTextContent(/median reveal latency and coherence/);
-    expect(caveat).toHaveTextContent(/the commit median moves onto each dispute's row/);
-    // The two sums are not in this header, so the sentence naming them may not be either.
-    expect(caveat).not.toHaveTextContent(/cumulative ETH and net PNK/i);
-  });
-
-  it("keeps describing all six figures below the threshold", () => {
-    renderAt("/", { performance: roomyCourt });
-
-    const caveat = screen.getByText(/This page measures how long each agent juror took/);
-    expect(caveat).toHaveTextContent(/cumulative ETH and net PNK/i);
-    expect(caveat).not.toHaveTextContent(/moves onto each dispute's row/);
-  });
-
   /**
    * The one thing the compact branch can say about the two figures it drops: where they are.
    *
@@ -1119,23 +1087,6 @@ describe("the matrix view past the density threshold", () => {
    * answer — otherwise a reader past forty disputes is told a figure vanished and not that it
    * moved.
    */
-  it("points a compacted reader at the view that still prints the two sums", () => {
-    renderAt("/", { performance: denseCourt });
-
-    const caveat = screen.getByText(/This page measures how long each agent juror took/);
-    expect(caveat).toHaveTextContent(
-      /what the court has paid an agent juror is on that agent juror's own page/i,
-    );
-  });
-
-  it("makes no such promise below the threshold, where the figures are on this page", () => {
-    // The other direction: a pointer to somewhere else, on a page that shows the figure itself,
-    // sends a reader away from what they are looking at.
-    renderAt("/", { performance: roomyCourt });
-
-    const caveat = screen.getByText(/This page measures how long each agent juror took/);
-    expect(caveat).not.toHaveTextContent(/on that agent juror's own page/i);
-  });
 
   it("states no payout provenance on a density that shows no payout figure", () => {
     renderAt("/", { performance: denseCourt });

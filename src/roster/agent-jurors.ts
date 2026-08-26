@@ -44,22 +44,30 @@ export type AgentJuror = {
  * must not arrive here — agent jurors are identified by nickname and stack, never by the
  * person who built them.
  *
- * Ordered by nickname, except `baskerville` last: its matrix column is empty end to end, and
- * an empty column mid-grid reads as missing data rather than as the sparsity random draws
- * produce. Every artboard draws it in this position. The order is still a property of this file
- * — nothing sorts at runtime, the column does not move when it is finally drawn, and no rank may
- * be read into it. Do not re-alphabetise.
+ * Ordered by nickname, with two exceptions at the right-hand end, and **no rank may be read into
+ * either**. `baskerville` is last because its matrix column is empty end to end, and an empty
+ * column mid-grid reads as missing data rather than as the sparsity random draws produce; every
+ * artboard draws it in that position. `aletheia` sits just before it by the maintainer's call:
+ * its column is the one dense with missed votes, and a full-height rose column two positions
+ * from the left is the loudest thing in a grid whose subject is latency.
+ *
+ * That second exception is the one to be careful about, and it is recorded here rather than left
+ * to be inferred. Moving the agent juror that misses most votes to the far right, next to the one
+ * never drawn, can be read as sorting the grid by how well each did — which is exactly what the
+ * sentence above forbids. It is a layout decision about one rose column and nothing else: the
+ * order is fixed in this file, nothing sorts at runtime, no figure anywhere is ordered by it, and
+ * the column will not move if aletheia's record changes.
+ *
+ * **This array is the join.** `marginals` and every row's `cells` are built in this order and
+ * matched to it by index, so a column moved anywhere but here shows one agent juror's draws under
+ * another's avatar with every figure on the page internally consistent, no error, and nothing in
+ * the console. Reorder here or not at all. Do not re-alphabetise.
  */
 export const ROSTER: readonly AgentJuror[] = [
   {
     nickname: "007",
     address: "0x245314a76FC9b8e48Fea7Abb3B9B07E34E13d8C6",
     stack: { label: "OpenClaw" },
-  },
-  {
-    nickname: "aletheia",
-    address: "0xD44Ca97bCd957b410a6e0A7109323cfD9ad814bE",
-    stack: { label: "Hermes" },
   },
   {
     nickname: "blaise",
@@ -76,6 +84,11 @@ export const ROSTER: readonly AgentJuror[] = [
   {
     nickname: "daemonhill",
     address: "0xAC237740772093Fcc812A463050c43A275dd01E5",
+    stack: { label: "Hermes" },
+  },
+  {
+    nickname: "aletheia",
+    address: "0xD44Ca97bCd957b410a6e0A7109323cfD9ad814bE",
     stack: { label: "Hermes" },
   },
   {

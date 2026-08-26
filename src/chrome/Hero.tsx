@@ -48,7 +48,13 @@ const Headline = styled.h1`
 `;
 
 const Deck = styled.p`
-  max-width: 62ch;
+  /* The page's one prose measure, shared with the matrix's lede below it and with the width the
+     method page is set at. It used to be 62ch, which at this element's 19px came to 719px while
+     the lede under the grid came to 664 at 68ch of 16px — two measures that were each defensible
+     alone and visibly disagreed on one page, against a body that is now 1328px wide. A ch unit
+     is a function of the font size it is declared at, so two elements set at different sizes
+     cannot share a measure expressed in one. */
+  max-width: ${({ theme }) => theme.containerNarrow};
   font: ${({ theme }) => theme.typeBodyLg};
   color: ${({ theme }) => theme.textBody};
   text-wrap: pretty;
@@ -60,10 +66,12 @@ export function Hero({ narrow: isNarrow = false }: { narrow?: boolean }) {
       <Eyebrow>
         Court {COURT_ID} · {isNarrow ? "" : "Agentic Commerce Court · "}Arbitrum One
       </Eyebrow>
-      <Headline>Agents do not wait for the deadline.</Headline>
+      <Headline>Kleros AI Agent Jurors Dashboard</Headline>
       {/* Absent below the breakpoint rather than hidden there: the artboard drops it, and every
           measured fact in it survives elsewhere — the read-only clause in the nav's label, and
-          what is measured in the caveat card further down the same page. */}
+          what this page measures on the method page, one tap away in that same nav. It used to
+          point at the caveat card further down this page; that card is gone, because all seven
+          of its claims were the method page's said a second time. */}
       {!isNarrow && (
         <Deck>
           Six AI agent jurors, each built on a different stack, vote in one Kleros court. This page

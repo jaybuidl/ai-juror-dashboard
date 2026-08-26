@@ -140,14 +140,17 @@ describe("buildCourtPerformance", () => {
   it("puts one column on the matrix per agent juror, in roster order", () => {
     const performance = built();
 
-    // `baskerville` last is deliberate, not an alphabetisation that slipped: its column is empty
-    // end to end and sits at the edge rather than through the middle. See `ROSTER`.
+    // Two deliberate departures from nickname order, neither an alphabetisation that slipped and
+    // neither a ranking. `baskerville` is last because its column is empty end to end and belongs
+    // at the edge rather than through the middle; `aletheia` sits before it because its column is
+    // the one dense with missed votes, and a full-height rose column near the left outshouts a
+    // grid whose subject is latency. See `ROSTER`, which is also the index this join runs on.
     expect(performance.agentJurors.map((agentJuror) => agentJuror.nickname)).toEqual([
       "007",
-      "aletheia",
       "blaise",
       "columbo",
       "daemonhill",
+      "aletheia",
       "baskerville",
     ]);
     for (const row of performance.rows) {

@@ -643,7 +643,11 @@ describe("Matrix", () => {
     // Worded about the *record* rather than about the matrix since ticket 16, because the phone
     // says the same sentence over a layout with no grid and no columns in it. What stays is the
     // noun for the position itself: a cell here, a slot there, and one figure behind both.
-    expect(screen.getByText(/on the empty cells/i)).toBeInTheDocument();
+    //
+    // No "On the empty cells" label here: below the grid this is a plain note among the † and ‡
+    // ones, in the same family rather than in a bordered card of its own. The phone keeps the
+    // card, where the note stands alone at the head of the list and needs an edge. The words
+    // are the same either way, which is what this test is really pinning.
     expect(screen.getByText(/sparsity is the normal state of this record/i)).toBeInTheDocument();
     expect(screen.getByText(/one agent juror is blank end to end/i)).toBeInTheDocument();
     expect(screen.getByText(/cells here are blank/i)).toBeInTheDocument();
@@ -1613,20 +1617,19 @@ describe("Matrix", () => {
       expect(screen.queryByText(/sparsity does not resolve with volume/i)).not.toBeInTheDocument();
     });
 
-    it("describes the cell the reader has, in the lede as well as in the corner", () => {
-      // The corner cell said where the commit figure went while the lede two elements above it
-      // went on promising that figure in the cell. Found by review, and it is the same rule as
-      // the caveat card's: a sentence naming a figure is a claim about this rendering.
+    it("says where the commit figure went, in the corner cell that is left to say it", () => {
+      // This used to assert the lede and the corner cell agreed, after review found the lede
+      // promising a commit figure in a cell that no longer had one. There is no lede now — it
+      // described a cell to a reader looking at a hundred and sixty-eight of them, under a
+      // legend keying every state — so the corner is the only voice and there is nothing left
+      // to disagree with it.
       renderMatrix(comfortableCourt());
-      expect(
-        screen.getByText(/how long it took to commit after the commit period opened/i),
-      ).toBeInTheDocument();
+      expect(screen.getByText(/newest first\. one row per dispute/i)).toBeInTheDocument();
+      expect(screen.queryByText(/commit latency moves to the row/i)).not.toBeInTheDocument();
 
       cleanup();
       renderMatrix(compactCourt());
-      const lede = screen.getByText(/One row per dispute, one column per agent juror/);
-      expect(lede).toHaveTextContent(/commit latency is on the row at this density/);
-      expect(lede).not.toHaveTextContent(/how long it took to commit after the commit period/);
+      expect(screen.getByText(/commit latency moves to the row/i)).toBeInTheDocument();
     });
 
     it("sends nobody looking for a shortfall in cells that carry no commit figure", () => {

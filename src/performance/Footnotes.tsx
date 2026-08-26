@@ -1,3 +1,4 @@
+import { Fragment } from "react";
 import { Link } from "react-router";
 import styled from "styled-components";
 import { VisuallyHidden } from "../styles/hidden";
@@ -73,9 +74,12 @@ const SparsityLabel = styled.div`
   color: ${({ theme }) => theme.textMeta};
 `;
 
-const SparsityBody = styled.p`
-  margin-top: ${({ theme }) => theme.space4};
+const SparsityBody = styled.p<{ $bare?: boolean }>`
+  margin-top: ${({ theme, $bare }) => ($bare === true ? "0" : theme.space4)};
   font: ${({ theme }) => theme.typeBodySm};
+  /* It counts cells, disputes and columns, and the shorthand above resets the tabular figures
+     base.css puts on the body — the same correction every footnote beside it carries. */
+  font-feature-settings: ${({ theme }) => theme.featureNumeric};
   color: ${({ theme }) => theme.textBody};
 `;
 
@@ -219,21 +223,44 @@ export function LonePanelFootnote({ performance }: { performance: CourtPerforman
  * no grid on it would be describing something the reader cannot see. Every figure comes from
  * `totals.sparsity`, so every layout counts the same court.
  */
+/**
+ * How the note is dressed, which is the one thing that differs between its two renderings.
+ *
+ * "footnote" is the matrix's: a plain paragraph among the † and ‡ notes below the grid, in the
+ * same family and reading as one of them. It used to be a bordered card there, which made a
+ * caveat about the court look like a component of the grid and put a second box below a page
+ * already carrying several.
+ *
+ * "card" is the phone's, and it is not a leftover. Ticket 16 put this note at the *head* of the
+ * card list rather than at its foot, deliberately: it prevents a misreading rather than
+ * answering a question, and a reader who does not know they have been misled never scrolls to
+ * the bottom to find out. Standing alone above the cards it needs an edge of its own.
+ *
+ * The words are identical either way and are built once below. That is the rule this file
+ * exists to keep — two renderings of one record may differ in their chrome and never in what
+ * they claim.
+ */
+export type SparsityPresentation = "card" | "footnote";
+
 export function SparsityNote({
   performance,
   noun,
+  presentation = "card",
 }: {
   performance: CourtPerformance;
   noun: "cell" | "slot";
+  presentation?: SparsityPresentation;
 }) {
   const { sparsity, unreadDisputes } = performance.totals;
   const unread = unreadDisputes.length;
   const undrawn = sparsity.undrawnDisputes;
 
+  const Frame = presentation === "card" ? SparsityCard : Fragment;
+
   return (
-    <SparsityCard>
-      <SparsityLabel>On the empty {noun}s</SparsityLabel>
-      <SparsityBody>
+    <Frame>
+      {presentation === "card" && <SparsityLabel>On the empty {noun}s</SparsityLabel>}
+      <SparsityBody $bare={presentation === "footnote"}>
         {/* Every figure here is about the disputes that were read, so with none of them read
             there is nothing to count and the card says that instead of counting to zero.
             "0 of the 0 cells here are blank" is not a smaller version of this claim; it is a
@@ -271,6 +298,6 @@ export function SparsityNote({
         {unread > 0 &&
           ` ${unread === 1 ? "One further dispute is" : `A further ${unread} disputes are`} not counted here at all: ${unread === 1 ? "its draws were" : "their draws were"} never read, so ${unread === 1 ? "it is" : "they are"} marked Unknown rather than blank.`}
       </SparsityBody>
-    </SparsityCard>
+    </Frame>
   );
 }

@@ -34,7 +34,9 @@ import { narrow } from "../styles/breakpoints";
 export type TileCaveat = {
   /** The marker, matching the one the matrix footnote uses for the same caveat. */
   mark: string;
-  /** Why the figure is qualified, in one line, beneath it. */
+  /** What the mark is about — the lead-in to its accessible name. */
+  about: string;
+  /** Why the figure is qualified, in one line. */
   reason: string;
   /** Where the full account is. */
   href: string;
@@ -91,14 +93,29 @@ const Mark = styled.sup`
   color: ${({ theme }) => theme.stateWork};
 `;
 
-const Reason = styled.p`
-  max-width: 34ch;
-  font: ${({ theme }) => theme.typeBodySm};
-  font-feature-settings: ${({ theme }) => theme.featureNumeric};
-  color: ${({ theme }) => theme.textMeta};
+/* The caveat's whole voice now, where it used to be decoration beside a paragraph that carried
+   it. The reason no longer sits under the figure: four tiles sit in a row and only this one is
+   ever marked, so a paragraph beneath it gave the row no common baseline and put a block of
+   prose at the top of the page, above the first figure anyone came to read. Losing the marker
+   was never on the table — it is the same dagger the matrix footnote below uses for the same
+   fact, and the footnote states it in full. What changed is that the mark had been
+   aria-hidden, so deleting the paragraph alone would have deleted the caveat outright for a
+   reader who is hearing this page. It carries the reason itself now, as the marginals' marks
+   have since ticket 17. */
+const CaveatLink = styled(Link)`
+  color: ${({ theme }) => theme.stateWork};
+  text-decoration: none;
 
-  a {
-    color: ${({ theme }) => theme.accent};
+  &:hover {
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    /* The house ring rather than an underline: a 7px dagger gaining a 7px rule under it is not
+       a discernible indicator, and it is the only thing marking where the keyboard is. */
+    outline: 2px solid ${({ theme }) => theme.focusRing};
+    outline-offset: 3px;
+    text-decoration: underline;
   }
 `;
 
@@ -139,14 +156,15 @@ function StatTile({
     <Tile>
       <Figure $accent={accent}>
         {figure}
-        {caveat && <Mark aria-hidden="true">{caveat.mark}</Mark>}
+        {caveat && (
+          <Mark>
+            <CaveatLink to={caveat.href} aria-label={`${caveat.about}: ${caveat.reason}`}>
+              <span aria-hidden="true">{caveat.mark}</span>
+            </CaveatLink>
+          </Mark>
+        )}
       </Figure>
       <Label>{label}</Label>
-      {caveat && (
-        <Reason>
-          {caveat.reason} <Link to={caveat.href}>The full account</Link>.
-        </Reason>
-      )}
     </Tile>
   );
 }
@@ -284,6 +302,11 @@ function medianCaveatOf(
     // The same mark the row flag and the footnote under the matrix use for the same fact. A
     // second glyph for one caveat would read as a second caveat.
     mark: "†",
+    // Named for the court, because six column headers a few hundred pixels below carry the same
+    // caveat about their own draws and word it "Why <nickname>'s median reveal is marked". Seven
+    // links with one name is a reader hearing the page unable to tell the pooled figure from a
+    // column's.
+    about: "Why the court's median reveal is marked",
     reason:
       only === undefined
         ? `${draws} of ${latency.seconds.length} draws ran under vote windows the court has since changed.`

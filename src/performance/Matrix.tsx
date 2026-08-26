@@ -59,11 +59,6 @@ const Heading = styled.h2`
   color: ${({ theme }) => theme.textHeading};
 `;
 
-const Lede = styled.p`
-  max-width: 68ch;
-  color: ${({ theme }) => theme.textBody};
-`;
-
 /**
  * How the grid meets a page narrower than it is, which is every page at the comfortable density.
  *
@@ -789,21 +784,19 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
 
   return (
     <Section aria-labelledby="matrix-heading">
-      <Heading id="matrix-heading">The matrix</Heading>
-      {/* Two forms, for the reason the caveat card above this page has two: a sentence naming a
-          figure is a claim about the rendering the reader is looking at, and past the threshold
-          the cell has no commit figure in it. The corner cell says where that figure went; this
-          would have gone on promising it in the cell, two elements above the correction. */}
-      <Lede>
-        One row per dispute, one column per agent juror, one cell per draw.{" "}
-        {compact
-          ? "Each cell says how long that agent juror took to reveal its vote after the vote period opened, and whether it voted with the dispute's final ruling; commit latency is on the row at this density, as a median over that dispute's draws."
-          : "Each cell says how long that agent juror took to reveal its vote after the vote period opened, how long it took to commit after the commit period opened, and whether it voted with the dispute's final ruling."}{" "}
-        Both durations are absolute and neither is a fraction of its window, because this court
-        changed its period lengths midway through the experiment. Coherence is only asserted where
-        the court has ruled: a dispute still in its appeal period has votes in it and no ruling, and
-        its cells say so rather than reporting a majority as a result.
-      </Lede>
+      {/* Heard and not seen. A grid under a heading reading "The matrix", on a page whose own
+          title now names the dashboard, told a looking reader what they were looking at — but the
+          h2 itself is doing two jobs a sighted reader gets from the layout for free: it names this
+          section for `aria-labelledby`, and it is a stop in the heading order a screen reader
+          navigates by. Deleting the element would take both; hiding it takes neither. */}
+      <Heading id="matrix-heading">
+        <VisuallyHidden>The matrix</VisuallyHidden>
+      </Heading>
+      {/* No lede. It described a cell to a reader looking at a hundred and sixty-eight of them,
+          under a legend keying every state and above a corner cell that already says how the
+          grid is arranged and, at the compact density, where the commit figure went. What each
+          measure means, that no duration is a fraction of its window, and why coherence waits
+          for a ruling are on the method page. */}
 
       {rows.length === 0 ? (
         <Empty>
@@ -1118,7 +1111,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                 handled correctly in code. */}
             <WindowFootnote performance={performance} />
             <LonePanelFootnote performance={performance} />
-            <SparsityNote performance={performance} noun="cell" />
+            <SparsityNote performance={performance} noun="cell" presentation="footnote" />
           </Footnotes>
         </>
       )}

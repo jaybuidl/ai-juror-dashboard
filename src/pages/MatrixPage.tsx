@@ -622,66 +622,34 @@ export function MatrixPage(props: MatrixPageProps) {
           crossing the narrow breakpoint, the court crossing into the compact density. A live
           region is for content that changes. This is furniture, and a reader who meets it as an
           interruption learns to talk over the regions that are not. */}
-      <Caveat>
-        {measured ? (
-          <>
-            <CaveatTitle>Three measures, and what is missing from them</CaveatTitle>
-            <CaveatBody>
-              This page measures how long each agent juror took to commit its vote after the commit
-              period opened, how long it took to reveal that vote after the vote period opened, and
-              whether the vote matched the dispute's final ruling. Each latency is measured from its
-              own period, so the reveal figure is not the time since the commit.{" "}
-              {/* The column headers are the grid's furniture and the phone's card list has none —
-                  and a blank is a cell there and a slot here. Ticket 16's whole point was that the
-                  two layouts must not say different things about one court; a caveat card
-                  describing furniture the reader cannot see is that fault in the other
-                  direction.
+      {/* Only where nothing was measured. The card that stood here when the read *had* succeeded
+          was titled "Three measures, and what is missing from them", and every one of its claims
+          was the method page's said a second time — what the three measures are, that each latency
+          is measured from its own period, that no figure is a fraction of a window, that coherence
+          is asserted only where the court has ruled, that a blank means not drawn, that a lone
+          panel is marked wherever counted, and that the two reward sums are context rather than a
+          rank. Checked claim by claim against /method before it went, including the appeal-period
+          case, which that page puts better than this card did: a majority read off a dispute with
+          every vote in and no ruling would be a prediction.
 
-                  The reward clause rides the desktop branch alone, for the same reason and not a
-                  different one. Ticket 10 put cumulative ETH and net PNK in the column header, and
-                  this layout drops that header whole, along with the four marginals beside them —
-                  so naming the two sums here would credit the phone with figures it does not
-                  carry. Saying instead that they have not been read would be ticket 10's retired
-                  falsehood in reverse: they were read, and a desktop reader is looking at them.
-                  Neither claim is available — but ticket 11 gave the phone branch a third thing
-                  to say, which is where the two sums *are*: each agent juror's own view prints all
-                  six figures at every width and at its one density, so the sentence points there
-                  rather than claiming or denying anything about this page.
+          What could not move there stayed on this page rather than being dropped: the sparsity
+          note is in the footnotes below the grid, and the window and lone-panel accounts are the
+          † and ‡ footnotes beside it.
 
-                  The compact density is the third branch and the same rule again, one width up:
-                  past forty disputes the column header keeps three of its six figures, so the
-                  sentence naming six would describe a header the reader is not looking at. This
-                  one *can* say where the commit median went, because it went somewhere on this
-                  page — onto the dispute row — which is the difference between a reduction and
-                  an absence, and the reason the grid's corner cell says the same thing. The two
-                  reward sums went nowhere on this page, so that branch borrows the phone's
-                  pointer for them and for the same reason. */}
-              {isNarrow
-                ? "Each card summarises one dispute, and each slot along its foot one agent juror's draw; what an agent juror amounts to across all of them, including what the court has paid it, is on that agent juror's own page."
-                : isDense
-                  ? // No number in this sentence, deliberately: the threshold is a heuristic about
-                    // screen height that is meant to be movable, and prose naming forty would go
-                    // quietly false the day someone moved it.
-                    "Each column header summarises that agent juror's own draws in median reveal latency and coherence. With this many disputes the matrix is compacted, so the commit median moves onto each dispute's row and neither reward figure is shown; what the court has paid an agent juror is on that agent juror's own page."
-                  : "Each column header summarises that agent juror's own draws in the same three measures, and states what that column has been paid: cumulative ETH and net PNK, which are context beside the measures rather than a fourth dimension anyone is ranked on."}{" "}
-              No figure here is a fraction of a period's window. Coherence is asserted only where
-              the court has ruled, a blank {isNarrow ? "slot" : "cell"} means an agent juror was not
-              drawn rather than that it failed to act, and a dispute decided by a panel of one is
-              marked wherever it is counted.
-            </CaveatBody>
-          </>
-        ) : (
-          <>
-            <CaveatTitle>Nothing measured on this load</CaveatTitle>
-            <CaveatBody>
-              This page measures how long each agent juror took to commit its vote, how long it took
-              to reveal it, and whether that vote matched the dispute's final ruling — but not on
-              this load: what it needed could not be read, and it shows what it did read rather than
-              a matrix built from part of it. Nothing below is a latency, a coherence or a draw.
-            </CaveatBody>
-          </>
-        )}
-      </Caveat>
+          This branch is not that card and does not go with it. A page that measured nothing must
+          say so where the measurements would have been — a reader who is shown an empty matrix and
+          no explanation concludes the court is empty. */}
+      {measured === undefined || measured === null ? (
+        <Caveat>
+          <CaveatTitle>Nothing measured on this load</CaveatTitle>
+          <CaveatBody>
+            This page measures how long each agent juror took to commit its vote, how long it took
+            to reveal it, and whether that vote matched the dispute's final ruling — but not on this
+            load: what it needed could not be read, and it shows what it did read rather than a
+            matrix built from part of it. Nothing below is a latency, a coherence or a draw.
+          </CaveatBody>
+        </Caveat>
+      ) : null}
 
       {measured ? (
         <>
