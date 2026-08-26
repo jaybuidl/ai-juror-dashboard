@@ -107,6 +107,20 @@ finding, and `aletheia` sits second from the right — a layout call about one r
 ranking, as `ROSTER` says at length. So: where a sentence below names the caveat card, its
 branches, or a panel pill, it is describing what was there.
 
+**A second pass continued it, and moved one thing rather than cutting it.** The sparsity note is
+no longer the third footnote under the grid: it is in the provenance footer, between the read
+range and the line naming how agent jurors are identified, because the † and ‡ notes beside it
+decode marks a reader can see *in* the matrix and that one says what the whole record is like —
+the same kind of claim as every other line down there. `Footer` takes a `note` slot for it and
+`View` threads it as `footerNote`; the slot carries the 90ch measure, since a paragraph in a
+column flex has none of its own. It stays gated on `!narrow`, so the phone still meets it as a
+card at the head of the card list, which is ticket 16's call and unchanged. What went for good
+is the **latency strip's caption** — "each mark is one draw … the comparison band is
+illustrative … it measures no court" — whose last claim the provenance footer was already
+making, one element below three figures that are measured. The band is still disclosed, once, in
+that caveat. So a sentence below naming the sparsity note as a footnote, or the band as
+labelled by its own caption, is describing what was there too.
+
 The design work behind it (glossary, seven ADRs, a spec, eighteen tickets) came out of a full
 grilling session and a later pass that rebuilt the tracker on the finished design — ADR-0007 is the
 one that came from implementation rather than design, and it overrode the spec. Start by reading, not by
