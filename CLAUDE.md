@@ -505,6 +505,10 @@ Things that cost real effort to discover and are easy to get wrong again:
   browser at the width it is claimed to work at, and `agent-browser` with `--executable-path` is
   how the rest of this ticket was checked. **Ticket 17 found three more the same way, with 736
   green tests**, and two of them are worth knowing as rules rather than as anecdotes.
+  A state the live court has not reached yet still has to be *opened*: the compact density needs
+  more than forty disputes and court 34 holds thirty-one, so it was checked by lowering
+  `COMPACT_FROM_ROWS` in the dev server, reading the page, and putting it back. A fixture cannot
+  stand in — jsdom lays nothing out, which is the whole reason the browser is being opened.
 - **A `position: sticky` element sticks to its nearest *scroll container*, and `overflow: hidden`
   makes one.** Ticket 17's frozen column header needed two unrelated things fixed before it could
   freeze at all, neither of them in the matrix: `Shell.tsx`'s `Ground` wrapped every view in
@@ -593,7 +597,9 @@ Things that cost real effort to discover and are easy to get wrong again:
   and it reads exactly like a routing bug. The tell is in the server's own output ("Port 4173 is in
   use, trying another one…"), which is easy to miss when it is backgrounded. Read the port it
   actually chose, and confirm by matching the `assets/index-*.js` hash the page requests against
-  the one on disk.
+  the one on disk. The cheap prevention is to pick a port and refuse to move off it —
+  `yarn dev --port 5199 --strictPort` fails loudly instead of serving somebody else's branch,
+  which is what ticket 17's browser pass ran on.
 - **A backtick inside a CSS comment ends the styled-components template.** This repo's house style
   puts long prose comments inside `styled.x\`…\`` blocks, and the moment one of them quotes an
   identifier the way the rest of the codebase does — around a filename, say — the template literal
