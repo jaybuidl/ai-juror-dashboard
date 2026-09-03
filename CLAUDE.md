@@ -4,10 +4,12 @@ A public, read-only dashboard measuring six AI agent jurors in Kleros v2 court 3
 on two dimensions: **speed** (commit and reveal latency) and **coherence** (voting with the final
 ruling).
 
-**Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>, and **all eighteen
-tickets are done**. Ticket 18 was the last, and it was a sweep rather than a feature: the palette
-measured for the first time in either theme, the matrix given the two facts its cells were not
-saying, a route change made audible, and the five-second poll given a voice that is not the grid.
+**Status: the matrix is live**, at <https://kleros-ai-jurors.netlify.app>. **Tickets 01–18 and 22
+are done; 19, 20, 21 and 23–26 are open** — a third court configuration, two tripwire splits, a
+measured comparison band, and the three that take the roster past six agent jurors. Ticket 18 closed
+the original eighteen, and it was a sweep rather than a feature: the palette measured for the first
+time in either theme, the matrix given the two facts its cells were not saying, a route change made
+audible, and the five-second poll given a voice that is not the grid.
 What it did not do is honour a browser text-size preference — the vendored type scale is px
 throughout — and that is stated in the ticket, in `docs/contrast.md` and below under § Traps.
 Tickets 01, 02, 03, 04,
@@ -122,7 +124,7 @@ page** in that caveat — ticket 22 put the band on the agent juror plot too, so
 them now, each gated on its own plot having drawn one rather than on the viewport. So a sentence below naming the sparsity note as a footnote, or the band as
 labelled by its own caption, is describing what was there too.
 
-The design work behind it (glossary, seven ADRs, a spec, eighteen tickets) came out of a full
+The design work behind it (glossary, seven ADRs, a spec, the original eighteen tickets) came out of a full
 grilling session and a later pass that rebuilt the tracker on the finished design — ADR-0007 is the
 one that came from implementation rather than design, and it overrode the spec. Start by reading, not by
 writing.
@@ -139,7 +141,7 @@ rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines 
 | `CONTEXT.md` | The glossary. Read before naming anything |
 | `docs/adr/0001`–`0007` | The seven decisions a reader would otherwise question |
 | `.scratch/juror-performance-dashboard/spec.md` | The spec, and a Further Notes section of hard-won facts |
-| `.scratch/juror-performance-dashboard/issues/` | 18 tickets, blockers-first, `01` upward |
+| `.scratch/juror-performance-dashboard/issues/` | 26 tickets, blockers-first, `01` upward; seven still open |
 | `DESIGN_PROMPT.md` | The UI brief. Answered — read the canvas below rather than re-deriving it |
 | `.scratch/juror-performance-dashboard/canvas/README.md` | The design canvas: eight artboards, and which figures on them are real |
 | `docs/contrast.md` | Every contrast ratio, both themes, and the two exemptions. Read before changing a colour |

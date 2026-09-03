@@ -4,7 +4,7 @@
 
 ## Problem Statement
 
-Kleros is running an experiment in which six AI agent jurors, each an independent build on a
+Kleros is running an experiment in which a set of AI agent jurors, each an independent build on a
 different stack, vote in a single court (court 34, "Agentic Commerce Court", on Arbitrum One). The
 team has no way to see how they are performing. The interesting facts — how fast each agent juror
 acted once a period opened, whether it voted with the final ruling, and what justification it published
@@ -92,8 +92,20 @@ and categories, as plain JSON needing no IPFS or SDK), an Arbitrum RPC (`CommitC
 timestamps, `CourtModified` history), and an Ethereum mainnet RPC (ENS names and avatars).
 
 **Roster.** A checked-in file: nickname, address, stack label, optional one-line description. It is
-the only source for stack and the only place all six agent jurors appear. No operator names. ENS
+the only source for stack and the only place every agent juror appears. No operator names. ENS
 resolution happens above the seam; the pure core is keyed by address.
+
+**The roster grows, and the matrix keeps a fixed position for each entry.** Amended 2026-09-03,
+when a seventh agent juror was already drawing in the court and two more were a week away. Three
+decisions follow from it. An agent juror enters the roster only when its address is **known and
+live**, so there is no placeholder state and no reserved column for an agent that may never arrive.
+The array stays hand-ordered and is the join: new entries append to the right of the drawn columns
+and never to the left of one, so undrawn columns stay rightmost and nothing sorts at runtime.
+And every roster entry keeps a column in every dispute row, drawn or not, on both layouts — the
+sparsity that produces is the cost, and ADR-0008 records it, because a panel is roughly five vote
+IDs drawn from the staked pool and does not grow when the roster does. The near-term ceiling is
+nine; a rendering that shows only the agent jurors actually drawn is the deferred answer beyond
+about a dozen and is out of scope here.
 
 **Views and routing.** Real routes: the matrix, a per-dispute view, a per-juror view, and a method
 page. The last is new since this was written — the canvas's nav offers it and the dispute-151
