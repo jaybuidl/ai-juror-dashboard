@@ -8,6 +8,14 @@ This repo is **single-context**: one `CONTEXT.md` and one `docs/adr/` directory 
 
 - **`CONTEXT.md`** at the repo root: the glossary of domain terms.
 - **`docs/adr/`**: read ADRs that touch the area you're about to work in.
+- **`docs/knowledge/`**: the knowledge base — the full account of every trap this project has hit,
+  one file per topic, indexed in its own `README.md`. `CLAUDE.md` § Tripwires is the one-line index
+  over it; read the topic file before acting on a tripwire.
+
+**Routing for anything new you learn:** a durable domain fact goes in the matching
+`docs/knowledge/` file, plus a tripwire line in `CLAUDE.md` only if it prevents a mistake. Session
+auto-memory is for user, feedback and tooling facts only — it is per-user, unversioned, and
+subagents never see it.
 
 If any of these files don't exist, **proceed silently**. Don't flag their absence; don't suggest creating them upfront. The `/domain-modeling` skill (reached via `/grill-with-docs` and `/improve-codebase-architecture`) creates them lazily when terms or decisions actually get resolved.
 
@@ -19,6 +27,9 @@ If any of these files don't exist, **proceed silently**. Don't flag their absenc
 ├── docs/adr/
 │   ├── 0001-example-decision.md
 │   └── 0002-another-decision.md
+├── docs/knowledge/
+│   ├── README.md
+│   └── <topic>.md
 └── src/
 ```
 

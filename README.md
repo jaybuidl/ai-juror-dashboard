@@ -127,10 +127,11 @@ records the things that cost real time to discover. The design that this scaffol
 | Document | Contents |
 | --- | --- |
 | [`CONTEXT.md`](CONTEXT.md) | The glossary. Read before naming anything |
+| [`docs/knowledge/`](docs/knowledge/) | The domain knowledge base — every trap this project has hit, in full |
 | [`docs/adr/`](docs/adr/) | Seven decisions a reader would otherwise question |
 | [`.scratch/juror-performance-dashboard/spec.md`](.scratch/juror-performance-dashboard/spec.md) | The spec, plus a Further Notes section of hard-won facts |
-| [`.scratch/juror-performance-dashboard/issues/`](.scratch/juror-performance-dashboard/issues/) | Eighteen tickets, blockers first |
-| [`DESIGN_PROMPT.md`](DESIGN_PROMPT.md) | The UI brief. Answered — read the canvas rather than re-deriving it |
+| [`.scratch/juror-performance-dashboard/issues/`](.scratch/juror-performance-dashboard/issues/) | Twenty-six tickets, blockers first |
+| [`.scratch/juror-performance-dashboard/canvas/DESIGN_PROMPT.md`](.scratch/juror-performance-dashboard/canvas/DESIGN_PROMPT.md) | The UI brief. Answered — read the canvas rather than re-deriving it |
 | [`.scratch/juror-performance-dashboard/canvas/README.md`](.scratch/juror-performance-dashboard/canvas/README.md) | The design canvas: eight artboards, and which figures on them are real |
 
 ## Quick start
