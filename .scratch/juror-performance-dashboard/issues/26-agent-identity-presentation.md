@@ -60,6 +60,19 @@ data:` both block. Copied across, the type would fall back to a system font on t
 look perfect on every developer machine, because Vite dev and `yarn preview` send no CSP at all. Use
 this repo's own type tokens and take nothing else from that file's styling.
 
+**The four marks, so this ticket does not depend on a file outside the repo.** They came from a
+sheet the maintainer supplied; two are remote and two are inline paths, reproduced here because the
+sheet was a scratch file.
+
+- **Claude** (for `claude -p`) — inline, `viewBox="0 0 24 24"`, `stroke-linecap="round"`,
+  stroke-width 1.7: `M12 3.4v17.2M3.4 12h17.2M5.9 5.9l12.2 12.2M18.1 5.9L5.9 18.1`
+- **Grok Bot** — inline, `viewBox="0 0 24 24"`, `stroke-linecap="round"`: a `circle` at 12,12 r 9.4
+  stroke-width 1.6, plus `M9.2 10.6 11 15.2` and `M15.4 8.6 17 12.3` at stroke-width 3.2
+- **OpenClaw** — `https://agents.circle.com/assets/agents/open-claw.svg?v=3` — real vector, 1194
+  bytes, carrying a red `linearGradient` to strip
+- **Hermes** — `https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/light/hermesagent.png`
+  — PNG only; the matching `static-svg` paths 404 in both light and dark
+
 **Blocked by:** 24
 
 **Design:** `Juror.dc.html:52-66` draws the identity block this touches — avatar, nickname `h1`,
