@@ -75,7 +75,7 @@ does not track the roster; its stated reason becomes false at nine.
 
 **Design:** No artboard draws more than six columns. `Main.dc.html` and `MatrixDense.dc.html` both
 draw exactly six on a 1440px page, so neither can be cited for how a seventh or ninth column looks —
-this is the § Traps rule that the artboard being read has to be the one that draws the element in
+this is the `docs/knowledge/architecture.md` rule that the artboard being read has to be the one that draws the element in
 that place. The densities, the cell, the row header and the flag styling are all cited as drawn; the
 column *count* is not, and is arithmetic instead.
 

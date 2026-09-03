@@ -13,6 +13,15 @@ import { postSubgraphQuery } from "./subgraph";
 export const DEFAULT_CORE_SUBGRAPH_URL =
   "https://api.goldsky.com/api/public/project_cmgx9all3003atlp2bqha1zif/subgraphs/kleros-v2-coreneo/v0.17.2/gn";
 
+/**
+ * The endpoint, overridable at build time.
+ *
+ * **Anything reading `import.meta.env` has to be tested twice.** Netlify runs the suite through
+ * `build:ci`, inside the deploy environment, so `VITE_` variables set on the site are present
+ * there and absent on your machine. A default that works locally can therefore be overridden in
+ * production by a variable you never see, and the reverse. This applies equally to
+ * `arbitrumRpcUrl`, `templatesSubgraphUrl` and `mainnetRpcUrl`.
+ */
 export function coreSubgraphUrl(): string {
   return import.meta.env.VITE_CORE_SUBGRAPH_URL ?? DEFAULT_CORE_SUBGRAPH_URL;
 }

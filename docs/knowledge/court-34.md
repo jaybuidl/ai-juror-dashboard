@@ -48,9 +48,14 @@ this file is the full account.
   dust. Both are pinned in `totals.test.ts` and live in `rewards-subgraph.integration.test.ts`,
   because these two figures are *sums*: a read that comes back short renders as an agent juror that
   earned less, which nothing else on the page would catch.
-- **Court 34's one reconfiguration changed no reward parameter.** `CourtCreated` and `CourtModified`
-  carry byte-identical `minStake` (11000e18), `alpha` (170), `feeForJuror` (2.7e14) and
-  `jurorsForCourtJump` (7); only `timesPerPeriod` moved. So the `†` window marker must **not** ride
+- **No reconfiguration of court 34 has changed a reward parameter — and the claim is meant to hold
+  for the next one too.** Across every `CourtCreated`/`CourtModified` pair to date, `minStake`
+  (11000e18), `alpha` (170), `feeForJuror` (2.7e14) and `jurorsForCourtJump` (7) are
+  byte-identical; only `timesPerPeriod` moved. Stake at risk per vote ID is
+  `minStake × alpha / 10000` = **187 PNK** — the divisor is the part that gets dropped, and
+  `src/performance/rewards.ts` states the product without it.
+  Note the live suite pins only `timesPerPeriod`, so a future reconfiguration that moved a reward
+  parameter would go green (open ticket 21). So the `†` window marker must **not** ride
   cumulative ETH or PNK — it would be a marker a reader can see is misplaced, and one they stop
   reading. Decoded from the logs rather than assumed, because "the court was reconfigured" reads as
   though everything about it changed.
@@ -63,11 +68,11 @@ this file is the full account.
 
 Court 34 is not a static experiment. Its period durations get changed on chain to suit whatever is
 being demonstrated: on **2026-08-26 the evidence period went 45 minutes to 10 minutes** — the
-court's third configuration, its *second* `CourtModified`, block 498587731 — so a live demo in
+court's third configuration, its *second* `CourtModified`, at 13:14:01 UTC in block 498587731 — so a live demo in
 front of an audience would not spend three
 quarters of an hour waiting for a panel to be drawn. **Expect more of these.**
 
-This is why `CLAUDE.md` § Verified constants goes stale on its own, and why the two-event account
+This is why any hard-coded parameter list goes stale on its own, and why the two-event account
 that stood for the whole of tickets 08–18 is no longer current. The fixture
 (`src/performance/court-34-parameters.fixture.json`) still holds two entries; taking up the third is
 open ticket 19, and tickets 20 and 21 exist because of the same change — 20 specifically to make the

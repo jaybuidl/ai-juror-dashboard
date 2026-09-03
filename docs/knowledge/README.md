@@ -1,13 +1,15 @@
 # Domain knowledge
 
 The durable, versioned account of everything this codebase and the live court have cost someone to
-discover. `CLAUDE.md` § Tripwires carries a one-line form of each entry here, phrased to stop the
-mistake; **this directory is the full account** — what it cost, how it was found, and what guards it
-now.
+discover — what it cost, how it was found, and what guards it now. Most entries here are *also*
+carried as a comment at the code site they guard, which is where a reader meets them at the moment
+they apply; this directory is the full account behind those comments.
 
-**Routing:** a new durable domain fact goes in the matching file below, plus a tripwire line in
-`CLAUDE.md` only if it prevents a mistake. Session auto-memory is for user, feedback and tooling
-facts only — never domain facts, because it is per-user, unversioned, and subagents never see it.
+**Routing:** a new durable domain fact goes in the matching file below. A line is added to
+`CLAUDE.md` only if it passes that file's one admission test — *does it warn about a mistake made in
+a file that does not exist yet?* — because anything else belongs in the file where the mistake gets
+made. Session auto-memory is for user, feedback and tooling facts only, never domain facts: it is
+per-user, unversioned, and subagents never see it.
 
 | File | Covers |
 | --- | --- |
@@ -32,3 +34,11 @@ Migrated out of `CLAUDE.md` on 2026-09-03, when that file had reached 87 KB and 
 Every entry moved **verbatim**; the tripwire lines in `CLAUDE.md` were written fresh against them.
 Five session memories holding domain facts were folded in at the same time and are marked
 *Migrated from session memory* where they landed.
+
+A second pass the same day cut `CLAUDE.md` from 355 lines to 153. An audit of all 76 tripwire lines
+found 73 already covered in full here and 59 already stated in a comment at the site they guard, so
+those lines were duplicating something the reader would meet anyway; 16 survive, being the ones with
+no site to live at. The four facts that existed *only* in `CLAUDE.md` — the `TokenAndETHShift`
+signature, the `minStake × alpha / 10000` divisor, the generalised reward-parameter claim and the
+third configuration's clock time — were moved here first. The 40 citations of the retired
+`§ Traps` and `§ Verified constants` were repointed at the topic files.

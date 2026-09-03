@@ -57,7 +57,7 @@ describe("fetchCourtDraws", () => {
     // `parameters: null` and not a fourth read. The whole live run shares one endpoint that
     // rate-limits per RPC *call*, and adding the parameter scan here returned HTTP 429 —
     // surfaced by viem as `UnknownRpcError: Cannot read properties of undefined`, the exact
-    // shape CLAUDE.md § Traps records. `court-parameters.integration.test.ts` builds the model
+    // shape `docs/knowledge/chain-and-subgraph.md` records. `court-parameters.integration.test.ts` builds the model
     // with a live history; nothing this suite asserts is about a window.
     const result = buildCourtPerformance({
       disputes,

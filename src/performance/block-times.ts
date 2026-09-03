@@ -3,7 +3,7 @@
  *
  * The commit scan costs one `eth_getLogs` and then one `eth_getBlockByNumber` per commitment,
  * because the log's own `blockTimestamp` is `"0x0"` on this endpoint and the block is the only
- * source of the moment (ADR-0004, and `CLAUDE.md` § Traps). That per-commitment call is what
+ * source of the moment (ADR-0004, and `docs/knowledge/chain-and-subgraph.md`). That per-commitment call is what
  * rate-limits: 62 blocks read three times over inside a second returns HTTP 429, and the court
  * grows a commitment at a time.
  *

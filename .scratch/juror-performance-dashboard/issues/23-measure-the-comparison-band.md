@@ -14,7 +14,7 @@ one is not, on the page whose entire subject is a speed comparison. A measured b
 gap, and it retires the caveat that admits it.
 
 The read is available and cheap in principle. A dispute id is global across every court on the
-core subgraph — `CLAUDE.md` § Traps records that as a hazard for `/disputes/:id`, and here it is
+core subgraph — `docs/knowledge/chain-and-subgraph.md` records that as a hazard for `/disputes/:id`, and here it is
 the opposite, an affordance: the deployment holds every dispute in every court, with the same
 `Round.timeline` this dashboard already parses. What it costs is discipline, because a fifth read
 is a fifth thing that can fail, come back short, or drift out of step with the other four.

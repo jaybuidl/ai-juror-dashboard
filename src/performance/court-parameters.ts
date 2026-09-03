@@ -17,7 +17,7 @@ import type { RawCourtParameters } from "./windows";
  * `eth_call` at a historical block, which the public endpoint does not reliably serve.
  */
 
-/** KlerosCore on Arbitrum One. Verified in CLAUDE.md § Verified constants. */
+/** KlerosCore on Arbitrum One. The deployed address, not the source's — see `docs/knowledge/court-34.md`. */
 export const KLEROS_CORE = "0x991d2df165670b9cac3B022f4B68D65b664222ea";
 
 /**

@@ -10,7 +10,7 @@ import type { RawRewardShift } from "./performance";
  * A subgraph read and not a log scan, which is the opposite of what ticket 07 had to do for the
  * commitments — `TokenAndETHShift` is one of the few things the deployed subgraph carries in
  * full, amounts included, so there is nothing here Arbitrum has to be asked for. That also
- * keeps this read off the endpoint whose rate limit `CLAUDE.md` § Traps is mostly about.
+ * keeps this read off the endpoint whose rate limit `docs/knowledge/chain-and-subgraph.md` is mostly about.
  *
  * Scoped to court 34 through the dispute, exactly as the draws are: a shift has no `court` of
  * its own, and a juror's rewards elsewhere are not a fact about this experiment.

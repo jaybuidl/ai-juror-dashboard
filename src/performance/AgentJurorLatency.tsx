@@ -33,7 +33,7 @@ import type { PeriodWindows } from "./windows";
  * `Juror.dc.html:108` gives it as "commit latency is not comparable across dispute 151, which ran
  * an 8-hour window" — and court 34 changed its commit window from 8h to 45m *and* its vote window
  * from 8h to 30m in one `CourtModified`, so a reveal is exactly as affected as a commit
- * (`CLAUDE.md` § Traps; `canvas/README.md` records the defect that premise produced, which is the
+ * (`docs/knowledge/court-34.md`; `canvas/README.md` records the defect that premise produced, which is the
  * same artboard printing a median commit at `:73` while excluding commit latency from the chart
  * at `:108` as incomparable). So the exclusion stands and the reason is rewritten: the two are
  * measured from *different periods*, and pooling them would be ADR-0005's mistake in another

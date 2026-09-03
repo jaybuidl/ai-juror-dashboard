@@ -14,6 +14,7 @@ import { postSubgraphQuery } from "./subgraph";
 export const DEFAULT_DRT_SUBGRAPH_URL =
   "https://api.goldsky.com/api/public/project_cmgx9all3003atlp2bqha1zif/subgraphs/kleros-v2-drt/v0.12.0/gn";
 
+/** Overridable at build time; see `coreSubgraphUrl` on testing an `import.meta.env` read both ways. */
 export function drtSubgraphUrl(): string {
   return import.meta.env.VITE_DRT_SUBGRAPH_URL ?? DEFAULT_DRT_SUBGRAPH_URL;
 }

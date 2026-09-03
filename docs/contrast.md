@@ -24,7 +24,7 @@ This was the criterion nobody had checked ("a state word sits on its own wash in
 which is not the surface the accent was picked against"), and it turned out to be the good news.
 The worst of the sixteen combinations is rose on its own rose wash at **5.29**. Nothing changed.
 
-The numbers `CLAUDE.md` § Traps quotes — cyan 3.95, mint 3.65, amber 4.10, rose 5.08 — are real,
+The numbers `docs/knowledge/contrast-and-theme.md` quotes — cyan 3.95, mint 3.65, amber 4.10, rose 5.08 — are real,
 but they are the **light** theme's accents on white, and the light theme is vendored and wired to
 nothing. That trap is accurate about the system and was being read as though it described the
 shipped page.

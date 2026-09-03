@@ -17,6 +17,7 @@ import { type AgentJuror, ensNameOf } from "./agent-jurors";
  */
 export const DEFAULT_MAINNET_RPC_URL = "https://ethereum-rpc.publicnode.com";
 
+/** Overridable at build time; see `coreSubgraphUrl` on testing an `import.meta.env` read both ways. */
 export function mainnetRpcUrl(): string {
   return import.meta.env.VITE_MAINNET_RPC_URL ?? DEFAULT_MAINNET_RPC_URL;
 }

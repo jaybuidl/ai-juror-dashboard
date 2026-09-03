@@ -58,6 +58,13 @@ this file is the full account.
   selected as the one usable half and is a *partial* guard — the deployment that mislabels the flag
   gives no assurance about which field it would fill if court 34 were switched to the WETH fee
   token it already has registered and unused.
+- **The deployed `TokenAndETHShift` signature is not written down in `src/`**, because the payouts
+  are read over GraphQL and no `parseAbiItem` for it exists. It is
+  `TokenAndETHShift(address indexed _account, uint256 indexed _disputeID, uint256 indexed
+  _roundID, uint256 _degreeOfCoherency, int256 _pnkAmount, int256 _feeAmount, address
+  _feeToken)`, on KlerosCore, written by `execute()`. Anyone moving this read from the subgraph
+  to a log scan needs it, and the `_eligibility` trap above applies: take the deployed shape from
+  `contracts/deployments/arbitrum`, never from the contract sources.
 - Dispute titles come from the **DRT subgraph** as plain JSON — no IPFS, no Kleros SDK. Using the SDK
   would drag the Node-only path into the bundle. The join is the core dispute's `templateId`, and it
   is **neither the dispute id nor a constant offset from it**: 151→161, 152→163. It is nullable on
@@ -78,7 +85,7 @@ this file is the full account.
   carries `{expected, resolved, isLoading}` and `DisputeList` names the number. A thrown error is then
   just the case where the count is zero. This bit every ticket that fetches by id — 05, 07, 08 — and
   ticket 10 met a version of it with no known set to compare against: its read asks for "every payout
-  in court 34" rather than for named ids, so the guard there is arithmetic instead (§ Traps, the
+  in court 34" rather than for named ids, so the guard there is arithmetic instead ([`court-34.md`](court-34.md), the
   per-vote-ID fee), which is what a *sum* needs and a count does not.
 - **`Round.timeline` writes `0` for a period that has not opened yet** — and `0` is a real instant in
   1970, one subtraction away from a latency of fifty-six years. Every dispute still in `appeal` has

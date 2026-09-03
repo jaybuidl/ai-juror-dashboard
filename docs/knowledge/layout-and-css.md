@@ -64,6 +64,12 @@ this file is the full account.
   obvious way to get it. At 390pt "Median reveal" wraps to two lines where "Coherent" does not, and
   the three numbers beside each other then sit at three different heights — with `order: -1` on the
   value they do not. Invisible to every test, for the reason below.
+- **A flex basis on an item is a *height* once that item is rendered inside a column container.**
+  `flex: 1 1 380px` on the sparsity note read as a width in the row it was written for and as
+  380px of height in the card that later reused it — a three-line paragraph in a box three
+  hundred pixels tall. The basis belongs to the arrangement, not to the item: put it on the
+  container as `> * { flex: … }`. Carried at `src/performance/Footnotes.tsx`; the incident is in
+  [`testing.md`](testing.md) among the defects jsdom cannot see.
 - **The breakpoint is one number and it has to stay one.** `styles/breakpoints.ts` exports both the
   `narrow` media prelude and `useIsNarrow`, built from a single `NARROW_QUERY`, because two ways of
   asking one question is how a page ends up rendering the phone's card list under the desktop's

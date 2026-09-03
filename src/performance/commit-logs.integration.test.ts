@@ -106,7 +106,7 @@ describe("fetchCommitCasts", () => {
     for (const seconds of latencies) {
       expect(seconds).toBeGreaterThanOrEqual(0);
       // Dispute 151's 8-hour commit window is the widest this court has ever had, and nothing
-      // may be measured against the court's current 45 minutes — see CLAUDE.md § Traps.
+      // may be measured against the court's current 45 minutes — see `docs/knowledge/court-34.md`.
       expect(seconds).toBeLessThanOrEqual(8 * 60 * 60);
     }
   });

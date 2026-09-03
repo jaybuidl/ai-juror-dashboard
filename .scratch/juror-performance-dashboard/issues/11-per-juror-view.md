@@ -119,7 +119,7 @@ re-decide:
 - **A disabled query is `pending` for ever.** `useDisputeDetail(null)` — for a path segment that is
   not a number — leaves `isPending` true permanently, so a caveat keyed on it says "still being
   read" about a read nobody started. The view flag must be `isPending && fetchStatus !== "idle"`.
-  Recorded in `CLAUDE.md` § Traps as the fourth face of the `RosterView.isResolving` trap. Ticket
+  Recorded in `docs/knowledge/react-query-and-persistence.md` as the fourth face of the `RosterView.isResolving` trap. Ticket
   11 has exactly the same shape: `/agent-jurors/<not-a-nickname>`.
 - **A bad id in the path is not a 404 and not a failed read.** It is a real route with an id that
   names nothing, and the view says so itself. Ticket 09 distinguishes three cases and words each
@@ -182,7 +182,7 @@ needs rather less code than it did:
 **This view has a phone form and nobody has decided what it is.** `useIsNarrow()` in
 `styles/breakpoints.ts` is how a component asks; `narrow` is the media prelude for the same
 number. ADR-0005 and `Juror.dc.html:108` say this view plots reveal latency only — and
-`CLAUDE.md` § Traps records that the reason given for that is *false*, because both windows
+`docs/knowledge/court-34.md` records that the reason given for that is *false*, because both windows
 changed. Whatever this view plots, the marker belongs on the median the window it names actually
 governs, and `markedWindows(changes, current, "reveal" | "commit")` in `totals.ts` is what places
 it per window rather than per group.

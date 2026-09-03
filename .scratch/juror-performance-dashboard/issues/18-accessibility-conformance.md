@@ -150,7 +150,7 @@ Two things to measure that ticket 14 could not:
 - **Nothing on the page is focusable yet** — no links, no controls — so the ring has never rendered
   in anger. The first focusable element arrives with ticket 15's routes.
 
-**Contrast baseline.** The measured failures in `CLAUDE.md` § Traps are unchanged by ticket 14: the
+**Contrast baseline.** The measured failures in `docs/knowledge/contrast-and-theme.md` are unchanged by ticket 14: the
 tokens were vendored with their declared values, deliberately, so this ticket has a clean before.
 The light theme in `tokens/themes.css` is vendored and wired to nothing — `color-scheme` stays
 `dark`, there is no `data-theme` attribute anywhere, and `theme.test.ts` scopes its token scan to

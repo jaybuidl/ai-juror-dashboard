@@ -16,7 +16,8 @@ import type { RawCommitCast } from "./performance";
  * thing read from a chain until ticket 08 read the court's own parameter history from it.
  */
 
-/** The dispute kit that emits the event. Verified in CLAUDE.md § Verified constants. */
+/** The dispute kit that emits the event. The deployed address, not the source's — see
+ * `docs/knowledge/chain-and-subgraph.md`. */
 export const DISPUTE_KIT_CLASSIC = "0x70B464be85A547144C72485eBa2577E5D3A45421";
 
 /**

@@ -13,7 +13,7 @@ import { fetchCourtRewards } from "./rewards-subgraph";
  * Live against Goldsky, held out of `yarn test` — run with `yarn test:integration`.
  *
  * A subgraph read and not a chain read, so it spends none of the arb1 call budget
- * `CLAUDE.md` § Traps records: the whole file is three Goldsky round trips, and the reason it
+ * `docs/knowledge/chain-and-subgraph.md` records: the whole file is three Goldsky round trips, and the reason it
  * can build a model at all without a fourth is that neither the commitments nor the parameter
  * history is needed to check a payout.
  *
@@ -68,7 +68,7 @@ describe("fetchCourtRewards", () => {
     const [rewards, disputes] = await Promise.all([fetchCourtRewards(), fetchCourtDisputes()]);
     const held = new Set(disputes.map((dispute) => dispute.disputeID));
 
-    // A dispute ID is global across every court on this subgraph (`CLAUDE.md` § Traps), so a
+    // A dispute ID is global across every court on this subgraph (`docs/knowledge/chain-and-subgraph.md`), so a
     // filter that missed would return other courts' payouts and this dashboard would add them
     // to an agent juror's column without a word.
     for (const shift of rewards) {

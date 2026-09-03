@@ -212,7 +212,7 @@ describe("the persisted model shape", () => {
     // Unlike the commitment above, `fetchCourtRewards` stores the payload unshaped — so what is
     // pinned here is what the *query selects*, which is the thing that would silently change.
     // Dropping `feeTokenAmount` would restore every shift as one this page believes was paid in
-    // ETH; adding `isNativeCurrency` would put the mislabelled field (CLAUDE.md § Traps) back
+    // ETH; adding `isNativeCurrency` would put the mislabelled field (`docs/knowledge/chain-and-subgraph.md`) back
     // within reach of someone who has not read why it is absent.
     const shift = rewardFixture[0];
     if (shift === undefined) throw new Error("the fixture holds no payouts");

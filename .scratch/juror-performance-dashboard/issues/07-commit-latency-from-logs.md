@@ -71,7 +71,7 @@ otherwise produce a confident wrong number.
 blanked sixteen rows of reveal latency and coherence that are read from the subgraph and are
 perfectly true. `CourtPerformance.commitCoverage` is `{read, expected, resolved}` instead — the same
 shape ticket 04 uses for unresolved titles, plus a flag for whether the read has happened at all,
-and what CLAUDE.md § Traps prescribes for a read that comes back short. The matrix names the count in a rose notice, the cell wording carries it as
+and what `docs/knowledge/chain-and-subgraph.md` prescribes for a read that comes back short. The matrix names the count in a rose notice, the cell wording carries it as
 `Unknown`, and ticket 13 raises it to the blocking banner it classifies the endpoint as deserving.
 Nothing is absorbed; a thrown error remains the case where the count is zero.
 

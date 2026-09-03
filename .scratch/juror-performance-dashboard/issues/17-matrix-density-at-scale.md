@@ -246,7 +246,7 @@ Three things that are now facts rather than plans:
 - **The frozen header ticket 06 warned you about is unchanged**, and the phone route does not
   relieve it. The compaction still has to carry a column header holding an avatar, a nickname, a
   stack and three marked figures.
-- **`CLAUDE.md` § Traps now records the cross-layout prose trap**, which this ticket will meet the
+- **`docs/knowledge/prose-and-caveats.md` now records the cross-layout prose trap**, which this ticket will meet the
   moment it words anything about a compacted grid: a string naming a cell, a column or a row is a
   claim about which layout the reader is on, and the caveat card in `MatrixPage.tsx` is already
   written twice for that reason.

@@ -137,7 +137,7 @@ the `courtDraws` payload the cache already holds, and the pure seam re-derives i
 **Both branches touch the same two files.** Ticket 09 changed `performance.ts` (the `Draw` type,
 `drawOf`, `stateOf`) and `useDisputes.ts` (a new `templateFor` on `DisputesView`, beside `slotsFor`
 rather than replacing it). Ticket 06 was in a parallel worktree while this was written. `CLAUDE.md`
-§ Traps is explicit about what that costs: resolve those hunks by hand, and afterwards diff the
+`docs/knowledge/merging-and-branches.md` is explicit about what that costs: resolve those hunks by hand, and afterwards diff the
 result against **both** parents for lines appearing more often than in either. The failure mode is
 not a conflict marker — it is a type field silently concatenated onto the wrong type, which parses.
 

@@ -25,7 +25,7 @@ const WEI = 18;
  * court 34 pays 0.00027 ETH and risks 187 whole PNK, so two places would render every ETH
  * figure as `0.00` and four would spend two columns of a 148px header on zeros nobody reads.
  * Fixed rather than significant, because a column of them has to line up — which only holds if
- * whatever renders it re-declares `font-feature-settings` (`CLAUDE.md` § Traps).
+ * whatever renders it re-declares `font-feature-settings` (`docs/knowledge/layout-and-css.md`).
  */
 export const ETH_PLACES = 4;
 export const PNK_PLACES = 2;

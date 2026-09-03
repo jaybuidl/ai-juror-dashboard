@@ -23,6 +23,7 @@ import type { BlockTimes } from "./block-times";
  */
 export const DEFAULT_ARBITRUM_RPC_URL = "https://arb1.arbitrum.io/rpc";
 
+/** Overridable at build time; see `coreSubgraphUrl` on testing an `import.meta.env` read both ways. */
 export function arbitrumRpcUrl(): string {
   return import.meta.env.VITE_ARBITRUM_RPC_URL ?? DEFAULT_ARBITRUM_RPC_URL;
 }

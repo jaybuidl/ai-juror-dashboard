@@ -5,7 +5,7 @@ earns or what a wrong one costs, this dashboard notices. Today it cannot: `fetch
 returns `{at, timesPerPeriod}` and discards `minStake`, `alpha`, `feeForJuror` and
 `jurorsForCourtJump`, all four of which `CourtCreated` and `CourtModified` carry in full.
 
-A claim rests on those four being constant, and it is load-bearing. `CLAUDE.md` § Traps states
+A claim rests on those four being constant, and it is load-bearing. `docs/knowledge/court-34.md` states
 that court 34's reconfiguration changed no reward parameter, and draws the conclusion the design
 depends on: the `†` window marker must **not** ride cumulative ETH or PNK, because it would be a
 marker a reader can see is misplaced, and one they stop reading. `totals.test.ts` pins the
@@ -48,9 +48,9 @@ is careful **not** to extend, and `../canvas/README.md` carries its provenance.
       and both values — if one is ever changed
 - [ ] The live suite catches the same drift against the chain rather than only against the fixture
 - [ ] No new marker rides cumulative ETH or PNK while the parameters agree: today's page is
-      unchanged, and `CLAUDE.md` § Traps' reasoning about the `†` marker still holds
+      unchanged, and `docs/knowledge/court-34.md`'s reasoning about the `†` marker still holds
 - [ ] Where the parameters would disagree, what the reward figures are summed over is stated
       affirmatively rather than as a caveat — or, if that is deferred, the deferral is recorded in
       `## Comments` with the failing test as the floor
-- [ ] `CLAUDE.md` § Traps and § Verified constants say that the agreement is checked rather than
+- [ ] `docs/knowledge/court-34.md` says that the agreement is checked rather than
       inspected, and stop implying it was established once by hand

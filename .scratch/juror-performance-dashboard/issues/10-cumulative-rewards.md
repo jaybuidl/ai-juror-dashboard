@@ -113,7 +113,7 @@ fields and no RPC. That also kept the live suite off the arb1 call budget entire
    with `feeToken: null` and `feeTokenAmount: "0"`, while `ethAmount` holds the full
    `feeForJuror` — and the raw log decodes to `_feeToken = address(0)`. Following the flag would
    have reported that every agent juror earned nothing. The field is deliberately **not selected**
-   by the query, so it cannot be reached for. Recorded in `CLAUDE.md` § Traps.
+   by the query, so it cannot be reached for. Recorded in `docs/knowledge/chain-and-subgraph.md`.
 2. **The fee is per vote ID, not per draw.** Nine of the 44 captured shifts are fractions of
    `feeForJuror` (1.25, 1.67, 2.5). The first cross-check written here assumed whole multiples and
    failed on real data. The court-wide identity that *does* hold — total ETH = `feeForJuror` × the

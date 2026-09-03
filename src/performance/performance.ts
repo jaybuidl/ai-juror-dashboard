@@ -426,7 +426,7 @@ export type RewardCoverage = {
    *
    * The guard a **sum** needs and a count does not. A reindexing Goldsky answers HTTP 200 with
    * `[]` and a lagging one returns some of what it holds — neither throws, and both leave
-   * `read: true` (`CLAUDE.md` § Traps). Every column would then print `0.0000` and `0.00` in the
+   * `read: true` (`docs/knowledge/chain-and-subgraph.md`). Every column would then print `0.0000` and `0.00` in the
    * ink of a measurement: a public statement that six named agent jurors have earned nothing.
    *
    * Two tests, and both are deliberately **all-or-nothing** rather than the per-draw

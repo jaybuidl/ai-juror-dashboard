@@ -22,7 +22,7 @@ which is the harder half to fix, because a number can be updated and a premise h
 
 **The court holds 46 disputes, not 31** — ids 151 to 196, 42 ruled, 4 in appeal, 226 draw records.
 That matters beyond currency: `COMPACT_FROM_ROWS` is 40, so **the compact density is live in
-production**, and § Traps records it as having been checked only by lowering that constant in a dev
+production**, and `docs/knowledge/testing.md` records it as having been checked only by lowering that constant in a dev
 server. This ticket is the first pass that will look at it with real data.
 
 Three things break at seven, and all three break quietly.
@@ -76,14 +76,14 @@ not be replaced, and a global substitution gets all three wrong:
 
 This is one ticket and not four because every part of it is the same claim — that the dashboard's
 account of the court matches the court — and because splitting it means two branches editing
-`agent-jurors.ts`, `CONTEXT.md` and `CLAUDE.md`, which § Traps has a long entry about.
+`agent-jurors.ts`, `CONTEXT.md` and `CLAUDE.md`, which `docs/knowledge/merging-and-branches.md` has a long entry about.
 
 **Blocked by:** None (can start immediately)
 
 **Design:** `Mobile.dc.html` draws the card and its strip at 390pt with six slots; it draws no
 seventh and no wrap, so the per-line count and the gap between lines are arithmetic against the
 artboard's 52px slot and 36px avatar rather than cited from it. `MatrixDense.dc.html` draws the
-compact grid at six columns, so the same applies to the share arithmetic. This is the § Traps rule
+compact grid at six columns, so the same applies to the share arithmetic. This is the `docs/knowledge/architecture.md` rule
 about finding the artboard that draws the element in that place: for a seventh column and a second
 line there is none.
 
@@ -121,7 +121,7 @@ line there is none.
       baskerville
 - [ ] `CONTEXT.md`'s **Roster**, **Matrix** and **Panel** entries are correct, with **Panel**'s
       warning given an example that is not baskerville
-- [ ] `CLAUDE.md` § Verified constants and § Traps record 46 disputes over 151–196, seven agent
+- [ ] `docs/knowledge/court-34.md` and `docs/knowledge/ens-and-roster.md` record 46 disputes over 151–196, seven agent
       jurors, baskerville's draws, and that the compact density is live rather than unreached
 - [ ] The spec's remaining design-time counts are either corrected or marked as the design-time
       capture they are; user story 21 survives

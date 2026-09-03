@@ -327,7 +327,9 @@ export type AgentJurorMarginals = {
    *
    * **The † does not ride these two, and that is a measured fact rather than an assumption.**
    * The marker is about the commit and vote windows, and a reward depends on none of them: it
-   * is `feeForJuror` per coherent draw and `minStake × alpha` at risk per draw. Court 34's one
+   * is `feeForJuror` per coherent **vote ID** and `minStake × alpha / 10000` (187 PNK) at risk
+   * per vote ID — not per draw, which is why nine of the 44 shifts are fractions of a fee and
+   * nothing here may assume a payout divides evenly. Court 34's one
    * reconfiguration, on 2026-08-20, carried `minStake`, `alpha`, `feeForJuror` and
    * `jurorsForCourtJump` **unchanged** and moved only `timesPerPeriod` — decoded from the
    * `CourtModified` log against the `CourtCreated` before it. So every figure summed here was

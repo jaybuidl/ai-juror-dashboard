@@ -22,7 +22,7 @@ the original eighteen, and it was a sweep rather than a feature: the palette mea
 time in either theme, the matrix given the two facts its cells were not saying, a route change made
 audible, and the five-second poll given a voice that is not the grid.
 What it did not do is honour a browser text-size preference — the vendored type scale is px
-throughout — and that is stated in the ticket, in `docs/contrast.md` and below under § Traps.
+throughout — and that is stated in the ticket, in `docs/contrast.md` and in [`a11y-and-focus.md`](a11y-and-focus.md).
 Tickets 01, 02, 03, 04,
 05, 06, 07, 08, 09, 10, 11, 12, 13, 14, 15, 16, 17 and 18 are done: Vite + React
 + TypeScript, yarn 4, Biome,

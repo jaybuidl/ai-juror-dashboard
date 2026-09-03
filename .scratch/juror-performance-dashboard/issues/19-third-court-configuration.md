@@ -68,7 +68,7 @@ touches was written against ADR-0005 rather than against a drawing.
       marks no row: dispute 151 alone carries `underEarlierWindows`
 - [ ] Every sentence counting the configurations is reviewed individually, and the three named
       above are handled on their own terms rather than swept
-- [ ] `CLAUDE.md` § Verified constants records the third configuration, its moment and its block,
+- [ ] `docs/knowledge/court-34.md` records the third configuration, its moment and its block,
       and no longer says the court has two events in its whole life
 - [ ] `README.md` § the live-suite description no longer describes the parameters check as
       pinning two configurations

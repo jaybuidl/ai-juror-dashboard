@@ -127,7 +127,7 @@ Three things a later ticket inherits:
 ## What it cost to find
 
 - **The evidence count has no schema behind it.** The deployed subgraph carries no link from a
-  dispute to its evidence. Recorded in `CLAUDE.md` § Traps in full, with the guard and the two live
+  dispute to its evidence. Recorded in `docs/knowledge/chain-and-subgraph.md` in full, with the guard and the two live
   cross-checks that keep it honest.
 - **Nothing clipped.** The overflow measurement decided whether to apply a cap and then applied it,
   so the measurement always ran against an unbounded element. Invisible in jsdom, where every

@@ -24,6 +24,11 @@ import { PHONE_WIDTH, stubViewportWidth } from "./test/viewport";
  * to hold on it: ticket 15's rule is about every view, not about every nav entry, and a detail
  * route is exactly where a page is most likely to be built without the shell around it.
  * `/agent-jurors/blaise` is ticket 11's, and is here on the same terms.
+ *
+ * Adding a path here is not the same as testing the view it renders. Every assertion below is
+ * about the chrome, and the chrome renders whether or not the route matched — a view that failed
+ * to render inside a shell that did looks identical to one that worked. Whatever this list gains
+ * needs its own test, of something only that page draws.
  */
 const ROUTES = [
   "/",

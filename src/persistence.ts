@@ -66,7 +66,7 @@ export const PERSISTED_CACHE_KEY = "kleros-ai-juror-dashboard:query-cache";
  * staleness `useRoster` holds and a restored `dataUpdatedAt`, one failed load would be re-served
  * for an hour across reloads without a retry, and the page would go on saying ENS could not be
  * reached long after it could. That is a read that failed rendering as a fact, which is the
- * failure `CLAUDE.md` § Traps names most often. It costs one mainnet read per load not to.
+ * failure `docs/knowledge/react-query-and-persistence.md` names most often. It costs one mainnet read per load not to.
  *
  * So a query added by a later ticket is not persisted until it is named here, and there are two
  * questions to answer first:
@@ -101,7 +101,7 @@ const PERSISTED_QUERIES: readonly string[] = [
   // court is reconfigured roughly never, and without it a return visit renders the whole
   // restored matrix under a footnote saying the parameter history is not in hand, which then
   // retracts itself a moment later. A caveat that comes and goes teaches a reader to ignore
-  // caveats — see `CLAUDE.md` § Traps.
+  // caveats — see `docs/knowledge/prose-and-caveats.md`.
   "courtParameters",
   // Ticket 10's payouts, admitted on the same two questions. The value is the raw
   // `TokenAndETHShift` payload — decimal strings, no Map, no bigint, no Date — and it is parsed

@@ -21,7 +21,7 @@ this file is the full account.
   ticket 06: one run took 40s against a normal 8.6s and failed four tests, and three subsequent
   quiet runs were 449/449 with no other change. The tell is the **duration**, not the failure
   count. So a red offline suite whose run took far longer than usual is worth re-running on a quiet
-  machine before believing it — the same advice § Traps already gives for a red *live* suite, for a
+  machine before believing it — the same advice [`chain-and-subgraph.md`](chain-and-subgraph.md) already gives for a red *live* suite, for a
   completely different reason.
 - **A green suite here proves the healthy path and nothing else.** Every fixture in this repo is
   one successful read of a working court, so no test can contain a second read that failed, a

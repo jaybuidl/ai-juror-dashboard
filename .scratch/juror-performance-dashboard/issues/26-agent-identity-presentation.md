@@ -5,7 +5,7 @@ saying anything about who built it.
 
 Two additions, one ticket, because they touch the same type and the same two components. Splitting
 them means two branches editing `agent-jurors.ts`, `Roster.tsx` and `AgentJurorPage.tsx`, and this
-repo's § Traps has a long entry on what parallel branches over shared files produce.
+repo's `docs/knowledge/merging-and-branches.md` has a long entry on what parallel branches over shared files produce.
 
 **The handles.** Three of the seven agent jurors have an account of their own: baskerville
 `@JurBaskerville`, blaise `@BlaiseBuidl`, grokleros `@Grokleros`. Capitalisation is as given and is
@@ -79,7 +79,7 @@ sheet was a scratch file.
 then a pill row whose first pill is the stack, followed by the ENS name, the short address and the
 Arbiscan link. The artboard draws **no icon** and `/agent-jurors` has no artboard at all, so the
 mark's size, placement and spacing are derived from the design system's own scale rather than cited
-from a drawing. This is the § Traps rule about finding the artboard that draws the element in that
+from a drawing. This is the `docs/knowledge/architecture.md` rule about finding the artboard that draws the element in that
 place: here there is none, and the honest move is to say so rather than to borrow one.
 
 **Status:** ready-for-agent

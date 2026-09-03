@@ -582,6 +582,11 @@ export function DisputeView({
           template: disputes.templateFor(row.dispute),
         });
 
+  // **Known wrong ordering, deliberately left.** A failure is loud because it costs a figure, so
+  // failures must be composed *after* the branch that can return early — a page carrying no figure
+  // has lost none and should raise no banner. `AgentJurorPage` does it in that order; this view
+  // still composes above the `reading === null` branch below, so a dispute that was never read can
+  // draw a banner about a read that cost it nothing. Settle it the day this view is next touched.
   const failures = failuresOf({ roster, disputes, performance, detail });
   const provenance = provenanceOf({ roster, disputes, reading, detail });
 

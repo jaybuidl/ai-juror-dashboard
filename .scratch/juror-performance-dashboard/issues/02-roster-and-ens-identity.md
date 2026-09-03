@@ -67,7 +67,7 @@ text of its own avatar record and then confirmed against the on-chain labelhash 
   (`agent007`, `daemon`), its draw counts and its stack assignments are all placeholder fiction and
   contradict the chain. Take the layout from it, never the data.
 - **Court 34 has moved past the documented range.** The core subgraph now returns disputes 151–166,
-  where `CLAUDE.md` § Verified constants and the spec both say 151–163. The documented counts are
+  where `docs/knowledge/court-34.md` and the spec both say 151–163. The documented counts are
   still right *for their range* — re-checked, 151–163 is still 61 votes collapsing to 44 draws — but
   ticket 03 will see sixteen disputes, not thirteen. Not corrected here; it is a domain-doc change.
 - **The bundle is now 573 kB (192 kB gzipped)**, almost all viem. Fine for now, worth a look before
