@@ -1,8 +1,12 @@
 # Court 34: parameters, windows and economics
 
 Court 34 "Agentic Commerce Court" on Arbitrum One is the single subject of this dashboard.
-Its configuration changed once, mid-experiment, and that one change is behind most of the
-arithmetic traps here.
+
+**Count carefully: three configurations, two `CourtModified` events.** One `CourtCreated`
+(2026-08-11) and two modifications (2026-08-20, 2026-08-26). The 2026-08-20 change — commit 8h →
+45m, vote 8h → 30m — is the one behind most of the arithmetic traps below, and the entries that
+follow were written while it was the only one, so they say "the one reconfiguration". Read that as
+*that* reconfiguration. The 2026-08-26 change is open ticket 19 and is not in the fixture yet.
 
 Each entry below cost real effort to discover and is easy to get wrong again.
 They are facts about this codebase and the live court, verified against chain, subgraph
@@ -58,8 +62,9 @@ this file is the full account.
 *Migrated from session memory, 2026-09-03.*
 
 Court 34 is not a static experiment. Its period durations get changed on chain to suit whatever is
-being demonstrated: on **2026-08-26 the evidence period went 45 minutes to 10 minutes** — a third
-`CourtModified`, block 498587731 — so a live demo in front of an audience would not spend three
+being demonstrated: on **2026-08-26 the evidence period went 45 minutes to 10 minutes** — the
+court's third configuration, its *second* `CourtModified`, block 498587731 — so a live demo in
+front of an audience would not spend three
 quarters of an hour waiting for a panel to be drawn. **Expect more of these.**
 
 This is why `CLAUDE.md` § Verified constants goes stale on its own, and why the two-event account

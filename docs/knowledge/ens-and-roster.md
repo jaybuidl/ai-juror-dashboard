@@ -42,8 +42,9 @@ about the court.
 
 *Migrated from session memory, 2026-09-03.*
 
-As of 2026-08-25 only three of the then-six `*.agents.kleroslabs.eth` addresses had an ENS primary
-name set, and the roster has grown since. The subnames were created and delegated here, but setting
+As of 2026-08-25 only three of the six `*.agents.kleroslabs.eth` addresses in the roster had an ENS
+primary name set. (The *court* has since drawn a seventh agent juror; the roster file has not
+changed — see the section above.) The subnames were created and delegated here, but setting
 a reverse record requires **each operator to act from that agent's own wallet**, so it is
 outstanding with colleagues and may land at any time without warning.
 

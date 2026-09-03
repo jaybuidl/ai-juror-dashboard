@@ -76,9 +76,12 @@ tripwires below names the file it came from.
 
 ## Tripwires
 
-One line per trap, phrased to stop the mistake on its own. The full account of each — what it cost,
-how it was found, what guards it now — is in the `docs/knowledge/` file named at the head of its
-group. **Read the topic file before acting on a line here.**
+One entry per trap — a line or three, phrased to stop the mistake on its own. The full account of
+each — what it cost, how it was found, what guards it now — is in the `docs/knowledge/` file named
+at the head of its group. **Read the topic file before acting on an entry here.**
+
+`§ Traps` was split into `docs/knowledge/` on 2026-09-03. Comments and tickets across the repo
+still cite "`CLAUDE.md` § Traps"; read that as this section plus the topic file it points at.
 
 ### Court 34: parameters and economics → `court-34.md`
 
@@ -93,9 +96,8 @@ group. **Read the topic file before acting on a line here.**
   `feeForJuror`. "Every payout divides evenly" looks right and fails on real data.
 - **No reconfiguration has changed a reward parameter** — the `†` window marker must never ride
   cumulative ETH or PNK.
-- **The court has been reconfigured a third time** (2026-08-26, evidence 45m → 10m) and the
-  dashboard has not taken it up yet — open ticket 19. Anything asserting two events is stale, and
-  the court gets reconfigured for demos, so a red parameters suite is usually that, not a regression.
+- **A red `court-parameters` suite is usually the court being operated, not a regression** — its
+  periods get shortened for demos. Read the history off chain before treating it as a bug.
 - Every appeal period ran ~18h against a 36h configured value. Unexplained; do not treat appeal
   duration as understood.
 
@@ -151,7 +153,7 @@ group. **Read the topic file before acting on a line here.**
   *each* query's error and say which half is stale — never that "the court" is.
 - **A flag that is false while a read is in flight is not a flag that the read failed.** An absence
   becomes a failure only once there has been an answer to fall short of. Every emptiness test needs
-  its own gate, tested **both** ways. Reintroduced four times so far.
+  its own gate, tested **both** ways. Four instances so far, three of them reintroductions.
 - **A disabled react-query query is `pending` for ever** — consume
   `isPending && fetchStatus !== "idle"`.
 - **`JSON.stringify` turns a `Map` into `{}`, and the query cache is persisted as JSON.** The
@@ -201,9 +203,9 @@ group. **Read the topic file before acting on a line here.**
 ### Accessibility, naming and focus → `a11y-and-focus.md`
 
 - **A green axe run is not an accessibility sweep — axe does not check target size at all.** Naming
-  the criteria a tool does *not* test is part of reporting it. Row-sized targets use a stretched
-  pseudo-element whose load-bearing half is `position: relative` on the row; dropping it spreads the
-  link across the viewport.
+  the criteria a tool does *not* test is part of reporting it.
+- **A row-sized target is a stretched pseudo-element, and `position: relative` on the row is its
+  load-bearing half** — dropping that spreads one link across the whole viewport.
 - **`title` is never the sole carrier of a fact** — `aria-hidden` on the abbreviation, a
   `VisuallyHidden` beside it. One that duplicates visible text is fine.
 - **Accessible-name computation normalises the whitespace out from between adjacent nodes**, so two
@@ -234,15 +236,16 @@ group. **Read the topic file before acting on a line here.**
 - **An empty page has as many empty states as it has reasons to be empty**, each needing its own
   words — "never drawn" and "names nobody" are different pages.
 - **A failure is loud because it costs a figure, so a page carrying no figure raises no banner.**
-  Compose failures *after* the branch that can return early.
+  Compose failures *after* the branch that can return early. **`DisputePage` still does it the other
+  way round** — a live, unfixed instance, to be settled the day that view is touched.
 - **One failed source gets one banner line, and the provenance footer never carries the failed
   half.** Where one endpoint serves several reads, collapse to the worst rather than list it twice.
 
 ### What the suites cannot prove → `testing.md`
 
 - **A green suite proves the healthy path and nothing else.** Every fixture is one successful read
-  of a working court, so no test contains a read that failed — write the failure case by hand. A
-  review over ticket 05 found seven defects against 105 passing tests.
+  of a working court, so no test here *can* contain a read that failed — write the failure case by
+  hand. A review over ticket 05 found seven defects against 105 passing tests.
 - **jsdom lays nothing out, so a whole class of defect is invisible to `yarn test`** — hit areas,
   clipping, indentation, anything positional needs a browser at the width it is claimed to work at.
   A state the live court has not reached yet must still be *opened*; a fixture cannot stand in.
@@ -293,34 +296,33 @@ to sit here is in `docs/knowledge/chain-and-subgraph.md` and `docs/knowledge/cou
 ```
 Court                34 "Agentic Commerce Court", Arbitrum One (42161)
 Disputes             start at 151; single-round so far. New ones arrive continually — query the
-                     court, never hard-code an upper bound, and treat any total quoted anywhere
-                     as true only of the range it names
+                     court, never hard-code an upper bound
 KlerosCore           0x991d2df165670b9cac3B022f4B68D65b664222ea
 DisputeKitClassic    0x70B464be85A547144C72485eBa2577E5D3A45421
 Core subgraph        api.goldsky.com/api/public/project_cmgx9all3003atlp2bqha1zif/subgraphs/kleros-v2-coreneo/v0.17.2/gn
 DRT subgraph         …/subgraphs/kleros-v2-drt/v0.12.0/gn — same host, so it added nothing to
                      connect-src. Joined on the core dispute's templateId
-Arbitrum RPC         https://arb1.arbitrum.io/rpc — answers fromBlock 0 → latest for a topic-
-                     filtered eth_getLogs in ~230ms, so no start block need be maintained
+Arbitrum RPC         https://arb1.arbitrum.io/rpc — fromBlock 0 → latest for a topic-filtered
+                     eth_getLogs in ~230ms, so no start block need be maintained
 Mainnet RPC          https://ethereum-rpc.publicnode.com (ENS only; ankr needs a key now, and
                      cloudflare-eth reverts inside the ENS universal resolver)
 Court 34 windows     `timesPerPeriod` is [evidence, commit, vote, appeal] in seconds.
                      Created  2026-08-11 10:34:50 UTC — [43200, 28800, 28800, 129600] (12h/8h/8h/36h)
                      Modified 2026-08-20 12:52:00 UTC — [2700, 2700, 1800, 129600] (45m/45m/30m/36h)
                      Modified 2026-08-26 13:14:01 UTC — [600, 2700, 1800, 129600] (10m evidence)
-                     The first two are captured in court-34-parameters.fixture.json and asserted
-                     live by court-parameters.integration.test.ts, which keeps /method's prose true
-                     From CourtCreated / CourtModified. **The third is on chain but not yet in the
-                     dashboard** — that is open ticket 19, so the fixture and `/method`'s prose
-                     still describe two events. Do not treat the two-event account as current.
+                     One CourtCreated and two CourtModified on KlerosCore — so **three
+                     configurations, two modifications**. The first two are captured in
+                     court-34-parameters.fixture.json and asserted live by
+                     court-parameters.integration.test.ts, which is what keeps /method's prose
+                     account true. **The third is on chain but not yet in the dashboard** — that is
+                     open ticket 19. Do not treat the two-configuration account as current.
 Court 34 economics   feeForJuror 270000000000000 wei (0.00027 ETH), minStake 11000e18, alpha 170,
-                     jurorsForCourtJump 7 — all four **unchanged** across the reconfiguration.
+                     jurorsForCourtJump 7 — all four **unchanged** across every reconfiguration.
                      Stake at risk per vote ID = minStake × alpha / 10000 = 187 PNK
 CommitCast           CommitCast(uint256 indexed _coreDisputeID, address indexed _juror,
                      uint256[] _voteIDs, bytes32 _commit), on DisputeKitClassic. Dispute and juror
-                     are indexed, the court is not — so the scan filters on the roster addresses and
-                     the seam drops what belongs to another court. 56 across disputes 151–166 on
-                     2026-08-25, one per committed draw, latency 14s to 3,236s
+                     are indexed, the court is not. 56 across disputes 151–166 on 2026-08-25, one
+                     per committed draw, latency 14s to 3,236s
 TokenAndETHShift     TokenAndETHShift(address indexed _account, uint256 indexed _disputeID,
                      uint256 indexed _roundID, uint256 _degreeOfCoherency, int256 _pnkAmount,
                      int256 _feeAmount, address _feeToken), on KlerosCore. Read from the core
@@ -328,9 +330,8 @@ TokenAndETHShift     TokenAndETHShift(address indexed _account, uint256 indexed 
                      round), written at execution
 Round.timeline       [commit start, reveal start, appeal start, execution start]
 Nicknames            007, aletheia, baskerville, blaise, columbo, daemonhill — ENS subnames of
-                     agents.kleroslabs.eth on mainnet. baskerville has never been drawn; the
-                     roster in src/roster/ is the only place all six appear, and CI's nightly
-                     `live` job checks it against ENS
+                     agents.kleroslabs.eth on mainnet. src/roster/ is the only place all six
+                     appear, and CI's nightly `live` job checks it against ENS
 ```
 
 ## Related repos
