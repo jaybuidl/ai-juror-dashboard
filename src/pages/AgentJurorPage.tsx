@@ -605,10 +605,32 @@ export type AgentJurorViewProps = AgentJurorPageProps & {
  * take the path segment and the clock. The clock arrives as a prop for the reason the seam
  * takes `drawsReadAt` as data — every derivation below stays testable without stubbing time.
  */
+/**
+ * The roster entry a path segment names, case-insensitively.
+ *
+ * Case is folded because the nicknames were capitalised after this route was live and linkable:
+ * `/agent-jurors/blaise` is a link somebody may hold, and an exact match would answer it with
+ * the "not an agent juror" panel below. Nicknames are distinct case-insensitively, which
+ * `agent-jurors.test.ts` holds, so the fold cannot make two of them collide.
+ *
+ * One function because the view and the document title both resolve the segment, and a fold
+ * applied to one and not the other is how the heading and the tab come to disagree.
+ */
+function entryNamedBy(entries: RosterView["entries"], pathNickname: string | undefined) {
+  return entries.find(
+    ({ agentJuror }) => agentJuror.nickname.toLowerCase() === pathNickname?.toLowerCase(),
+  );
+}
+
 export function AgentJurorPage(props: AgentJurorPageProps) {
   const { nickname } = useParams();
-  // The roster nickname from the path, for the reason DisputePage titles with the raw id.
-  useDocumentTitle(nickname ?? "Agent juror");
+  // The roster's own spelling, not the path's, for the reason `DisputePage` titles with the raw
+  // id: the tab should name what the page names. They part only on a lowercase legacy link, and
+  // there the roster is right and the URL is merely old. An address naming nothing has no roster
+  // spelling to use, and titles itself with the segment as typed.
+  useDocumentTitle(
+    entryNamedBy(props.roster.entries, nickname)?.agentJuror.nickname ?? nickname ?? "Agent juror",
+  );
   return <AgentJurorView {...props} pathNickname={nickname} now={Date.now()} />;
 }
 
@@ -623,7 +645,7 @@ export function AgentJurorView({
   // is decidable here and now. `/agent-jurors/nope` is not a 404 — the route table matched it —
   // and it is not a failed read either: it is an address that names nothing, and this view says
   // so itself.
-  const entry = roster.entries.find(({ agentJuror }) => agentJuror.nickname === pathNickname);
+  const entry = entryNamedBy(roster.entries, pathNickname);
 
   // **Before** any failure is composed, and that ordering is the whole of it.
   //
@@ -672,8 +694,10 @@ export function AgentJurorView({
 
   return (
     <View provenance={provenance} failures={failures}>
-      {/* The roster nickname and never the one ENS resolves: `blaise` carries a `name` record
-          reading "Blaise", and the trail has to name what the route is keyed on. */}
+      {/* The roster nickname and never the one ENS resolves: the trail names what the route is
+          keyed on, and a `name` record is rewritable from a wallet. The roster's spelling even
+          on a lowercase link — `entryNamedBy` folded the case, and this shows what the page
+          settled on rather than what was typed at it. */}
       <Breadcrumb to="/agent-jurors" parent="Agent jurors" current={agentJuror.nickname} />
 
       <Header>

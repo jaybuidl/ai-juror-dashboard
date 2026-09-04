@@ -393,8 +393,8 @@ function PanelMember({
             </AvatarFallback>
           )}
           <Named>
-            {/* The ENS nickname is a display name; the roster's is the key. `blaise` carries a
-                `name` record reading "Blaise", and the route is keyed on the roster. */}
+            {/* The ENS nickname is a display name; the roster's is the key, because a `name`
+                record is rewritable from a wallet. */}
             <Nickname>{identity?.nickname ?? draw.agentJuror.nickname}</Nickname>
             <StackLabel>{draw.agentJuror.stack.label}</StackLabel>
           </Named>

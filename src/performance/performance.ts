@@ -760,7 +760,7 @@ type DisputeDraws = {
    *
    * The panel is who the court drew, and the roster is who this dashboard measures — they
    * coincide in court 34 today and are still not the same thing. They have already come apart
-   * once, and silently: `grokleros` was being drawn for weeks before the roster knew it
+   * once, and silently: `Grokleros` was being drawn for weeks before the roster knew it
    * existed, and every draw of its was dropped here with no error and no caveat, because a
    * roster miss has no cell to be missing from. Counting the panel in roster
    * matches would let one non-agent juror turn a panel of two into the page's claim that the

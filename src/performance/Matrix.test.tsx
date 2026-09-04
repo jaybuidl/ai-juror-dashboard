@@ -222,9 +222,8 @@ describe("the matrix's own structure", () => {
    * the linear browse mode most reading is done in. So the pair is said in the cell.
    *
    * The roster nickname and not the ENS one, deliberately. What the column header *displays* is
-   * whatever ENS resolved — `blaise` carries a name record reading "Blaise" — but the nickname
-   * this dashboard keys, routes and joins on is the roster's, and a name a wallet can change is
-   * not the thing to identify a measurement by.
+   * whatever ENS resolved; what this dashboard keys, routes and joins on is the roster's, and a
+   * name a wallet can change is not the thing to identify a measurement by.
    */
   it("says which agent juror and which dispute every cell belongs to", () => {
     renderMatrix();
@@ -420,7 +419,7 @@ describe("Matrix", () => {
   it("names an agent juror this record never drew as never drawn, not as absent", () => {
     renderMatrix();
 
-    const column = screen.getByRole("columnheader", { name: /baskerville/ });
+    const column = screen.getByRole("columnheader", { name: /Baskerville/ });
 
     expect(within(column).getByText(/never drawn/i)).toBeInTheDocument();
   });
@@ -868,8 +867,8 @@ describe("Matrix", () => {
       // Five dashes since ticket 10 and not three: an agent juror the court has not drawn has
       // not been paid nothing, it has not been in a position to be paid at all, and `0.0000`
       // would state the first.
-      expect(header("baskerville").getAllByText("—")).toHaveLength(5);
-      expect(header("baskerville").getByText("0 · 0v")).toBeInTheDocument();
+      expect(header("Baskerville").getAllByText("—")).toHaveLength(5);
+      expect(header("Baskerville").getByText("0 · 0v")).toBeInTheDocument();
     });
 
     it("shows what each drawn column has been paid, at the precision the artboard sets", () => {
@@ -883,12 +882,12 @@ describe("Matrix", () => {
       expect(header("007").getByText("0.0026")).toBeInTheDocument();
       expect(header("007").getByText("-93.50")).toBeInTheDocument();
 
-      expect(header("blaise").getByText("0.0036")).toBeInTheDocument();
-      expect(header("blaise").getByText("+218.17")).toBeInTheDocument();
+      expect(header("Blaise").getByText("0.0036")).toBeInTheDocument();
+      expect(header("Blaise").getByText("+218.17")).toBeInTheDocument();
 
-      expect(header("aletheia").getByText("-561.00")).toBeInTheDocument();
-      expect(header("daemonhill").getByText("+264.92")).toBeInTheDocument();
-      expect(header("columbo").getByText("+171.42")).toBeInTheDocument();
+      expect(header("Aletheia").getByText("-561.00")).toBeInTheDocument();
+      expect(header("Daemonhill").getByText("+264.92")).toBeInTheDocument();
+      expect(header("Columbo").getByText("+171.42")).toBeInTheDocument();
     });
 
     it("says nothing about a payout it has not read, rather than reading it as zero", () => {
@@ -911,7 +910,7 @@ describe("Matrix", () => {
       // Dispute 151 ran under 8-hour commit and vote windows; columbo and daemonhill are the
       // two agent jurors the court drew for it. A column that was not there is comparable with
       // the court as it stands and says nothing.
-      expect(header("columbo").getAllByText("†")).toHaveLength(2);
+      expect(header("Columbo").getAllByText("†")).toHaveLength(2);
       expect(header("007").queryByText("†")).not.toBeInTheDocument();
     });
 
@@ -921,11 +920,11 @@ describe("Matrix", () => {
       // Dispute 155 was decided by columbo alone, where being the majority took no agreement.
       // The reason is read off the mark's accessible name: it is drawn under the figure at
       // neither density now, and the six columns share one baseline because of it.
-      expect(header("columbo").getByText("‡")).toBeInTheDocument();
+      expect(header("Columbo").getByText("‡")).toBeInTheDocument();
       expect(
-        header("columbo").getByRole("link", { name: /coherence count is marked/i }),
+        header("Columbo").getByRole("link", { name: /coherence count is marked/i }),
       ).toHaveAccessibleName(/of \d+ draws sat on a panel of one/i);
-      expect(header("blaise").queryByText("‡")).not.toBeInTheDocument();
+      expect(header("Blaise").queryByText("‡")).not.toBeInTheDocument();
     });
 
     it("leaves every commit median a dash until the log scan has come back", () => {

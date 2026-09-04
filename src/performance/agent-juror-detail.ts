@@ -12,7 +12,7 @@ import type { AgentJurorMarginals } from "./totals";
  * rather than in the view for one reason, which is that the join is on an array index.
  *
  * `marginals` is one entry per agent juror in roster order and every row's `cells` is the same
- * list in the same order, so an off-by-one shows aletheia's ten draws under blaise's avatar with
+ * list in the same order, so an off-by-one shows Aletheia's ten draws under Blaise's avatar with
  * every figure on the page internally consistent, no error, and nothing in the console. That is
  * the shape of defect this repository keeps below the seam and out of components, so this is
  * pure, testable and asked for by name.
@@ -57,9 +57,15 @@ export type AgentJurorReading = {
  * which is neither a 404 nor a failed read, and the view says so in its own words. The roster is
  * local, so unlike ticket 09's equivalent this is decidable with no read at all.
  *
- * Matched on the **roster** nickname, exactly. `blaise` carries an ENS `name` record reading
- * "Blaise", and a lookup that lowercased or trimmed would make the URL keyed on something an
- * operator can change from a wallet.
+ * Matched on the **roster** nickname, exactly — and exactly is the point, because the route
+ * above this is not. `AgentJurorPage` folds case on the path segment to keep links made before
+ * the nicknames were capitalised working, then hands *this* the roster entry it resolved to. So
+ * the fold happens once, against the roster, before the seam sees anything. A second fold here
+ * would be a second definition of which agent juror a name picks out, free to drift from the
+ * first without either one being obviously wrong.
+ *
+ * What must never match is a resolved ENS name: that is a text record an operator can rewrite
+ * from a wallet, and a lookup that accepted one would key the URL on it.
  */
 export function buildAgentJurorReading(
   performance: CourtPerformance,

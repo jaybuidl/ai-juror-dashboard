@@ -23,7 +23,7 @@ import { PHONE_WIDTH, stubViewportWidth } from "./test/viewport";
  * `/disputes/156` is not a destination and is still a view, so the chrome invariants below have
  * to hold on it: ticket 15's rule is about every view, not about every nav entry, and a detail
  * route is exactly where a page is most likely to be built without the shell around it.
- * `/agent-jurors/blaise` is ticket 11's, and is here on the same terms.
+ * `/agent-jurors/Blaise` is ticket 11's, and is here on the same terms.
  *
  * Adding a path here is not the same as testing the view it renders. Every assertion below is
  * about the chrome, and the chrome renders whether or not the route matched — a view that failed
@@ -35,7 +35,7 @@ const ROUTES = [
   "/disputes",
   "/disputes/156",
   "/agent-jurors",
-  "/agent-jurors/blaise",
+  "/agent-jurors/Blaise",
   "/method",
 ];
 
@@ -85,8 +85,8 @@ describe("a route change", () => {
     expect(document.title).toMatch(/^Dispute 156\b/);
     unmount();
 
-    renderAt("/agent-jurors/blaise");
-    expect(document.title).toMatch(/^blaise\b/);
+    renderAt("/agent-jurors/Blaise");
+    expect(document.title).toMatch(/^Blaise\b/);
   });
 
   it("moves focus to the section a hash names, not just the scroll", () => {
@@ -233,14 +233,14 @@ describe("the shell", () => {
     // Asserted against something only that view says, for the reason the dispute route above is:
     // the chrome tests run over this path too and the 404 renders the same nav and footer, so
     // they prove the route table matched something rather than what.
-    renderAt("/agent-jurors/blaise");
+    renderAt("/agent-jurors/Blaise");
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("blaise");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Blaise");
     expect(screen.queryByText(/nothing at this address/i)).not.toBeInTheDocument();
   });
 
   it("keeps the agent-juror index marked in the nav while you are on one of them", () => {
-    renderAt("/agent-jurors/blaise");
+    renderAt("/agent-jurors/Blaise");
     // Scoped to the nav: the breadcrumb on that view links back to the same index, and an
     // unscoped query would find that one and pass whatever the nav did.
     const nav = screen.getByRole("navigation", { name: "Dashboard" });
@@ -298,7 +298,7 @@ describe("isCurrent", () => {
     // Ticket 09's /disputes/152 sits under the disputes destination; a nav that went blank
     // there would tell a visitor they had left the dashboard.
     expect(isCurrent("/disputes", "/disputes/152")).toBe(true);
-    expect(isCurrent("/agent-jurors", "/agent-jurors/blaise")).toBe(true);
+    expect(isCurrent("/agent-jurors", "/agent-jurors/Blaise")).toBe(true);
   });
 
   it("does not match a destination that merely shares a prefix", () => {

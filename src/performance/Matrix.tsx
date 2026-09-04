@@ -198,12 +198,22 @@ const AgentColumn = styled.th<{ $compact: boolean }>`
   box-sizing: border-box;
   /* Narrower left and right than the artboards' 11px, and the 4px is bought rather than saved.
      Stacking the identity gave the nickname the whole column, which cleared it at 1440 and left
-     it 3px short at the compact floor: the slot is 78.98px there and daemonhill measures 82,
+     it 3px short at the compact floor: the slot is 78.98px there and daemonhill measured 82,
      baskerville 80. Every width from 720 up to about 1298 sits at that floor, which is most
      laptops, so the two names went on clipping exactly where the change was supposed to have
      fixed them. Eight makes the slot 86.98 and clears both, and the marginals under the hairline
      get the same 8px. The alternative was to widen the column itself, which moves the grid
-     minimum and the breakpoint derived from it — ticket 25's constants, not this ticket's. */
+     minimum and the breakpoint derived from it — ticket 25's constants, not this ticket's.
+
+     Capitalising the nicknames later spent 1.2px of what that bought: Daemonhill measures
+     83.20 against the same 86.98 slot, so the headroom at the floor went 4.98 to 3.78 and every
+     name still renders whole (measured in Chrome across 800 to 1440; Baskerville is 79.86, a
+     capital B being fractionally narrower than the lowercase b it replaced). It is the tightest
+     figure on this row and the one to re-measure before any nickname grows, because the next
+     long name is likelier than a width change to be what takes it.
+
+     No backticks around those names on purpose: this comment is inside a styled-components
+     template, where one would end the template. */
   padding: ${({ theme }) => `${theme.space6} ${theme.space4} ${theme.space5}`};
   border-left: ${({ theme }) => theme.borderHairline};
   border-bottom: 1px solid ${({ theme }) => theme.lineStrongColor};
@@ -230,8 +240,8 @@ const AgentColumn = styled.th<{ $compact: boolean }>`
  *
  * Ticket 29. Beside it, the avatar and its gap took 34px of a compact column's ~83px content box
  * and the nickname ellipsised whatever was left of the remaining ~46 — `daemonhill` rendered as
- * "daemon…" and `baskerville` as "baskerv…", on the one row of the grid whose whole job is to say
- * which column belongs to whom. Stacking hands the nickname the full box and every nickname the
+ * "daemon…" and `baskerville` as "baskerv…" (the nicknames were lowercase then), on the one row
+ * of the grid whose whole job is to say which column belongs to whom. Stacking hands the nickname the full box and every nickname the
  * roster holds fits in it, so the clipping goes without a pixel of extra width. That mattered:
  * ticket 25 forbids taking width from the 440px row header, and no artboard draws a column wider
  * than 148px.
@@ -360,7 +370,7 @@ const AgentStack = styled.span`
   /* Two lines held whether this one needs them or not, because the slot carries two different
      kinds of string: a stack name for an agent juror the court has drawn, and the words "never
      drawn" for one it has not. The longer of those wraps at this column width and the shorter
-     does not, which put baskerville's six figures 13px below the five columns beside it — one
+     does not, which put Baskerville's six figures 13px below the five columns beside it — one
      measure at two heights across a header whose whole purpose is to be read across. Reserving
      the taller case makes that baseline a property of the layout rather than of whichever
      strings the roster happens to hold, so a longer stack name cannot reintroduce it either.
@@ -1053,7 +1063,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                     // newly-arrived dispute routinely sits unread beside a fresh dispute list —
                     // and this dashboard exists partly to record the day an agent juror is drawn
                     // for the first time, which would land in exactly such a row. That was
-                    // written about baskerville as a future event; the court drew it 14 times
+                    // written about Baskerville as a future event; the court drew it 14 times
                     // and the guard is what kept the column honest on the way. The next agent
                     // juror to join the roster arrives in the same state.
                     //
@@ -1075,10 +1085,9 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                           )}
                           <AgentNames>
                             {/* Displayed as ENS resolved it, so the column and the roster card
-                                above it read the same — `blaise` carries a name record reading
-                                "Blaise". Keyed on the roster address regardless: the resolved
-                                name is a display name, and joining a matrix on one would key it
-                                on something an operator can change from a wallet. */}
+                                above it read the same. Keyed on the roster address regardless:
+                                the resolved name is a display name, and joining a matrix on one
+                                would key it on something an operator can rewrite from a wallet. */}
                             <AgentNickname
                               to={`/agent-jurors/${agentJuror.nickname}`}
                               $drawn={drawn}

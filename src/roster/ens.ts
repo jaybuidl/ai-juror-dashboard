@@ -81,8 +81,9 @@ export async function resolveAgentJurorIdentity(
 
     return {
       address: agentJuror.address,
-      // The `name` text record is set on one subname only; the rest fall back to the
-      // roster nickname, which is the subname's own label and reads identically.
+      // The `name` text record is set on two subnames — `blaise` and `grokleros`, both
+      // reading as the capitalised label — and the rest fall back to the roster nickname,
+      // which is the same label capitalised the same way. Either source, one spelling.
       nickname: nameRecord?.trim() || agentJuror.nickname,
       avatarUrl: avatarUrl ?? null,
       resolvedFromEns: true,

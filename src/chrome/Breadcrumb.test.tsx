@@ -25,7 +25,7 @@ function renderBreadcrumb(props: { to: string; parent: string; current: string }
 
 describe("the breadcrumb", () => {
   it("links to the parent index and names where you are", () => {
-    renderBreadcrumb({ to: "/agent-jurors", parent: "Agent jurors", current: "aletheia" });
+    renderBreadcrumb({ to: "/agent-jurors", parent: "Agent jurors", current: "Aletheia" });
 
     const trail = screen.getByRole("navigation", { name: /breadcrumb/i });
 
@@ -33,7 +33,7 @@ describe("the breadcrumb", () => {
       "href",
       "/agent-jurors",
     );
-    expect(within(trail).getByText("aletheia")).toHaveAttribute("aria-current", "page");
+    expect(within(trail).getByText("Aletheia")).toHaveAttribute("aria-current", "page");
   });
 
   it("renders the current item as text rather than a link to itself", () => {
@@ -46,11 +46,12 @@ describe("the breadcrumb", () => {
   });
 
   it("says whatever the view gives it, so a resolved ENS name can never reach the trail", () => {
-    // `blaise` carries a `name` record reading "Blaise". The route is keyed on the roster
-    // nickname, so the trail has to be too — which is why the label is passed in, not resolved.
-    renderBreadcrumb({ to: "/agent-jurors", parent: "Agent jurors", current: "blaise" });
+    // The route is keyed on the roster nickname, so the trail has to be too — which is why the
+    // label is passed in, not resolved. The `name` text record is what an operator can rewrite
+    // from a wallet, and "Blaise of Kleros" stands for whatever they rewrite it to.
+    renderBreadcrumb({ to: "/agent-jurors", parent: "Agent jurors", current: "Blaise" });
 
-    expect(screen.getByText("blaise")).toBeInTheDocument();
-    expect(screen.queryByText("Blaise")).not.toBeInTheDocument();
+    expect(screen.getByText("Blaise")).toBeInTheDocument();
+    expect(screen.queryByText("Blaise of Kleros")).not.toBeInTheDocument();
   });
 });

@@ -49,11 +49,16 @@ describe("buildAgentJurorReading", () => {
   });
 
   it("keys on the roster nickname and not on a resolved one", () => {
-    // `blaise` carries an ENS `name` record reading "Blaise". The route, the join and this
-    // lookup are all on the roster's own label; a match that lowercased or trimmed would be a
-    // second definition of which agent juror a URL names.
-    expect(buildAgentJurorReading(court(), "blaise")?.agentJuror.nickname).toBe("blaise");
-    expect(buildAgentJurorReading(court(), "Blaise")).toBeNull();
+    // Exactly, and unlike the route above the seam: `AgentJurorPage` folds case to keep links
+    // made before the nicknames were capitalised working, but it hands *this* the roster's own
+    // spelling and never the path segment. A second place folding case would be a second
+    // definition of which agent juror a name picks out, drifting from the first in silence.
+    //
+    // "Blaise of Kleros" stands for a resolved ENS name — a `name` text record an operator can
+    // rewrite from a wallet — which must never pick anything out here.
+    expect(buildAgentJurorReading(court(), "Blaise")?.agentJuror.nickname).toBe("Blaise");
+    expect(buildAgentJurorReading(court(), "Blaise of Kleros")).toBeNull();
+    expect(buildAgentJurorReading(court(), "blaise")).toBeNull();
   });
 
   it("gives each agent juror its own draws, its own marginal and its own identity", () => {
@@ -81,7 +86,7 @@ describe("buildAgentJurorReading", () => {
   });
 
   it("lists an agent juror's disputes newest first, as the rows arrive", () => {
-    const reading = buildAgentJurorReading(court(), "aletheia");
+    const reading = buildAgentJurorReading(court(), "Aletheia");
     const ids = reading?.draws.map(({ row }) => row.dispute.id) ?? [];
 
     expect(ids.length).toBeGreaterThan(1);
@@ -89,11 +94,11 @@ describe("buildAgentJurorReading", () => {
   });
 
   it("gives an agent juror the court has not drawn a reading rather than nothing", () => {
-    // This fixture's baskerville was captured before the court first drew it, so it has no
+    // This fixture's Baskerville was captured before the court first drew it, so it has no
     // draws to read and this page exists to say so honestly rather than as an error. A reading
     // built by walking the draws would have no entry for it and the route would 404 on the one
     // agent juror whose record is "never asked".
-    const reading = buildAgentJurorReading(court(), "baskerville");
+    const reading = buildAgentJurorReading(court(), "Baskerville");
 
     expect(reading?.draws).toEqual([]);
     expect(reading?.marginals.draws).toBe(0);

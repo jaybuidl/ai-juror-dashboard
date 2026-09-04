@@ -30,13 +30,20 @@ import { PHONE_WIDTH, stubViewportWidth } from "../test/viewport";
  * which is the whole of `canvas/JurorEmpty.dc.html`.
  */
 
-/** ENS answering with a display name that is not the roster's, which is `blaise` in real life. */
+/**
+ * ENS answering with a display name that is not the roster's.
+ *
+ * The real `name` record on `blaise` reads "Blaise", and the roster now spells it that way too,
+ * so the live pair no longer demonstrates anything: this fixture has to invent a divergence to
+ * keep the assertion honest. The record is a text record an operator can rewrite from a wallet
+ * at any moment, which is the whole reason the route is not keyed on it.
+ */
 const renamedRoster: RosterView = {
   entries: ROSTER.map((agentJuror) => ({
     agentJuror,
     identity: {
       ...rosterIdentity(agentJuror),
-      nickname: agentJuror.nickname === "blaise" ? "Blaise" : agentJuror.nickname,
+      nickname: agentJuror.nickname === "Blaise" ? "Blaise of Kleros" : agentJuror.nickname,
       resolvedFromEns: true,
     },
   })),
@@ -48,14 +55,29 @@ describe("one agent juror's own view", () => {
   it("resolves an agent juror's own URL to that agent juror, and not to the 404", () => {
     // Asserted against something only this view says. The chrome tests in `routes.test.tsx` run
     // over the same path and would pass with the 404 behind them.
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("columbo");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Columbo");
     expect(screen.queryByText(/nothing at this address/i)).not.toBeInTheDocument();
   });
 
-  it("names the stack, the ENS name, the address and the chain it votes on", () => {
+  it("still opens on a lowercase link made before the nicknames were capitalised", () => {
+    // The reason `entryNamedBy` folds case at all. This route was live and linkable while the
+    // roster spelled its nicknames in lowercase, so `/agent-jurors/columbo` is an address
+    // somebody may hold — and an exact match would answer it with the panel below, which is the
+    // page whose whole job is to say the address is wrong saying so about a working one.
     renderAt("/agent-jurors/columbo");
+
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Columbo");
+    expect(screen.queryByText(/not an agent juror/i)).not.toBeInTheDocument();
+    // The tab too, and this is the half that is easy to leave behind: the title is resolved in
+    // the route component and the heading in the view, so an old link is exactly the case where
+    // one can go on naming the agent juror something the other stopped calling it.
+    expect(document.title).toMatch(/^Columbo\b/);
+  });
+
+  it("names the stack, the ENS name, the address and the chain it votes on", () => {
+    renderAt("/agent-jurors/Columbo");
 
     expect(screen.getByText("claude -p")).toBeInTheDocument();
     expect(screen.getByText("columbo.agents.kleroslabs.eth")).toBeInTheDocument();
@@ -64,15 +86,15 @@ describe("one agent juror's own view", () => {
     expect(screen.getByRole("link", { name: /arbiscan/i })).toHaveAttribute(
       "href",
       // By nickname and not by index. This read ROSTER[3] while the page above it is rendered at
-      // /agent-jurors/columbo — a named lookup and a positional one pointing at one agent juror,
+      // /agent-jurors/Columbo — a named lookup and a positional one pointing at one agent juror,
       // which held only while columbo happened to be fourth. It stopped being fourth, and this
       // was the assertion that said so.
-      `https://arbiscan.io/address/${ROSTER.find((a) => a.nickname === "columbo")?.address}`,
+      `https://arbiscan.io/address/${ROSTER.find((a) => a.nickname === "Columbo")?.address}`,
     );
   });
 
   it("carries the one-line description where the roster has one", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
 
     expect(
       screen.getByText("No agent framework: the Claude Code CLI driven directly."),
@@ -80,22 +102,22 @@ describe("one agent juror's own view", () => {
   });
 
   it("keys the breadcrumb on the roster nickname and not on the one ENS resolves", () => {
-    // `blaise` carries a `name` text record reading "Blaise". The heading shows what ENS said —
-    // the matrix's column header does the same — and the trail names what the route is keyed on,
-    // because a URL built from a display name is a URL an operator can change from a wallet.
-    renderAt("/agent-jurors/blaise", { roster: renamedRoster });
+    // The heading shows what ENS said — the matrix's column header does the same — and the trail
+    // names what the route is keyed on, because a URL built from a display name is a URL an
+    // operator can change from a wallet.
+    renderAt("/agent-jurors/Blaise", { roster: renamedRoster });
 
     const trail = screen.getByRole("navigation", { name: /breadcrumb/i });
-    expect(within(trail).getByText("blaise")).toBeInTheDocument();
+    expect(within(trail).getByText("Blaise")).toBeInTheDocument();
     expect(within(trail).getByRole("link", { name: "Agent jurors" })).toHaveAttribute(
       "href",
       "/agent-jurors",
     );
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Blaise");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Blaise of Kleros");
   });
 
   it("summarises the six figures the matrix's column header prints, at length", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
     const card = screen.getByRole("region", { name: /what columbo has done/i });
 
     // The same six values `Marginals` prints in 148px, read by the same module — three medians
@@ -109,7 +131,7 @@ describe("one agent juror's own view", () => {
   });
 
   it("puts the vote count beside the draw count, because one draw may hold several", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
 
     // 61 votes were 44 draws across the first thirteen disputes: the fee is paid per vote ID and
     // the unit here is the draw, so a page printing one of them alone is missing the other.
@@ -126,7 +148,7 @@ describe("one agent juror's own view", () => {
   });
 
   it("marks each median with the window that governs it, and says how many draws", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
     const card = screen.getByRole("region", { name: /what columbo has done/i });
 
     expect(
@@ -141,7 +163,7 @@ describe("one agent juror's own view", () => {
   });
 
   it("says on the aggregate coherence figure that a panel of one is behind it", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
     const card = screen.getByRole("region", { name: /what columbo has done/i });
 
     // A count that includes a tautological draw must not read as if it did not.
@@ -154,7 +176,7 @@ describe("one agent juror's own view", () => {
   });
 
   it("says the opposite in as many words where no panel of one is behind the count", () => {
-    renderAt("/agent-jurors/blaise");
+    renderAt("/agent-jurors/Blaise");
 
     // The artboard's own sentence, and a claim — so it is made only where it is true. Where a
     // lone panel *is* behind the figure the ‡ line above says so, and this stays silent rather
@@ -170,7 +192,7 @@ describe("one agent juror's own view", () => {
 
 describe("the latency profile", () => {
   it("plots this agent juror's reveals against the whole court's", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
     const plot = screen.getByRole("region", { name: /12 reveals against the whole court/i });
 
     // The plot is decoration over figures printed in full: this is the reading beside it, which
@@ -181,7 +203,7 @@ describe("the latency profile", () => {
   });
 
   it("excludes commit latency and does not give the artboard's false reason for it", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
     const plot = screen.getByRole("region", { name: /reveals against the whole court/i });
 
     // ADR-0005: excluded rather than normalised into the comparison. The reason is that the two
@@ -196,7 +218,7 @@ describe("the latency profile", () => {
   });
 
   it("marks the plot where the vote window behind some of its marks has since changed", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
     const plot = screen.getByRole("region", { name: /reveals against the whole court/i });
 
     expect(
@@ -205,7 +227,7 @@ describe("the latency profile", () => {
   });
 
   it("leaves the plot unmarked for a column never drawn under the earlier windows", () => {
-    renderAt("/agent-jurors/blaise");
+    renderAt("/agent-jurors/Blaise");
     const plot = screen.getByRole("region", { name: /reveals against the whole court/i });
 
     // The marker is a claim about the draws behind *this* figure. blaise was never drawn in
@@ -219,7 +241,7 @@ describe("the latency profile", () => {
     // text contradicting the picture immediately beneath it. Pinned against the scale rather
     // than against the words, which is the only version of this test that cannot rot the same
     // way — `Juror.dc.html:89` still says "1s to 1h" and has been superseded since ticket 11.
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
     const plot = screen.getByRole("region", { name: /reveals against the whole court/i });
 
     expect(within(plot).getByText(`Log scale · ${STRIP_RANGE_LABEL}`)).toBeVisible();
@@ -230,7 +252,7 @@ describe("the latency profile", () => {
     // and the court's own distribution is drawn on both, so a scale of this page's own would
     // draw one set of numbers two shapes. What comes with it is the disclosure, said in this
     // page's own footer exactly as the matrix view says it in its own.
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
 
     const footer = screen.getByRole("contentinfo");
     const caveat = within(footer).getByText(
@@ -260,7 +282,7 @@ describe("the latency profile", () => {
       },
     };
 
-    renderAt("/agent-jurors/columbo", { performance: unrevealed });
+    renderAt("/agent-jurors/Columbo", { performance: unrevealed });
 
     expect(screen.getByText(/no draw of this agent juror's has revealed/i)).toBeVisible();
     expect(screen.queryByText(/comparison band on the latency plot/i)).not.toBeInTheDocument();
@@ -268,7 +290,7 @@ describe("the latency profile", () => {
 
   it("names no band on a page with no plot at all", () => {
     // baskerville has never been drawn, so there is no plot and nothing to disclose about one.
-    renderAt("/agent-jurors/baskerville");
+    renderAt("/agent-jurors/Baskerville");
 
     expect(screen.queryByText(/comparison band/i)).not.toBeInTheDocument();
   });
@@ -276,7 +298,7 @@ describe("the latency profile", () => {
 
 describe("the disputes it was drawn in", () => {
   it("lists them newest first, each linking to that dispute's own view", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
     const table = screen.getByRole("table");
     const ids = within(table)
       .getAllByRole("link")
@@ -293,7 +315,7 @@ describe("the disputes it was drawn in", () => {
     // because it cannot occur here — an unread row has no cell for anybody, so it contributes no
     // line at all — and naming a state the record does not contain teaches a reader to look for
     // a failure that is not there.
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
 
     for (const word of ["Coherent", "Diverged", "No vote", "Acting", "Not drawn"]) {
       expect(screen.getAllByText(word).length, word).toBeGreaterThan(0);
@@ -302,7 +324,7 @@ describe("the disputes it was drawn in", () => {
   });
 
   it("gives every coherence mark its panel size without naming a position", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
 
     // "Beside" would be a claim about which layout the reader is looking at: in the table the
     // panel is the third column and the coherence the seventh, and on a card the state sits
@@ -314,7 +336,7 @@ describe("the disputes it was drawn in", () => {
   });
 
   it("carries a panel column beside the coherence column", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
     const table = screen.getByRole("table");
 
     // The standing requirement: coherence in a panel of one is tautological, so no coherence
@@ -324,7 +346,7 @@ describe("the disputes it was drawn in", () => {
   });
 
   it("marks the coherence of the draw that sat on a panel of one", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
 
     expect(
       screen.getByRole("link", { name: /why columbo's draw in dispute 155 is marked/i }),
@@ -332,13 +354,13 @@ describe("the disputes it was drawn in", () => {
   });
 
   it("counts what it lists, so the heading cannot outrun the record", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
 
     expect(screen.getByRole("heading", { name: "Drawn in 12 disputes." })).toBeInTheDocument();
   });
 
   it("reads each latency with the same functions the matrix reads its cells with", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
     const table = screen.getByRole("table");
 
     // One row of the fixture, spot-checked end to end: a duration in each latency column and a
@@ -352,7 +374,7 @@ describe("the disputes it was drawn in", () => {
 
 describe("the agent juror the court has never drawn", () => {
   it("says nothing has gone wrong, and why there is nothing to measure", () => {
-    renderAt("/agent-jurors/baskerville");
+    renderAt("/agent-jurors/Baskerville");
 
     expect(
       screen.getByRole("heading", { name: /never drawn\. nothing has gone wrong\./i }),
@@ -380,7 +402,7 @@ describe("the agent juror the court has never drawn", () => {
    * two kinds of blank underneath it.
    */
   it("does not count a dispute with no panel as one it was passed over in", () => {
-    renderAt("/agent-jurors/baskerville", { performance: waitingCourt });
+    renderAt("/agent-jurors/Baskerville", { performance: waitingCourt });
 
     // 17 read, one of them still in its evidence period: the claim is over the other 16.
     expect(
@@ -390,7 +412,7 @@ describe("the agent juror the court has never drawn", () => {
   });
 
   it("names the dispute it is not claiming anything about, rather than describing it", () => {
-    renderAt("/agent-jurors/baskerville", { performance: waitingCourt });
+    renderAt("/agent-jurors/Baskerville", { performance: waitingCourt });
 
     // By id, for the reason the sparsity note gives them by id: "some of these are different"
     // is a caveat a reader cannot act on.
@@ -399,7 +421,7 @@ describe("the agent juror the court has never drawn", () => {
   });
 
   it("never reads as a failed read, which is loud and looks nothing like this", () => {
-    renderAt("/agent-jurors/baskerville");
+    renderAt("/agent-jurors/Baskerville");
 
     expect(screen.queryByText(/could not be read/i)).not.toBeInTheDocument();
     // Ticket 13's Unknown, which is the rose figure a *short* read leaves behind. The exact
@@ -410,7 +432,7 @@ describe("the agent juror the court has never drawn", () => {
   });
 
   it("draws every unmeasurable figure as a dash, and says what a dash means", () => {
-    renderAt("/agent-jurors/baskerville");
+    renderAt("/agent-jurors/Baskerville");
 
     // Three medians and the two sums: five dashes, and not one zero among them.
     expect(screen.getAllByText("—")).toHaveLength(5);
@@ -421,13 +443,13 @@ describe("the agent juror the court has never drawn", () => {
   });
 
   it("keeps the draw and vote counts as real zeros, because zero draws is a measurement", () => {
-    renderAt("/agent-jurors/baskerville");
+    renderAt("/agent-jurors/Baskerville");
 
     expect(screen.getByText("0 · 0v")).toBeInTheDocument();
   });
 
   it("names what will appear on its first draw", () => {
-    renderAt("/agent-jurors/baskerville");
+    renderAt("/agent-jurors/Baskerville");
     const coming = screen.getByRole("region", { name: /what appears here on its first draw/i });
 
     expect(within(coming).getByText(/commit and reveal latency/i)).toBeVisible();
@@ -450,7 +472,7 @@ describe("the agent juror the court has never drawn", () => {
       performance: { ...built, agentJurors: [], marginals: [] },
     };
 
-    renderAt("/agent-jurors/baskerville", { performance: strangers });
+    renderAt("/agent-jurors/Baskerville", { performance: strangers });
 
     expect(screen.queryByText(/never drawn\. nothing has gone wrong\./i)).not.toBeInTheDocument();
     expect(
@@ -459,7 +481,7 @@ describe("the agent juror the court has never drawn", () => {
   });
 
   it("plots nothing and lists nothing, rather than an empty axis and an empty table", () => {
-    renderAt("/agent-jurors/baskerville");
+    renderAt("/agent-jurors/Baskerville");
 
     expect(screen.queryByRole("table")).not.toBeInTheDocument();
     expect(
@@ -468,7 +490,7 @@ describe("the agent juror the court has never drawn", () => {
   });
 
   it("says nothing on the page is a measurement of it, and what is", () => {
-    renderAt("/agent-jurors/baskerville");
+    renderAt("/agent-jurors/Baskerville");
 
     expect(
       screen.getByText(/that it has not been drawn is the measured record/i),
@@ -551,7 +573,7 @@ describe("what the page says before, and instead of, a read", () => {
     // The trap in its fifth face. A column with no draws is "never drawn" only once there has
     // been a read to have come up empty — otherwise the page states the court's random selection
     // as a permanent fact about a read that never happened.
-    renderAt("/agent-jurors/baskerville", { performance: unmeasured });
+    renderAt("/agent-jurors/Baskerville", { performance: unmeasured });
 
     expect(screen.queryByText(/never drawn\. nothing has gone wrong\./i)).not.toBeInTheDocument();
     expect(
@@ -560,14 +582,14 @@ describe("what the page says before, and instead of, a read", () => {
   });
 
   it("still names the agent juror, because the roster is not a read", () => {
-    renderAt("/agent-jurors/baskerville", { performance: unmeasured });
+    renderAt("/agent-jurors/Baskerville", { performance: unmeasured });
 
-    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("baskerville");
+    expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Baskerville");
     expect(screen.getByText("Hermes")).toBeInTheDocument();
   });
 
   it("shows a dash rather than a zero for each sum while the payouts are still being read", () => {
-    renderAt("/agent-jurors/columbo", { performance: rewardsPending });
+    renderAt("/agent-jurors/Columbo", { performance: rewardsPending });
     const card = screen.getByRole("region", { name: /what columbo has done/i });
 
     // A sum's natural degradation is `0.0000`, in the ink of a measurement. Both must be dashes
@@ -577,14 +599,14 @@ describe("what the page says before, and instead of, a read", () => {
   });
 
   it("reads a payout that came back short as unknown, not as a zero", () => {
-    renderAt("/agent-jurors/columbo", { performance: rewardsShort });
+    renderAt("/agent-jurors/Columbo", { performance: rewardsShort });
     const card = screen.getByRole("region", { name: /what columbo has done/i });
 
     expect(within(card).getAllByText("Not read")).toHaveLength(2);
   });
 
   it("says the payouts failed once at the top, and not again in the footer", () => {
-    renderAt("/agent-jurors/columbo", { performance: rewardsFailed });
+    renderAt("/agent-jurors/Columbo", { performance: rewardsFailed });
 
     expect(
       screen.getByText(/neither the cumulative eth nor the net pnk figure is a measurement/i),
@@ -596,7 +618,7 @@ describe("what the page says before, and instead of, a read", () => {
 
 describe("what the footer says this view rests on", () => {
   it("states which disputes the figures were read from", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
 
     // The disputes this agent juror was drawn in, and not the whole court's range: the figures
     // above are measured from its own twelve draws and from nothing else.
@@ -604,13 +626,13 @@ describe("what the footer says this view rests on", () => {
   });
 
   it("states how an agent juror is identified, on a page that names one", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
 
     expect(screen.getByText(/never by the person or team\s+who built them/i)).toBeInTheDocument();
   });
 
   it("says what the two sums are summed over, in this column's own numbers", () => {
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
 
     expect(
       screen.getByText(/summed over the 9 of this agent juror's 12 draws the court has executed/i),
@@ -618,7 +640,7 @@ describe("what the footer says this view rests on", () => {
   });
 
   it("carries no caveat about a latency for an agent juror that has none", () => {
-    renderAt("/agent-jurors/baskerville");
+    renderAt("/agent-jurors/Baskerville");
 
     // A caveat about a median that does not exist reads as a caveat about the whole page, which
     // is exactly what this state must not look like.
@@ -627,7 +649,7 @@ describe("what the footer says this view rests on", () => {
   });
 
   it("says ENS fell back once it has answered for nobody, and marks the name it affects", () => {
-    renderAt("/agent-jurors/columbo", { roster: unresolvedRoster });
+    renderAt("/agent-jurors/Columbo", { roster: unresolvedRoster });
 
     expect(screen.getByText(/names are falling back to the roster/i)).toBeVisible();
     // The panel says ENS is unreachable once; this says which element is the consequence, so a
@@ -640,14 +662,14 @@ describe("what the footer says this view rests on", () => {
     // it fails, so a caveat keyed on it alone announces a failure for the length of every cold
     // load and then retracts it — and a caveat that comes and goes teaches a reader to ignore
     // caveats. A separate test rather than a second render, because the first one stays mounted.
-    renderAt("/agent-jurors/columbo", { roster: resolvingRoster });
+    renderAt("/agent-jurors/Columbo", { roster: resolvingRoster });
 
     expect(screen.queryByText(/names are falling back to the roster/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/^From roster$/)).not.toBeInTheDocument();
   });
 
   it("shows the avatar ENS resolved where there is one", () => {
-    renderAt("/agent-jurors/columbo", { roster: resolvedRoster });
+    renderAt("/agent-jurors/Columbo", { roster: resolvedRoster });
 
     expect(document.querySelector("img")).toHaveAttribute(
       "src",
@@ -671,7 +693,7 @@ describe("one agent juror's own view on a phone", () => {
 
   it("keeps every one of the six figures, including the two the matrix's phone form drops", () => {
     stubViewportWidth(PHONE_WIDTH);
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
     const card = screen.getByRole("region", { name: /what columbo has done/i });
 
     expect(within(card).getByText("0.0035")).toBeInTheDocument();
@@ -682,7 +704,7 @@ describe("one agent juror's own view on a phone", () => {
 
   it("replaces the seven-column table with one block per dispute rather than shrinking it", () => {
     stubViewportWidth(PHONE_WIDTH);
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
 
     // Not rendered, not hidden: seven columns at 390pt push the page sideways, which is the one
     // thing a layout here must never do.
@@ -699,14 +721,14 @@ describe("one agent juror's own view on a phone", () => {
 
   it("keeps the table above the breakpoint", () => {
     stubViewportWidth(1280);
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
 
     expect(screen.getByRole("table")).toBeInTheDocument();
   });
 
   it("loses no figure with the table: panel, choice and both latencies stay on each block", () => {
     stubViewportWidth(PHONE_WIDTH);
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
 
     const labels = screen.getAllByText(/^(Panel|Choice|Reveal|Commit)$/).map((n) => n.textContent);
     expect(new Set(labels)).toEqual(new Set(["Panel", "Choice", "Reveal", "Commit"]));
@@ -714,7 +736,7 @@ describe("one agent juror's own view on a phone", () => {
 
   it("still says why so much of the record is the way it is", () => {
     stubViewportWidth(PHONE_WIDTH);
-    renderAt("/agent-jurors/columbo");
+    renderAt("/agent-jurors/Columbo");
 
     // Every sentence on this view names something both layouts have — there is no element here
     // that the phone drops and the desktop keeps, which is why nothing in `provenanceOf` is
@@ -728,7 +750,7 @@ describe("one agent juror's own view on a phone", () => {
 
 describe("the whole court's own reads, seen from here", () => {
   it("dates the page by the read behind it, so a citing reader has a moment", () => {
-    renderAt("/agent-jurors/columbo", { disputes });
+    renderAt("/agent-jurors/Columbo", { disputes });
 
     expect(screen.getByText(/2026-08-25 05:12 UTC/)).toBeInTheDocument();
   });
@@ -737,7 +759,7 @@ describe("the whole court's own reads, seen from here", () => {
     // The court median the plot compares against is `totals.revealLatency`, computed by the seam
     // over every row — the same number the matrix's own strip plots. A second reduction here
     // would be two accounts of one court on two pages.
-    renderAt("/agent-jurors/columbo", { performance: measured });
+    renderAt("/agent-jurors/Columbo", { performance: measured });
 
     expect(screen.getByText(/court median of 68s across 56 reveals/i)).toBeVisible();
   });

@@ -18,7 +18,7 @@ import type { CourtPerformance } from "./performance";
  * An agent juror the court has not drawn yet, built against `canvas/JurorEmpty.dc.html:56-97`.
  *
  * **This is not dead code, and do not delete it for having no occupant.** It was written for
- * `baskerville`, which the court had never drawn and has drawn repeatedly since (ticket 24, read
+ * `Baskerville`, which the court had never drawn and has drawn repeatedly since (ticket 24, read
  * on 2026-09-04) — so on any given day no roster column need be empty and nothing on the live
  * court renders this. What it serves is a *state* rather than a member: every agent juror
  * occupies it between being appended to `roster/agent-jurors.ts` and the first time the court's
@@ -42,7 +42,7 @@ import type { CourtPerformance } from "./performance";
  *
  * **The artboard's "It is staked" is dropped, and the reason it was dropped has expired.**
  * `JurorEmpty.dc.html:60` reads "It is staked, it is listed in the roster, and it has never been
- * asked to vote", and ticket 11 cut the first clause because baskerville had never staked — the
+ * asked to vote", and ticket 11 cut the first clause because Baskerville had never staked — the
  * canvas wins on design and not on its data, and a stake was its data. Nothing else forced the
  * cut, and an agent juror that is undrawn because the *draw* is random will ordinarily have
  * staked, so the clause could well be true of whoever reaches this page next. It stays out until
@@ -177,7 +177,7 @@ export function AgentJurorEmpty({
               ` ${unreadDisputes.length === 1 ? "One further dispute is" : `A further ${unreadDisputes.length} disputes are`} not counted: ${unreadDisputes.length === 1 ? "its draws were" : "their draws were"} never read, so whether ${nickname} was drawn there is unknown rather than no.`}
           </EmptyBody>
           {/* This said "an agent juror with no draws has no on-chain presence at all", which was
-              true of baskerville — it had never staked either — and is not true in general. An
+              true of Baskerville — it had never staked either — and is not true in general. An
               agent juror can have staked and simply not been drawn yet, and this dashboard reads
               no stakes, so it is in no position to say. What it can say is the narrower thing
               that was always the point: nothing on this page came back from a query. */}

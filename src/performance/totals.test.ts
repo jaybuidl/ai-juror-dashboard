@@ -484,7 +484,7 @@ describe("agentJurorMarginalsOf", () => {
     // only because this repository says so. Marginals built from the draws rather than from the
     // roster would show five columns — which is the failure this asserts against, and the same
     // one that dropped grokleros from every figure until ticket 24.
-    expect(marginals.find((m) => m.agentJuror.nickname === "baskerville")?.draws).toBe(0);
+    expect(marginals.find((m) => m.agentJuror.nickname === "Baskerville")?.draws).toBe(0);
   });
 
   it("slices the court's own totals down each column", () => {
@@ -505,7 +505,7 @@ describe("agentJurorMarginalsOf", () => {
     // `canvas/JurorEmpty.dc.html:66-76`. Every figure it cannot have is null so the view draws
     // an em dash; the draw count is `0` because zero draws is a measurement and not an absence.
     const never = agentJurorMarginalsOf(built.rows, ROSTER).find(
-      (m) => m.agentJuror.nickname === "baskerville",
+      (m) => m.agentJuror.nickname === "Baskerville",
     );
 
     expect(never?.draws).toBe(0);
@@ -537,10 +537,10 @@ describe("agentJurorMarginalsOf", () => {
         ethWei: 2565000000000000n,
         pnkWei: -93500000000000000000n,
       });
-      expect(paid("aletheia")).toMatchObject({ pnkWei: -561000000000000000000n });
-      expect(paid("blaise")).toMatchObject({ pnkWei: 218166666666666666666n });
-      expect(paid("columbo")).toMatchObject({ pnkWei: 171416666666666666666n });
-      expect(paid("daemonhill")).toMatchObject({ pnkWei: 264916666666666666666n });
+      expect(paid("Aletheia")).toMatchObject({ pnkWei: -561000000000000000000n });
+      expect(paid("Blaise")).toMatchObject({ pnkWei: 218166666666666666666n });
+      expect(paid("Columbo")).toMatchObject({ pnkWei: 171416666666666666666n });
+      expect(paid("Daemonhill")).toMatchObject({ pnkWei: 264916666666666666666n });
     });
 
     it("accounts for one juror fee per vote ID the court executed, and not one per draw", () => {

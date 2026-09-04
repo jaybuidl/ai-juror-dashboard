@@ -53,7 +53,7 @@ describe("transitionsBetween", () => {
         false,
         [
           ["007", "awaiting"],
-          ["aletheia", "committed"],
+          ["Aletheia", "committed"],
         ],
       ],
     ]);
@@ -63,14 +63,14 @@ describe("transitionsBetween", () => {
         false,
         [
           ["007", "committed"],
-          ["aletheia", "revealed"],
+          ["Aletheia", "revealed"],
         ],
       ],
     ]);
 
     expect(transitionsBetween(before, after)).toEqual([
       "007 committed in dispute 166.",
-      "aletheia revealed in dispute 166.",
+      "Aletheia revealed in dispute 166.",
     ]);
   });
 
@@ -92,7 +92,7 @@ describe("transitionsBetween", () => {
         false,
         [
           ["007", "revealed"],
-          ["aletheia", "revealed"],
+          ["Aletheia", "revealed"],
         ],
       ],
     ]);
@@ -102,7 +102,7 @@ describe("transitionsBetween", () => {
         true,
         [
           ["007", "coherent"],
-          ["aletheia", "diverged"],
+          ["Aletheia", "diverged"],
         ],
       ],
     ]);
@@ -113,7 +113,7 @@ describe("transitionsBetween", () => {
   it("collapses a burst into a count rather than reading a list", () => {
     // A screen reader interrupts itself on each polite update, so a dozen sentences arriving at
     // once is a dozen fragments. Past a handful the honest thing is the number.
-    const nicknames = ["007", "aletheia", "blaise", "columbo", "daemonhill", "baskerville"];
+    const nicknames = ["007", "Aletheia", "Blaise", "Columbo", "Daemonhill", "Baskerville"];
     const before = snapshot([
       [166, false, nicknames.map((n) => [n, "awaiting"] as [string, string])],
       [167, false, nicknames.map((n) => [n, "awaiting"] as [string, string])],

@@ -155,12 +155,12 @@ describe("buildCourtPerformance", () => {
     // that. `grokleros` is appended right of both under the same rule. See `ROSTER`.
     expect(performance.agentJurors.map((agentJuror) => agentJuror.nickname)).toEqual([
       "007",
-      "blaise",
-      "columbo",
-      "daemonhill",
-      "aletheia",
-      "baskerville",
-      "grokleros",
+      "Blaise",
+      "Columbo",
+      "Daemonhill",
+      "Aletheia",
+      "Baskerville",
+      "Grokleros",
     ]);
     for (const row of performance.rows) {
       expect(row.cells).toHaveLength(ROSTER.length);
@@ -180,7 +180,7 @@ describe("buildCourtPerformance", () => {
     const row = rowFor(155);
 
     expect(row.cells.filter((cell) => cell !== null)).toHaveLength(1);
-    expect(cellFor(155, "columbo")?.voteCount).toBe(3);
+    expect(cellFor(155, "Columbo")?.voteCount).toBe(3);
   });
 
   it("counts panel size in agent jurors drawn, never in vote IDs", () => {
@@ -195,7 +195,7 @@ describe("buildCourtPerformance", () => {
     // absent — and not about which agent juror happens to be in that state.
     const performance = built();
     const column = performance.agentJurors.findIndex(
-      (agentJuror) => agentJuror.nickname === "baskerville",
+      (agentJuror) => agentJuror.nickname === "Baskerville",
     );
 
     expect(performance.rows.every((row) => row.cells[column] === null)).toBe(true);
@@ -205,7 +205,7 @@ describe("buildCourtPerformance", () => {
     it("measures from the moment the vote period opened to the moment the reveal was recorded", () => {
       // Dispute 163's vote period opened at 1787343398; blaise's justification landed at
       // 1787343444. Not from `createdAt`, not from a deadline, and not from a clock.
-      expect(cellFor(163, "blaise")?.revealLatencySeconds).toBe(46);
+      expect(cellFor(163, "Blaise")?.revealLatencySeconds).toBe(46);
     });
 
     it("reproduces the measured range across the finalised disputes", () => {
@@ -246,7 +246,7 @@ describe("buildCourtPerformance", () => {
         ],
       });
 
-      expect(cellFor(163, "blaise", built(raw))?.revealLatencySeconds).toBe(42);
+      expect(cellFor(163, "Blaise", built(raw))?.revealLatencySeconds).toBe(42);
     });
 
     it("never measures one round's reveal against another round's clock", () => {
@@ -285,7 +285,7 @@ describe("buildCourtPerformance", () => {
         [firstRound, secondRound],
         [secondRound, firstRound],
       ]) {
-        const cell = cellFor(163, "blaise", built(courtData({ disputes, draws })));
+        const cell = cellFor(163, "Blaise", built(courtData({ disputes, draws })));
 
         // The round still running is the one the cell reports, whatever order it arrived in.
         expect(cell?.state).toEqual({ kind: "live", stage: "committed" });
@@ -303,7 +303,7 @@ describe("buildCourtPerformance", () => {
           }),
         ],
       });
-      const cell = cellFor(163, "blaise", built(raw));
+      const cell = cellFor(163, "Blaise", built(raw));
 
       expect(cell?.revealLatencySeconds).toBeNull();
       // The draw still voted, and still voted with the ruling. Only the moment is missing.
@@ -316,14 +316,14 @@ describe("buildCourtPerformance", () => {
       // Dispute 163's commit period opened at 1787342856; blaise's CommitCast landed in a
       // block stamped 1787342880. Measured against the period that actually opened, never
       // against a deadline and never as a fraction of the window (ADR-0005).
-      expect(cellFor(163, "blaise")?.commitLatencySeconds).toBe(24);
+      expect(cellFor(163, "Blaise")?.commitLatencySeconds).toBe(24);
     });
 
     it("reproduces the range the design was drawn against", () => {
       // The canvas quotes commit latency running 2m 06s to 53m 56s, and dispute 151 holds
       // both ends of it. Those two figures were established before any of this code existed.
-      expect(cellFor(151, "columbo")?.commitLatencySeconds).toBe(126);
-      expect(cellFor(151, "daemonhill")?.commitLatencySeconds).toBe(3236);
+      expect(cellFor(151, "Columbo")?.commitLatencySeconds).toBe(126);
+      expect(cellFor(151, "Daemonhill")?.commitLatencySeconds).toBe(3236);
     });
 
     it("reproduces the measured spread across the finalised disputes", () => {
@@ -350,7 +350,7 @@ describe("buildCourtPerformance", () => {
         commits: [rawCommit({ juror: "0x57EB05D4DFFAC43A0C52B42C47A4E7D1838725EA" })],
       });
 
-      expect(cellFor(163, "blaise", built(raw))?.commitLatencySeconds).toBe(24);
+      expect(cellFor(163, "Blaise", built(raw))?.commitLatencySeconds).toBe(24);
     });
 
     it("measures against the round the draw belongs to, not the dispute's first round", () => {
@@ -377,12 +377,12 @@ describe("buildCourtPerformance", () => {
         commits: [rawCommit({ timestamp: "1030" })],
       });
 
-      expect(cellFor(163, "blaise", built(raw))?.commitLatencySeconds).toBe(30);
+      expect(cellFor(163, "Blaise", built(raw))?.commitLatencySeconds).toBe(30);
     });
 
     it("reports an unknown latency rather than a wrong one when no log matched the draw", () => {
       const raw = courtData({ disputes: [rawDispute()], draws: [rawDraw()], commits: [] });
-      const cell = cellFor(163, "blaise", built(raw));
+      const cell = cellFor(163, "Blaise", built(raw));
 
       expect(cell?.commitLatencySeconds).toBeNull();
       // The draw still committed, still revealed, and still voted with the ruling. Only the
@@ -405,7 +405,7 @@ describe("buildCourtPerformance", () => {
         commits: [rawCommit()],
       });
 
-      expect(cellFor(163, "blaise", built(raw))?.commitLatencySeconds).toBeNull();
+      expect(cellFor(163, "Blaise", built(raw))?.commitLatencySeconds).toBeNull();
     });
 
     it("never reports a negative latency from a commitment that predates the round", () => {
@@ -420,7 +420,7 @@ describe("buildCourtPerformance", () => {
       });
       const performance = built(raw);
 
-      expect(cellFor(163, "blaise", performance)?.commitLatencySeconds).toBeNull();
+      expect(cellFor(163, "Blaise", performance)?.commitLatencySeconds).toBeNull();
       expect(performance.commitCoverage).toEqual({ read: true, expected: 1, resolved: 0 });
     });
 
@@ -451,7 +451,7 @@ describe("buildCourtPerformance", () => {
         commits: [rawCommit({ timestamp: "40" }), rawCommit({ timestamp: "1030" })],
       });
 
-      expect(cellFor(163, "blaise", built(raw))?.commitLatencySeconds).toBe(30);
+      expect(cellFor(163, "Blaise", built(raw))?.commitLatencySeconds).toBe(30);
     });
   });
 
@@ -478,9 +478,9 @@ describe("buildCourtPerformance", () => {
     it("still builds every other measurement while the commitments are unread", () => {
       const pending = built(courtData({ commits: null }));
 
-      expect(cellFor(163, "blaise", pending)?.revealLatencySeconds).toBe(46);
-      expect(cellFor(163, "blaise", pending)?.state).toEqual({ kind: "coherent" });
-      expect(cellFor(163, "blaise", pending)?.commitLatencySeconds).toBeNull();
+      expect(cellFor(163, "Blaise", pending)?.revealLatencySeconds).toBe(46);
+      expect(cellFor(163, "Blaise", pending)?.state).toEqual({ kind: "coherent" });
+      expect(cellFor(163, "Blaise", pending)?.commitLatencySeconds).toBeNull();
     });
 
     it("carries the subgraph's own boolean beside the moment, not in place of it", () => {
@@ -495,8 +495,8 @@ describe("buildCourtPerformance", () => {
         commits: [],
       });
 
-      expect(cellFor(163, "blaise")?.committed).toBe(true);
-      expect(cellFor(163, "blaise", built(raw))?.committed).toBe(false);
+      expect(cellFor(163, "Blaise")?.committed).toBe(true);
+      expect(cellFor(163, "Blaise", built(raw))?.committed).toBe(false);
     });
 
     it("counts a committed draw with no log as a shortfall rather than absorbing it", () => {
@@ -516,7 +516,7 @@ describe("buildCourtPerformance", () => {
         ],
         commits: [],
       });
-      const cell = cellFor(163, "blaise", built(raw));
+      const cell = cellFor(163, "Blaise", built(raw));
 
       expect(cell?.state).toEqual({ kind: "no-vote" });
       expect(built(raw).commitCoverage).toEqual({ read: true, expected: 1, resolved: 0 });
@@ -571,7 +571,7 @@ describe("buildCourtPerformance", () => {
       // Disputes 164–166 were in `appeal` when this was captured: every vote in, no ruling,
       // and nothing paid. That is not a failed read and not an empty payout — it is the state
       // every dispute passes through, and the commonest thing a `null` here means.
-      expect(cellFor(165, "blaise", built())?.reward).toBeNull();
+      expect(cellFor(165, "Blaise", built())?.reward).toBeNull();
     });
 
     it("tells a read that has not come back from one that came back empty", () => {
@@ -639,9 +639,9 @@ describe("buildCourtPerformance", () => {
     it("still builds every other measurement while the payouts are unread", () => {
       const pending = built(courtData({ rewards: null }));
 
-      expect(cellFor(163, "blaise", pending)?.revealLatencySeconds).toBe(46);
-      expect(cellFor(163, "blaise", pending)?.state).toEqual({ kind: "coherent" });
-      expect(cellFor(163, "blaise", pending)?.reward).toBeNull();
+      expect(cellFor(163, "Blaise", pending)?.revealLatencySeconds).toBe(46);
+      expect(cellFor(163, "Blaise", pending)?.state).toEqual({ kind: "coherent" });
+      expect(cellFor(163, "Blaise", pending)?.reward).toBeNull();
     });
 
     it("counts a payout in a fee token so that it can be disclosed rather than dropped", () => {
@@ -694,17 +694,17 @@ describe("buildCourtPerformance", () => {
     it("is computed against the dispute's own final ruling", () => {
       // Dispute 154 refused to arbitrate. Three of its four agent jurors voted 0 with it;
       // aletheia voted 1 across both of its vote IDs and is the diverged one.
-      expect(cellFor(154, "blaise")?.state).toEqual({ kind: "coherent" });
-      expect(cellFor(154, "aletheia")?.state).toEqual({ kind: "diverged" });
-      expect(cellFor(154, "aletheia")?.voteCount).toBe(2);
+      expect(cellFor(154, "Blaise")?.state).toEqual({ kind: "coherent" });
+      expect(cellFor(154, "Aletheia")?.state).toEqual({ kind: "diverged" });
+      expect(cellFor(154, "Aletheia")?.voteCount).toBe(2);
     });
 
     it("treats a refusal to arbitrate as a ruling an agent juror can be coherent with", () => {
       // Dispute 154 is genuinely currentRuling 0 with ruled true, so a draw that voted 0 is
       // coherent. Testing the ruling for truthiness would mark the whole panel incoherent.
       expect(rowFor(154).dispute.ruling).toEqual({ state: "refused" });
-      expect(cellFor(154, "columbo")?.state).toEqual({ kind: "coherent" });
-      expect(cellFor(154, "daemonhill")?.state).toEqual({ kind: "coherent" });
+      expect(cellFor(154, "Columbo")?.state).toEqual({ kind: "coherent" });
+      expect(cellFor(154, "Daemonhill")?.state).toEqual({ kind: "coherent" });
     });
 
     it("asserts nothing about a dispute the court has not ruled on", () => {
@@ -727,7 +727,7 @@ describe("buildCourtPerformance", () => {
 
       // The vote says 2 and the subgraph's current ruling says 1, which would read as
       // diverged if the prediction were taken for a ruling.
-      expect(cellFor(163, "blaise", built(raw))?.state).toEqual({
+      expect(cellFor(163, "Blaise", built(raw))?.state).toEqual({
         kind: "live",
         stage: "revealed",
       });
@@ -737,15 +737,15 @@ describe("buildCourtPerformance", () => {
   describe("the choice a draw voted", () => {
     it("carries what each draw revealed, for the per-dispute view to name", () => {
       // Dispute 154 refused to arbitrate: three voted 0 with it, aletheia voted 1.
-      expect(cellFor(154, "blaise")?.choices).toEqual([0]);
-      expect(cellFor(154, "aletheia")?.choices).toEqual([1]);
+      expect(cellFor(154, "Blaise")?.choices).toEqual([0]);
+      expect(cellFor(154, "Aletheia")?.choices).toEqual([1]);
     });
 
     it("collapses a draw's several vote IDs into the one choice they voted", () => {
       // aletheia held two vote IDs in dispute 154 and voted them together, which is what the
       // classic kit's one-transaction reveal makes the ordinary case.
-      expect(cellFor(154, "aletheia")?.voteCount).toBe(2);
-      expect(cellFor(154, "aletheia")?.choices).toEqual([1]);
+      expect(cellFor(154, "Aletheia")?.voteCount).toBe(2);
+      expect(cellFor(154, "Aletheia")?.choices).toEqual([1]);
     });
 
     it("keeps both where a draw's vote IDs disagree, rather than reporting the first", () => {
@@ -768,8 +768,8 @@ describe("buildCourtPerformance", () => {
         ],
       });
 
-      expect(cellFor(163, "blaise", built(raw))?.choices).toEqual([1, 2]);
-      expect(cellFor(163, "blaise", built(raw))?.state).toEqual({ kind: "diverged" });
+      expect(cellFor(163, "Blaise", built(raw))?.choices).toEqual([1, 2]);
+      expect(cellFor(163, "Blaise", built(raw))?.state).toEqual({ kind: "diverged" });
     });
 
     it("says nothing about a draw that has not revealed", () => {
@@ -793,7 +793,7 @@ describe("buildCourtPerformance", () => {
         ],
       });
 
-      const draw = cellFor(163, "blaise", built(raw));
+      const draw = cellFor(163, "Blaise", built(raw));
       expect(draw?.state).toEqual({ kind: "live", stage: "awaiting" });
       expect(draw?.choices).toEqual([]);
     });
@@ -807,7 +807,7 @@ describe("buildCourtPerformance", () => {
           rawDraw({ vote: { commited: true, voted: false, choice: null, justification: null } }),
         ],
       });
-      const cell = cellFor(163, "blaise", built(raw));
+      const cell = cellFor(163, "Blaise", built(raw));
 
       expect(cell?.state).toEqual({ kind: "no-vote" });
       expect(cell?.revealLatencySeconds).toBeNull();
@@ -828,7 +828,7 @@ describe("buildCourtPerformance", () => {
         ],
       });
 
-      expect(cellFor(163, "blaise", built(raw))?.state).toEqual({
+      expect(cellFor(163, "Blaise", built(raw))?.state).toEqual({
         kind: "live",
         stage: "committed",
       });
@@ -849,7 +849,7 @@ describe("buildCourtPerformance", () => {
         ],
       });
 
-      expect(cellFor(163, "blaise", built(raw))?.state).toEqual({
+      expect(cellFor(163, "Blaise", built(raw))?.state).toEqual({
         kind: "live",
         stage: "awaiting",
       });
@@ -868,7 +868,7 @@ describe("buildCourtPerformance", () => {
         draws: [rawDraw({ vote: null })],
       });
 
-      expect(cellFor(163, "blaise", built(raw))?.state).toEqual({
+      expect(cellFor(163, "Blaise", built(raw))?.state).toEqual({
         kind: "live",
         stage: "awaiting",
       });

@@ -104,9 +104,9 @@ const Identity = styled.div`
   min-width: 0;
 `;
 
-/* A link, and keyed on the *roster* nickname while it displays the resolved one: `blaise`
-   carries an ENS `name` record reading "Blaise", so a URL built from what is on screen would be
-   built from something an operator can change from a wallet. */
+/* A link, and keyed on the *roster* nickname while it displays the resolved one: an ENS `name`
+   record is rewritable from a wallet, so a URL built from what is on screen would move when it
+   was. */
 const Nickname = styled(Link)`
   font: ${({ theme }) => theme.typeTitle3};
   color: ${({ theme }) => theme.textHeading};

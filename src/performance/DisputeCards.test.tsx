@@ -212,13 +212,13 @@ describe("DisputeCards", () => {
   it("draws an agent juror that was not drawn as a single dot and nothing else", () => {
     renderCards();
 
-    // baskerville is undrawn in this fixture, which predates the court's first draw of it. Its
+    // Baskerville is undrawn in this fixture, which predates the court's first draw of it. Its
     // position is kept and carries no avatar, no glyph, no figure, no fill and no border —
     // nothing that could be read as a failure to act.
-    const baskerville = ROSTER.findIndex(({ nickname }) => nickname === "baskerville");
+    const baskerville = ROSTER.findIndex(({ nickname }) => nickname === "Baskerville");
     const slot = slotsOf(163)[baskerville] as HTMLElement;
 
-    expect(slot).toHaveTextContent("baskerville: Not drawn");
+    expect(slot).toHaveTextContent("Baskerville: Not drawn");
     expect(within(slot).queryByRole("img")).not.toBeInTheDocument();
     expect(slot.textContent).not.toMatch(/[✓✕∅⋯?]/);
     expect(getComputedStyle(slot).backgroundColor).toBe(TRANSPARENT);
@@ -319,7 +319,7 @@ describe("DisputeCards", () => {
 
     const slots = slotsOf(163);
     const missed = slots[0] as HTMLElement;
-    const notDrawn = slots[ROSTER.findIndex((a) => a.nickname === "baskerville")] as HTMLElement;
+    const notDrawn = slots[ROSTER.findIndex((a) => a.nickname === "Baskerville")] as HTMLElement;
 
     // The loudest slot on the card against a bare dot: no shared glyph, no shared avatar, no
     // shared fill and no shared border. This is the distinction ticket 05 exists to protect.

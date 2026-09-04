@@ -10,8 +10,8 @@ import styled from "styled-components";
  * second parent for a route that already has one.
  *
  * The current item is text, not a link to itself. It is also the *roster* nickname or the
- * dispute's own id — never the nickname ENS resolves, because `blaise` carries a `name` record
- * reading "Blaise" and a trail that said so would name something the route is not keyed on.
+ * dispute's own id — never the nickname ENS resolves, which is a text record an operator can
+ * rewrite from a wallet, and a trail naming it would name something the route is not keyed on.
  */
 
 const Trail = styled.nav`

@@ -238,9 +238,9 @@ describe("the justification band", () => {
     // positions and the gap simply closes, rather than anything re-sorting.
     expect(columns.map((column) => column.getAttribute("aria-label"))).toEqual([
       expect.stringContaining("007"),
-      expect.stringContaining("blaise"),
-      expect.stringContaining("columbo"),
-      expect.stringContaining("daemonhill"),
+      expect.stringContaining("Blaise"),
+      expect.stringContaining("Columbo"),
+      expect.stringContaining("Daemonhill"),
     ]);
   });
 

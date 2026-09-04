@@ -28,7 +28,7 @@ import {
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import type { RawCourtParameters } from "../performance/windows";
 import { ReadFailure, SOURCES } from "../read-failure";
-import { ROSTER } from "../roster/agent-jurors";
+import { ensNameOf, ROSTER } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
 import { DashboardRoutes, type DashboardRoutesProps } from "../routes";
@@ -74,7 +74,7 @@ export const resolvedRoster: RosterView = {
     identity: {
       address: agentJuror.address,
       nickname: agentJuror.nickname,
-      avatarUrl: `https://euc.li/${agentJuror.nickname}.agents.kleroslabs.eth`,
+      avatarUrl: `https://euc.li/${ensNameOf(agentJuror)}`,
       resolvedFromEns: true,
     },
   })),
