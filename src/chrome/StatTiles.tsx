@@ -15,8 +15,8 @@ import { narrow } from "../styles/breakpoints";
  *
  * Draws and vote IDs are two numbers because they are two things: the draw is the unit, and one
  * draw may hold several vote IDs (61 votes were 44 draws across the first thirteen disputes).
- * The drawn tile reads against the roster's six so that an agent juror never drawn is legible
- * here and not only as an empty column in the matrix.
+ * The drawn tile reads against the roster's own length so that an agent juror the court has not
+ * drawn is legible here and not only as an empty column in the matrix.
  */
 
 /**
@@ -288,7 +288,7 @@ function medianCaveatOf(
   if (latency === null) return undefined;
 
   // Through `markedWindows`, which is what the matrix's column headers mark on, so the tile and
-  // the six figures a few hundred pixels below it cannot mark different things about one court.
+  // the column headers a few hundred pixels below it cannot mark different things about one court.
   // Ticket 08 marked on group membership alone, which is right for a court that changed both
   // windows at once and wrong for the next one that moves only its commit window: every group
   // would then qualify this reveal median and the reason would name the vote window in force.
@@ -302,10 +302,10 @@ function medianCaveatOf(
     // The same mark the row flag and the footnote under the matrix use for the same fact. A
     // second glyph for one caveat would read as a second caveat.
     mark: "†",
-    // Named for the court, because six column headers a few hundred pixels below carry the same
-    // caveat about their own draws and word it "Why <nickname>'s median reveal is marked". Seven
-    // links with one name is a reader hearing the page unable to tell the pooled figure from a
-    // column's.
+    // Named for the court, because every column header a few hundred pixels below carries the
+    // same caveat about its own draws and words it "Why <nickname>'s median reveal is marked".
+    // One name shared across this link and all of theirs is a reader hearing the page unable to
+    // tell the pooled figure from a column's.
     about: "Why the court's median reveal is marked",
     reason:
       only === undefined

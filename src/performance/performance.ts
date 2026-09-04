@@ -170,12 +170,12 @@ export type RawCourtData = {
    *
    * `null` and `[]` are different here in the way that matters most on this page, because the
    * figures built from these are **sums**. An empty read makes every column read `0.0000`, which
-   * is a statement that six agent jurors earned nothing across sixteen disputes — where a median
-   * that cannot be taken at least renders as a dash. A sum has no natural way to say "unknown",
+   * is a statement that every named agent juror earned nothing across every dispute read — where
+   * a median that cannot be taken at least renders as a dash. A sum has no natural way to say "unknown",
    * so the distinction has to be carried here and gated in the view.
    */
   rewards: readonly RawRewardShift[] | null;
-  /** The column set, and the only place all six agent jurors appear. */
+  /** The column set, and the only place every agent juror appears. */
   roster: readonly AgentJuror[];
   /**
    * When `draws` was read, in epoch milliseconds, or `null` where the caller cannot say.
@@ -349,7 +349,7 @@ export type MatrixRow = {
  *
  * It is deliberately not a reason to fail: reveal latency and coherence are read from the
  * subgraph and are unaffected by an Arbitrum outage, so a matrix that blanked itself over a
- * missing commitment would hide sixteen rows of measurements that are perfectly true. Ticket 13
+ * missing commitment would hide every row of measurements that are perfectly true. Ticket 13
  * lifts this count into the blocking banner it deserves.
  */
 export type CommitCoverage = {
@@ -427,7 +427,7 @@ export type RewardCoverage = {
    * The guard a **sum** needs and a count does not. A reindexing Goldsky answers HTTP 200 with
    * `[]` and a lagging one returns some of what it holds — neither throws, and both leave
    * `read: true` (`docs/knowledge/chain-and-subgraph.md`). Every column would then print `0.0000` and `0.00` in the
-   * ink of a measurement: a public statement that six named agent jurors have earned nothing.
+   * ink of a measurement: a public statement that every named agent juror has earned nothing.
    *
    * Two tests, and both are deliberately **all-or-nothing** rather than the per-draw
    * `expected`/`resolved` cross-check `CommitCoverage` runs. That shape is unusable here,
@@ -758,8 +758,11 @@ type DisputeDraws = {
   /**
    * Every distinct address drawn, agent juror or not.
    *
-   * The panel is who the court drew, and the roster is who this dashboard measures — the two
-   * are the same in court 34 today and are not the same thing. Counting the panel in roster
+   * The panel is who the court drew, and the roster is who this dashboard measures — they
+   * coincide in court 34 today and are still not the same thing. They have already come apart
+   * once, and silently: `grokleros` was being drawn for weeks before the roster knew it
+   * existed, and every draw of its was dropped here with no error and no caveat, because a
+   * roster miss has no cell to be missing from. Counting the panel in roster
    * matches would let one non-agent juror turn a panel of two into the page's claim that the
    * dispute "was decided by a panel of one", which is a sentence about the court and not about
    * the roster.

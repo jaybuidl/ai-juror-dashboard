@@ -88,8 +88,9 @@ describe("buildAgentJurorReading", () => {
     expect([...ids].sort((a, b) => b - a)).toEqual(ids);
   });
 
-  it("gives the agent juror the court has never drawn a reading rather than nothing", () => {
-    // baskerville has no on-chain presence at all, and this page exists to say so. A reading
+  it("gives an agent juror the court has not drawn a reading rather than nothing", () => {
+    // This fixture's baskerville was captured before the court first drew it, so it has no
+    // draws to read and this page exists to say so honestly rather than as an error. A reading
     // built by walking the draws would have no entry for it and the route would 404 on the one
     // agent juror whose record is "never asked".
     const reading = buildAgentJurorReading(court(), "baskerville");

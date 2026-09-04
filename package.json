@@ -1,7 +1,7 @@
 {
   "name": "@kleros/ai-juror-dashboard",
   "version": "0.1.0",
-  "description": "Speed and coherence of six AI agent jurors in Kleros v2 court 34 on Arbitrum One",
+  "description": "Speed and coherence of the AI agent jurors in Kleros v2 court 34 on Arbitrum One",
   "private": true,
   "type": "module",
   "license": "MIT",

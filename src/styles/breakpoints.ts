@@ -1,4 +1,5 @@
 import { useSyncExternalStore } from "react";
+import { ROSTER } from "../roster/agent-jurors";
 
 /**
  * The one place a width at which the layout changes is written down.
@@ -14,6 +15,81 @@ import { useSyncExternalStore } from "react";
  * 390pt, well inside it, and the matrix was already scrolling sideways in its own box at 720 —
  * so the card list takes over exactly where the desktop grid stopped fitting.
  */
+/**
+ * The grid's own arithmetic, and why a styles module knows about the roster.
+ *
+ * How wide the matrix has to be is a question about how many agent jurors there are, so this
+ * imports `ROSTER` rather than restating its length. It was a literal six for four tickets and
+ * the day the court drew a seventh it became three wrong numbers at once — a `min-width` short
+ * of what the columns declare, a breakpoint below where the grid stops fitting, and column
+ * shares summing to 110%. None of the three throws (ticket 24).
+ *
+ * The two per-column figures are measurements, not preferences: `COMPACT_COLUMN_PX` is about
+ * what a compact cell needs before its durations spill into the column beside them, and
+ * `COMFORTABLE_COLUMN_PX` is what `canvas/Main.dc.html` draws.
+ */
+export const ROW_HEADER_PX = 440;
+export const COMPACT_COLUMN_PX = 104;
+const COMFORTABLE_COLUMN_PX = 148;
+
+/** What the compact grid's columns and its row header come to. See `breakpoints.compactGrid`. */
+export const COMPACT_GRID_MIN_PX = ROW_HEADER_PX + ROSTER.length * COMPACT_COLUMN_PX;
+
+/**
+ * The same widths as shares of the table, because the compact grid is declared in percentages and
+ * two arithmetics for one layout will disagree.
+ *
+ * `Matrix.tsx` sizes the compact grid in `%` so that it fits its container rather than overflowing
+ * it — that is what lets the header freeze against the page instead of inside a scrolling box. The
+ * shares used to be a literal `40%` and a literal `10%`, which is a *second* model of the same
+ * grid, and the two models did not agree even at six: the floor promised the row header 440px and
+ * 40% of 1064 handed it 425.
+ *
+ * Normalising the pixel model removes the second model rather than correcting it. These sum to
+ * exactly 1 by construction — they are the same numerator over the same total — so at the floor
+ * every column gets exactly `COMPACT_COLUMN_PX` and the row header exactly `ROW_HEADER_PX`, which
+ * is what the floor was always claiming to buy, and above the floor everything scales together.
+ * There is nowhere left for a share and a width to drift apart.
+ */
+export const COMPACT_ROW_HEADER_SHARE = ROW_HEADER_PX / COMPACT_GRID_MIN_PX;
+export const COMPACT_COLUMN_SHARE = COMPACT_COLUMN_PX / COMPACT_GRID_MIN_PX;
+
+/**
+ * The same arithmetic for the comfortable grid, which is what `canvas/Main.dc.html` draws and
+ * what `Matrix.tsx` has declared since ticket 15.
+ *
+ * It is here because for three tickets it was declared and not held. The comfortable table was
+ * laid out `auto`, so those widths were a suggestion: the page container is 1104px, the grid
+ * asks for more, and an auto table resolves that shortfall by shrinking whatever *can* shrink.
+ * Columns of identity and figures cannot, so the row header took all 224px of it and rendered
+ * at 239 — 54% of what it declared — with the dispute title inside it clipped to 180px of its
+ * natural 836. On a 1440px screen the desktop was showing a fifth of a question the 390pt phone
+ * showed whole. Nothing reported it: `text-overflow: ellipsis` is what a title is *supposed* to
+ * do, and jsdom lays nothing out, so no test could see a width at all.
+ *
+ * The note on `compactGrid` below already described the fix as the status quo — the compact grid
+ * "keeps its min-width and scrolls sideways in its own box exactly as the comfortable grid always
+ * does". The comfortable grid never did. With this and `table-layout: fixed` beside it, it now
+ * does, and that sentence is true for the first time.
+ *
+ * **Ticket 25 owns the rest of this density**, and this line is not it: the page that contains
+ * the grid, the switch between the two densities and the comfortable column shares are still
+ * sized for six. This is here only so that adding the seventh agent juror does not leave a
+ * `min-width` below the sum of the widths the columns declare, which is the crush described
+ * above, silently reintroduced.
+ */
+export const COMFORTABLE_GRID_MIN_PX = ROW_HEADER_PX + ROSTER.length * COMFORTABLE_COLUMN_PX;
+
+/**
+ * What the page's chrome takes either side of the grid, measured rather than derived.
+ *
+ * The compact grid's floor was 1064px of content when the roster held six, and the viewport at
+ * which it stopped fitting was measured in a browser at 1160 — so the gutters, the page's own
+ * max-width and the scrollbar come to this between them. It is a property of the page and not
+ * of the roster, which is why it is a literal here and the two widths above are not.
+ */
+const PAGE_CHROME_PX = 96;
+
 export const breakpoints = {
   /** The phone artboard is 390pt; this is the width below which the desktop chrome stops fitting. */
   narrow: "720px",
@@ -23,9 +99,13 @@ export const breakpoints = {
    * A second number here and deliberately not a second `narrow`: it answers a different question
    * about a different element. `narrow` asks which layout a reader gets — grid or cards — and is
    * a fact about the chrome. This asks whether the compact grid's own measurements fit the page,
-   * and is arithmetic about the grid: a 440px row header and six columns that a compact cell
-   * needs about 104px each for, which is 1064px of content, which this page's gutters put at
-   * roughly this viewport.
+   * and is arithmetic about the grid: a row header and one column per agent juror, which is
+   * `COMPACT_GRID_MIN_PX` of content, which this page's gutters put at roughly this viewport.
+   *
+   * It moves when the roster grows, and it has to. Held at a fixed width while the grid widened
+   * underneath it, this would name a band of viewports where the grid is above the breakpoint —
+   * so its scroll container is gone — and still wider than the room it has. Nothing scrolls and
+   * nothing warns; the columns are simply crushed below what a compact cell needs.
    *
    * What it costs below itself is the freeze and nothing else. The compact grid keeps its
    * `min-width` and scrolls sideways in its own box exactly as the comfortable grid always does,
@@ -33,31 +113,8 @@ export const breakpoints = {
    * the page — so between `narrow` and here, the column header scrolls away with the rows. Every
    * other reduction the density makes holds at every width.
    */
-  compactGrid: "1160px",
+  compactGrid: `${COMPACT_GRID_MIN_PX + PAGE_CHROME_PX}px`,
 };
-
-/** What the compact grid's six columns and its row header come to. See `breakpoints.compactGrid`. */
-export const COMPACT_GRID_MIN_PX = 1064;
-
-/**
- * The same arithmetic for the comfortable grid: a 440px row header and six 148px columns, which
- * is what `canvas/Main.dc.html` draws and what `Matrix.tsx` has declared since ticket 15.
- *
- * It is here because for three tickets it was declared and not held. The comfortable table was
- * laid out `auto`, so those widths were a suggestion: the page container is 1104px, the grid
- * asks for 1328, and an auto table resolves that shortfall by shrinking whatever *can* shrink.
- * Six columns of identity and figures cannot, so the row header took all 224px of it and
- * rendered at 239 — 54% of what it declared — with the dispute title inside it clipped to 180px
- * of its natural 836. On a 1440px screen the desktop was showing a fifth of a question the
- * 390pt phone showed whole. Nothing reported it: `text-overflow: ellipsis` is what a title is
- * *supposed* to do, and jsdom lays nothing out, so no test could see a width at all.
- *
- * The note on `compactGrid` above already described the fix as the status quo — the compact grid
- * "keeps its min-width and scrolls sideways in its own box exactly as the comfortable grid always
- * does". The comfortable grid never did. With this and `table-layout: fixed` beside it, it now
- * does, and that sentence is true for the first time.
- */
-export const COMFORTABLE_GRID_MIN_PX = 1328;
 
 /**
  * The condition itself, so the media query and the hook below cannot come to disagree.

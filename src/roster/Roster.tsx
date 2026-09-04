@@ -24,7 +24,7 @@ const Lede = styled.p`
    built it here against Errors.dc.html:142 and recorded why it is amber rather than uncoloured;
    ticket 13 lifted it out rather than reinventing it. It had to move: ticket 15 sent the roster
    to its own route, so a panel that lived here was invisible on the matrix — which shows the
-   same six nicknames and the same six avatars as its column headers, and was therefore falling
+   same nicknames and the same avatars as its column headers, and was therefore falling
    back to the roster while saying nothing at all about it.
 
    What stays here is what the panel cannot say: which elements the fallback actually reached.
@@ -149,10 +149,15 @@ export function Roster({ entries, isResolving, isResolvedFromEns }: RosterView) 
   return (
     <Section aria-labelledby="roster-heading">
       <Heading id="roster-heading">The roster</Heading>
+      {/* The count is read off the list being rendered, never written into the sentence: the
+          roster gains entries, and a literal here would go on stating an older length on a
+          public page with nothing to contradict it. The clause after it is a conditional and
+          stays one — every entry happens to be drawn today, and the next one appended will not
+          be. */}
       <Lede>
-        Six agent jurors, each an independent build on a different stack. This list is the
-        dashboard's own: an agent juror that has never staked or been drawn has no on-chain presence
-        at all, so the chain alone would show fewer than six.
+        {entries.length} agent jurors, each an independent build on a different stack. This list is
+        the dashboard's own: an agent juror that has never staked or been drawn has no on-chain
+        presence at all, so the chain alone could show fewer.
       </Lede>
 
       <Grid>

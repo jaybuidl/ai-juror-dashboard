@@ -15,7 +15,17 @@ import { marginalFiguresOf } from "./marginal-figures";
 import type { CourtPerformance } from "./performance";
 
 /**
- * The agent juror the court has never drawn, built against `canvas/JurorEmpty.dc.html:56-97`.
+ * An agent juror the court has not drawn yet, built against `canvas/JurorEmpty.dc.html:56-97`.
+ *
+ * **This is not dead code, and do not delete it for having no occupant.** It was written for
+ * `baskerville`, which the court had never drawn and has drawn repeatedly since (ticket 24, read
+ * on 2026-09-04) — so on any given day no roster column need be empty and nothing on the live
+ * court renders this. What it serves is a *state* rather than a member: every agent juror
+ * occupies it between being appended to `roster/agent-jurors.ts` and the first time the court's
+ * random selection happens to reach it, and this roster gains entries — ticket 24 added a
+ * seventh and named two more arriving within the week. Without this file the next joiner's page
+ * is either an error or, far worse, a card of zeros. The spec keeps the requirement as user
+ * story 21 on the same argument.
  *
  * An honest empty state and emphatically not an error: nothing has gone wrong, there is simply
  * nothing to measure. Every unmeasurable figure is a dash and the card says what a dash means,
@@ -27,14 +37,17 @@ import type { CourtPerformance } from "./performance";
  * juror is this", which is the one question `agent-juror-detail.ts` exists to answer once.
  *
  * Its caller renders it only where the draws were read *and* the join succeeded. An agent juror
- * with no draws because nobody asked is not one the court has never drawn, and this page would
+ * with no draws because nobody asked is not one the court has passed over, and this page would
  * otherwise state an unread condition as a permanent fact about the court's random selection.
  *
- * **The artboard's "It is staked" is dropped, and that is deliberate.** `JurorEmpty.dc.html:60`
- * reads "It is staked, it is listed in the roster, and it has never been asked to vote";
- * baskerville has never staked, which is why it has no on-chain presence at all
- * (`roster/agent-jurors.ts`). The canvas wins on design and not on its data, and this is its
- * data.
+ * **The artboard's "It is staked" is dropped, and the reason it was dropped has expired.**
+ * `JurorEmpty.dc.html:60` reads "It is staked, it is listed in the roster, and it has never been
+ * asked to vote", and ticket 11 cut the first clause because baskerville had never staked — the
+ * canvas wins on design and not on its data, and a stake was its data. Nothing else forced the
+ * cut, and an agent juror that is undrawn because the *draw* is random will ordinarily have
+ * staked, so the clause could well be true of whoever reaches this page next. It stays out until
+ * the stake of the agent juror actually rendering it is read: printing "It is staked" over an
+ * unread stake would be precisely the invented fact the rest of this card exists to refuse.
  */
 
 const Empty = styled.section`
@@ -129,7 +142,7 @@ export function AgentJurorEmpty({
    * juror as passed over on the strength of a selection that has not happened. This sentence is
    * that same figure in words, on the one page that is entirely about a column being empty, and
    * it needs the same gate: without it a court in its opening hours would tell a reader that
-   * every one of the six has "not come up" across disputes nobody came up in.
+   * every agent juror on the roster has "not come up" across disputes nobody came up in.
    */
   const drawnDisputes = sparsity.disputes - sparsity.undrawnDisputes.length;
 
@@ -163,9 +176,14 @@ export function AgentJurorEmpty({
             {unreadDisputes.length > 0 &&
               ` ${unreadDisputes.length === 1 ? "One further dispute is" : `A further ${unreadDisputes.length} disputes are`} not counted: ${unreadDisputes.length === 1 ? "its draws were" : "their draws were"} never read, so whether ${nickname} was drawn there is unknown rather than no.`}
           </EmptyBody>
+          {/* This said "an agent juror with no draws has no on-chain presence at all", which was
+              true of baskerville — it had never staked either — and is not true in general. An
+              agent juror can have staked and simply not been drawn yet, and this dashboard reads
+              no stakes, so it is in no position to say. What it can say is the narrower thing
+              that was always the point: nothing on this page came back from a query. */}
           <EmptyBody>
-            An agent juror with no draws has no on-chain presence at all. This page exists because
-            the roster says it should, not because a query returned it.
+            Nothing here was read from the chain, because there are no draws to read. This page
+            exists because the roster says this agent juror does, not because a query returned it.
           </EmptyBody>
         </Said>
 

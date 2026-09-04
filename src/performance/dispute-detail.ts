@@ -222,8 +222,10 @@ function roundSuffixOf(id: string): string {
  *
  * So the join is an assumption: that court 34's one arbitrable
  * (`0xb5526d022962a1fff6ed32c93e8b714c901f4323`) uses the core dispute id as its evidence group
- * id. Checked on 2026-08-25 across all 31 disputes the court then held — every one has a group,
- * and all 33 submissions fall inside their dispute's own evidence period.
+ * id. Checked on 2026-08-25 across all 31 disputes the court then held — every one had a group,
+ * and all 33 submissions fell inside their dispute's own evidence period. The court has grown
+ * past that read, so the check covers a prefix of what it now holds rather than the whole of it;
+ * the guard below is what makes the assumption safe on the disputes nobody re-checked.
  *
  * `externalDisputeId` is what guards it. The group is asked for by the dispute's own id, so if
  * the arbitrable ever numbers its disputes differently the two disagree and this returns `null`
@@ -443,7 +445,7 @@ export type DisputeReading = {
    * Everyone the court drew, which is not the same as `columns.length`.
    *
    * A juror outside the roster gets no column and still counts here (`CONTEXT.md`). Where the
-   * two differ the view says so, rather than presenting six columns as the whole panel.
+   * two differ the view says so, rather than presenting the roster's columns as the whole panel.
    */
   panelSize: number;
   /** The ballot with each choice's name attached. See `ChoiceTally`. */

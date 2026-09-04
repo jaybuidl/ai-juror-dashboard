@@ -11,7 +11,7 @@ The answer to `DESIGN_PROMPT.md`. Eight artboards on one pan/zoom canvas:
 | `Dispute.dc.html` | One dispute, five justifications side by side |
 | `Cell.dc.html` | The cell: anatomy and all five states |
 | `Juror.dc.html` | One agent juror |
-| `JurorEmpty.dc.html` | The agent juror that has never been drawn |
+| `JurorEmpty.dc.html` | An agent juror the court has not drawn yet |
 | `Errors.dc.html` | Partial-read failure, and the dispute-151 marker |
 | `Mobile.dc.html` | 390pt phone |
 | `canvas.json` | Positions, frame sizes and the sticky notes |
@@ -108,7 +108,13 @@ order despite its caption saying they are.
 ## What is measured and what is sampled
 
 Real, and safe to reason from: the 13×6 occupancy grid, panel sizes, 44 draws / 61 votes,
-the latency range (reveal 7s–552s, median 85s; commit 126s–3,236s), the titles of disputes
-151 and 152, and `baskerville` never having been drawn. Everything else — nicknames,
-stacks, other titles, per-draw latencies, reward figures, and every row above 163 — is
-sampled to exercise the layout, and is labelled as such on the artboards themselves.
+the latency range (reveal 7s–552s, median 85s; commit 126s–3,236s), and the titles of disputes
+151 and 152. Everything else — nicknames, stacks, other titles, per-draw latencies, reward
+figures, and every row above 163 — is sampled to exercise the layout, and is labelled as such
+on the artboards themselves.
+
+`baskerville` never having been drawn was on that measured list, and is the one entry on it that
+has since been falsified: the court drew it 14 times across 8 disputes by 2026-09-04, and the
+roster has grown past the six columns every artboard draws. The occupancy grid is a true capture
+of the fortnight it was seeded in, not a shape to design around — read the empty column as what
+sparsity looked like that week, and `docs/knowledge/court-34.md` for the court now.

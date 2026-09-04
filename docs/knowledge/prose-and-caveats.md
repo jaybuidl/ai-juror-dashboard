@@ -57,7 +57,7 @@ this file is the full account.
   that "the one figure not gated on it". It was not: ticket 11 had built a page that states the
   same quantity **in words** — "across the N disputes whose draws have been read, this agent
   juror has not come up" — on the one view whose entire subject is a column being empty. Merged,
-  a court in its opening hours would tell a reader that all six agent jurors had been passed over
+  a court in its opening hours would tell a reader that every agent juror had been passed over
   on the strength of a draw that has not happened, which is exactly the misreading `undrawnDisputes`
   exists to close. Both parents were correct alone, 809 tests were green, and nothing but reading
   found it. So when a ticket narrows a set, the sweep is not "which figures are computed from it"
@@ -66,9 +66,10 @@ this file is the full account.
 - **A page can say something true of every figure on it and false about the thing it is naming.**
   Ticket 11's footer told a reader of `/agent-jurors/nope` that "the court has drawn it in none of
   the disputes read" and that "not being drawn is the measured record" — sentences written for
-  baskerville, which is a real agent juror the court has never drawn, reaching a path segment that
-  names nobody at all. Both states show no figures and only one of them is a reading of the court;
-  the other has nothing for the court to have failed to do. It is the "not drawn" versus "not read"
+  baskerville, which was then a real agent juror the court had never drawn — the state every new
+  roster entry passes through — reaching a path segment that names nobody at all. Both states show
+  no figures and only one of them is a reading of the court; the other has nothing for the court
+  to have failed to do. It is the "not drawn" versus "not read"
   distinction one level up, and the same rule applies: **an empty page has as many empty states as
   it has reasons to be empty, and each needs its own words.** Nothing caught it — 731 tests, lint,
   types and a green build — because every test asserted what the page *shows*, and what was wrong

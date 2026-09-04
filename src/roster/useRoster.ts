@@ -30,7 +30,7 @@ export type RosterView = {
  *
  * The checked-in roster is the value, not the fallback: it renders immediately and in
  * full, and ENS only ever replaces a nickname or adds an avatar to it. There is
- * deliberately no loading state in which the six are absent.
+ * deliberately no loading state in which the roster is absent.
  */
 export function useRoster(agentJurors: readonly AgentJuror[] = ROSTER): RosterView {
   const client = useMemo(() => createMainnetClient(), []);

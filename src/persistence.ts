@@ -7,7 +7,8 @@ import { browserStorage } from "./storage";
  * What survives a reload, and what makes it safe to.
  *
  * The court's finalised record is the great majority of what this page shows and none of it can
- * change: thirteen of sixteen disputes are ruled, and a ruled dispute's draws, votes, latencies
+ * change: the great majority of the court's disputes are ruled, and a ruled dispute's draws,
+ * votes, latencies
  * and commitments are fixed for ever. Reading all of it again on every load is a round trip to
  * Goldsky and a scan of Arbitrum for an answer that was already known, which is what makes
  * returning to the dashboard slow.
@@ -111,8 +112,8 @@ const PERSISTED_QUERIES: readonly string[] = [
   // re-serve for an hour, which is what kept the ENS identities out.
   //
   // It is also a read that wants persisting, for the reason `courtParameters` does. These two
-  // figures are sums, so the state before they land is not a dash on a median but six column
-  // headers reading "—" under a footer saying the payouts are still being read. Without this,
+  // figures are sums, so the state before they land is not a dash on a median but every column
+  // header reading "—" under a footer saying the payouts are still being read. Without this,
   // every return visit renders that and then retracts it a moment later — a caveat that comes
   // and goes teaches a reader to ignore caveats.
   "courtRewards",

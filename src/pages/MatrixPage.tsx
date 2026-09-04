@@ -29,7 +29,7 @@ import { narrow, useIsNarrow } from "../styles/breakpoints";
  *
  * Built against `canvas/Main.dc.html`, which lays out exactly this order — nav, hero and
  * tiles, the latency strip, then the grid. The roster does not appear on that artboard and no
- * longer appears here either: the six are the matrix's column headers, and they have an index
+ * longer appears here either: the agent jurors are the matrix's column headers, and they have an index
  * of their own at `/agent-jurors` for a reader who wants them without the grid.
  *
  * This view derives nothing. Every figure above the matrix comes from `performance.totals`,

@@ -78,7 +78,7 @@ this file is the full account.
   separator is a `·` that is `aria-hidden` (spoken as "middle dot" otherwise). The fix is a
   `VisuallyHidden` comma between them — and note that its trailing *space* is trimmed too, so
   the name reads `"151,x402…"`. That is enough, because a comma is a pause to a speech
-  synthesiser, but an assertion written against `"151, x402"` will fail. The phone's six slot
+  synthesiser, but an assertion written against `"151, x402"` will fail. The phone's slot
   labels had the same defect for the same reason.
 - **An inline `components` object for `ReactMarkdown` remounts every node it maps, on every
   render.** A new function identity for `a` is a new component *type* to React, so every anchor

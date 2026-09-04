@@ -13,7 +13,7 @@ import commitFixture from "./court-34-commits.fixture.json" with { type: "json" 
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import rewardFixture from "./court-34-rewards.fixture.json" with { type: "json" };
-import { DisputeCards } from "./DisputeCards";
+import { DisputeCards, SLOTS_PER_LINE } from "./DisputeCards";
 import { formatLatencySeconds } from "./latency";
 import {
   buildCourtPerformance,
@@ -114,9 +114,13 @@ describe("DisputeCards", () => {
     expect(screen.queryAllByRole("columnheader")).toHaveLength(0);
   });
 
-  it("gives every card six slots, in roster order, whatever the panel was", () => {
+  it("gives every card one slot per agent juror, in roster order, whatever the panel was", () => {
     renderCards();
 
+    // 155 is in this list because it was decided by a panel of one: the strip is the roster, not
+    // the panel, so it carries a slot per agent juror like every other card. That claim used to
+    // be a second assertion below this loop, restating the loop's own `ROSTER.length` check
+    // against a literal six — the literal was the only thing it added, and it was wrong.
     for (const id of [151, 155, 163, 166]) {
       const slots = slotsOf(id);
       expect(slots).toHaveLength(ROSTER.length);
@@ -126,38 +130,91 @@ describe("DisputeCards", () => {
         expect(slots[index]).toHaveTextContent(new RegExp(agentJuror.nickname, "i"));
       });
     }
-
-    // Dispute 155 was decided by a panel of one and still shows six.
-    expect(slotsOf(155)).toHaveLength(6);
   });
 
   it("holds the slots at a fixed width so they align from card to card", () => {
     renderCards();
 
-    // Fixed slots with elastic gaps, and not the other way round. Six equal grid tracks would
+    // Fixed slots with elastic gaps, and not the other way round. Six *equal* grid tracks would
     // put the third agent juror at a different x on a phone than on a tablet, and the one
-    // property this layout exists to preserve would hold at exactly one width.
+    // property this layout exists to preserve would hold at exactly one width. Six tracks each
+    // fixed at the slot width, spread by `justify-content`, is the construction that holds.
     //
     // 52px because jsdom's window is 1024px wide, where the floor under the width — the second
-    // term of the min(), which only engages below about 352px of viewport — resolves to 164px
+    // term of the min(), which only engages below about 354px of viewport — resolves to 163px
     // and loses. Which is the point: from the artboard's 390pt upward this is a flat 52px.
     for (const id of [163, 166]) {
       for (const slot of slotsOf(id)) {
         expect(getComputedStyle(slot).width).toBe("52px");
-        expect(getComputedStyle(slot).flex).toBe("0 0 auto");
       }
     }
 
     const strip = getComputedStyle(card(163).lastElementChild as HTMLElement);
-    expect(strip.flexWrap).toBe("nowrap");
+    expect(strip.display).toBe("grid");
     expect(strip.justifyContent).toBe("space-between");
+  });
+
+  /**
+   * The roster is longer than one line of the strip, and not one slot may go missing for it.
+   *
+   * This has its own test because the failure it guards is silent in every way this repo can be
+   * silent. The strip was `flex-wrap: nowrap` and sized against a hard-coded six; a seventh
+   * agent juror in it did not wrap, did not scroll and did not warn — the card clips its own
+   * overflow to keep its corners, so the slot was simply gone. Nothing threw, nothing logged,
+   * and the page went on reporting six of seven agent jurors as though that were the court.
+   *
+   * jsdom cannot see a clip: it lays nothing out, so every assertion here is about what the
+   * strip *declares*, and the browser half is ticket 24's own check at 390pt and down to 300pt.
+   * What is worth declaring is exactly what makes the clip impossible rather than unlikely:
+   *
+   * - **a track template, not a flex line.** Wrapping flex with `space-between` puts an eighth
+   *   slot flush right — position 5 on a line where it belongs at position 1. A grid's short
+   *   last row fills columns 1..n of the same template, so slot *k* is at position *k* mod six
+   *   at every roster size.
+   * - **exactly `SLOTS_PER_LINE` tracks**, never `ROSTER.length` of them. Tracks that tracked
+   *   the roster would re-space every card each time an agent juror joined, and would put the
+   *   whole roster back on one line — which is the overflow this test exists for.
+   * - **a slot width divided by `SLOTS_PER_LINE`**, for the same reason: dividing by the roster
+   *   narrows every slot on every phone to fit a line that was never going to be one line.
+   */
+  it("drops no slot when the roster is longer than a line of the strip", () => {
+    renderCards();
+
+    const strip = card(163).lastElementChild as HTMLElement;
+    const declared = getComputedStyle(strip);
+
+    expect(strip.children).toHaveLength(ROSTER.length);
+    expect(declared.display).toBe("grid");
+
+    // One track per position on a line, whatever the roster's length — and asserted on the
+    // *declared* template, because jsdom does not expand `repeat()` and reporting what was asked
+    // for is the most it can honestly do. That the six tracks are really six boxes at 21, 80,
+    // 139, 199, 258 and 317 with the seventh slot back at 21 on a second line was read in Chrome
+    // at 390pt, and again at every width down to 300, where nothing is clipped and every slot
+    // keeps a box. No assertion in jsdom can stand in for that.
+    const template = declared.gridTemplateColumns;
+    expect(template.startsWith(`repeat(${SLOTS_PER_LINE},`)).toBe(true);
+
+    // And the width each track holds divides by the line, not by the roster. The two were the
+    // same number until the court drew a seventh agent juror, which is how a literal six
+    // survived four tickets in a file whose whole subject is that width.
+    //
+    // Only the positive half is assertable, and deliberately so. A matching `not.toContain` on
+    // `ROSTER.length` reads well and is a trap: the two constants are equal again the moment an
+    // agent juror leaves, and the assertion would then fail on correct code — in the one
+    // scenario `agent-jurors.test.ts` is written to make loud, which is the worst possible time
+    // for a second unrelated failure. CSS cannot distinguish `/ 6)` meant as the line from
+    // `/ 6)` meant as the roster anyway; what stops the roster being used here is the constant
+    // in `DisputeCards.tsx` and the comment above it.
+    expect(template).toContain(`/ ${SLOTS_PER_LINE})`);
   });
 
   it("draws an agent juror that was not drawn as a single dot and nothing else", () => {
     renderCards();
 
-    // baskerville has never been drawn. Its position is kept and carries no avatar, no glyph,
-    // no figure, no fill and no border — nothing that could be read as a failure to act.
+    // baskerville is undrawn in this fixture, which predates the court's first draw of it. Its
+    // position is kept and carries no avatar, no glyph, no figure, no fill and no border —
+    // nothing that could be read as a failure to act.
     const baskerville = ROSTER.findIndex(({ nickname }) => nickname === "baskerville");
     const slot = slotsOf(163)[baskerville] as HTMLElement;
 
@@ -279,7 +336,7 @@ describe("DisputeCards", () => {
     renderCards(build(), (dispute) => (dispute.id === 163 ? { title: "A print-ready file" } : {}));
 
     // One link per card, named so a screen-reader user can tell them apart. Not an anchor
-    // around the whole card: that would take six agent jurors' states as its name.
+    // around the whole card: that would take every agent juror's state as its name.
     const link = screen.getByRole("link", { name: "Dispute 163: A print-ready file" });
     expect(link).toHaveAttribute("href", "/disputes/163");
     expect(within(card(163)).getAllByRole("link")).toHaveLength(1);

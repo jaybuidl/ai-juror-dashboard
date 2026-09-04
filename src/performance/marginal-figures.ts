@@ -42,7 +42,7 @@ export type MarginalCaveat = {
   /** One line, beside or below the number, saying how many of the counted draws are affected. */
   reason: string;
   href: string;
-  /** The mark is a link, and six columns of them need telling apart by ear. */
+  /** The mark is a link, and one per column needs telling apart from the rest by ear. */
   about: string;
 };
 
@@ -236,13 +236,13 @@ const EMPTY_REWARDS: AgentJurorRewards = {
  *   asked *and* after it refused, which is the fourth recurrence of that trap in `CLAUDE.md` —
  *   the failed half is the banner's to say, and this only has to not lie in the meantime.
  * - **Never drawn.** Pending ink and a dash, which is what `canvas/JurorEmpty.dc.html:66-76`
- *   draws and what the four figures above already do. baskerville has no on-chain presence at
- *   all; there is nothing here to have earned. Asked *before* the shortfall below, because a
+ *   draws and what the four figures above already do. An agent juror the court has not drawn
+ *   has nothing on chain to have earned from. Asked *before* the shortfall below, because a
  *   column with no draws has nothing that could have been read short.
  * - **The read came back short.** Ticket 13's Unknown — rose, and the word "Not read" beside it,
  *   exactly as the commit median states the same thing one gate up. This is the case the whole
- *   `short` flag exists for: without it a reindexing subgraph's `[]` renders as six columns of
- *   `0.0000`, and a wrong figure is worse than an absent one on a page that may be cited.
+ *   `short` flag exists for: without it a reindexing subgraph's `[]` renders as every column
+ *   reading `0.0000`, and a wrong figure is worse than an absent one on a page that may be cited.
  * - **Drawn, read whole, and paid nothing.** A real zero, because that is a measurement: the
  *   court has executed nothing this agent juror was drawn in.
  */

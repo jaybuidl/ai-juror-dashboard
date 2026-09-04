@@ -142,13 +142,14 @@ export type Sparsity = {
    * Agent jurors with no draw in any read dispute the court has drawn a panel for.
    *
    * A claim about the whole record, so it is `0` where there is no such row to say it about
-   * rather than six: `every` on an empty array is vacuously true, and without the guard a court
-   * whose every row was unread would report all six agent jurors as never drawn on no evidence.
+   * rather than the roster's whole length: `every` on an empty array is vacuously true, and
+   * without the guard a court whose every row was unread would report every agent juror as
+   * never drawn on no evidence.
    *
    * The undrawn rows are held out of it for the same reason and not a weaker one. A dispute the
    * court has not drawn a panel for has no draw in *any* column, so a page whose read rows were
    * all of that kind — a court in its opening hours, or a matrix scrolled to nothing else —
-   * would report all six agent jurors as blank end to end on the strength of a draw that has not
+   * would report every agent juror as blank end to end on the strength of a draw that has not
    * happened. That is exactly the misreading `undrawnDisputes` exists to close, in the one figure
    * that was not gated on it.
    */
@@ -282,11 +283,13 @@ export type AgentJurorRewards = {
  * Every figure that cannot be measured is `null` rather than `0`, because the view draws it as
  * an em dash and a zero would be a measurement nobody took (`canvas/JurorEmpty.dc.html:66-76`).
  * `draws` is the one exception and is a real zero: never having been drawn is a fact about the
- * court's random selection, which is baskerville's whole entry in this experiment.
+ * court's random selection, and it is the whole record an agent juror the court has not yet
+ * reached has in this experiment — the state every entry occupies between joining the roster
+ * and its first draw.
  *
  * An unread row contributes nothing here, because its cells are null. That understates every
  * count by an amount nobody measured, and the disclosure is `CourtTotals.unreadDisputes` — said
- * once in the banner and once beside the grid, rather than a third time in each of six columns.
+ * once in the banner and once beside the grid, rather than a third time in every column.
  */
 export type AgentJurorMarginals = {
   agentJuror: AgentJuror;
@@ -603,10 +606,11 @@ export function rowCommitLatencyOf(row: MatrixRow): RowCommitLatency {
  * The same rows, sliced down each column: one summary per agent juror, in roster order.
  *
  * In **roster order and over the roster**, not over the draws — `agentJurors` is the authority
- * on who exists here. baskerville has never been drawn and has no on-chain presence at all, so a
- * list built by walking the cells would quietly show five columns where the matrix shows six,
- * and the one agent juror whose record is "never asked" would vanish from the page that exists
- * to say so.
+ * on who exists here. An agent juror the court has not drawn yet has nothing on chain to be
+ * found by, so a list built by walking the cells would quietly show fewer columns than the
+ * matrix does, and whichever agent juror's record is "never asked" would vanish from the page
+ * that exists to say so. That window is not hypothetical: every entry sits in it between
+ * joining the roster and its first draw, and this roster gains entries.
  *
  * Nobody is ranked and nothing is sorted: the order is the matrix's own column order, and these
  * figures sit in the headers of the columns they describe.

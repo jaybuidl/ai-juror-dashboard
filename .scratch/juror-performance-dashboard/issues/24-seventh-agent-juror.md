@@ -87,49 +87,49 @@ compact grid at six columns, so the same applies to the share arithmetic. This i
 about finding the artboard that draws the element in that place: for a seventh column and a second
 line there is none.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `grokleros` is in `ROSTER` with the checksummed address, stack `Grok Bot`, appended to the
+- [x] `grokleros` is in `ROSTER` with the checksummed address, stack `Grok Bot`, appended to the
       right of the drawn columns
-- [ ] The live ENS suite passes: `grokleros.agents.kleroslabs.eth` forward-resolves to that address
+- [x] The live ENS suite passes: `grokleros.agents.kleroslabs.eth` forward-resolves to that address
       and the roster check covers seven
-- [ ] Nothing in the seam is keyed on a roster length: `yarn test` is green with seven entries
-- [ ] The phone strip wraps at six slots per line, and a browser at 390pt confirms every one of the
+- [x] Nothing in the seam is keyed on a roster length: `yarn test` is green with seven entries
+- [x] The phone strip wraps at six slots per line, and a browser at 390pt confirms every one of the
       seven is visible on every card
-- [ ] A test pins that no slot is dropped when the roster exceeds one line's worth — the failure
+- [x] A test pins that no slot is dropped when the roster exceeds one line's worth — the failure
       being fixed here is a silent clip, so it needs an assertion of its own
-- [ ] Below 352pt nothing vanishes, which is the property the existing `min()` floor exists to hold
-- [ ] The compact grid's row-header and column shares derive from the roster's length and sum to
+- [x] Below 352pt nothing vanishes, which is the property the existing `min()` floor exists to hold
+- [x] The compact grid's row-header and column shares derive from the roster's length and sum to
       100% at seven, and `COMPACT_GRID_MIN_PX` follows
-- [ ] A browser at 1440pt confirms the compact row header is rendered at the width it declares —
+- [x] A browser at 1440pt confirms the compact row header is rendered at the width it declares —
       `getComputedStyle` cannot answer this
-- [ ] The compact density is read in a browser with the court's real 46 disputes, and anything it
+- [x] The compact density is read in a browser with the court's real 46 disputes, and anything it
       shows that the dev-server check missed is recorded here
-- [ ] The four dynamic count strings read `ROSTER.length`; `index.html`'s meta description and
+- [x] The four dynamic count strings read `ROSTER.length`; `index.html`'s meta description and
       `Hero.tsx`'s deck carry no number at all
-- [ ] The four literal-6 test assertions read `ROSTER.length`, and the redundant one beneath a
+- [x] The four literal-6 test assertions read `ROSTER.length`, and the redundant one beneath a
       correct assertion is removed rather than updated
-- [ ] `performance.test.ts`'s roster-order literal is updated by hand, and still fails loudly if
+- [x] `performance.test.ts`'s roster-order literal is updated by hand, and still fails loudly if
       the order changes
-- [ ] No **live** document, comment or glossary entry claims baskerville has never been drawn, has
+- [x] No **live** document, comment or glossary entry claims baskerville has never been drawn, has
       no on-chain presence, or has a column empty end to end — "live" as scoped under Comments
-- [ ] The nine design-premise sites listed under Comments are rewritten as reasoning, not renumbered
-- [ ] `density.ts`'s comment no longer says the compact threshold is one "the court has not reached
+- [x] The nine design-premise sites listed under Comments are rewritten as reasoning, not renumbered
+- [x] `density.ts`'s comment no longer says the compact threshold is one "the court has not reached
       yet", and `docs/accessibility.md` no longer says the live court cannot reach it
-- [ ] `agent-jurors.ts`'s ordering rationale is rewritten as a rule that survives — undrawn columns
+- [x] `agent-jurors.ts`'s ordering rationale is rewritten as a rule that survives — undrawn columns
       rightmost, append right of the drawn ones, never left of one — rather than as a fact about
       baskerville
-- [ ] `CONTEXT.md`'s **Roster**, **Matrix** and **Panel** entries are correct, with **Panel**'s
+- [x] `CONTEXT.md`'s **Roster**, **Matrix** and **Panel** entries are correct, with **Panel**'s
       warning given an example that is not baskerville
-- [ ] `docs/knowledge/court-34.md` and `docs/knowledge/ens-and-roster.md` record 46 disputes over 151–196, seven agent
+- [x] `docs/knowledge/court-34.md` and `docs/knowledge/ens-and-roster.md` record 46 disputes over 151–196, seven agent
       jurors, baskerville's draws, and that the compact density is live rather than unreached
-- [ ] The spec's remaining design-time counts are either corrected or marked as the design-time
+- [x] The spec's remaining design-time counts are either corrected or marked as the design-time
       capture they are; user story 21 survives
-- [ ] `AgentJurorEmpty.tsx` is kept, with a comment saying which state it serves now that no agent
+- [x] `AgentJurorEmpty.tsx` is kept, with a comment saying which state it serves now that no agent
       juror is undrawn
-- [ ] Every doc comment arguing from six is read individually, and the six *figures* per agent
+- [x] Every doc comment arguing from six is read individually, and the six *figures* per agent
       juror are left alone
-- [ ] Closed issue files, ADR evidence and canvas sample data are **not** edited — see Comments for
+- [x] Closed issue files, ADR evidence and canvas sample data are **not** edited — see Comments for
       why, and for the two exceptions that are
 
 ## Comments
@@ -198,3 +198,98 @@ member being permanently undrawn, so a figure swap leaves them incoherent:
 The rule the sweep runs on: **a sentence describing the dashboard today gets corrected; a sentence
 recording why a decision was made gets left alone.** Where the two are the same sentence, correct
 the live copy and leave the record.
+
+**2026-09-04 — shipped, and what the browser reads found that no test could.** Every box above is
+ticked; the four acceptance criteria that say "in a browser" were read in Chrome against the live
+court at 46 disputes, not inferred.
+
+**The court, re-read on the day of the work.** 46 disputes over ids 151–196 with no gaps, 226 draw
+records, seven distinct jurors drawn — and, unlike the day this ticket was written, all 46 ruled and
+in `execution` rather than 42 ruled and 4 in appeal. grokleros forward-resolves from
+`grokleros.agents.kleroslabs.eth` to the checksummed address above, and the live ENS suite passes at
+seven. baskerville: 14 vote IDs across 8 disputes, as stated.
+
+**The phone strip wraps, and the floor was 2px wrong the whole time.** Six tracks fixed at the slot
+width, spread by `justify-content`, so slot *k* is at line ⌊k/6⌋ position *k* mod 6 — read at 390pt
+as x = 21, 80, 139, 199, 258, 317 with the seventh back at 21 on a second line, identical on all 46
+cards. It is a grid rather than a wrapping flex row because `flex-wrap: wrap` with `space-between`
+puts an *eighth* slot flush right, at position 5 on a line where it belongs at position 1 — nine
+agent jurors would have re-broken the property this ticket restores.
+
+Checking the `min()` floor at 320pt found the sixth slot overhanging its card by **0.94px** and
+being clipped by it. The second term subtracted the page's 40px of gutters and not the card's own
+1px border either side, so it had always been 2px optimistic — wrong for six slots before it was
+wrong for seven, and invisible to `getComputedStyle`, which reported the declared width being
+honoured exactly. What was short was the box it was declared against. Now `100vw - 42px`; verified
+at 430, 390, 356, 354, 352, 340, 320 and 300pt: seven slots, two lines, one width, nothing clipped,
+nothing without a box. The flat-52px threshold moves from ~352pt to ~354pt.
+
+**The compact grid.** Shares are `40%` and `(100 - 40) / ROSTER.length`, read at 1440pt as a 537.63px
+row header *asked for and given*, seven columns at 115.19px, 1344px of table accounted for exactly.
+322 body cells, none overflowing; the widest rendered run is 56px inside a 100px column at the
+narrowest the grid ever gets.
+
+**Two constants the ticket did not name had to follow, and saying so plainly.** `COMPACT_GRID_MIN_PX`
+and `breakpoints.compactGrid` are two expressions of one number: held at 1160 while the grid widened
+to 1168, there would have been a band of viewports above the breakpoint — so with the scroll box
+gone — and still narrower than the grid. Nothing scrolls and nothing warns there; the columns are
+simply crushed. Both now derive from `ROSTER.length`, and the handoff was read at 1266/1264/1260:
+the box turns into a scroll container at exactly the width the table stops fitting.
+
+`COMFORTABLE_GRID_MIN_PX` is ticket 25's by the split in this ticket, and it is derived here anyway,
+for one reason: left at 1328 it would sit *below* the 1476 its own columns declare, which is the
+silent rescale this ticket exists to remove, newly introduced by the seventh entry. Nothing else of
+the comfortable density is touched — the page container, the density switch and the unknown-juror
+caveat are still 25's. `MatrixPage`'s grid measure followed on its own, because it already read the
+constant.
+
+**Found while verifying, not fixed here.** `dispute-detail.integration` asks the DRT subgraph for
+evidence groups for all 46 disputes and gets 45 — the "reads that come back short" tripwire firing
+correctly on live data. Not caused by this ticket (no non-comment change in that path) and not
+diagnosed here. The two `court-parameters` failures are ticket 19, and `draws-subgraph` is the
+documented Arbitrum per-call rate limit.
+
+**One rendered claim was false in general and is now narrower.** `AgentJurorEmpty` said "an agent
+juror with no draws has no on-chain presence at all", which was true of baskerville — it had never
+staked either — and is not true of an agent juror that staked and has simply not been drawn. This
+dashboard reads no stakes, so it was never in a position to say it. It now says the narrower thing
+that was always the point: nothing on the page came back from a query.
+
+**What is still unverified.** Nothing here was read by a screen reader, and the compact density's
+frozen header was checked for `position: sticky` and its scroll-container handoff, not for how it
+announces. `AgentJurorEmpty` renders for nobody today, so its copy was reasoned about rather than
+seen — the next agent juror to join is the first reader of it.
+
+**2026-09-04 — what review found, and the one that mattered.** Six findings; two were real defects
+and four were stale words.
+
+**The compact grid was described twice and the two descriptions disagreed.** `breakpoints.ts`
+counted pixels — a floor of `440 + n × 104` — and `Matrix.tsx` counted percentages, `40%` and the
+remainder over the roster. Both were internally correct and they were not the same grid: at the
+floor the row header took 467px of the 440 the floor was built from, leaving each column 100px of
+the 104. The first version of the share test asserted the sum came to 100% and the header asked for
+40%, and it was green over exactly that. **A sum is not a model.** The shares are now the pixel
+model normalised — the same numerators over the same total — so they sum to 1 by construction, the
+floor hands out precisely the widths it is the sum of, and there is one description of this grid
+instead of two. Read at 1264pt: header asked 440.031px, given 440.03; columns 103.98; no cell
+overflowing. The test now applies the rendered shares to the declared floor and requires the pixel
+model back, and it was confirmed red against the `40%` version by 27.2px.
+
+The alternative was to keep `40%` and raise the floor to `max(440/0.4, 104n/0.6)` — 1213px, and a
+breakpoint at 1309. It was rejected: it costs the frozen header on every 1280-wide screen, and the
+browser read says the 104px column is a rounded design allowance rather than a measured minimum —
+322 cells at 100px, none overflowing, widest run 56px.
+
+**A sentence on a page this ticket never opened.** `DisputePanel` rendered "The panel is at most
+six" under the panel columns on every `/disputes/:id`. The layout was never sized against it
+(`repeat(auto-fit, minmax(…))`), so only the sentence was wrong — which is this repo's own tripwire
+firing in the widening direction, and the reason `CONTEXT.md`'s Panel entry says what it says. The
+claim now rests on what is actually true: a panel is a handful of vote IDs and has never exceeded
+the roster.
+
+Four smaller ones, all fixed: `package.json`'s description still said six where `index.html`'s had
+been fixed in the same pass; `View.tsx` and `Matrix.tsx` carried comments explaining derived widths
+as "six 148px columns" and "the five beside it", which re-seed the literal this ticket removed;
+three test titles asserted six over bodies that correctly read `ROSTER.length`; and one new
+assertion — `not.toContain("/ 7)")` — would have inverted and failed on correct code the day an
+agent juror left, which is the one moment a spurious second failure is least welcome.

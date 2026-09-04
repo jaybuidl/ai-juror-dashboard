@@ -31,10 +31,13 @@ export type Density = "comfortable" | "compact";
  * "past roughly forty" — so the value is open and only the behaviour either side of it is
  * pinned. A bare `40` in the render path would read as a claim about the court instead.
  *
- * Court 34 held 31 disputes on the day this was written, so this is a threshold the court has
- * not reached yet. It is written against the court arriving at it rather than against the court
- * as it stands, which is the whole subject of this ticket: no upper bound on the dispute range
- * is written anywhere, and the matrix compacts itself when the range grows into it.
+ * **The court has since crossed it.** This was written when court 34 held 31 disputes, against
+ * the court arriving at forty rather than against the court as it stood — no upper bound on the
+ * dispute range is written anywhere, and the matrix compacts itself as the range grows into it.
+ * It grew: the court held 46 disputes on 2026-09-04, so the compact density is what a reader
+ * gets, and every sentence in this repo calling it unreached was true only until then
+ * (ticket 24). What is still open is the value, for the reason above; what is no longer open is
+ * whether anyone sees the far side of it.
  */
 export const COMPACT_FROM_ROWS = 40;
 

@@ -12,16 +12,18 @@ import type { MatrixRow } from "./performance";
  * grid or a card.
  *
  * **The size itself is gone from both layouts, because both of them draw it already.** A row is
- * six cells and a card is six slots, each either a draw or a blank, so `Panel 4` was a count of
+ * one cell per agent juror and a card one slot per agent juror, each either a draw or a blank,
+ * so `Panel 4` was a count of
  * something the reader is looking at — and on dispute 155 it was said twice over, as `Panel 1`
  * beside the `‡ Lone panel` flag that means the same thing more explicitly. Checked against the
- * live court before it went: all 31 rows had a panel size equal to their own drawn-cell count.
+ * live court before it went: all 31 rows it then held had a panel size equal to their own
+ * drawn-cell count.
  *
  * That equality is a property of *this* court rather than of the model, which is why the figure
  * survives where it cannot be counted. `MatrixRow.panelSize` is everyone the court drew, and a
  * juror outside the roster gets no column and still counts — so if court 34 ever seats one, a
  * row's cells will undercount its panel. The agent juror view keeps the number in full for the
- * same reason: that page has no six cells to count, and the figure there is the denominator a
+ * same reason: that page has no row of cells to count, and the figure there is the denominator a
  * coherence mark is read against.
  *
  * **What is left is the two absences, and neither is a count.** A dispute arrives in its

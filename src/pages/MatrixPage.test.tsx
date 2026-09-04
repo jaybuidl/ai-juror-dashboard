@@ -5,6 +5,7 @@ import { formatLatencySeconds } from "../performance/latency";
 import { ORDINARY_COURT_PROSE } from "../performance/strip";
 import { formatAgo, SOURCES } from "../read-failure";
 import { ROSTER } from "../roster/agent-jurors";
+import { COMFORTABLE_GRID_MIN_PX } from "../styles/breakpoints";
 import {
   arbitrumFailed,
   arbitrumPending,
@@ -61,7 +62,10 @@ describe("the matrix view", () => {
     renderAt("/");
 
     const frame = screen.getByRole("main").parentElement as HTMLElement;
-    expect(getComputedStyle(frame).maxWidth).toContain("1328px");
+    // Read off the constant rather than written down: the grid measure *is* the comfortable
+    // grid's own width, so the page follows the roster the moment the grid does. It was a
+    // literal 1328 here and a literal six behind that constant until ticket 24.
+    expect(getComputedStyle(frame).maxWidth).toContain(`${COMFORTABLE_GRID_MIN_PX}px`);
   });
 
   it("says what it measures and, in the same breath, that it does nothing else", () => {
@@ -129,7 +133,11 @@ describe("the matrix view", () => {
       // stays is the noun for the position itself: a cell here, a slot there, one figure behind
       // both.
       expect(screen.getByText(/sparsity is the normal state of this record/i)).toBeInTheDocument();
-      expect(screen.getByText(/one agent juror is blank end to end/i)).toBeInTheDocument();
+      // Count-agnostic: how many columns are blank end to end is a fact about what was read,
+      // and this fixture's answer changed the day the court drew baskerville and a seventh
+      // agent juror joined. What the note must keep saying is that the blankness is the
+      // record's, not the read's.
+      expect(screen.getByText(/agent jurors? (is|are) blank end to end/i)).toBeInTheDocument();
       expect(screen.getByText(/cells here are blank/i)).toBeInTheDocument();
     });
 
@@ -174,7 +182,10 @@ describe("the matrix view", () => {
 
       const note = screen.getByText(/sparsity is the normal state of this record/i);
 
-      expect(note).toHaveTextContent(/6 of those blanks are a different absence/);
+      // One panel-less dispute is one blank per agent juror, so the count follows the roster.
+      expect(note).toHaveTextContent(
+        new RegExp(`${ROSTER.length} of those blanks are a different absence`),
+      );
       expect(note).toHaveTextContent(/dispute 167 has no panel at all yet/);
       expect(note).toHaveTextContent(/the draw has not happened/);
     });

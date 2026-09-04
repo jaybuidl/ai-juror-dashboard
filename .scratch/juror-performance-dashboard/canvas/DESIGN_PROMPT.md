@@ -95,8 +95,9 @@ Rows carry a real dispute title, e.g. *"Alleged Plagiarism in an Original Commis
 A **summary column** in the margin gives each agent: median latency, coherence as a count (`12/12`),
 draw count, and cumulative ETH + PNK.
 
-Rows are disputes because **disputes grow without bound while agents stay at six**. Design for 13
-rows today and 100+ later.
+Rows are disputes because **disputes grow without bound while agents grow by ones**. Six at the time
+of writing, seven from 2026-09-04, and a dozen or so foreseen — so design for 13 rows today and 100+
+later, and for a column count that moves rather than one that is fixed at six.
 
 ### `/dispute/:id` — One dispute
 
@@ -113,9 +114,13 @@ disputes it was drawn in.
 
 ## 6. The real data — design against this
 
-**The matrix is mostly empty.** 44 draws in 78 possible cells. **34 cells are blank.** One agent
-(`baskerville`) has never been drawn, so its **entire column is empty**. This sparsity is permanent
-and normal — jurors are randomly drawn. A design that assumes a full grid will look broken.
+**The matrix is mostly empty.** 44 draws in 78 possible cells. **34 cells are blank.** When this was
+captured one agent (`baskerville`) had not been drawn at all, so its **entire column is empty** in
+the grid below; the court has drawn it many times since, and the roster has grown past these six.
+**The sparsity is permanent and normal — a particular empty column is not.** Jurors are drawn at
+random, and an agent added this week has a near-empty column until the court gets to it, so there
+is always a sparsest column and it is usually the newest. A design that assumes a full grid will
+look broken.
 
 Actual current occupancy (`█` drawn, `·` not drawn):
 

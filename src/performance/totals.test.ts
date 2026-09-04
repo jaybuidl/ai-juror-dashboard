@@ -21,9 +21,11 @@ import type { RawCourtParameters } from "./windows";
 
 /**
  * The same captured court every other test in this folder reads, and the same reason: the
- * figures asserted here — 44 draws from 61 votes, five of six agent jurors drawn, reveal
- * latency from 7s to 552s with a median of 85s — were established in `spec.md` § Further
- * Notes before this code existed. A drift in the aggregate stops reproducing them.
+ * figures asserted here — 44 draws from 61 votes, five agent jurors drawn out of the roster the
+ * capture was taken against, reveal latency from 7s to 552s with a median of 85s — were
+ * established in `spec.md` § Further Notes before this code existed. A drift in the aggregate
+ * stops reproducing them. They are facts about **this fixture**, not about the court today: the
+ * court has grown and the roster has too, and neither is what these assertions measure.
  *
  * The fixture holds disputes 151–166, of which 164–166 sat in `appeal` with every draw
  * revealed, so its counts are larger than the thirteen-dispute range those figures name.
@@ -60,7 +62,11 @@ describe("courtTotalsOf", () => {
   it("counts the agent jurors ever drawn against the whole roster", () => {
     const totals = courtTotalsOf(built.rows, ROSTER);
 
-    expect(totals.agentJurors).toBe(6);
+    // The first is the roster's own size and is read off it. The second is a fact about this
+    // fixture and not about the court: the capture predates both baskerville's first draw and
+    // grokleros joining, so two of the roster's columns are empty in it. That is the point of
+    // the test — the denominator follows the roster, the numerator follows the record.
+    expect(totals.agentJurors).toBe(ROSTER.length);
     expect(totals.agentJurorsDrawn).toBe(5);
   });
 
@@ -213,12 +219,15 @@ describe("sparsity", () => {
   });
 
   it("names the agent jurors no read dispute drew", () => {
-    // baskerville has never been drawn, which is the record this dashboard exists partly to
-    // state — one blank column end to end, against five that carry draws.
-    expect(courtTotalsOf(built.rows, ROSTER).sparsity.emptyColumns).toBe(1);
+    // Two of them in this fixture, and the number is a fact about the capture rather than about
+    // the court: it was taken before the court first drew baskerville and before grokleros
+    // joined the roster, so both columns are blank end to end in it against five that carry
+    // draws. Stating that is the record this dashboard exists partly to keep — an empty column
+    // is something the court did, not a read that came up short.
+    expect(courtTotalsOf(built.rows, ROSTER).sparsity.emptyColumns).toBe(2);
   });
 
-  it("counts an unread row out of every figure rather than as six blanks", () => {
+  it("counts an unread row out of every figure rather than as a blank per agent juror", () => {
     const unread: MatrixRow = {
       ...(built.rows[0] as MatrixRow),
       read: false,
@@ -226,7 +235,7 @@ describe("sparsity", () => {
     };
     const { sparsity } = courtTotalsOf([...built.rows.slice(1), unread], ROSTER);
 
-    // One fewer dispute in every figure, not six more blanks: a row nobody asked about is a
+    // One fewer dispute in every figure, not a blank per column: a row nobody asked about is a
     // gap in this dashboard, and the note's whole claim is that a blank is a fact about the
     // court.
     expect(sparsity.disputes).toBe(built.rows.length - 1);
@@ -237,7 +246,8 @@ describe("sparsity", () => {
     const rows = built.rows.map((row) => ({ ...row, read: false, cells: ROSTER.map(() => null) }));
     const { sparsity } = courtTotalsOf(rows, ROSTER);
 
-    // Six would be the vacuous answer — `every` on no rows is true for every column — and it
+    // The roster's length would be the vacuous answer — `every` on no rows is true for every
+    // column — and it
     // would report the whole roster as never drawn on no evidence whatsoever.
     expect(sparsity.emptyColumns).toBe(0);
     expect(sparsity.positions).toBe(0);
@@ -285,15 +295,15 @@ describe("sparsity", () => {
 
     expect(sparsity.emptyColumns).toBe(0);
     // The blanks themselves are still counted, and still explained: they are a fact about a
-    // court that has not drawn yet rather than about six agent jurors.
+    // court that has not drawn yet rather than about the agent jurors.
     expect(sparsity.blank).toBe(waiting.length * ROSTER.length);
     expect(sparsity.undrawnDisputes).toHaveLength(waiting.length);
   });
 
-  it("still names the agent juror no drawn dispute picked, beside disputes with no panel", () => {
+  it("still names the agent jurors no drawn dispute picked, beside disputes with no panel", () => {
     // The other direction: an undrawn row among drawn ones must not suppress the claim, or a
     // court in its ordinary state would stop saying the one thing this dashboard was built to
-    // record. baskerville is blank across every dispute that has a panel.
+    // record. Two of the fixture's columns are blank across every dispute that has a panel.
     const waiting = {
       ...(built.rows[0] as MatrixRow),
       dispute: { ...(built.rows[0] as MatrixRow).dispute, id: 167 },
@@ -301,7 +311,7 @@ describe("sparsity", () => {
       cells: ROSTER.map(() => null),
     };
 
-    expect(courtTotalsOf([waiting, ...built.rows], ROSTER).sparsity.emptyColumns).toBe(1);
+    expect(courtTotalsOf([waiting, ...built.rows], ROSTER).sparsity.emptyColumns).toBe(2);
   });
 
   it("never counts an unread row as a dispute with no panel", () => {
@@ -466,12 +476,14 @@ describe("the court's own live and finalised counts", () => {
 });
 
 describe("agentJurorMarginalsOf", () => {
-  it("gives one entry per agent juror in roster order, including the one never drawn", () => {
+  it("gives one entry per agent juror in roster order, including any never drawn", () => {
     const marginals = agentJurorMarginalsOf(built.rows, ROSTER);
 
     expect(marginals.map((m) => m.agentJuror.nickname)).toEqual(ROSTER.map((a) => a.nickname));
-    // baskerville has never been drawn and is in the roster only because this repository says
-    // so. Marginals built from the draws rather than from the roster would show five columns.
+    // This fixture predates the court's first draw of baskerville, so it is in the roster there
+    // only because this repository says so. Marginals built from the draws rather than from the
+    // roster would show five columns — which is the failure this asserts against, and the same
+    // one that dropped grokleros from every figure until ticket 24.
     expect(marginals.find((m) => m.agentJuror.nickname === "baskerville")?.draws).toBe(0);
   });
 
@@ -501,7 +513,7 @@ describe("agentJurorMarginalsOf", () => {
     expect(never?.revealLatency).toBeNull();
     expect(never?.commitLatency).toBeNull();
     expect(never?.coherence).toMatchObject({ coherent: 0, resolved: 0 });
-    // And the two ticket 10 added, on the same terms: an agent juror the court has never drawn
+    // And the two ticket 10 added, on the same terms: an agent juror the court has not drawn
     // has not earned zero, it has not been in a position to earn. `{ethWei: 0n}` here would be
     // a figure, which is exactly what the view would then print.
     expect(never?.rewards).toBeNull();

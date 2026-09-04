@@ -3,8 +3,8 @@ import fixture from "./court-34.fixture.json" with { type: "json" };
 import { type RawDispute, rulingOf, toDisputes } from "./disputes";
 
 /**
- * The real court, read from Goldsky on 2026-08-25: disputes 151–166, of which 151–163 are
- * in `execution` and 164–166 were still in `appeal`. Captured rather than invented, so the
+ * The court as captured, read from Goldsky on 2026-08-25: disputes 151–166, of which 151–163
+ * were in `execution` and 164–166 were still in `appeal`. Captured rather than invented, so the
  * cases below are the ones the dashboard actually meets — including dispute 154, whose
  * ruling is choice 0.
  *

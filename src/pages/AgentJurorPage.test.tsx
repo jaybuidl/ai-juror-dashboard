@@ -504,7 +504,9 @@ describe("an address that names nothing", () => {
     // Scoped to the paragraph rather than taken by index: the breadcrumb carries a link of the
     // same name, and only this one sits inside a sentence. Reaching it through the prose is also
     // what makes the assertion mean "the link in the text block".
-    const prose = screen.getByText(/does not name one of the six agent jurors/i);
+    // Count-agnostic: the sentence reads the roster's own length, so a literal here would put
+    // the roster's size back into a place that exists to have it taken out.
+    const prose = screen.getByText(/does not name one of the \d+ agent jurors/i);
     const inProse = within(prose).getByRole("link", { name: "Agent jurors" });
     // `text-underline-offset`, because the underline itself is not observable here: jsdom's UA
     // sheet underlines anchors and the vendored base.css that unsets it is not in this cascade,

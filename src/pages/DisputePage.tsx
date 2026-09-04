@@ -626,7 +626,7 @@ export function DisputeView({
                     </Fact>
                   )}
                   {/* No panel size here either. This page draws every panel member side by
-                      side and says so — "the panel is at most six, so all of it fits at once" —
+                      side and says so — the whole panel fits at once, so there is nothing to page —
                       so the chip counted what the reader is already looking at, the same reason
                       it left the matrix row and the phone's card. The two absences it used to
                       guard are unaffected: ticket 09 words both in prose on this view rather

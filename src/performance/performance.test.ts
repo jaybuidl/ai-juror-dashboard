@@ -17,9 +17,10 @@ import {
 import type { RawCourtParameters } from "./windows";
 
 /**
- * The real court, read from Goldsky on 2026-08-25 and captured beside the dispute payload
- * ticket 03 took the same day: 76 vote IDs across disputes 151–166, held by five of the six
- * agent jurors.
+ * The court as captured, read from Goldsky on 2026-08-25 beside the dispute payload
+ * ticket 03 took the same day: 76 vote IDs across disputes 151–166, held by five of the agent
+ * jurors the roster then named. Everything counted below is a fact about this payload rather
+ * than about the court, which has since grown past it in both disputes and agent jurors.
  *
  * Everything asserted below about the finalised range — 61 votes collapsing to 44 draws, a
  * reveal latency of 7s to 552s with a median of 85s, dispute 155's panel of one — is the
@@ -140,11 +141,18 @@ describe("buildCourtPerformance", () => {
   it("puts one column on the matrix per agent juror, in roster order", () => {
     const performance = built();
 
-    // Two deliberate departures from nickname order, neither an alphabetisation that slipped and
-    // neither a ranking. `baskerville` is last because its column is empty end to end and belongs
-    // at the edge rather than through the middle; `aletheia` sits before it because its column is
-    // the one dense with missed votes, and a full-height rose column near the left outshouts a
-    // grid whose subject is latency. See `ROSTER`, which is also the index this join runs on.
+    // Written out by hand rather than derived from `ROSTER`, and it has to stay that way: this
+    // array *is* the join, so a test that reads the order off the thing it is checking would
+    // agree with any reordering, including one that silently reattributes every figure on the
+    // page to the wrong agent juror. Adding an agent juror is meant to fail here once, loudly,
+    // and be updated deliberately.
+    //
+    // Two departures from nickname order, neither an alphabetisation that slipped and neither a
+    // ranking. `aletheia` sits near the end because its column is the one dense with missed
+    // votes, and a full-height rose column near the left outshouts a grid whose subject is
+    // latency. `baskerville` follows it because that is where it was appended while the court
+    // had not drawn it — the court has since drawn it 14 times, and a column does not move for
+    // that. `grokleros` is appended right of both under the same rule. See `ROSTER`.
     expect(performance.agentJurors.map((agentJuror) => agentJuror.nickname)).toEqual([
       "007",
       "blaise",
@@ -152,9 +160,10 @@ describe("buildCourtPerformance", () => {
       "daemonhill",
       "aletheia",
       "baskerville",
+      "grokleros",
     ]);
     for (const row of performance.rows) {
-      expect(row.cells).toHaveLength(6);
+      expect(row.cells).toHaveLength(ROSTER.length);
     }
   });
 
@@ -180,7 +189,10 @@ describe("buildCourtPerformance", () => {
     expect(rowFor(151).panelSize).toBe(2);
   });
 
-  it("leaves the column of an agent juror that has never been drawn empty end to end", () => {
+  it("leaves the column of an agent juror the record does not draw empty end to end", () => {
+    // baskerville in this fixture, which was captured before the court first drew it. The
+    // claim under test is about the shape — an undrawn column is null end to end rather than
+    // absent — and not about which agent juror happens to be in that state.
     const performance = built();
     const column = performance.agentJurors.findIndex(
       (agentJuror) => agentJuror.nickname === "baskerville",
@@ -579,8 +591,8 @@ describe("buildCourtPerformance", () => {
         // page would announce a shortfall on every cold load and then retract it.
         short: false,
       });
-      // And the empty one *is* short: this court has ruled thirteen disputes with draws in
-      // them, so a read that found no payout for any of them cannot be a whole read. It is the
+      // And the empty one *is* short: this fixture's court has ruled thirteen disputes with
+      // draws in them, so a read that found no payout for any of them cannot be a whole read. It is the
       // shape a reindexing Goldsky produces, and nothing throws anywhere along the way.
       expect(empty.rewards).toEqual({
         read: true,

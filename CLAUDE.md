@@ -60,8 +60,8 @@ placement, not brevity. One test admits a line here:
 - Use `CONTEXT.md` vocabulary. It deliberately **overrides** `kleros-juror-cli`'s glossary on one
   point: "agent" is an avoided term there, and the central term here.
 - **CI (`.github/workflows/ci.yml`) is toolchain upkeep, not a ticket.** Do not propose it.
-- **"Six agent jurors" is a claim about `src/roster/agent-jurors.ts`, not about the court.** Read
-  every "six" in this repo as true of the roster file when it was written; the court has more.
+- **The roster grows, so its length is `ROSTER.length` and never a literal.** A hard-coded six drops
+  a column or a slot in silence. Not every six is the roster: the six *figures* stay six.
 
 ## Tripwires
 

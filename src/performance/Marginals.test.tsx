@@ -360,7 +360,7 @@ describe("Marginals", () => {
       expect(screen.queryByText(/which the court has since changed/i)).not.toBeInTheDocument();
     });
 
-    it("says which agent juror each marker belongs to, since six columns carry the same words", () => {
+    it("says which agent juror each marker belongs to, since every column carries the same words", () => {
       const nickname = ROSTER[0]?.nickname ?? "";
       renderMarginals({ changedWindows: [EARLIER] });
 

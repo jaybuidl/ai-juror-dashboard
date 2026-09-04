@@ -25,7 +25,7 @@ import type { PeriodWindows } from "./windows";
  * accessible name, the footnote below the grid, and `/method`.
  *
  * Agent jurors are the columns of this matrix, so a column's summary belongs to the column. There
- * is no seventh column and no margin of its own, and nothing here is sorted or ranked: these are
+ * is no extra column and no margin of its own, and nothing here is sorted or ranked: these are
  * marginals on a matrix, and the order is the roster's.
  *
  * Every figure comes from `AgentJurorMarginals`, which the seam computed over the same rows the

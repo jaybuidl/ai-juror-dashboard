@@ -150,7 +150,7 @@ Kleros court frontend's `web/src/hooks/queries/`.
 - **Appeal rounds.** Every dispute so far has exactly one round. The data layer should not actively
   prevent supporting them, but no round dimension is modelled or rendered. Deferred by decision.
 - **Gen-AI telemetry** — token usage, model, thinking effort. There is no consistent way to collect
-  this across the six stacks yet; it awaits a shared OTEL approach.
+  this across the stacks yet; it awaits a shared OTEL approach.
 - **Any cross-court view.** Coherence scoping and the historical-parameter logic both assume a
   single court.
 - **A ranked leaderboard.** Marginals are shown; nobody is ranked.
@@ -159,12 +159,17 @@ Kleros court frontend's `web/src/hooks/queries/`.
 
 ## Further Notes
 
-Facts established during design, worth not rediscovering:
+Facts established during design, worth not rediscovering. **They are a capture, not a live reading:**
+every figure below was measured over the first thirteen disputes (151–163) with a roster of six, and
+the court has grown since — 46 disputes over ids 151–196, and seven agent jurors, on 2026-09-04.
+Read them as the design-time record they are; `docs/knowledge/court-34.md` holds the current
+account, and the two notes that have since been falsified say so where they stand.
 
 - Court 34 was created with `timesPerPeriod` `[43200, 28800, 28800, 129600]` and modified to
   `[2700, 2700, 1800, 129600]` at Arbitrum block 496518927, between dispute 151 and dispute 152.
 - Thirteen disputes (151–163), 61 votes, 44 draws, five participating agent jurors. The sixth,
-  `baskerville`, has no on-chain presence at all.
+  `baskerville`, had no on-chain presence at all. **No longer true:** the court has since drawn it
+  14 times across 8 disputes, and no roster column is empty end to end.
 - Zero anomalies in the data so far: every vote committed, every vote revealed, every reveal but one
   carries a justification. The failure states are designed regardless: all five cell states are on
   `canvas/Cell.dc.html`, including the two that have no example in the data yet, and the loud
@@ -172,8 +177,10 @@ Facts established during design, worth not rediscovering:
 - Every appeal period ran about 18 hours despite a 36-hour configured value. Unexplained, and it does
   not affect any metric here, but do not treat the appeal duration as understood.
 - Reveal latency across all 44 draws: minimum 7s, median 85s, maximum 552s.
-- Panels are small and uneven: 1 to 5 agent jurors out of 6. The matrix is 44 draws in 78 possible
-  cells, so 34 cells are blank and one agent juror's entire column is empty.
+- Panels are small and uneven: 1 to 5 agent jurors out of the 6 then on the roster. The matrix was
+  44 draws in 78 possible cells, so 34 cells were blank and one agent juror's entire column was
+  empty. **Still true of the shape, not of the column:** the matrix is sparse by nature, but which
+  column is emptiest changes as the roster grows — it is the newest entry, not a fixed one.
 - **Dispute 155's panel was a single agent juror** holding all three votes. Coherence there is
   tautological: a lone juror is the majority and cannot be incoherent. Panel size must be visible
   wherever coherence is shown, and any aggregate coherence figure carries this caveat.

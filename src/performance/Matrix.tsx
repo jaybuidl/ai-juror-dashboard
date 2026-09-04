@@ -8,7 +8,9 @@ import type { RosterView } from "../roster/useRoster";
 import {
   belowCompactGrid,
   COMFORTABLE_GRID_MIN_PX,
+  COMPACT_COLUMN_SHARE,
   COMPACT_GRID_MIN_PX,
+  COMPACT_ROW_HEADER_SHARE,
   useFitsCompactGrid,
 } from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
@@ -62,9 +64,10 @@ const Heading = styled.h2`
 /**
  * How the grid meets a page narrower than it is, which is every page at the comfortable density.
  *
- * The matrix is 1328px at the canvas's measurements — a 440px row header and six 148px columns —
- * and this page's container is 1200. So it scrolls sideways in its own box rather than pushing
- * the page, which is what ticket 16 spared the phone and what this keeps for the desktop.
+ * The comfortable matrix is a 440px row header and a 148px column per agent juror at the canvas's
+ * measurements — more than this page's 1200px container at any roster size the canvas drew. So it
+ * scrolls sideways in its own box rather than pushing the page, which is what ticket 16 spared the
+ * phone and what this keeps for the desktop.
  *
  * **Absent at the compact density, and it has to be.** `overflow-x: auto` makes this element a
  * scroll container in *both* axes: `overflow-y`'s computed value beside it is `auto` rather than
@@ -95,19 +98,34 @@ const TableScroll = styled.div<{ $compact: boolean }>`
 /**
  * Fixed and full-width at the compact density, fixed-pixel at the comfortable one.
  *
- * The artboard draws both densities on a 1440px page where 1328px of grid fits with room to
- * spare. This page's container is 1200, so at the compact density the columns take a share of
- * what there is rather than a measurement that does not fit — which is what lets the header
- * freeze against the page rather than inside a sideways-scrolling box. Nothing about the record
- * changes with it: six columns, in roster order, every one of them on screen.
+ * The artboard draws both densities on a 1440px page where the grid fits with room to spare.
+ * This page's container is 1200, so at the compact density the columns take a share of what
+ * there is rather than a measurement that does not fit — which is what lets the header freeze
+ * against the page rather than inside a sideways-scrolling box. Nothing about the record changes
+ * with it: one column per agent juror, in roster order, every one of them on screen.
  *
- * 40% and six of 10% is 100%, and at this page's container that is a 441px row header against the
- * artboard's 440 and 110px columns against its 148. The row header keeps the artboard's width
- * because that is where the shortfall bites: a one-line row carries an id, a title, a flag, a
- * panel and a figure, and it was measured in a browser at 34% with the title down to nothing.
+ * **The shares have to sum to 100%, and only arithmetic can promise that.** They were `40%` and
+ * six literal `10%`s, which summed to 100 at exactly six columns and to 110 at seven — at which
+ * point the browser rescales every column silently and the row header declared at 40% is handed
+ * about 36. Nothing throws, and this repo's own trap applies: `getComputedStyle` reports the 40%
+ * that was asked for and `getBoundingClientRect` the width that was given.
+ *
+ * The fix that did not last five minutes was to keep the 40% and divide the remainder by the
+ * roster. It sums to 100 at any size, so the test that checks the sum goes green — and at the
+ * floor `breakpoints.ts` declares, the row header would take 467px of the 440 it needs while
+ * each column got 100px of the 104 the floor was built to buy. Correct arithmetic over the wrong
+ * model: the `min-width` counts pixels and the columns counted percentages, and nothing made the
+ * two agree.
+ *
+ * So both shares come from the pixel model, normalised — see `COMPACT_ROW_HEADER_SHARE`. They sum
+ * to exactly 1 because they are the same numerator over the same total, the floor now hands out
+ * precisely the widths it was built from, and there is one description of this grid rather than
+ * two. The row header is still the wide one and still does not shrink faster than the rest, which
+ * is the point of it: a one-line row carries an id, a title, a flag, a panel and a figure, and it
+ * was measured in a browser at 34% of the table with the title down to nothing.
  */
-const ROW_HEADER_SHARE = "40%";
-const COLUMN_SHARE = "10%";
+const ROW_HEADER_SHARE = `${COMPACT_ROW_HEADER_SHARE * 100}%`;
+const COLUMN_SHARE = `${COMPACT_COLUMN_SHARE * 100}%`;
 
 const Table = styled.table<{ $compact: boolean }>`
   border-collapse: collapse;
@@ -122,9 +140,10 @@ const Table = styled.table<{ $compact: boolean }>`
      COMFORTABLE_GRID_MIN_PX for the arithmetic and for how long it went unheld. */
   table-layout: fixed;
   width: 100%;
-  /* The floor each density needs — six columns beside the row header. Under it the box above
-     scrolls sideways rather than crushing them, which is the one thing this grid may do with a
-     page too narrow for it: no dispute leaves, no column moves, nothing is windowed away. */
+  /* The floor each density needs — one column per agent juror beside the row header, which is
+     why both constants are derived from the roster rather than written down. Under it the box
+     above scrolls sideways rather than crushing them, which is the one thing this grid may do
+     with a page too narrow for it: no dispute leaves, no column moves, nothing is windowed away. */
   min-width: ${({ $compact }) => ($compact ? COMPACT_GRID_MIN_PX : COMFORTABLE_GRID_MIN_PX)}px;
 `;
 
@@ -171,9 +190,9 @@ const CaptionBody = styled.div`
 `;
 
 /* Top-aligned since the marginals landed underneath the identity, and it has to be: a column
-   carrying a marker's reason line is taller than the five beside it, and bottom alignment would
-   push that column's nickname and avatar down while the other five stayed put — six identity
-   blocks at five different heights, from one footnote. */
+   carrying a marker's reason line is taller than the ones beside it, and bottom alignment would
+   push that column's nickname and avatar down while the rest stayed put — a row of identity
+   blocks at two different heights, from one footnote. */
 const AgentColumn = styled.th<{ $compact: boolean }>`
   width: ${({ $compact }) => ($compact ? COLUMN_SHARE : "148px")};
   box-sizing: border-box;
@@ -958,13 +977,16 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                     // carries for the same reason. The case is not hypothetical: the draw read
                     // and the dispute read are separate queries polled every five seconds, so a
                     // newly-arrived dispute routinely sits unread beside a fresh dispute list —
-                    // and this dashboard exists partly to record the day baskerville is drawn
-                    // for the first time, which would land in exactly such a row.
+                    // and this dashboard exists partly to record the day an agent juror is drawn
+                    // for the first time, which would land in exactly such a row. That was
+                    // written about baskerville as a future event; the court drew it 14 times
+                    // and the guard is what kept the column honest on the way. The next agent
+                    // juror to join the roster arrives in the same state.
                     //
                     // `panelled` is the second half of the same guard, and ticket 17 is what made
                     // it reachable: a dispute the court has not drawn a panel for has no draw in
-                    // any column, so a page whose read rows were all of that kind would call all
-                    // six agent jurors never drawn over a draw that has not happened.
+                    // any column, so a page whose read rows were all of that kind would call
+                    // every agent juror never drawn over a draw that has not happened.
                     const neverDrawn = !drawn && unreadRows === 0 && panelled > 0;
 
                     return (

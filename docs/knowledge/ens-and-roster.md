@@ -1,6 +1,6 @@
 # ENS identity and the roster
 
-How the six agent jurors are named and resolved, and why the roster nickname — not the resolved
+How the agent jurors are named and resolved, and why the roster nickname — not the resolved
 one — is the key.
 
 Each entry below cost real effort to discover and is easy to get wrong again.
@@ -8,9 +8,10 @@ They are facts about this codebase and the live court, verified against chain, s
 or a browser at the time noted. `CLAUDE.md` § Tripwires carries a one-line form of each;
 this file is the full account.
 
-- **ENS reverse records are mostly unset.** Only three of the six addresses have one, because
-  setting it requires each operator to act from the agent's own wallet. Resolve *forward* from the
-  roster's subname; `getEnsName(address)` leaves half the roster anonymous.
+- **ENS reverse records are mostly unset.** Three of the roster's addresses had one on 2026-08-25,
+  because setting it requires each operator to act from the agent's own wallet — and an entry added
+  since arrives without one. Resolve *forward* from the roster's subname; `getEnsName(address)`
+  leaves most of the roster anonymous.
 - **`getEnsAvatar` is a `connect-src` fetch, not just an image load.** viem sends a `HEAD` to the
   avatar URL before it ever reaches an `<img>`. Blocked, it fails *silently* — viem catches it and
   falls back to `new Image()`, so avatars still appear and the only symptom is a console violation
@@ -19,32 +20,46 @@ this file is the full account.
   "Blaise", so what renders is not what the roster holds. Route, key and join on the roster
   nickname, never the resolved one.
 
-## The roster is growing past its original six
+## The roster grows, and the court grows first
 
-*Migrated from session memory, 2026-09-03.*
+*Migrated from session memory, 2026-09-03; the seventh landed with ticket 24 on 2026-09-04.*
 
-Most of this repo's prose says "six agent jurors". That is true of `src/roster/agent-jurors.ts` and
-of every figure the dashboard computes, and **it is no longer true of the court**: as of 2026-09-03
-`grokleros` is live and already drawing, which is open ticket 24. Two more were expected within
-about a week — roughly 2026-09-10 — with addresses not yet known, because each operator has to
-deploy and stake before there is anything to add; up to about a dozen more are expected after that.
-Ticket 25, the one that makes room for nine columns, has to land before the two arrive, and their
-arrival is not under anyone's control here.
+The roster held six for the whole of tickets 01 to 23, which is when most of this repo's prose was
+written. It holds **seven as of 2026-09-04**: `grokleros`,
+`0x93Aa2f8e5cE8288d57F8785F5a40A60A42fD925e`, stack `Grok Bot`,
+`grokleros.agents.kleroslabs.eth`. It had been running in court 34 for days before anything here
+knew it existed — 4 vote IDs across 3 disputes when ticket 24 read the chain — and the page reported
+six of seven with no error and no caveat, because `performance.ts` maps a row's cells over the
+roster and a juror the roster does not hold is dropped rather than counted. **A new agent juror
+appears in the court first and in this file afterwards**, so the gap is the normal state and the
+dashboard has to be honest inside it. Two more were expected within about a week of 2026-09-03,
+with addresses not yet known, because each operator has to deploy and stake before there is anything
+to add; up to about a dozen more after that. Ticket 25, the one that makes room for nine columns,
+has to land before the two arrive, and their arrival is not under anyone's control here.
 
-**The rule:** an agent juror enters `src/roster/agent-jurors.ts` **only** when its address is known
-and live. One that is announced but not yet running gets no placeholder entry and no reserved
-column — so `AgentJuror.address` stays required and no new empty state is needed.
+**The rule for joining:** an agent juror enters `src/roster/agent-jurors.ts` **only** when its
+address is known and live. One that is announced but not yet running gets no placeholder entry and
+no reserved column — so `AgentJuror.address` stays required and no new empty state is needed.
 
-Treat every "six" in this repo as a claim about the roster file at the time it was written, not
-about the court.
+**The rule for ordering:** the columns the court has drawn come first and a new entry is appended to
+the **right** of them, never inserted to the left of one, because the newest entry is always the
+emptiest column and an empty column mid-grid reads as missing data rather than as the sparsity
+random draws produce. That rule used to be written as a fact about `baskerville`, whose column was
+empty end to end; the court has since drawn it 14 times across 8 disputes (`court-34.md`), and the
+rule outlives its example.
+
+**The rule for a count in prose:** do not write one. `ROSTER.length` is the number and the roster
+file is the source. Ticket 24 swept the live ones out; the ones it deliberately left — closed
+tickets, ADR evidence, the canvas's sample data — are dated records, so a "six" still standing in
+this repo is either one of those or a miss.
 
 ## Reverse records are outstanding with the operators, not broken
 
 *Migrated from session memory, 2026-09-03.*
 
-As of 2026-08-25 only three of the six `*.agents.kleroslabs.eth` addresses in the roster had an ENS
-primary name set. (The *court* has since drawn a seventh agent juror; the roster file has not
-changed — see the section above.) The subnames were created and delegated here, but setting
+As of 2026-08-25 only three of the six `*.agents.kleroslabs.eth` addresses then in the roster had an
+ENS primary name set. (The roster has since gained a seventh, `grokleros`, whose reverse record has
+not been read — see the section above.) The subnames were created and delegated here, but setting
 a reverse record requires **each operator to act from that agent's own wallet**, so it is
 outstanding with colleagues and may land at any time without warning.
 

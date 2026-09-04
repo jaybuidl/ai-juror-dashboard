@@ -15,10 +15,10 @@ describe("identity without ENS", () => {
     });
   });
 
-  it("names every agent juror, so a total ENS failure still renders six of them", () => {
+  it("names every agent juror, so a total ENS failure still renders all of them", () => {
     const identities = ROSTER.map(rosterIdentity);
 
-    expect(identities).toHaveLength(6);
+    expect(identities).toHaveLength(ROSTER.length);
     expect(identities.every((identity) => identity.nickname.length > 0)).toBe(true);
     expect(identities.every((identity) => identity.resolvedFromEns)).toBe(false);
   });

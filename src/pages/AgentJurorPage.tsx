@@ -30,7 +30,7 @@ import { VisuallyHidden } from "../styles/hidden";
  *
  * Built against `canvas/Juror.dc.html` — identity and stat card at `:53-83`, the latency
  * profile at `:86-110`, the drawn-in table at `:113-134` — and `canvas/JurorEmpty.dc.html` for
- * the one agent juror the court has never drawn.
+ * an agent juror the court has not drawn yet.
  *
  * **It reads nothing of its own.** Ticket 06 built `CourtPerformance.marginals` for exactly this
  * page and ticket 10 filled its last two figures, so every number here is one the matrix already
@@ -546,10 +546,11 @@ function provenanceOf({
 /**
  * What on this page is the measured record.
  *
- * An agent juror the court has never drawn *has* one — its absence from every panel, read from
- * the court's own draws, which is baskerville's whole entry in this experiment. That is not the
- * same claim as `NAMES_NOTHING` below, and telling the two apart is what this view exists to get
- * right one level down as well: a blank is a fact about the court, and an absence is not.
+ * An agent juror the court has not drawn *has* one — its absence from every panel, read from
+ * the court's own draws, which is the whole record it has in this experiment until the day it
+ * comes up. That is not the same claim as `NAMES_NOTHING` below, and telling the two apart is
+ * what this view exists to get right one level down as well: a blank is a fact about the court,
+ * and an absence is not.
  */
 function measuresOf(nickname: string, measured: CourtPerformance | null, drawn: boolean): string {
   if (!drawn) {
@@ -572,7 +573,7 @@ function measuresOf(nickname: string, measured: CourtPerformance | null, drawn: 
  * could have found it, because every test asserted what the page shows and this was a sentence
  * about what it does not.
  *
- * `identifiesAgentJurors` stays true: the body names the six and links to them, and the line is
+ * `identifiesAgentJurors` stays true: the body names the roster and links to it, and the line is
  * a standing statement about how this dashboard identifies them rather than about a figure.
  */
 const NAMES_NOTHING: Provenance = {
@@ -639,9 +640,12 @@ export function AgentJurorView({
         <Missing>
           <MissingTitle>That is not an agent juror</MissingTitle>
           <MissingBody>
-            This address does not name one of the six agent jurors in this experiment. They are
-            listed by nickname at <Link to="/agent-jurors">Agent jurors</Link>, and the address of
-            each is its nickname exactly as the roster holds it.
+            {/* Off the roster's own length, never a literal: the roster gains entries, and a
+                number written into this sentence would go on naming an older one on a public
+                page with nothing to contradict it. */}
+            This address does not name one of the {roster.entries.length} agent jurors in this
+            experiment. They are listed by nickname at <Link to="/agent-jurors">Agent jurors</Link>,
+            and the address of each is its nickname exactly as the roster holds it.
           </MissingBody>
         </Missing>
       </View>
@@ -735,7 +739,8 @@ export function AgentJurorView({
           //
           // `reading === null` over a *measured* court belongs here and not in the empty state
           // below, and the distinction is the one this page turns on. It means the seam's own
-          // roster does not hold this nickname — a disagreement between two lists of six, not a
+          // roster does not hold this nickname — a disagreement between two lists of agent
+          // jurors that ought to be the same list, not a
           // fact about the court's random selection — and drawing it as "never drawn" would
           // state a defect in this dashboard as a finding about an agent juror.
           <Notice $tone="rose" role="status">

@@ -44,10 +44,15 @@ this file is the full account.
   browser at the width it is claimed to work at, and `agent-browser` with `--executable-path` is
   how the rest of this ticket was checked. **Ticket 17 found three more the same way, with 736
   green tests**, and two of them are worth knowing as rules rather than as anecdotes.
-  A state the live court has not reached yet still has to be *opened*: the compact density needs
-  more than forty disputes and court 34 holds thirty-one, so it was checked by lowering
+  A state the live court has not reached *yet* still has to be opened somehow: the compact
+  density needs more than forty disputes and court 34 held thirty-one, so it was checked by lowering
   `COMPACT_FROM_ROWS` in the dev server, reading the page, and putting it back. A fixture cannot
   stand in — jsdom lays nothing out, which is the whole reason the browser is being opened.
+  **That workaround is spent: the court passed forty disputes and the compact density is live**
+  (46 rows on 2026-09-04, `court-34.md`), so it is now read the way every other state is — open the
+  page. The technique keeps its general form, which is that a threshold nobody can reach on demand
+  is still testable by moving the threshold, and the caveat with it: what a lowered constant opens
+  is the density at *thirty* rows, and ticket 24 is the first read of it at the real count.
 - **jsdom resolves styled-components rules but not shorthands, and its own UA sheet can make an
   assertion vacuous.** `getComputedStyle` *does* see a descendant rule from a styled component —
   `color` and `text-underline-offset` come back correctly. But it does not expand

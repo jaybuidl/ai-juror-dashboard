@@ -114,7 +114,7 @@
       "x": 1700,
       "y": -290,
       "w": 300,
-      "text": "Measured: occupancy, panel sizes, draw and vote counts, the latency range, the titles of 151 and 152, baskerville never drawn.\n\nSampled for the mockup: nicknames, stacks, other titles, per-draw latencies, rewards, and every row above 163."
+      "text": "Measured: occupancy, panel sizes, draw and vote counts, the latency range, the titles of 151 and 152.\n\nMeasured then, false now: baskerville never drawn. The court has drawn it since, and the roster has grown past these six columns.\n\nSampled for the mockup: nicknames, stacks, other titles, per-draw latencies, rewards, and every row above 163."
     }
   ],
   "launch": {

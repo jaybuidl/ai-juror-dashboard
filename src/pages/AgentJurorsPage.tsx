@@ -8,15 +8,15 @@ import { Roster } from "../roster/Roster";
 import type { RosterView } from "../roster/useRoster";
 
 /**
- * The agent-juror index: all six, whether or not the court has ever drawn them.
+ * The agent-juror index: every one of them, whether or not the court has ever drawn them.
  *
  * The nav names this destination, so it has to arrive somewhere real. It is also the parent
  * ticket 11's per-agent-juror view hangs its breadcrumb from, and the one place a reader can
- * see `baskerville` — never drawn, and therefore absent from every on-chain source.
+ * see an agent juror the court has yet to draw — absent, until then, from every on-chain source.
  *
  * The roster is not a read. It is this repository's own list, checked against ENS nightly in
  * CI, and the footer says as much: an agent juror with no stake and no draw has no on-chain
- * presence at all, so the chain alone would show fewer than six.
+ * presence at all, so the chain alone could show fewer names than this page does.
  */
 
 const Header = styled.header`
@@ -72,7 +72,7 @@ function provenanceOf(roster: RosterView): Provenance {
   return {
     measures:
       "Nothing on this page is a measurement. It names who is being measured; the figures are on the matrix.",
-    // Nothing here rests on a dispute read: the six are the six whether or not the court
+    // Nothing here rests on a dispute read: the roster is the roster whether or not the court
     // has held anything.
     read: null,
     readAt: null,

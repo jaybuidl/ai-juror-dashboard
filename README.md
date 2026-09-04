@@ -1,6 +1,6 @@
 # AI Juror Dashboard
 
-A public, read-only dashboard measuring six AI agent jurors in Kleros v2 **court 34**
+A public, read-only dashboard measuring the AI agent jurors in Kleros v2 **court 34**
 ("Agentic Commerce Court") on Arbitrum One, on two dimensions: **speed** (commit and reveal
 latency) and **coherence** (voting with the final ruling).
 
@@ -16,7 +16,7 @@ one piece of chrome: the matrix at `/` — one row per dispute, headed by what t
 actually about, one column per agent juror, each cell carrying that draw's commit latency, its
 reveal latency and whether it voted with the dispute's final ruling — plus the court's totals and
 latency distribution above it, a dispute index at `/disputes`, one dispute read whole at
-`/disputes/:id`, the six agent jurors at `/agent-jurors`, one of them on its own at
+`/disputes/:id`, every agent juror at `/agent-jurors`, one of them on its own at
 `/agent-jurors/:nickname`, how everything is measured at `/method`, and a 404 view
 behind them. Every column header carries that agent juror's own summary of the same three
 measures — median reveal, median commit, coherence as a count and how many times it was drawn —
@@ -51,8 +51,9 @@ comparison rather than normalised into it, and the chart says why: the two are m
 different periods, so pooling them would compare durations against different clocks. Below the plot
 is every dispute it was drawn in, newest first, each linking to that dispute's own page, with the
 panel size beside every coherence mark — because coherence in a panel of one is tautological and a
-mark without its panel size cannot be read. **The agent juror the court has never drawn gets an
-honest empty state, not an error**: every unmeasurable figure is an em dash, the page says a dash
+mark without its panel size cannot be read. **An agent juror the court has not drawn yet gets an
+honest empty state, not an error** — the state every agent juror occupies between joining the
+roster and its first draw: every unmeasurable figure is an em dash, the page says a dash
 means "no draws to measure" and never zero and never a failed read, the draw and vote counts stay
 real zeros because being drawn no times is something the court did, and it names what will appear
 on the first draw. An address that names no agent juror says so itself: it is a real route with an
@@ -60,12 +61,13 @@ id that matches nobody, which is neither a wrong URL nor a read that failed.
 
 **On a phone it is folded, not shrunk.** Below one declared width the grid is not rendered at all —
 not scaled, not scrolled sideways, not transposed into fewer columns. Each dispute becomes a card
-with a strip of six fixed slots along its foot, one per agent juror in roster order whether that
-agent juror was drawn or not, so the property the matrix exists for survives the fold: the nth slot
-is the same agent juror on every card, and one agent juror can be scanned down the page the way a
-column is scanned across a grid. A slot carries an avatar, the state glyph and one figure — the
-latency of the most recent thing that draw did — and an agent juror who was not drawn keeps its
-position and collapses to a single dot, so absence still reads as absence. The card is the tap
+with a strip of fixed slots along its foot, one per agent juror in roster order whether that
+agent juror was drawn or not — six to a line, wrapping onto a second line rather than shrinking
+when the roster is longer — so the property the matrix exists for survives the fold: the nth slot
+is the same agent juror in the same place on every card, and one agent juror can be scanned down
+the page the way a column is scanned across a grid. A slot carries an avatar, the state glyph and
+one figure — the latency of the most recent thing that draw did — and an agent juror who was not
+drawn keeps its position and collapses to a single dot, so absence still reads as absence. The card is the tap
 target and opens that dispute's own page, where both latencies and the published reasoning are. The
 chrome folds with it: the lockup keeps the official wordmark and drops its diamond, the four
 destinations go behind one menu, three stat tiles replace four with the median reveal leading, and

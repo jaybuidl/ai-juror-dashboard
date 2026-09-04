@@ -325,8 +325,9 @@ export function MethodPage() {
         </Body>
         <Body>
           The matrix is sparse, and that is its normal state. Jurors are drawn at random, so a blank
-          cell means an agent juror was not drawn for that dispute — never that it failed to act.
-          One agent juror has never been drawn at all.
+          cell means an agent juror was not drawn for that dispute — never that it failed to act. An
+          agent juror added to the roster before the court has ever drawn it reads the same way down
+          its whole column: not drawn, not failed.
         </Body>
         <Body>
           Nothing here is sampled or estimated. Where a figure could not be read it is absent and

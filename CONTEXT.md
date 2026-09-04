@@ -11,7 +11,7 @@ pointer rots. Where a definition is narrowed or overridden, that is said explici
 ### The subjects
 
 **Agent juror**:
-One of the six AI agents in this experiment, each an independent build on a different stack, each
+One of the AI agents in this experiment, each an independent build on a different stack, each
 voting from its own address. `kleros-juror-cli` lists "agent" under _Avoid_ for **Juror**, because
 there it is noise — a juror is an address and nothing else. This glossary deliberately overrides
 that: here the fact that every juror is an agent is the whole subject, and the distinction between
@@ -30,8 +30,11 @@ the prose of some justifications, which is not a source anything should parse.
 _Avoid_: agent, framework, model (each names one part of a stack, not the whole)
 
 **Roster**:
-The dashboard's own list of the six agent jurors. Authoritative here because it is the only place
-all six appear: an agent juror that has never staked or been drawn has no on-chain presence at all.
+The dashboard's own list of the agent jurors, `src/roster/agent-jurors.ts`, which grows as builds
+join the court. Authoritative here because it is the only place every one of them appears: an agent
+juror that has never staked or been drawn has no on-chain presence at all, so the court cannot be
+asked who is on the roster. How many there are is `ROSTER.length` and never a literal — the count
+in any sentence in this repo is a claim about the day it was written.
 _Avoid_: panel, juror list
 
 **Panel**:
@@ -40,11 +43,13 @@ between disputes: dispute 155's panel was one juror holding all three votes, so 
 and not 3.
 
 A fact about the court, not about the roster. Every panel in court 34 so far has been agent jurors
-and nothing else, so panel size has never exceeded the roster — but the two are different
-quantities, and conflating them makes the page assert something it has not measured. A panel of two
-holding one agent juror and one other would otherwise be reported as "a panel of one", and with it
-the claim that a lone juror is automatically the majority, which would then be false. The matrix has
-one column per agent juror and counts its panels in everyone drawn.
+and nothing else, and the court draws a handful of vote IDs at a time, so panel size has never
+exceeded the roster — but the two are different quantities, moving for unrelated reasons: the roster
+grows when a build joins, a panel when the court draws more votes for one dispute. Conflating them
+makes the page assert something it has not measured. A panel of two holding one agent juror and one
+other would otherwise be reported as "a panel of one", and with it the claim that a lone juror is
+automatically the majority, which would then be false. The matrix has one column per agent juror
+and counts its panels in everyone drawn.
 _Avoid_: jury, roster, counting it in vote IDs, assuming a panel is all agent jurors
 
 ### The measures
@@ -158,9 +163,10 @@ _Avoid_: settled, closed, complete, resolved, treating `period === "execution"` 
 
 **Matrix**:
 The dispute matrix: one row per dispute, one column per agent juror, one cell per draw. Rows grow
-without bound as disputes arrive; the columns stay at six, because the roster does. It is sparse by
-nature — 34 of its 78 cells were blank across the first thirteen disputes, and one agent juror's
-column is empty end to end — and that sparsity is the normal state, not missing data.
+without bound as disputes arrive; the columns change only when the roster does. It is sparse by
+nature — 34 of its 78 cells were blank across the first thirteen disputes, and a column stays
+near-empty for as long as it takes the court to draw the agent juror it belongs to — and that
+sparsity is the normal state, not missing data.
 _Avoid_: grid where it implies every cell is filled, table, heatmap
 
 **Marginal**:

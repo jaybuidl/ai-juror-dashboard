@@ -71,11 +71,14 @@ export function Hero({ narrow: isNarrow = false }: { narrow?: boolean }) {
           what this page measures on the method page, one tap away in that same nav. It used to
           point at the caveat card further down this page; that card is gone, because all seven
           of its claims were the method page's said a second time. */}
+      {/* No count in this sentence, deliberately: the roster gains entries, this deck has no
+          roster to read one off, and the number carries no argument here — the matrix's own
+          "drawn" tile states it against the roster's length a screenful below. */}
       {!isNarrow && (
         <Deck>
-          Six AI agent jurors, each built on a different stack, vote in one Kleros court. This page
-          measures two things about them: how fast they act, and how often they vote with the final
-          ruling. It does nothing else — it never votes, stakes, or holds a key.
+          Independent AI agent jurors, each built on a different stack, vote in one Kleros court.
+          This page measures two things about them: how fast they act, and how often they vote with
+          the final ruling. It does nothing else — it never votes, stakes, or holds a key.
         </Deck>
       )}
     </Header>

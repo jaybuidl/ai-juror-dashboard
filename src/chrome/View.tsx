@@ -27,11 +27,12 @@ export type Measure = "wide" | "prose" | "grid";
  * `measure` is how wide the view is allowed to be, and there are three answers because there are
  * three kinds of page here. "prose" is for a page that is read rather than scanned — the method
  * page, where 1200px is prose nobody finishes. "wide" is the 1200px default. "grid" is wider
- * still and belongs to exactly one view: the matrix declares a 440px row header and six 148px
- * columns, and at "wide" the page had 1104px of content to give it, so it scrolled sideways in
- * its own box on every desktop. The width is derived from that measurement rather than chosen —
- * the grid's own minimum plus the gutters either side of it — so it cannot drift from the grid
- * it exists to fit.
+ * still and belongs to exactly one view: the matrix declares a 440px row header and a 148px column
+ * per agent juror, and at "wide" the page had 1104px of content to give it, so it scrolled
+ * sideways in its own box on every desktop. The width is derived from that measurement rather than
+ * chosen — the grid's own minimum plus the gutters either side of it — so it cannot drift from the
+ * grid it exists to fit, and it widened on its own the day the roster gained a seventh entry
+ * (ticket 24), because `COMFORTABLE_GRID_MIN_PX` did.
  */
 
 const Frame = styled.div<{ $measure: Measure }>`

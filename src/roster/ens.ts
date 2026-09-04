@@ -25,9 +25,10 @@ export function mainnetRpcUrl(): string {
 export function createMainnetClient(url: string = mainnetRpcUrl()): PublicClient {
   return createPublicClient({
     chain: mainnet,
-    // Every agent juror costs three reads, so six of them is eighteen round trips
-    // unbatched. Both layers are wanted: multicall folds the resolver reads into one
-    // call, and the batch scheduler folds what is left into one HTTP request.
+    // Every agent juror costs three reads, so the whole roster is three round trips
+    // apiece unbatched, and the roster grows. Both layers are wanted: multicall folds the
+    // resolver reads into one call, and the batch scheduler folds what is left into one
+    // HTTP request.
     transport: http(url, { batch: true }),
     batch: { multicall: true },
   });
@@ -58,8 +59,8 @@ export function rosterIdentity(agentJuror: AgentJuror): AgentJurorIdentity {
 /**
  * Resolve one agent juror's nickname and avatar from its ENS subname.
  *
- * Forward resolution, deliberately: only two of the six addresses have a reverse record
- * set, so `getEnsName` would leave four of them anonymous. The roster holds the subname
+ * Forward resolution, deliberately: only a couple of the roster's addresses have a reverse
+ * record set, so `getEnsName` would leave most of them anonymous. The roster holds the subname
  * and this reads records off it.
  *
  * ENS is the one source this dashboard is allowed to lose quietly (ticket 13): a mainnet

@@ -14,8 +14,15 @@ import type { Form } from "./justifications";
  *
  * The thing this experiment exists to show: identical evidence, one question, and however many
  * independent stacks the court drew, reasoning about it in their own words. Columns of equal
- * width, in roster order, with the whole panel visible at once — a panel is at most six, so
- * there is no carousel and no pagination.
+ * width, in roster order, with the whole panel visible at once — a panel is a handful of vote IDs
+ * and has never exceeded the roster, so there is no carousel and no pagination.
+ *
+ * "At most six" is what this said until the roster stopped being six (ticket 24), and the number
+ * was the wrong thing to lean on twice over: it is a bound on the *roster*, and the quantity that
+ * decides whether this layout works is how many jurors the court drew for one dispute. `Columns`
+ * is `repeat(auto-fit, minmax(...))` and was never sized against either, so what changed here is
+ * only the sentence — which is the tell `CONTEXT.md`'s Panel entry warns about: a claim quantified
+ * over a set that has since been widened.
  *
  * Coherence does not reorder them. A diverged reading keeps its roster position and is never
  * sorted last: the ordering is `MatrixRow.cells`', which is `agent-jurors.ts`', and nothing
@@ -527,8 +534,9 @@ export function DisputePanel({
           </Columns>
           <Caption>
             <CaptionText>
-              Equal width, roster order. The panel is at most six, so all of it fits at once — no
-              carousel, no ranking, and the diverged reading is never sorted last.
+              Equal width, roster order. A panel is a handful of vote IDs and never larger than the
+              roster, so all of it fits at once — no carousel, no ranking, and the diverged reading
+              is never sorted last.
               {drawn > shown &&
                 ` ${drawn - shown} of the ${drawn} drawn are not agent jurors on this dashboard's roster, so they have no column here.`}
             </CaptionText>

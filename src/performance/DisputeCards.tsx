@@ -27,7 +27,9 @@ import { type RowFlagContext, rowFlagOf } from "./row-flags";
  * The same record as the matrix, folded to one card per dispute for a phone.
  *
  * Built against `canvas/Mobile.dc.html` — the hero at `:44-52`, the live card at `:63-78`, a
- * finalised card and its six-slot strip at `:81-95`, and the rule the whole layout rests on at
+ * finalised card and its strip at `:81-95` — drawn with six slots, which is what the roster held
+ * when the artboard was drawn and is now what one *line* of the strip holds — and the rule the
+ * whole layout rests on at
  * `:129`. `MatrixPage` decides which of the two renders, at the one breakpoint
  * `styles/breakpoints.ts` declares, and only one of them is ever in the DOM.
  *
@@ -36,9 +38,13 @@ import { type RowFlagContext, rowFlagOf } from "./row-flags";
  * fold is the matrix's central property, and it is the only thing here that is not negotiable:
  * *column position is the agent juror*. The nth slot is the same agent juror on every card, so
  * one agent juror can still be scanned down the page the way a column is scanned across a
- * grid. That only holds if the strip is always six slots, always in roster order, always the
- * same width and always aligned card to card — which is why the slot width is fixed and the
- * gaps absorb the remaining width, rather than the other way round.
+ * grid. That only holds if the strip is always one slot per agent juror, always in roster
+ * order, always the same width and always in the same position card to card — which is why the
+ * slot width is fixed and the gaps absorb the remaining width, rather than the other way round.
+ *
+ * Position, not line. A roster longer than one line's worth wraps (see `SLOTS_PER_LINE`), and
+ * the property survives that intact: the nth agent juror is at the same x and the same line on
+ * every card, because every card wraps at the same count.
  *
  * Everything rendered here comes from `buildCourtPerformance`, exactly as the matrix does. The
  * two layouts share their vocabulary through `cell.ts`, their flag precedence through
@@ -49,25 +55,57 @@ import { type RowFlagContext, rowFlagOf } from "./row-flags";
 /* ─── the strip's arithmetic ───────────────────────────────────────────────────────────── */
 
 /**
+ * How many slots a line of the strip holds — the one number the phone layout is sized against.
+ *
+ * Six, and it is no longer the roster's length: the court drew a seventh agent juror and the two
+ * quantities parted company for good (ticket 24). It stays six because six 52px slots is what a
+ * 350px card at the artboard's 390pt has room for, and because a per-line count that tracked the
+ * roster would re-space every card each time an agent juror joined — the third agent juror would
+ * sit at a different x this week than last, which is the one property this file calls
+ * non-negotiable.
+ *
+ * So the strip wraps instead: slot *k* is on line ⌊k / 6⌋ at position *k* mod 6, on every card, at
+ * every width. Seven is a line of six and a line of one; nine is six and three. The strip grew
+ * downward rather than narrower deliberately — narrower is the change that has no floor, and two
+ * more agent jurors are expected within the week.
+ */
+export const SLOTS_PER_LINE = 6;
+
+/**
  * One width for every slot on the page, and the reason the layout works at all.
  *
  * Six at 52px is 312px. At the artboard's 390pt the page gutter takes 20px a side and the card is
  * 350px wide, so a full-bleed strip has 38px left over for five gaps — about 7.6px each. Fixed
- * slots with elastic gaps is what keeps the sixth agent juror in the sixth position on every card
+ * slots with elastic gaps is what keeps an agent juror in the same position on every card
  * whatever height the cards take; elastic slots would let a card with a long title and a card
  * with a short one disagree about where an agent juror sits.
  *
- * The `min()` is the floor under that, and review is what found it needed one. Below about 352pt
- * of viewport the six no longer fit, and because the card clips its own overflow to keep its
- * corners the sixth slot simply *vanished* — silently, with nothing in the console, breaking the
- * one property this file calls non-negotiable. The second term is the width six slots may have
- * once the 20px gutters are taken, so from 352pt up this resolves to a flat 52px and the artboard
- * is met exactly; below it every slot narrows by the same amount, which keeps them aligned card
- * to card and keeps all six on the page. Shrinking in unison is a smaller loss than losing one.
+ * The `min()` is the floor under that, and review is what found it needed one. Below about 354pt
+ * of viewport a line of six no longer fits, and because the card clips its own overflow to keep
+ * its corners the sixth slot simply *vanished* — silently, with nothing in the console, breaking
+ * the one property this file calls non-negotiable. The second term is the width a line of slots
+ * may have once the page and the card have taken theirs, so from 354pt up this resolves to a flat
+ * 52px and the artboard is met exactly; below it every slot narrows by the same amount, which
+ * keeps them aligned card to card and keeps every line whole. Shrinking in unison is a smaller
+ * loss than losing one.
+ *
+ * **`SUBTRACTED_PX` is measured against the strip's box, not the viewport's**, and the two are
+ * not the same by 2px. Ticket 24 read this in a browser at 320pt and found the sixth slot
+ * overhanging its card by 0.94px and being clipped by it: the term said the page's 20px gutters
+ * were all that stood between the viewport and the strip, and the card's own 1px border either
+ * side was missing from it. One pixel of one slot is not the vanishing this floor exists to
+ * prevent, but it is the same arithmetic being wrong, and it was wrong for six slots before it
+ * was wrong for seven. `getComputedStyle` could not have found it — the declared width was
+ * honoured exactly, and what was short was the box it was declared against.
+ *
+ * **The divisor is the per-line count and not the roster's length**, which is what makes the
+ * floor survive the roster growing. Divide by the roster and a seventh agent juror narrows every
+ * slot on every phone to hold a line that was never going to be one line; divide by six and the
+ * seventh simply starts a second line at the same width as the first.
  */
-const SLOT_WIDTH = "min(52px, calc((100vw - 40px) / 6))";
+const SUBTRACTED_PX = 20 * 2 + 1 * 2;
+const SLOT_WIDTH = `min(52px, calc((100vw - ${SUBTRACTED_PX}px) / ${SLOTS_PER_LINE}))`;
 
-/** The avatar box, from the artboard. 36px inside a 52px slot leaves 8px of air either side. */
 const SLOT_AVATAR = "36px";
 
 /* ─── layout ───────────────────────────────────────────────────────────────────────────── */
@@ -128,8 +166,8 @@ const Cards = styled.ul`
  * One dispute, and the whole of it is the tap target.
  *
  * Live is marked here rather than on the slots — the ticket is explicit about it, and it is the
- * right call for a reason the artboard shows: six mint-tinted slots inside a mint-tinted card
- * would say one thing six times and leave nothing for the states to say. The flag rail is the
+ * right call for a reason the artboard shows: a row of mint-tinted slots inside a mint-tinted
+ * card would say one thing once per agent juror and leave nothing for the states to say. The flag rail is the
  * matrix row's, carried over unchanged, and it is painted from the flag rather than from
  * liveness so the highest-precedence mark keeps its own colour.
  */
@@ -167,7 +205,7 @@ const CardHead = styled.div`
  * rather than this 24pt of text, which is a phone requirement rather than a nicety.
  *
  * One link per card, and deliberately not a link wrapping the whole card: an anchor around all
- * of this would take the title, the metadata and six agent jurors' states as its accessible
+ * of this would take the title, the metadata and every agent juror's state as its accessible
  * name. `aria-label` carries a name a screen-reader user can actually use instead.
  *
  * Focus is drawn on the stretched area rather than on the text, so a keyboard user sees the
@@ -232,22 +270,39 @@ const MetaSeparator = styled.span`
 `;
 
 /**
- * The six slots along the card's foot.
+ * The agent jurors along the card's foot, six to a line.
  *
  * Full-bleed past the card's padding, which buys the gaps another 32px at 390pt — the
- * difference between slots that nearly touch and slots that read as six separate positions.
+ * difference between slots that nearly touch and slots that read as separate positions.
  * The hairline above it then spans the card, which is also what makes the strip read as the
  * card's foot rather than as one more line of its body.
  *
- * A grid of six equal tracks would be the obvious construction and is the wrong one: equal
+ * A grid of six *equal* tracks would be the obvious construction and is the wrong one: equal
  * tracks are elastic, so the third agent juror would sit at a different x on a 390pt phone than
  * on a 600pt tablet, and the one property this layout exists to preserve would hold only at one
- * width.
+ * width. A grid of six tracks each fixed at `SLOT_WIDTH`, spread by `justify-content`, is the
+ * right one — the tracks are where the flex row put them, and the gaps still absorb the slack.
+ *
+ * **It is a grid rather than a wrapping flex row for the sake of the last line, and this is the
+ * whole reason the construction changed.** `flex-wrap: wrap` with `space-between` puts a lone
+ * seventh slot flush left, which is right by accident, and an eighth flush *right* — position 5
+ * on a line where it should be position 1. The grid has no such degenerate case: a short last
+ * row fills columns 1..n of the same template the full rows use, so slot *k* is at position *k*
+ * mod 6 whatever the roster's length happens to be. The nth agent juror is at one x, for ever.
+ *
+ * Before ticket 24 this was `flex-wrap: nowrap` and the roster was six, so there was nothing to
+ * wrap and the question never came up. A seventh slot in a nowrap row does not wrap and does not
+ * scroll: the card clips its overflow to keep its corners, so it is simply *gone*, with nothing
+ * in the console. That is the failure this element is shaped to make impossible.
+ *
+ * The row gap is the strip's own `padding-top`, so a second line sits the same distance below the
+ * first as the first sits below the hairline.
  */
 const Strip = styled.div`
-  display: flex;
-  flex-wrap: nowrap;
+  display: grid;
+  grid-template-columns: repeat(${SLOTS_PER_LINE}, ${SLOT_WIDTH});
   justify-content: space-between;
+  row-gap: ${({ theme }) => theme.space5};
   margin: ${({ theme }) => `0 calc(-1 * ${theme.space6})`};
   padding-top: ${({ theme }) => theme.space5};
   border-top: ${({ theme }) => theme.borderHairline};
@@ -255,7 +310,11 @@ const Strip = styled.div`
 
 const SlotBox = styled.span<{ $tone?: Tone; $filled?: boolean }>`
   display: flex;
-  flex: none;
+  /* Stated here as well as in the strip's track template, and not redundantly: the track sets
+     where the slot starts and this sets how wide the box paints, which is what the tint and the
+     1px inset ring are drawn against. A flex: none used to sit here and was dropped with the
+     flex row — on a grid item it declares nothing. (No backticks in here: one ends the
+     template.) */
   width: ${SLOT_WIDTH};
   min-height: 56px;
   flex-direction: column;
@@ -550,7 +609,7 @@ function DisputeCard({
           second line stopped wrapping. `panelPillOf` is where the two surviving cases are
           decided, shared with that row: a dispute whose draws were never read, and one the
           court has not drawn a panel for yet. The size is gone from both layouts, because a
-          card's six slots are the count in the same way a row's six cells are. */}
+          card's slots are the count in the same way a row's cells are. */}
       {panel !== null && (
         <>
           <MetaSeparator aria-hidden="true">·</MetaSeparator>
@@ -596,8 +655,9 @@ function DisputeCard({
             agentJuror={agentJuror}
             identity={identityOf.get(agentJuror.address)}
             // Order matters, and it is the same order the matrix's cells are chosen in: an
-            // unread dispute's cells are all null, so testing for null first would draw six
-            // "not drawn" dots — an unread state rendering as a fact about the court.
+            // unread dispute's cells are all null, so testing for null first would draw a
+            // "not drawn" dot for every agent juror — an unread state rendering as a fact
+            // about the court.
             draw={row.read ? (row.cells[column] ?? null) : null}
             read={row.read}
             fallenBack={fallenBack}
@@ -657,7 +717,7 @@ function Slot({
     return (
       <SlotBox>
         {/* The full stop is doing the same job as the comma the matrix's row header carries:
-            the six slots are siblings with no whitespace between them, and accessible-name
+            the slots are siblings with no whitespace between them, and accessible-name
             computation normalises whitespace out from between adjacent nodes — so without it the
             strip announced as one run-on string and a reader could not tell where one agent
             juror's reading ended and the next began. */}
@@ -697,14 +757,14 @@ function SlotState({
 }) {
   const nickname = identity?.nickname ?? agentJuror.nickname;
   // The live family is the one state the slot does not fill: the card carries it whole, by its
-  // own border and tint, and six tinted slots inside a tinted card would say one thing six
-  // times over with nothing left for the states to say.
+  // own border and tint, and a card of tinted slots inside a tinted card would say one thing
+  // once per agent juror with nothing left for the states to say.
   const filled = presentation.filled && presentation.tone !== "live";
 
   return (
     <SlotBox $tone={presentation.tone} $filled={filled}>
       {/* First, so a screen reader hears which agent juror and what happened before the
-          duration it happened in — and terminated, so the six slots do not run together into
+          duration it happened in — and terminated, so the slots do not run together into
           one string. The blank slot above is punctuated the same way; the two used to disagree,
           one ending in a comma and one in nothing. */}
       <VisuallyHidden>{`${nickname}: ${presentation.word}, `}</VisuallyHidden>

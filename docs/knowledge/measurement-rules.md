@@ -18,7 +18,7 @@ this file is the full account.
   44 draws. The subgraph's `totalCoherentVotes` / `coherenceScore` are per-vote *and* global across
   all courts — unusable here (ADR-0002). `ClassicJustification` is conveniently one per draw.
 - **A dispute arrives in `evidence` with no panel and an all-zero timeline.** Disputes 167, 168 and
-  169 landed that way on 2026-08-25. Nobody has been drawn yet, so the row is six blank cells and a
+  169 landed that way on 2026-08-25. Nobody has been drawn yet, so the row is blank end to end and a
   panel size of zero, and `commitOpenedAt` parses to null — the same null the execution slot carries
   for a dispute in `appeal`. Two things this breaks, both found by running against the live court
   rather than a fixture. The matrix's own "On the empty cells" note says every blank is random draw
@@ -42,8 +42,9 @@ this file is the full account.
   committed (it revealed). The matrix words it `REVEALED`, a third stage of the live family. Any
   aggregate must exclude these draws from coherence while still counting their latency, or it will
   either undercount speed or invent a coherence figure out of a prediction.
-- **The matrix is sparse** — it was 44% empty over the first thirteen disputes, and one agent juror
-  has never been drawn at all. A design that assumes a full grid will look broken.
+- **The matrix is sparse** — it was 44% empty over the first thirteen disputes, and the newest
+  column is emptier than that: an agent juror joins the roster before the court has drawn it, so
+  `grokleros` held 3 of 46 rows on 2026-09-04. A design that assumes a full grid will look broken.
 - **Latency is never shown as a fraction of a window** — not in a cell, not in an aggregate, not on a
   detail view. The court's durations changed mid-experiment, so the same ratio means different things
   either side of dispute 152, and a percentage is false the moment it is quoted away from the page.

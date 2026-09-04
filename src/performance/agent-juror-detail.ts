@@ -39,8 +39,8 @@ export type AgentJurorReading = {
    *
    * Newest first because the rows are, and the order is the matrix's rather than anything this
    * view chose: a list sorted by latency or by coherence would be a ranking, and nobody is
-   * ranked here. Empty for an agent juror the court has never drawn, which is a reading and not
-   * an absence of one — `canvas/JurorEmpty.dc.html` is the page that state renders.
+   * ranked here. Empty for an agent juror the court has not drawn yet, which is a reading and
+   * not an absence of one — `canvas/JurorEmpty.dc.html` is the page that state renders.
    *
    * A dispute whose draws were never read contributes nothing here, because its cells are all
    * `null` and none of them is this agent juror's. That makes the list short by a dispute nobody

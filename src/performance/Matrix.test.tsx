@@ -8,6 +8,12 @@ import type { Dispute, RawDispute } from "../disputes/disputes";
 import { ROSTER } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
+import {
+  COMFORTABLE_GRID_MIN_PX,
+  COMPACT_COLUMN_PX,
+  COMPACT_GRID_MIN_PX,
+  ROW_HEADER_PX,
+} from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
 import { theme } from "../styles/theme";
 import { padCourt } from "../test/court";
@@ -392,7 +398,7 @@ describe("Matrix", () => {
     expect(screen.getAllByRole("rowheader")).toHaveLength(16);
   });
 
-  it("names the agent juror that has never been drawn as never drawn, not as absent", () => {
+  it("names an agent juror this record never drew as never drawn, not as absent", () => {
     renderMatrix();
 
     const column = screen.getByRole("columnheader", { name: /baskerville/ });
@@ -441,7 +447,7 @@ describe("Matrix", () => {
     expect(within(single).queryByText("×1")).not.toBeInTheDocument();
   });
 
-  it("keeps the panel size off the row, because the six cells already are the count", () => {
+  it("keeps the panel size off the row, because the row's own cells are the count", () => {
     renderMatrix();
     const row = rowFor(163);
     if (row === null) throw new Error("no row for dispute 163");
@@ -693,11 +699,13 @@ describe("Matrix", () => {
     const row = rowFor(155);
     if (row === null) throw new Error("no row for dispute 155");
 
-    // Five of the six columns are empty in dispute 155, and none of them carries a word, a
-    // glyph or a figure that could be read as a failure to act.
+    // Dispute 155 was decided by a panel of one, so every column but that one is empty in it —
+    // and none of them carries a word, a glyph or a figure that could be read as a failure to
+    // act. Counted off the roster rather than written down, because the roster is what decides
+    // how many columns there are to be empty.
     const empty = within(row).getAllByText("Not drawn");
 
-    expect(empty).toHaveLength(5);
+    expect(empty).toHaveLength(ROSTER.length - 1);
     expect(within(row).queryByText("Missed")).not.toBeInTheDocument();
     expect(within(row).queryByText("No vote")).not.toBeInTheDocument();
   });
@@ -822,7 +830,7 @@ describe("Matrix", () => {
       expect(header("007").getByText("7/8")).toBeInTheDocument();
     });
 
-    it("adds no seventh column: one row header and exactly six agent jurors", () => {
+    it("adds no column of its own: one row header and one per agent juror", () => {
       renderMatrix();
 
       const [head] = screen.getAllByRole("rowgroup");
@@ -831,13 +839,14 @@ describe("Matrix", () => {
       expect(within(head).getAllByRole("columnheader")).toHaveLength(ROSTER.length + 1);
     });
 
-    it("shows dashes and a real zero for the agent juror that has never been drawn", () => {
+    it("shows dashes and a real zero for an agent juror this record never drew", () => {
       renderMatrix();
 
-      // baskerville is staked, listed and never asked. There is nothing to measure and no
-      // figure that could be shown without inventing it — but zero draws is a measurement.
+      // baskerville is listed and, in this capture, never asked. There is nothing to measure and
+      // no figure that could be shown without inventing it — but zero draws is a measurement.
+      // (Whether it had staked is not read here and was never this page's to say.)
       //
-      // Five dashes since ticket 10 and not three: an agent juror the court has never drawn has
+      // Five dashes since ticket 10 and not three: an agent juror the court has not drawn has
       // not been paid nothing, it has not been in a position to be paid at all, and `0.0000`
       // would state the first.
       expect(header("baskerville").getAllByText("—")).toHaveLength(5);
@@ -1253,14 +1262,19 @@ describe("Matrix", () => {
     });
 
     it("stops calling any column never drawn, because an unread row is not part of the record", () => {
-      // The claim the marginals made reachable, and the one this page must never make wrongly:
-      // baskerville reads "Never drawn · 0 · 0v" over a court that has been read whole, and the
-      // *first dispute it is ever drawn in* arrives in exactly the state this block describes —
-      // created since the draws were last read, cells null because nobody asked. Saying "never
-      // drawn" there is an unread state rendering as a fact about the court, over the single
-      // observation this dashboard was built to catch.
+      // The claim the marginals made reachable, and the one this page must never make wrongly: a
+      // column reads "Never drawn · 0 · 0v" over a court that has been read whole, and the
+      // *first dispute that agent juror is ever drawn in* arrives in exactly the state this
+      // block describes — created since the draws were last read, cells null because nobody
+      // asked. Saying "never drawn" there is an unread state rendering as a fact about the
+      // court, over the single observation this dashboard was built to catch.
+      //
+      // Two columns are in that state in this fixture rather than one. That used to be
+      // baskerville alone and the test was written as though it always would be; the court drew
+      // baskerville and a seventh agent juror joined, and the count is a property of the capture
+      // either way.
       renderMatrix(build());
-      expect(screen.getByText("Never drawn")).toBeInTheDocument();
+      expect(screen.getAllByText("Never drawn")).toHaveLength(2);
 
       cleanup();
       renderDrifted();
@@ -1275,7 +1289,8 @@ describe("Matrix", () => {
    * A dispute that was read and has no panel yet — the reading a live court produces today.
    *
    * Disputes 167, 168 and 169 arrived in their evidence period on 2026-08-25 with nobody drawn,
-   * and both layouts drew them as six blanks under a note saying every blank is random sparsity.
+   * and both layouts drew them as a blank per agent juror under a note saying every blank is
+   * random sparsity.
    * That claim is true of a dispute with a panel and false of one without: the draw has not
    * happened, rather than these agent jurors not having been selected. Hand-built, because the
    * captured court stops at 166 and holds no such dispute.
@@ -1364,7 +1379,7 @@ describe("Matrix", () => {
       expect(compact).toEqual(expect.arrayContaining(comfortable));
     });
 
-    it("keeps the six columns and their order", () => {
+    it("keeps every column and their order", () => {
       renderMatrix(compactCourt());
 
       const columns = screen.getAllByRole("columnheader");
@@ -1547,16 +1562,73 @@ describe("Matrix", () => {
       // down to 180px of its natural 836 — a 1440px desktop showing a fifth of a question the
       // 390pt phone showed whole. What is assertable offline is the declaration; the width it
       // produces was measured in a browser.
+      //
+      // The floors are read off `breakpoints.ts` rather than written down, because both of them
+      // are one column per agent juror plus a row header and both were literals sized for six
+      // until ticket 24. A literal here would have gone on agreeing with a literal there.
       for (const [court, floor] of [
-        [comfortableCourt(), "1328px"],
-        [compactCourt(), "1064px"],
+        [comfortableCourt(), COMFORTABLE_GRID_MIN_PX],
+        [compactCourt(), COMPACT_GRID_MIN_PX],
       ] as const) {
         renderMatrix(court);
         const table = screen.getByRole("table");
         expect(getComputedStyle(table).tableLayout).toBe("fixed");
-        expect(getComputedStyle(table).minWidth).toBe(floor);
+        expect(getComputedStyle(table).minWidth).toBe(`${floor}px`);
         cleanup();
       }
+    });
+
+    /**
+     * The compact density's widths are shares, and shares that do not sum to 100% are a silent
+     * rescale.
+     *
+     * This is the arithmetic half of the trap the test above is the declaration half of. The row
+     * header asked for `40%` and each column for a literal `10%`, which is 100% at exactly six
+     * columns and 110% at seven — and a browser handed 110% of a table simply scales everything
+     * down, so the header declared at 40% arrives at about 36 and the columns fall under what a
+     * compact cell needs. Nothing throws. `getComputedStyle` reports the 40% that was asked for,
+     * `getBoundingClientRect` the width that was given, and the gap between them is this repo's
+     * oldest silent defect.
+     *
+     * So the sum is asserted here, offline, where it is arithmetic rather than layout — and the
+     * widths it produces were read in Chrome at 1440pt against the court's real 46 disputes:
+     * a 537.63px row header asked for and 537.63px given, seven columns at 115.19px each, and
+     * 1344px of table accounted for exactly.
+     */
+    it("shares the compact grid's width out to exactly one whole table", () => {
+      renderMatrix(compactCourt());
+
+      const header = screen.getAllByRole("columnheader") as HTMLElement[];
+      expect(header).toHaveLength(ROSTER.length + 1);
+
+      const shares = header.map((cell) => {
+        const declared = getComputedStyle(cell).width;
+        expect(declared, "every compact width is a share of the table, not a measurement").toMatch(
+          /%$/,
+        );
+        return Number.parseFloat(declared);
+      });
+
+      // Summed with a tolerance, not compared exactly: the shares are repeating decimals at most
+      // roster sizes. Under 0.01% of a 1200px table is a tenth of a pixel, and what this is
+      // guarding against is 10% out.
+      expect(shares.reduce((total, share) => total + share, 0)).toBeCloseTo(100, 2);
+      expect(new Set(shares.slice(1)).size).toBe(1);
+
+      // **And the sum is not enough on its own, which is the lesson this assertion exists for.**
+      // The first version of this test checked only that the shares came to 100% and that the row
+      // header asked for 40%, and it was green over a grid whose floor did not deliver: `40%` and
+      // `60 / 7` sum to exactly 100 and hand the row header 467px of the 440 the `min-width` was
+      // built from, leaving each column 100px of the 104. Two models of one grid, each internally
+      // consistent, disagreeing by 27px — and a test of one of them cannot see the other.
+      //
+      // So the shares are checked against the pixels: applied to the floor the table declares,
+      // they must give back exactly the widths that floor is the sum of. Nothing can now drift
+      // without this failing.
+      const floor = Number.parseFloat(getComputedStyle(screen.getByRole("table")).minWidth);
+      const [rowHeader = 0, column = 0] = shares;
+      expect((rowHeader / 100) * floor).toBeCloseTo(ROW_HEADER_PX, 6);
+      expect((column / 100) * floor).toBeCloseTo(COMPACT_COLUMN_PX, 6);
     });
 
     it("freezes the column header and nothing else", () => {
@@ -1723,7 +1795,7 @@ describe("Matrix", () => {
   it("never calls a column never drawn over a court that has drawn nobody at all", () => {
     // Every read dispute still in its evidence period — a court in its opening hours, and the
     // one case where "never drawn" and "blank end to end" are claims about a draw that has not
-    // happened rather than about six agent jurors. Found by review on this ticket's own figures.
+    // happened rather than about the agent jurors. Found by review on this ticket's own figures.
     const waiting = [167, 168, 169].map(
       (id) =>
         ({

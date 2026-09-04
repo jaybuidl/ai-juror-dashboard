@@ -217,8 +217,8 @@ export const arbitrumFailed: CourtPerformanceView = {
  * The same court with the payouts still out — every cold load that is not served from the cache.
  *
  * `rewards: null` and not `[]`, and this is the pair where the difference is loudest. The two
- * figures it feeds are **sums**: `[]` builds a perfectly successful model in which all six agent
- * jurors have earned exactly nothing, rendered in the ink of a measurement. Every other unread
+ * figures it feeds are **sums**: `[]` builds a perfectly successful model in which every agent
+ * juror on the roster has earned exactly nothing, rendered in the ink of a measurement. Every other unread
  * figure on this page degrades to a dash, so no other fixture here can demonstrate that shape.
  */
 const unpaid = buildCourtPerformance({
@@ -254,10 +254,10 @@ export const rewardsFailed: CourtPerformanceView = {
  * The payout read that **succeeded** and came back short — no error anywhere.
  *
  * The third state, and the one neither of the two above can demonstrate. A reindexing Goldsky
- * answers HTTP 200 with `[]`, so nothing throws and `rewards.read` is true; the court has ruled
- * thirteen disputes with draws in them, so a read that found no payout for any of them cannot
- * be whole. Without the `short` flag every column renders `0.0000` and `0.00` in the ink of a
- * measurement — six named agent jurors stated to have earned nothing.
+ * answers HTTP 200 with `[]`, so nothing throws and `rewards.read` is true; the captured court
+ * has ruled thirteen disputes with draws in them, so a read that found no payout for any of them
+ * cannot be whole. Without the `short` flag every column renders `0.0000` and `0.00` in the ink
+ * of a measurement — every named agent juror stated to have earned nothing.
  */
 const emptied = buildCourtPerformance({
   disputes: fixture as RawDispute[],
@@ -308,7 +308,7 @@ export const rewardsInFeeToken: CourtPerformanceView = {
  * and a payload captured in one moment cannot contain a dispute that post-dates it. This is the
  * drift `CLAUDE.md` records — react-query keeps the draws it already holds when a refetch fails,
  * so a fresh dispute list joins an old draw read and a dispute created since arrives with no
- * cells at all. Without the read moment those six blanks would say "not drawn".
+ * cells at all. Without the read moment that row's blanks would say "not drawn".
  *
  * Dispute 163 was created at unix 1787340123; this one ten minutes later, in `evidence` with an
  * all-zero timeline — exactly how disputes 167–169 arrived on the day this was written.
@@ -378,8 +378,10 @@ export const staleDraws: CourtPerformanceView = {
  * The same court, grown to a given number of disputes.
  *
  * The captured court holds sixteen and ticket 17's threshold is in the region of forty, so the
- * density that ticket is about cannot be reached from a fixture — court 34 has not reached it
- * either. Dispute 156 is cloned under fresh ids, with its draws and its commitments, so the extra
+ * density that ticket is about cannot be reached from the fixture as captured. The live court
+ * has since passed it — 46 disputes as of 2026-09-04, so the compact density is what a reader
+ * gets in production, which is exactly why the offline suite has to be able to reach it.
+ * Dispute 156 is cloned under fresh ids, with its draws and its commitments, so the extra
  * rows are ordinary rows: ruled, drawn, revealed and dated, rather than empty scaffolding that
  * could be compacted without proving anything about a cell.
  *
@@ -471,7 +473,7 @@ export const roomyCourt: CourtPerformanceView = {
  * The state a live court produces continually — 167, 168 and 169 arrived in their evidence
  * period on 2026-08-25 with nobody drawn — and the captured court stops at 166 and holds none,
  * so it is hand-built the same way `Matrix.test.tsx` builds one. `drawsReadAt` stays null, so
- * this row is *read*: its six blanks are a fact about the court rather than a gap in the read,
+ * this row is *read*: its blanks are a fact about the court rather than a gap in the read,
  * which is the distinction ticket 17 exists to keep.
  */
 const waitingDispute = {

@@ -114,8 +114,8 @@ export function useDisputes(): DisputesView {
   const templates = useQuery({
     // Keyed on the whole set of ids, so a new dispute refetches every title rather than
     // only its own. That is one extra request against a keyless endpoint for a court
-    // holding sixteen disputes, and it keeps the cache entry a straightforward function
-    // of what is on screen.
+    // holding a few dozen disputes, and it keeps the cache entry a straightforward
+    // function of what is on screen.
     queryKey: ["disputeTemplates", templateIds],
     queryFn: async ({ signal }) =>
       toDisputeTemplates(await fetchDisputeTemplates({ ids: templateIds, signal })),

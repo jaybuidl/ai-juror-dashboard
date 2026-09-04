@@ -79,8 +79,11 @@ this file is the full account.
   **Ticket 17 added a second number to that file and it is not a second `narrow`.**
   `breakpoints.compactGrid` (1160px) asks a different question about a different element — whether
   the compact grid's own measurements fit the page — and its value is arithmetic rather than a
-  choice: a 440px row header plus six columns a compact cell needs about 104px each for is
-  `COMPACT_GRID_MIN_PX`, 1064, which this page's gutters put at that viewport. The test for a new
+  choice: a 440px row header plus one column per agent juror at the ~104px a compact cell needs is
+  `COMPACT_GRID_MIN_PX`, which this page's gutters put at that viewport. It was 1064 while the
+  roster was six; ticket 24 made it derive from `ROSTER.length`, because a row header share and a
+  column share that sum to 100% at six sum to 110% at seven and the browser rescales both in
+  silence — the declared-versus-given gap again, one file down. The test for a new
   width is not "is there already one" but "does it answer a question none of these do, and is its
   value derived from something". Both live in `breakpoints.ts` because that is still the one place
   a width anything reduces at is written down.

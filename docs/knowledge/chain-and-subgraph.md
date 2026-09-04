@@ -53,7 +53,7 @@ this file is the full account.
   `_feeToken = address(0)`, which *is* native ETH. The v0.17.2 mapping is simply wrong about it.
   This is the `blockTimestamp: "0x0"` trap in another entity: present, correctly typed, and wrong.
   A reader that believed it would take the fee-token branch, find `0`, and report that every agent
-  juror has earned nothing — no error, no console warning, six columns of `0.0000`. The guard is
+  juror has earned nothing — no error, no console warning, `0.0000` in every column. The guard is
   that `rewards-subgraph.ts` **does not select the field at all**, and says why: a field absent
   from the query cannot be reached for by someone who has not read this. `feeTokenAmount` is
   selected as the one usable half and is a *partial* guard — the deployment that mislabels the flag

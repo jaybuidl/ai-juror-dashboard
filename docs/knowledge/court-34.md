@@ -87,3 +87,31 @@ because `sameMeasuredWindows` compares only those two and the evidence window is
 
 A red *live* suite has a second, unrelated cause — the Arbitrum rate limit (see
 `chain-and-subgraph.md`). Check which suite failed before assuming either.
+
+## How big the court is, and what turns on the size
+
+*Read off chain 2026-09-04.*
+
+Court 34 holds **46 disputes, ids 151 to 196 with no gaps**, over **226 draw records**. All 46 are
+ruled and sitting in `execution`; a dispute passes hours in `appeal` first, so the ruled/unruled
+split moves between reads and is worth nobody's assertion. The court held 13 disputes when the
+fixture was captured and 31 while most of this repo's prose was being written, which is the whole
+lesson: **a count in a sentence here is a claim about the day it was written**, this one included.
+Date it, or drop it and read `ROSTER.length` and the model instead.
+
+Two things turn on the size rather than on any dispute in it.
+
+- **The compact density is live in production, and has been since the fortieth dispute.**
+  `COMPACT_FROM_ROWS` is 40 against 46 rows, so the compact matrix is what a desktop reader has been
+  getting — not a state waiting on a court that might one day be big enough. It was specified,
+  built and checked as a future state (`testing.md` § the dev-server workaround), and the court
+  crossed the threshold within a fortnight of it being written. Nothing may describe compact as
+  unreached, and the first browser read of it against real rows is ticket 24's.
+- **Every roster column has draws in it.** Per agent juror on 2026-09-04, as vote IDs over disputes
+  drawn: `blaise` 49/32, `daemonhill` 42/30, `aletheia` 42/30, `007` 38/29, `columbo` 37/29,
+  `baskerville` 14/8, `grokleros` 4/3. `baskerville` went undrawn from ticket 02 to ticket 18 and
+  the design leaned on it as *the* permanently empty column; it has been drawn eight times, and
+  `grokleros` — added by ticket 24 — is now the sparsest column instead. The rule that survives is
+  about newness and not about a name: **a column is near-empty for as long as it takes the court to
+  draw the agent juror it belongs to**, which for a build that joined last week is most of the grid,
+  and the next roster entry starts the same way.

@@ -169,9 +169,9 @@ which is the pattern the matrix's own keys already used.
 The dispute title's `title` attribute is **not** one of these: it duplicates text that is already
 in the DOM and in the row header's accessible name. The clipping there is visual only.
 
-### The phone's six slot labels ran together
+### The phone's slot labels ran together
 
-Same family as the row-header run-on, and found by the same reading. The six hidden labels are
+Same family as the row-header run-on, and found by the same reading. The hidden labels are
 siblings with no whitespace between them, so they concatenated into one string and a reader could
 not tell where one agent juror's reading ended and the next began. They also disagreed with each
 other about punctuation — a drawn slot ended in a comma and a blank one in nothing.
@@ -234,8 +234,11 @@ did and is left standing as one; the sentence above it is true of that sweep.
 ## Checked in a browser, because jsdom lays nothing out
 
 `agent-browser` against system Chrome, on the dev server at a fixed port. An axe audit returned
-**zero violations** on all seven routes, at 1280 and at 390, and at the compact density — which
-the live court cannot reach, so `COMPACT_FROM_ROWS` was lowered to open the state and put back.
+**zero violations** on all seven routes, at 1280 and at 390, and at the compact density — which the
+court had not reached at the time, so `COMPACT_FROM_ROWS` was lowered to open the state and put
+back. It has reached it since: the matrix has been compact in production since its fortieth
+dispute, so this audit's compact reading was of thirty-odd rows rather than of the page a reader
+now gets.
 The cell lead-in, the row-header separator, the caption, the scroll region's `tabindex` and the
 `scroll-margin-top` were all read back out of the live DOM rather than inferred from the source.
 
