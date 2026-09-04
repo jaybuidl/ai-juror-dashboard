@@ -96,6 +96,22 @@ Separately, the frozen column header ticket 17 added had no `scroll-margin-top` 
 tabbing down the dispute column scrolled each link flush to the top of the scrollport and
 underneath the header.
 
+**That clearance is a measurement of the column header, and it has already gone stale once.** It
+was set at `8rem`, and the header it clears is content-sized — an avatar, a nickname, a stack label
+and three figures — so nothing declares its height and nothing can check the two against each
+other. Ticket 29 made the header taller and the criterion failed again: at 1440x900 the header
+stood at 197.84px against 128px of clearance, and a link reached by Shift+Tab parked at exactly
+128px with a 21px box, putting the whole row and its entire focus ring behind the header. It is
+`13rem` now.
+
+Two things about how that was found are worth keeping, because both would hide it again. A
+programmatic `.focus()` does **not** reproduce it — Chrome centres the element for that, and only
+sequential focus navigation parks it against the margin — so a check that calls `.focus()` and
+reads a rect comes back clean over a broken page. And axe does not test it: 2.4.11 is about what a
+focus indicator is obscured by, which is a question about two elements' rects, and a green run says
+nothing about it. **Anything that changes what the column header holds has to re-measure this, by
+hand, with the header stuck.**
+
 ### A client-side route change was silent
 
 Nothing retitled the document — seven routes reported one static title to the tab strip, the

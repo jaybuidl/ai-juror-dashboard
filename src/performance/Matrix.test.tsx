@@ -23,7 +23,7 @@ import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import rewardFixture from "./court-34-rewards.fixture.json" with { type: "json" };
 import { COMPACT_FROM_ROWS } from "./density";
-import { Matrix } from "./Matrix";
+import { HEADER_AVATAR_PX, Matrix } from "./Matrix";
 import {
   buildCourtPerformance,
   type CourtPerformance,
@@ -38,6 +38,23 @@ const roster: RosterView = {
   entries: ROSTER.map((agentJuror) => ({ agentJuror, identity: rosterIdentity(agentJuror) })),
   isResolving: false,
   isResolvedFromEns: false,
+};
+
+/**
+ * The same roster with portraits, which is what a reader with a reachable ENS gets.
+ *
+ * Every other test here runs on the fallback identity, so until ticket 29 no test in this file had
+ * ever rendered the column header's `<img>` at all — the initials tile beside it was the only
+ * avatar under test. The two are declared separately and have to stay the same size, so the branch
+ * that is normally invisible offline needs to be reachable.
+ */
+const resolvedRoster: RosterView = {
+  entries: ROSTER.map((agentJuror) => ({
+    agentJuror,
+    identity: { ...rosterIdentity(agentJuror), avatarUrl: "https://example.test/portrait.png" },
+  })),
+  isResolving: false,
+  isResolvedFromEns: true,
 };
 
 function build(raw: Partial<RawCourtData> = {}): CourtPerformance {
@@ -68,13 +85,14 @@ function harness(
   performance: CourtPerformance = build(),
   slotsFor?: (dispute: Dispute) => DisputeRowSlots,
   now: number = NOW,
+  rosterView: RosterView = roster,
 ) {
   // Inside a router since ticket 08: the window footnote links to the method page's account of
   // the two period regimes, which is a part of the matrix and not of the page around it.
   return (
     <ThemeProvider theme={theme}>
       <MemoryRouter>
-        <Matrix performance={performance} roster={roster} slotsFor={slotsFor} now={now} />
+        <Matrix performance={performance} roster={rosterView} slotsFor={slotsFor} now={now} />
       </MemoryRouter>
     </ThemeProvider>
   );
@@ -84,8 +102,9 @@ function renderMatrix(
   performance: CourtPerformance = build(),
   slotsFor?: (dispute: Dispute) => DisputeRowSlots,
   now: number = NOW,
+  rosterView: RosterView = roster,
 ) {
-  return render(harness(performance, slotsFor, now));
+  return render(harness(performance, slotsFor, now, rosterView));
 }
 
 /**
@@ -916,6 +935,103 @@ describe("Matrix", () => {
       renderMatrix(build({ commits: null }));
 
       expect(screen.queryByText("Not read")).not.toBeInTheDocument();
+    });
+  });
+
+  /**
+   * The identity block, which ticket 29 turned on its side.
+   *
+   * None of this is a layout assertion — jsdom lays nothing out, and the widths these declarations
+   * produce were read in a browser. What is assertable offline is that the declarations are the
+   * ones the design asks for, and that the two that must agree with each other do.
+   */
+  describe("the column header's identity block", () => {
+    /** One agent juror's identity block: the avatar, the names under it, and the link inside. */
+    function identityBlock(nickname: string) {
+      const link = screen.getByText(nickname);
+      const names = link.parentElement;
+      const block = names?.parentElement;
+      const avatar = block?.firstElementChild;
+      if (names === null || block == null || avatar == null) {
+        throw new Error(`${nickname} has an identity block`);
+      }
+      return { link, names, block, avatar: avatar as HTMLElement };
+    }
+
+    it("stacks the avatar above the nickname at both densities", () => {
+      // Beside it, the avatar and its gap took 34px of a compact column's ~83px content box and
+      // the nickname ellipsised what was left of the remaining ~46 — daemonhill rendered as
+      // "daemon…" and baskerville as "baskerv…", in the header of their own columns. Stacking is
+      // the whole fix: it buys the nickname the full box without buying a pixel of column, which
+      // ticket 25 has no width to spare for.
+      //
+      // Both densities, because one identity block is the point. A second would be a second
+      // description of one element, which is the failure `layout-and-css.md` records under "one
+      // element sized two ways".
+      for (const court of [comfortableCourt(), compactCourt()]) {
+        renderMatrix(court);
+        for (const agentJuror of ROSTER) {
+          const { block, names } = identityBlock(agentJuror.nickname);
+          expect(getComputedStyle(block).flexDirection).toBe("column");
+          expect(getComputedStyle(block).alignItems).toBe("center");
+          expect(getComputedStyle(names).alignItems).toBe("center");
+          expect(getComputedStyle(names).textAlign).toBe("center");
+        }
+        cleanup();
+      }
+    });
+
+    it("draws the portrait and the initials that stand in for it at one size", () => {
+      // The two are separate declarations and a drift between them would surface only in the
+      // degraded state: the initials tile is what a reader sees exactly when ENS is unreachable,
+      // which is the moment nobody is looking at this column closely. They read one constant, and
+      // this asserts both back against it rather than against a pixel typed a third time — the
+      // rule ticket 24 arrived at, that a derived value is checked against the model it came from.
+      renderMatrix(compactCourt());
+      const fallback = identityBlock("007").avatar;
+      expect(getComputedStyle(fallback).width).toBe(`${HEADER_AVATAR_PX}px`);
+      expect(getComputedStyle(fallback).height).toBe(`${HEADER_AVATAR_PX}px`);
+      // Still the thing that says which elements the fallback reached, on the elements themselves.
+      expect(fallback.getAttribute("aria-hidden")).toBe("true");
+
+      cleanup();
+      renderMatrix(compactCourt(), undefined, undefined, resolvedRoster);
+      const portrait = identityBlock("007").avatar;
+      expect(portrait.tagName).toBe("IMG");
+      expect(getComputedStyle(portrait).width).toBe(`${HEADER_AVATAR_PX}px`);
+      expect(getComputedStyle(portrait).height).toBe(`${HEADER_AVATAR_PX}px`);
+      // An empty alt, so the column's accessible name stays the nickname and the stack label. A
+      // portrait that named itself would rename the column and every cell answering to it.
+      expect(portrait.getAttribute("alt")).toBe("");
+    });
+
+    it("keeps the nickname on one line and inside its column", () => {
+      // `max-width` is load-bearing and only since the block became a column: a centred flex item
+      // is sized fit-content, and nowrap makes its min-content the whole string, so without this
+      // the box grows past the column and the name spills across the border rather than
+      // ellipsising. Nothing reports it — getComputedStyle answers with the width that was asked
+      // for either way — which is why it is pinned here and measured in a browser.
+      //
+      // One line is the other half. A nickname that wrapped would put its column's figures on a
+      // different baseline from the ones beside it, which is the comparison the marginals exist
+      // to allow, and is the defect ticket 06 met and AgentStack still reserves two lines against.
+      renderMatrix(compactCourt());
+      for (const agentJuror of ROSTER) {
+        const { link } = identityBlock(agentJuror.nickname);
+        expect(getComputedStyle(link).whiteSpace).toBe("nowrap");
+        expect(getComputedStyle(link).textOverflow).toBe("ellipsis");
+        expect(getComputedStyle(link).maxWidth).toBe("100%");
+      }
+    });
+
+    it("centres the identity and nothing under it", () => {
+      // The centring stops at the identity block. Put text-align on the cell instead and the
+      // Marginals block under the hairline inherits it, and six key-value lines whose whole
+      // readability is a key on the left and a value on the right collapse into the middle.
+      renderMatrix(compactCourt());
+      for (const column of screen.getAllByRole("columnheader")) {
+        expect(getComputedStyle(column).textAlign).toBe("left");
+      }
     });
   });
 

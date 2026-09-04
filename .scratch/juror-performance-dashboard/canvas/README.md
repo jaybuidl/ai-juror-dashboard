@@ -38,6 +38,18 @@ node <design-skill>/seed-canvas.mjs --template <design-skill>/payload.template.h
 If the canvas has been edited in the browser since, read that version back first — its
 saved state is the source of truth, not these files.
 
+**Editing an artboard moves every `Foo.dc.html:NN` citation below the edit**, and there are dozens
+of them — in `src/` doc comments, in `docs/`, in the tickets, and in this file. They are how a
+reader gets from a component to the drawing it was built against, and nothing checks them: a
+citation that has slid seven lines still resolves to *something*, which is worse than a broken one.
+
+So prefer an amendment that replaces lines in place rather than adding them. Ticket 29 restacked
+the column header in both artboards and started by adding an explanatory HTML comment above each
+block, which moved 30-odd citations by seven lines and five; the comments were dropped and the
+rationale kept here instead, leaving both files at exactly their previous length. **Where an
+artboard edit does have to change the line count, grep for the artboard's name and fix every
+citation past the insertion in the same commit.**
+
 ## To preview one artboard without publishing
 
 Copy `support.js` from `kleros-design-system/kleros-ai/design_references/` into this folder
@@ -104,6 +116,29 @@ order despite its caption saying they are.
   rather than printing them, so the artboard is a record of a range the axis has not had for two
   tickets. Left as it is — the plot's own geometry is unchanged and re-seeding it buys nothing —
   but do not resolve the disagreement by narrowing the code back to the artboard.
+
+- **The matrix column header drew the avatar beside the nickname, and now stacks it above.**
+  Ticket 29, amending `Main.dc.html:138-144` and `MatrixDense.dc.html:69-75`. Beside the name the
+  avatar and its 8px gap took 34px of a compact column's ~83px content box, so the nickname
+  ellipsised at roughly 46px and two of the seven agent jurors — `daemonhill`, `baskerville` —
+  could not be read in the header of their own column. Stacking hands the nickname the whole box
+  and buys no width, which mattered: ticket 25 has none to give.
+
+  **This is the second time an artboard has lost, and the first time it has lost about how an
+  element is drawn.** Ticket 22's amendment was invoked under the exception for the canvas's
+  *data*; this one is a drawing decision, overridden by the maintainer against the rendered page on
+  2026-09-04. `docs/knowledge/architecture.md` § The design canvas carries the reading, so that the
+  standing "the canvas wins" rule is not used to revert it. Amending the artboards is what makes
+  that rule safe to keep.
+
+  Both artboards also drew this one element at two sizes — 26px comfortable, 24px compact — for no
+  reason either gave. They now draw it at 44px, which is what the roster card has always used.
+
+  The header cell's side padding went with it, 11px to 8px on both. Stacking cleared the nickname
+  at 1440 and left it 3px short at the compact floor, which is where every viewport from 720 to
+  about 1298 sits — so `daemonhill` and `baskerville` went on clipping across most laptops. The 4px
+  a side buys the slot 86.98px against `daemonhill`'s 82. The alternative was a wider column, which
+  moves the grid minimum and the breakpoint derived from it and belongs to ticket 25.
 
 ## What is measured and what is sampled
 

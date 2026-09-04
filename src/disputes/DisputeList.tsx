@@ -165,8 +165,25 @@ const DisputeId = styled(Link)`
      scrolls each link flush to the top of the scrollport — underneath it. The focus ring is
      then drawn behind an opaque header and a keyboard reader loses their place with nothing on
      screen to say where it went (WCAG 2.4.11). Costless on the standalone dispute index, where
-     nothing is sticky and nothing scrolls this into view. */
-  scroll-margin-top: 8rem;
+     nothing is sticky and nothing scrolls this into view.
+
+     **This number is a measurement of another component, and nothing checks it.** It was 8rem
+     against a header that measured about 146px, so it was already 18px short, and ticket 29 took
+     the header to 197.84px at 1440x900 and made the shortfall 70. What that looked like: every
+     link focused by Shift+Tab parked at exactly its own scroll-margin-top, 128px, and the row is
+     21px tall — so the whole link and its entire ring sat inside the header's band. Not
+     marginally behind it; wholly behind it. Measured in Chrome on 2026-09-04, walking sixteen
+     links up the column with the header stuck.
+
+     It is 13rem for the 197.84px header plus about 10px of daylight. **A floor, not a
+     derivation**: no element declares the column header's height — it is whatever an avatar, a
+     nickname, a stack label and three figures come to — so there is nothing here to derive this
+     from and no offline test that can see it. jsdom lays nothing out, and a programmatic
+     call to focus does not even reproduce the defect in a real browser: Chrome centres the element
+     for that and only sequential focus navigation parks it against the margin. So this is
+     verified by a person pressing Shift+Tab, or it is not verified. **Change what the column
+     header contains and this has to be measured again.** */
+  scroll-margin-top: 13rem;
 `;
 
 /*

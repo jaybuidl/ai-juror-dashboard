@@ -112,3 +112,28 @@ column *count* is not, and is arithmetic instead.
       from the roster's
 - [ ] Checked in a browser at 1440pt and 390pt with the roster temporarily grown to nine — jsdom
       lays nothing out, so no offline test can see any of this
+
+
+## Comments
+
+**A measurement for the compact column's width, taken while building ticket 29** (2026-09-04, in
+Chrome at 1264x900, the floor this grid declares).
+
+At `COMPACT_COLUMN_PX = 104` the header cell has 86.98px of content after its padding, and two
+things do not fit in it:
+
+- **`columbo`'s marginal values overflow their row and cross the cell's right border by about
+  6px**, leaving roughly 2.4px to `daemonhill`'s key text — the dagger visibly sits on the column
+  rule. `Med rev 2m 48s†` and `Coherent 29/29‡` are the two; it is the footnote-marker columns
+  meeting the floor, and only that cell reports horizontal overflow. It was about 10px before
+  ticket 29 trimmed the header's side padding to 8px, so that ticket halved it and left the rest.
+- **"Never drawn" is 87.13px** in the stack label's font, so it wraps at the floor and
+  `AgentStack` still has to reserve two lines against it. It stops wrapping at about 1298px
+  viewport, which is above the floor.
+
+Both clear at a column of roughly **113px**, which would put `COMPACT_GRID_MIN_PX` at 1231 and
+`breakpoints.compactGrid` at 1327 for a roster of seven. That is a real cost — the freeze is lost
+on every screen between 1264 and 1327 — so it is a trade for this ticket to make with the column
+count in hand, not an obvious win. Recorded here rather than acted on, because 104 is documented as
+what a compact *cell* needs and both of these are facts about the *header*, which is a second
+question the constant has never been asked.

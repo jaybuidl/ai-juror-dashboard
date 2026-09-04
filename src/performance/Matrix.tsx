@@ -196,7 +196,15 @@ const CaptionBody = styled.div`
 const AgentColumn = styled.th<{ $compact: boolean }>`
   width: ${({ $compact }) => ($compact ? COLUMN_SHARE : "148px")};
   box-sizing: border-box;
-  padding: ${({ theme }) => `${theme.space6} ${theme.space5} ${theme.space5}`};
+  /* Narrower left and right than the artboards' 11px, and the 4px is bought rather than saved.
+     Stacking the identity gave the nickname the whole column, which cleared it at 1440 and left
+     it 3px short at the compact floor: the slot is 78.98px there and daemonhill measures 82,
+     baskerville 80. Every width from 720 up to about 1298 sits at that floor, which is most
+     laptops, so the two names went on clipping exactly where the change was supposed to have
+     fixed them. Eight makes the slot 86.98 and clears both, and the marginals under the hairline
+     get the same 8px. The alternative was to widen the column itself, which moves the grid
+     minimum and the breakpoint derived from it — ticket 25's constants, not this ticket's. */
+  padding: ${({ theme }) => `${theme.space6} ${theme.space4} ${theme.space5}`};
   border-left: ${({ theme }) => theme.borderHairline};
   border-bottom: 1px solid ${({ theme }) => theme.lineStrongColor};
   text-align: left;
@@ -217,18 +225,54 @@ const AgentColumn = styled.th<{ $compact: boolean }>`
     `}
 `;
 
+/**
+ * The avatar above the nickname rather than beside it, and what that buys.
+ *
+ * Ticket 29. Beside it, the avatar and its gap took 34px of a compact column's ~83px content box
+ * and the nickname ellipsised whatever was left of the remaining ~46 — `daemonhill` rendered as
+ * "daemon…" and `baskerville` as "baskerv…", on the one row of the grid whose whole job is to say
+ * which column belongs to whom. Stacking hands the nickname the full box and every nickname the
+ * roster holds fits in it, so the clipping goes without a pixel of extra width. That mattered:
+ * ticket 25 forbids taking width from the 440px row header, and no artboard draws a column wider
+ * than 148px.
+ *
+ * **This is drawn against the amended artboards, not the ones ticket 17 was built from.**
+ * `Main.dc.html:138-144` and `MatrixDense.dc.html:69-75` drew the avatar beside the name at 26px
+ * and 24px; ticket 29 amended both to this arrangement at one size. `docs/knowledge/architecture.md`
+ * carries why that inversion of "the canvas wins" was allowed, so that reading the rule alone does
+ * not license reverting this.
+ *
+ * Centred here and **not** on `AgentColumn`, which keeps `text-align: left`: the `Marginals` block
+ * under the hairline inherits from the cell, and its lines are keyed left and valued right.
+ */
 const AgentIdentity = styled.div`
   display: flex;
+  flex-direction: column;
   align-items: center;
   gap: ${({ theme }) => theme.space4};
   min-width: 0;
 `;
 
+/**
+ * One size, read by the portrait and by the initials that stand in for it.
+ *
+ * Written once because the two must never disagree and a drift between them would show only in the
+ * degraded state — the fallback is what a reader sees exactly when ENS is unreachable, which is the
+ * moment nobody is looking at this column closely. It was a 26px literal typed twice.
+ *
+ * The value is `Roster.tsx`'s, deliberately: the roster card draws this same agent juror at 44px on
+ * `radiusTile`, and after ticket 29 the two declarations are identical. They are still two
+ * declarations. Extracting one shared avatar is the right follow-up and was left alone here because
+ * ticket 26 is open over `Roster.tsx` and `docs/knowledge/merging-and-branches.md` records what
+ * parallel branches over one file produce.
+ */
+export const HEADER_AVATAR_PX = 44;
+
 const Avatar = styled.img`
-  width: 26px;
-  height: 26px;
+  width: ${HEADER_AVATAR_PX}px;
+  height: ${HEADER_AVATAR_PX}px;
   flex: none;
-  border-radius: ${({ theme }) => theme.radiusChip};
+  border-radius: ${({ theme }) => theme.radiusTile};
   border: ${({ theme }) => theme.borderHairline};
   object-fit: cover;
   background-color: ${({ theme }) => theme.page};
@@ -239,26 +283,34 @@ const Avatar = styled.img`
    what says which elements it reached, on the elements themselves. */
 const AvatarFallback = styled.span<{ $fallenBack?: boolean }>`
   display: flex;
-  width: 26px;
-  height: 26px;
+  width: ${HEADER_AVATAR_PX}px;
+  height: ${HEADER_AVATAR_PX}px;
   flex: none;
   align-items: center;
   justify-content: center;
-  border-radius: ${({ theme }) => theme.radiusChip};
+  border-radius: ${({ theme }) => theme.radiusTile};
   border: ${({ theme, $fallenBack }) =>
     $fallenBack === true ? `1px dashed ${theme.lineAmber}` : theme.borderVisible};
   background-color: ${({ theme }) => theme.surfaceInset};
-  font: ${({ theme }) => theme.typeMonoSm};
+  /* The larger mono, since the tile it sits in is now 44px rather than 26 and the small one read as
+     a smudge in it. This is the roster card's pairing at the roster card's size. */
+  font: ${({ theme }) => theme.typeMono};
   font-feature-settings: ${({ theme }) => theme.featureMono};
   color: ${({ theme }) => theme.textMeta};
   text-transform: uppercase;
 `;
 
+/* Full width rather than shrink-to-fit, so that the two lines inside it centre on the column's axis
+   and not on each other's. See the note on the nickname's max-width for why that distinction is
+   load-bearing rather than cosmetic. */
 const AgentNames = styled.span`
   display: flex;
   flex-direction: column;
+  align-items: center;
   gap: ${({ theme }) => theme.space1};
+  width: 100%;
   min-width: 0;
+  text-align: center;
 `;
 
 /* A link to that agent juror's own view, and no `aria-label` on it. The name of a
@@ -273,6 +325,14 @@ const AgentNickname = styled(Link)<{ $drawn: boolean }>`
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  /* Load-bearing, and only since the identity block became a column. A centred flex item is sized
+     fit-content, and nowrap makes its min-content the whole string — so without this the box grows
+     past the column and the name spills across the border instead of ellipsising. Nothing reports
+     it: getComputedStyle answers with the width that was asked for either way, and jsdom lays
+     nothing out. The same trap this repo already records for a 1fr grid track, in a flex container.
+     One line is deliberate: a nickname that wrapped would put this column's figures on a different
+     baseline from the ones beside it, which is the comparison the marginals exist to allow. */
+  max-width: 100%;
   text-decoration: none;
 
   &:hover {
@@ -304,7 +364,21 @@ const AgentStack = styled.span`
      measure at two heights across a header whose whole purpose is to be read across. Reserving
      the taller case makes that baseline a property of the layout rather than of whichever
      strings the roster happens to hold, so a longer stack name cannot reintroduce it either.
-     The slot is set to display block because a bare inline box ignores a min-height. */
+     The slot is set to display block because a bare inline box ignores a min-height.
+
+     Ticket 29 widened this slot — the identity block became a column, so the slot went from what
+     was left beside a 26px avatar to the full column — and re-measured rather than assuming the
+     reservation had become dead weight. It has not. "Never drawn" is 87.13px in this font, the
+     slot is 78.98px at the compact floor and 94.66px at 1440, so it still wraps below about 1298
+     and still needs the second line reserved. Every stack name the roster holds is one line at
+     both widths, so the reservation costs one line of header height today and earns it only at
+     the narrow end. To retire it the column would have to reach roughly 113px, which is a width
+     question and belongs to ticket 25, not here.
+
+     One trap in checking this, because it wasted a reading: the min-height below makes
+     scrollHeight report two lines whether or not the text takes two, so a wrap test that reads
+     scrollHeight measures this declaration rather than the string. Measure the string against
+     the slot's width instead. */
   display: block;
   min-height: ${STACK_LINE_HEIGHT * 2}em;
 `;

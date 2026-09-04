@@ -214,6 +214,10 @@ Converting the scale to `rem` is a two-part change and only the first part is ch
 base the conversion renders identically, so the tokens themselves are safe to move. What is not
 safe alone is the second part: the boxes holding that text are fixed px too — the phone's 52px
 slot with `white-space: nowrap` inside a card that clips its own overflow, the matrix's 148px
-cell, `AgentJurorDraws`' fixed `colgroup`, the 26px and 36px avatars. Moving the type without
-moving those creates the clipping the criterion forbids. It wants doing together, with a browser
+cell, `AgentJurorDraws`' fixed `colgroup`, and every avatar — 26px on the dispute panel, 36px on
+the phone's slot, 44px on the roster card and, since ticket 29, in the matrix's column header.
+This list is meant to be the whole inventory, so it grew when the header's avatar did: ticket 29
+enlarged one of these boxes and unblocked none of this, because a bigger box for text that is
+still sized in px is the same defect at a different scale. Moving the type without moving those
+creates the clipping the criterion forbids. It wants doing together, with a browser
 at a raised base size, and it is recorded here rather than half-done.

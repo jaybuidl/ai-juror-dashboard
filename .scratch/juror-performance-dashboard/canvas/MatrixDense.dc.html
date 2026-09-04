@@ -65,11 +65,11 @@
         </div>
 
         <sc-for list="{{agents}}" as="a" hint-placeholder-count="6">
-          <div class="cell" style="display: block; padding: 16px 11px 12px; border-bottom: 1px solid rgba(255,255,255,0.12); background: {{a.bg}};">
-            <div style="display: flex; align-items: center; gap: 8px;">
-              <span style="width: 24px; height: 24px; flex: none; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; font: 500 9px/1 'JetBrains Mono', monospace; color: #8681a0;">{{a.av}}</span>
-              <span style="min-width: 0;">
-                <span style="display: block; font: 700 13px/1.2 'Manrope', sans-serif; letter-spacing: -0.015em; color: {{a.fg}}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{a.name}}</span>
+          <div class="cell" style="display: block; padding: 16px 8px 12px; border-bottom: 1px solid rgba(255,255,255,0.12); background: {{a.bg}};">
+            <div style="display: flex; flex-direction: column; align-items: center; gap: 8px;">
+              <span style="width: 44px; height: 44px; flex: none; border-radius: 12px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; font: 500 13px/1 'JetBrains Mono', monospace; color: #8681a0;">{{a.av}}</span>
+              <span style="width: 100%; min-width: 0; text-align: center;">
+                <span style="display: block; max-width: 100%; font: 700 13px/1.2 'Manrope', sans-serif; letter-spacing: -0.015em; color: {{a.fg}}; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{a.name}}</span>
                 <span style="display: block; margin-top: 3px; font: 500 9px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.1em; color: {{a.stackFg}};">{{a.stack}}</span>
               </span>
             </div>

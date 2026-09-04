@@ -53,6 +53,32 @@ this file is the full account.
   page. The technique keeps its general form, which is that a threshold nobody can reach on demand
   is still testable by moving the threshold, and the caveat with it: what a lowered constant opens
   is the density at *thirty* rows, and ticket 24 is the first read of it at the real count.
+- **Two ways a browser measurement lies about text, both met in one sweep (ticket 29).**
+  Measuring whether a string fits its slot is the check behind every truncation claim here, and the
+  obvious two ways to do it are both wrong.
+
+  `getComputedStyle(el).font` returns the **empty string** in Chrome whenever the shorthand cannot
+  be serialised, which it usually cannot — so a probe element built by copying that value is
+  measured in the page's default 14px sans and reports a width that is nothing to do with the
+  element. Set the font longhands individually (`font-family`, `font-size`, `font-weight`,
+  `letter-spacing`, `text-transform`) or clone the real node.
+
+  And `scrollHeight` cannot tell you whether text wrapped if the element declares a `min-height`:
+  it reports the declaration. `AgentStack` reserves two lines, so every column answered "wraps" —
+  including the ones showing one line. Measure the **string** against the slot's width instead of
+  asking the box how tall it is.
+
+  The general form, since both failures share it: a reading taken *through* a declaration measures
+  the declaration. Measure the thing whose size is in question against the thing that constrains
+  it — `scrollWidth` against `clientWidth` for a clip, the child's rect against the parent's for a
+  spill.
+- **A programmatic `.focus()` does not reproduce a focus-obscured-by-sticky-header defect.** Chrome
+  centres an element focused from script within the scrollport reduced by `scroll-margin-top`, so
+  every link lands mid-viewport and every reading comes back clean. Only **sequential focus
+  navigation** — real Tab or Shift+Tab keys — parks the element against its scroll margin, which is
+  where WCAG 2.4.11 fails. Ticket 29 found the matrix's dispute links wholly behind the frozen
+  column header this way, after three `.focus()` probes had said the page was fine. Axe does not
+  test 2.4.11 either, so a green run and a clean script are two silences, not two confirmations.
 - **jsdom resolves styled-components rules but not shorthands, and its own UA sheet can make an
   assertion vacuous.** `getComputedStyle` *does* see a descendant rule from a styled component —
   `color` and `text-underline-offset` come back correctly. But it does not expand

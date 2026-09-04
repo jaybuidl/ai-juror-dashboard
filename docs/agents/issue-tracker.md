@@ -7,6 +7,7 @@ Issues and specs for this repo live as markdown files in `.scratch/`.
 - One feature per directory: `.scratch/<feature-slug>/`
 - The spec is `.scratch/<feature-slug>/spec.md`
 - Implementation issues are one file per ticket at `.scratch/<feature-slug>/issues/<NN>-<slug>.md`, numbered from `01`, never a single combined tickets file
+- **`ls` the issues directory before choosing a number.** The `grep -L 'Status:** done'` in `CLAUDE.md` lists only the *open* tickets, so it says nothing about the highest number in use — on 2026-09-04 a ticket was written as `27` against an existing, finished `27` and `28`, and renumbering it meant editing twenty-odd references while leaving five pre-existing mentions of the real ticket 27 alone, in the same files
 - Triage state is recorded as a `Status:` line near the top of each issue file (see `triage-labels.md` for the role strings)
 - Where a ticket has a design referent, a `**Design:**` line sits between `**Blocked by:**` and `**Status:**`, naming the artboard and the line range it must be built against, or — where the referent is not an artboard, as for a design system — naming that instead. Added because the design canvas landed after the tickets were written: a criterion reading "renders distinctly" is unbuildable without one
 - Comments and conversation history append to the bottom of the file under a `## Comments` heading

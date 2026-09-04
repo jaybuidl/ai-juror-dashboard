@@ -13,6 +13,22 @@ this file is the full account.
   sideways instead of clipping — with nothing in the console. `minmax(0, 1fr)` on the track and
   `min-width: 0` on the item are both required. `DisputeList.tsx` carries them and a test pins the
   computed `grid-template-columns`, because the failure is invisible until someone reads a row.
+- **`text-overflow: ellipsis` also does nothing on a *centred flex item*, and needs
+  `max-width: 100%`.** The same failure one layout mode across, met by ticket 29 when the matrix
+  column header's identity block went from a row to a centred column. A flex item that is centred
+  on the cross axis is sized `fit-content`, and `white-space: nowrap` makes its min-content the
+  whole string — so `fit-content` resolves to the string's width, the box grows past its column,
+  and the name spills across the cell border instead of clipping. Every ingredient of the working
+  version is present: `overflow: hidden`, `text-overflow: ellipsis`, `min-width: 0` on the parent.
+  None of them binds a box that was never told it had a ceiling. `max-width: 100%` on the item is
+  the ceiling, and it is load-bearing rather than defensive.
+
+  The tell is the same as the rest of this family, and worth stating once more because it is what
+  makes these expensive: `getComputedStyle` answers with the `100%` that was asked for whether or
+  not it was given, and jsdom lays nothing out, so the offline test that pins the declaration is
+  green either way. What sees it is `scrollWidth > clientWidth` for a clip and the child's rect
+  against the parent's for a spill — two different readings for two different failures, in a
+  browser, at a stated width.
 - **The CSS `font` shorthand resets `font-feature-settings`, and every `--type-*` token is one.**
   `tokens/base.css` puts `font-feature-settings: var(--font-feature-numeric)` (`"tnum" 1`) on `body`
   so digits are tabular page-wide; any element typed through a `--type-*` token silently drops that

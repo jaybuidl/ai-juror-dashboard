@@ -87,6 +87,27 @@ and its line range, or, for ticket 14, the design system itself.
   marginals exists to allow. Before citing the canvas for how an element looks, find the artboard
   that draws *that element in that place*, not the one that explains the idea.
 
+- **The rule settles a ticket against an artboard. It does not settle the maintainer against one.**
+  Ticket 29 stacked the matrix column header's avatar above the nickname; `Main.dc.html:138-144`
+  and `MatrixDense.dc.html:69-75` drew it beside the name, and both were **amended** to match. That
+  is the second inversion after ticket 22 and it is a different kind: 22 was invoked under the
+  exception for the canvas's *data*, and this one is a disagreement about how an element is drawn,
+  which is exactly what the rule reserves to the artboard.
+
+  The reading, so nobody re-argues it. The rule exists because a ticket written before the canvas
+  landed is a worse description of an element than a drawing of it — it resolves *two documents*,
+  and a maintainer changing the design is not one of the two. What the rule does bind is what
+  happens next: the drawing has to move with the code. A codebase that has quietly diverged from
+  the canvas, read against a rule saying the canvas wins, is a codebase whose next reader reverts
+  the divergence in good faith. **So the artboard edit is part of the ticket that changes the
+  element, not follow-up work after it** — and where a re-seed is impractical, the divergence goes
+  in `canvas/README.md` under its known-defects heading, where the next reader will meet it.
+
+  What 27 also removed: the two artboards drew this one element at 26px and 24px, comfortable and
+  compact, for no reason either of them gave. Density reduces the figures under the hairline and
+  the cell's height; it had never been a reason to redraw who a column belongs to. One element, one
+  size, in one description of it — the same rule `layout-and-css.md` states for widths.
+
 ## The kleros-v2 court frontend is the behaviour reference
 
 *Migrated from session memory, 2026-09-03.*
