@@ -13,6 +13,16 @@ They are facts about this codebase and the live court, verified against chain, s
 or a browser at the time noted. `CLAUDE.md` § Tripwires carries a one-line form of each;
 this file is the full account.
 
+- **jsdom does resolve styled-components in `getComputedStyle`, so CSS-only facts are testable**
+  (2026-09-04, ticket 26). The injected `<style>` participates in the cascade: an element under
+  `text-transform: uppercase` reports `uppercase`, and one overriding it reports `none`. That
+  opens the class of defect nothing else can reach — a rule that changes what is drawn without
+  changing text content, an accessible name or any attribute. Two cautions. Verify the assertion
+  is not vacuous by probing a sibling that should report the *other* value, because a rule jsdom
+  failed to apply and a rule that says `none` are the same result. And it stays a fact about the
+  cascade, never about layout: `getComputedStyle` reports what was asked for, and jsdom lays
+  nothing out — see the width entries above.
+
 - **The offline suite goes red under CPU contention, and it looks like a bug you just introduced.**
   `yarn test` is ~450 tests across 27 files, many of them rendering the whole matrix, and vitest
   runs the files in parallel against the default 5s timeout. Run it while something else is

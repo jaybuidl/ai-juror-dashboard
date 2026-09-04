@@ -97,7 +97,8 @@ ens-and-roster, architecture, project-history. Read the topic file before workin
   vendored `base.css` un-underlines every anchor and the accent is 1.22:1 on body ink, so a new
   prose link ships a WCAG 1.4.1 violation. Underline it permanently, on the prose container.
 - **`title` is never the sole carrier of a fact** — `aria-hidden` on the abbreviation, a
-  `VisuallyHidden` beside it. One that duplicates visible text is fine.
+  `VisuallyHidden` beside it. One that duplicates visible text is fine. Put the separating space
+  in a **text node**, not inside the hidden element: a name trims each element's own contribution.
 - **`Thing.ts` and `Thing.tsx` differing only in case is a hard macOS TypeScript error** (`TS1149`).
   Only `yarn check-types` says so.
 

@@ -8,6 +8,15 @@ They are facts about this codebase and the live court, verified against chain, s
 or a browser at the time noted. `CLAUDE.md` § Tripwires carries a one-line form of each;
 this file is the full account.
 
+- **A flex `gap` is not in the text, so a separator moved into one disappears from what a reader
+  copies** (2026-09-04, ticket 26). Making the roster's stack label a flex row to hold an icon
+  level with it turned ` · From roster` into `· From roster` with 4px of gap in front — identical
+  on screen, and `textContent` now reads `OpenClaw· From roster`. The fix is to keep the label in
+  inline flow and confine the flex to the mark and the word it stands for. Two smaller things came
+  with it: a flex row does not wrap where inline text does, so a long label leaves its card
+  instead of running onto a second line; and the state was only reachable with ENS down, which no
+  test on that component covered.
+
 - **`text-overflow: ellipsis` does nothing inside a `1fr` grid track.** A track's minimum is `auto`,
   which is its content's minimum, so the column grows to fit the longest title and the row overflows
   sideways instead of clipping — with nothing in the console. `minmax(0, 1fr)` on the track and

@@ -8,6 +8,14 @@ They are facts about this codebase and the live court, verified against chain, s
 or a browser at the time noted. `CLAUDE.md` § Tripwires carries a one-line form of each;
 this file is the full account.
 
+- **A vendored image under 4096 bytes is not `'self'` — it is `data:`** (2026-09-04, ticket 26).
+  Vite's `assetsInlineLimit` defaults to 4096, so `src/roster/hermes-agent.png` (817 bytes) emits
+  no file at all: `dist/` holds no PNG and the bundle carries one `data:image/png;base64` URI. It
+  loads because `img-src` lists `data:` for ENS avatars, not because it is served from this
+  origin. Anyone tightening that directive has to know the mark goes with it — and it goes **in
+  production only**, since Vite dev and `yarn preview` send no CSP. Check `dist/` rather than
+  reasoning from where the file sits in `src/`.
+
 - **agentkit is only partly browser-safe.** `src/core/juror-v2.ts` and `disputes-v2.ts` are clean;
   `config-source.ts`, `sdk-lock.ts`, `rate-limit.ts`, `report-issue.ts` are Node-only. Its
   `src/index.ts` does not export the domain readers, and `getSubgraphUrl` reads `process.env`.

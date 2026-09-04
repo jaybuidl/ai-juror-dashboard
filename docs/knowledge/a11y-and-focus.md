@@ -8,6 +8,23 @@ They are facts about this codebase and the live court, verified against chain, s
 or a browser at the time noted. `CLAUDE.md` § Tripwires carries a one-line form of each;
 this file is the full account.
 
+- **An accessible name trims each child *element's* contribution, and keeps a raw text node's
+  whitespace** (2026-09-04, ticket 26). Adding `<VisuallyHidden> on X</VisuallyHidden>` after
+  `{handle}` to say where a link goes produced the name `@Grokleroson X` — worse than the defect
+  it fixed, because the leading space inside the element was trimmed away while the ` ↗` text node
+  beside it kept its own. The separator has to live in a text node of the parent:
+  `{handle} <VisuallyHidden>on X</VisuallyHidden> ↗`. Nothing on screen changes either way, and
+  `textContent` is identical in both, so only `computeAccessibleName` — or a `getByRole` name
+  assertion written as one whole string rather than as two halves — can see it.
+
+- **`text-transform` is invisible to every assertion you would think to write** (2026-09-04,
+  ticket 26). It does not touch text content, so the DOM, `textContent`, the accessible name and
+  every string matcher are identical whether an element shouts or not. `@BlaiseBuidl` rendered as
+  `@BLAISEBUIDL` through a green suite, inheriting the pill row's mono-label uppercase — right for
+  the ENS name and the address beside it, whose case is not a fact, and wrong for a handle, whose
+  capitals are the whole point. It was found by looking at the page. The guard is
+  `getComputedStyle(el).textTransform`, and it works: see `testing.md`.
+
 - **A green axe run is not an accessibility sweep, and no test here can measure a hit area.**
   Clicking a dispute row did nothing, and it was a reader who said so rather than the suite. The
   ID was the only link: 40x21px inside an 1104x80px row — one per cent of its area, under the 24px
