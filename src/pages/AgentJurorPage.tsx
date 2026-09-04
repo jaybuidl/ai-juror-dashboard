@@ -206,6 +206,19 @@ const MissingBody = styled.p`
   max-width: 68ch;
   font: ${({ theme }) => theme.typeBodyLg};
   color: ${({ theme }) => theme.textBody};
+
+  /* Same rule, same reason as the footnote in Footnotes.tsx: a link inside body prose cannot be
+     marked by colour alone, and the accent against this paragraph's ink is the same 1.22:1 that
+     failed there.
+
+     axe did not name this one, and reported this route as zero violations — which was silence
+     rather than a pass. It had put link-in-text-block in its *incomplete* list, unable to resolve
+     the background behind this paragraph and so declining to judge, and a default audit prints
+     violations. Found by reading every route for the shape instead. Ticket 28. */
+  a {
+    text-decoration: underline;
+    text-underline-offset: 2px;
+  }
 `;
 
 /** `0x7a3f…c412`. The href beside it carries the whole of it, and so does the tooltip. */

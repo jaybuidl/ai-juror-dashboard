@@ -48,8 +48,22 @@ const Footnote = styled.p`
   font-feature-settings: ${({ theme }) => theme.featureNumeric};
   color: ${({ theme }) => theme.textBody};
 
+  /* Underlined, and permanently rather than on hover. This is a link inside a block of body
+     prose, which is the one shape where colour alone is not allowed to carry the fact that a
+     link is there: the accent against this paragraph's ink is 1.22:1 where WCAG 1.4.1 wants 3:1,
+     so a reader who does not separate those two hues has nothing telling them the sentence ends
+     in a link. Every other link in this repo is standalone — a dagger, an ID, a nav item — and
+     those legitimately underline on hover only; the rule is about text blocks, and this is one.
+
+     The default is the trap rather than this file: the vendored base.css sets text-decoration of
+     none on every anchor, so a link dropped into prose anywhere is colour-only until someone says
+     otherwise, and that file cannot be edited. The offset matches Justification.tsx, which
+     had already done this for the links inside an agent's own justification prose; this and
+     AgentJurorPage.tsx's MissingBody are the other two prose containers. Ticket 28. */
   a {
     color: ${({ theme }) => theme.accent};
+    text-decoration: underline;
+    text-underline-offset: 2px;
   }
 `;
 

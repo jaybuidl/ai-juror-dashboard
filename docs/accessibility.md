@@ -228,13 +228,8 @@ The remaining finding is answered rather than fixed: see the "not drawn" dot in
 None of the ten was caught by 832 passing tests, lint, types, a build, or an axe audit returning
 zero violations on seven routes.
 
-**And the page no longer returns zero.** An audit run during ticket 27, at `wcag2a,wcag2aa` on
-`/`, reports one violation: `link-in-text-block` on `Footnotes.tsx:170`, the window footnote's
-link to `/method#window`, at 1.21:1 against the prose it sits in where 3:1 is wanted, with no
-non-colour cue. That is **ticket 28**, open. This section is a record of what ticket 18 did and is
-left standing as one; the sentence above it is true of that sweep and is no longer true of the
-page. The other 187 nodes in that run are `incomplete` — backgrounds axe cannot resolve behind
-gradients and overlaps — and are not defects.
+**And it did not stay zero — see ticket 28 below.** This section is a record of what ticket 18
+did and is left standing as one; the sentence above it is true of that sweep.
 
 ## Checked in a browser, because jsdom lays nothing out
 
@@ -308,3 +303,45 @@ on the dispute view. Both are worded, so neither rests on the glyph, but a reade
 first will meet the second. Flagged rather than changed: it is a vocabulary decision and
 `CONTEXT.md` is where it belongs.
 
+## Found after the sweep, by a tool the sweep also ran
+
+**A link in body prose, marked by colour alone.** `Footnotes.tsx`'s window footnote ends
+"…never as a fraction of the window it ran in. *What that means for these figures*." — and the
+link was `--accent` on `--text-2` with no underline, 1.22:1 where WCAG 1.4.1 wants 3:1 of a
+colour-only link. axe names it `link-in-text-block`. Ticket 28; both prose links now carry a
+permanent underline, and `docs/contrast.md` records why the ratio itself was not chased.
+
+**Three things about it are worth more than the fix.**
+
+**It was not caused by the prose that moved.** The obvious suspect was `9e69dc8` and its
+neighbours, which moved the sparsity note into the footer after this sweep. They did not: the link
+sits in exactly the same sentence at `1904247` as it does today. Nor was it the palette — this
+sweep raised `--text-3` and `--text-4`, while the body ink is `--text-2`, unchanged since
+`f2decbf` adopted the system.
+
+**A rule can be present, evaluated, and still silent.** The same defect exists on
+`/agent-jurors/notanagent`, in `AgentJurorPage.tsx`'s not-an-agent-juror paragraph, at the same
+two colours. axe reported that route as **zero violations** — because there `link-in-text-block`
+landed in `incomplete`, not in `violations`: it could not resolve the background behind the
+paragraph, so it declined to judge. A default audit prints violations, and the finding was in the
+other list. So "zero violations" was compatible with the defect being present the whole time, and
+this is the companion to the target-size lesson above: **`incomplete` is silence, and silence is
+not a pass.** Read both lists, on every route.
+
+The inverse also holds and is easier to get wrong in the other direction: `/` reports **187**
+`incomplete` colour-contrast nodes, and they are gradients and overlaps axe cannot composite, not
+187 defects. Neither number means what it looks like.
+
+**The default is the trap, and it cannot be fixed at the source.** The vendored `base.css` sets
+`text-decoration: none` on every `a`, so any link dropped into prose anywhere in this app is
+colour-only until its own component says otherwise — and that file is vendored verbatim and must
+not be edited. Every other link in the repo is standalone (a dagger, an ID, a nav item) and
+legitimately underlines on hover only, so a blanket rule would contradict several documented
+decisions. It is per-prose-container, and there are two containers.
+
+Audited after the fix at `wcag2a,wcag2aa`, at 1440 and at 390, on all eight routes — the seven
+plus the not-an-agent-juror state: **zero violations everywhere.** On the two routes that carried
+this rule, `/` and `/agent-jurors/notanagent`, it no longer appears in `incomplete` either — the
+underline settles the question axe could not, so there is nothing left to decline. That pair is
+what was checked for the `incomplete` list specifically; the zero-violations figure is all eight,
+at both widths. Which is the check, not "it looked fine".

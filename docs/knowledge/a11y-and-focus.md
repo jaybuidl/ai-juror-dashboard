@@ -41,6 +41,29 @@ this file is the full account.
   programmatic focus — Chrome matches `:focus-visible` on a scripted focus when the last
   interaction was a keyboard one, so `<main>` taking focus on a route change would have drawn a
   2px halo round the whole view. Suppress `box-shadow`, and do it on `:focus-visible`.
+- **A link inside body prose needs a cue that is not colour, and the design system's default
+  denies it one.** The vendored `base.css` sets `text-decoration: none` on every `a`, so a link
+  dropped into a sentence is marked by the accent and nothing else. WCAG 1.4.1 then wants 3:1
+  between link and surrounding text, and this palette gives **1.22:1** dark and **2.55:1** light,
+  so the colour-only route is not available in either theme. The answer is a permanent underline
+  on the prose container's `a` — `text-decoration: underline; text-underline-offset: 2px`, the
+  shape `Justification.tsx` already used — never a hover-only one, which does not exist for a
+  reader who does not hover and does not exist at all on a touch screen. It is per-container and
+  not global: every other link here is standalone (a dagger, an ID, a nav item) and those
+  underline on hover deliberately. **Three containers carry prose links**, and all three underline:
+  `Footnotes.tsx`, `AgentJurorPage.tsx`'s `MissingBody`, and `Justification.tsx`, whose `a` maps
+  the links inside an agent's own justification text and got there first. The first two are pinned
+  by a `text-underline-offset` assertion apiece. `base.css` is vendored and must not be edited, so
+  a *fourth* prose container starts out wrong. Ticket 28.
+- **An axe rule can be evaluated and still say nothing: `incomplete` is not a pass.** The same
+  prose-link defect above was a `violation` on `/` and sat in `incomplete` on
+  `/agent-jurors/notanagent`, where axe could not resolve the background behind the paragraph and
+  so declined to judge. A default audit prints violations, so that route read as **zero
+  violations** while carrying the defect. Read both lists, on every route, and say which you read.
+  The number cuts the other way too: `/` reports **187** `incomplete` colour-contrast nodes that
+  are gradients and overlaps axe cannot composite, not 187 defects. Neither list means what its
+  count looks like. This is the companion to the target-size lesson — a rule the tool does not
+  implement and a rule it cannot finish are both silence.
 - **`title` is never the sole carrier of a fact.** It needs a pointer hovering the element, so a
   keyboard reader cannot reach it, a touch reader cannot reach it, and screen readers disagree
   about whether to announce it at all. Ticket 18 found three — `DisputePanel`'s `R`/`C` measure

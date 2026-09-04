@@ -48,6 +48,17 @@ this file is the full account.
   more than forty disputes and court 34 holds thirty-one, so it was checked by lowering
   `COMPACT_FROM_ROWS` in the dev server, reading the page, and putting it back. A fixture cannot
   stand in — jsdom lays nothing out, which is the whole reason the browser is being opened.
+- **jsdom resolves styled-components rules but not shorthands, and its own UA sheet can make an
+  assertion vacuous.** `getComputedStyle` *does* see a descendant rule from a styled component —
+  `color` and `text-underline-offset` come back correctly. But it does not expand
+  `text-decoration` into its longhands, so `textDecorationLine` reads `"none"` on an element that
+  is visibly underlined, while the `textDecoration` shorthand reads `"underline"`. Worse, jsdom's
+  UA stylesheet underlines anchors, and the vendored `base.css` that sets `text-decoration: none`
+  is **not** in the jsdom cascade — so `expect(getComputedStyle(a).textDecoration).toContain(
+  "underline")` passes whether or not the component declares one. Ticket 28 wrote that assertion
+  first and it was green with the declaration deleted. Pin a property with no UA default instead:
+  `text-underline-offset` reads `"2px"` from the rule and `"auto"` without it. The general form —
+  **before trusting a computed-style assertion, delete the declaration and watch it go red.**
 - **jsdom has no `window.matchMedia` at all** — `undefined`, not a stub answering false. So
   `useIsNarrow` in `src/styles/breakpoints.ts` guards the read exactly as `useIsClipped` guards
   `ResizeObserver`, and returns false where there is nothing to ask; every test written before

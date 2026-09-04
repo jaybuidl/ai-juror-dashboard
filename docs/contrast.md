@@ -170,6 +170,38 @@ fix fails a test.
 **`--brand-x`, the `×` of the Kleros ×AI lockup.** `#5e5383`, part of a logotype, exempt under
 WCAG 1.4.3. It appears in one component and the system marks both brand colours "logo only".
 
+## The one ratio the page does not clear, and does not have to
+
+**A link inside body prose, against the prose around it.** WCAG 1.4.1 asks that a link in a block
+of text not be marked by colour alone; if colour *is* the only cue, the link must clear **3:1**
+against the surrounding text. This page's accent against its body ink does not, in either theme:
+
+| Link on prose | Ratio | 3:1 |
+| --- | --- | --- |
+| Dark: `--accent` `#4ddfd8` on `--text-2` `#b9b5cc` | **1.22** | fails |
+| Light: `--accent` `#0f8f8b` on `--text-2` `#443e5c` | **2.55** | fails |
+
+(axe reports the dark one as **1.21**, computing it off the composited pixels rather than off the
+token as this file does everywhere; the difference is the glow behind the paragraph, not a
+disagreement.)
+
+**Neither was raised, and neither should be.** The 3:1 clause is a condition on the colour-only
+case, not an independent requirement — the rule is satisfied instead by giving the link a cue that
+is not colour. Both prose links carry a permanent underline as of ticket 28: `Footnotes.tsx`'s
+window footnote and `AgentJurorPage.tsx`'s not-an-agent-juror paragraph. Chasing the ratio instead
+would mean moving the accent — the colour of every figure, focus ring and verified mark on the
+page — to satisfy the two places it happens to sit inside a sentence.
+
+**This is not a third exemption.** The two in the section above are ratios the page fails and
+accepts with an argument. This is a ratio the page fails and does not owe, because the condition that would make
+it owed does not hold. What has to stay true is the underline, and **both** sites are pinned:
+`Matrix.test.tsx` over the footnote, `AgentJurorPage.test.tsx` over the not-an-agent-juror
+paragraph. Each asserts `text-underline-offset`, which is the only half of it jsdom can see. Both
+guards are needed rather than one being belt-and-braces — the vendored `base.css` sets
+`text-decoration: none` on every anchor, so a new prose link is colour-only by default and this
+failure is one deleted declaration away at all times, and on the `AgentJurorPage` route axe reports
+the rule as `incomplete` rather than as a violation, so the tool would not catch its return.
+
 ## What is still not honoured
 
 **The type scale is px throughout, so a reader who raises their browser's default font size gets

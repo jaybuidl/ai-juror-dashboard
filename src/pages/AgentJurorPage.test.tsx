@@ -493,6 +493,26 @@ describe("an address that names nothing", () => {
     expect(screen.queryByText(/could not be read/i)).not.toBeInTheDocument();
   });
 
+  it("marks the way out as a link without relying on its colour", () => {
+    // The second of this app's two hand-written prose links, and the one axe cannot speak for:
+    // on this route it reports `link-in-text-block` as *incomplete* rather than as a violation,
+    // unable to resolve the background behind the paragraph. So a default audit reads this page
+    // as zero violations whether or not the underline is here, and the tool is not the guard —
+    // this is. Ticket 28; `Matrix.test.tsx` holds the same assertion over `Footnotes.tsx`.
+    renderAt("/agent-jurors/nope");
+
+    // Scoped to the paragraph rather than taken by index: the breadcrumb carries a link of the
+    // same name, and only this one sits inside a sentence. Reaching it through the prose is also
+    // what makes the assertion mean "the link in the text block".
+    const prose = screen.getByText(/does not name one of the six agent jurors/i);
+    const inProse = within(prose).getByRole("link", { name: "Agent jurors" });
+    // `text-underline-offset`, because the underline itself is not observable here: jsdom's UA
+    // sheet underlines anchors and the vendored base.css that unsets it is not in this cascade,
+    // so an assertion on `textDecoration` passes with the declaration deleted. See
+    // `docs/knowledge/testing.md`.
+    expect(getComputedStyle(inProse).textUnderlineOffset).toBe("2px");
+  });
+
   it("raises no banner over it, whatever else failed", () => {
     // A page showing no figure cannot have lost one. Worse than merely redundant here: every
     // sentence `failuresOf` writes names the agent juror the address failed to name, so an

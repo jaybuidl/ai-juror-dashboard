@@ -567,6 +567,36 @@ describe("Matrix", () => {
       ).toHaveAttribute("href", "/method#window");
     });
 
+    it("marks that link as a link without relying on its colour", () => {
+      // WCAG 1.4.1, and the one shape on this page it applies to: a link inside a block of body
+      // prose. The accent against this paragraph's ink is 1.22:1 where the rule wants 3:1, so
+      // the underline is the whole of what tells a reader who does not separate those two hues
+      // that the sentence ends in a link. Permanent, not on hover — a hover cue does not exist
+      // for a reader who never hovers, and does not exist at all on a touch screen.
+      //
+      // Pinned because the default is the trap: the vendored base.css sets text-decoration none
+      // on every anchor, so deleting this one declaration silently returns the page to the
+      // violation axe caught in ticket 28 rather than to something that looks wrong.
+      renderMatrix();
+
+      const link = screen.getByRole("link", { name: /what that means for these figures/i });
+
+      // **The offset is the assertion that discriminates; the underline below cannot.** Two
+      // jsdom facts stack up against testing this the obvious way. It does not expand the
+      // `text-decoration` shorthand, so the `textDecorationLine` longhand reads "none" even with
+      // the underline applied. And its UA stylesheet underlines anchors anyway, while the
+      // vendored `base.css` that sets `text-decoration: none` on every `a` is not in this
+      // cascade at all — so an assertion on the underline passes whether or not this component
+      // declares one. It was written that way first and proved nothing.
+      //
+      // `text-underline-offset` has no UA default to hide behind: it reads "2px" from this
+      // component's rule and "auto" without it. So it stands in for the declaration, and the
+      // underline it travels with is confirmed in a browser instead — which is where the
+      // cascade this is really about actually exists.
+      expect(getComputedStyle(link).textUnderlineOffset).toBe("2px");
+      expect(getComputedStyle(link).textDecoration).toContain("underline");
+    });
+
     it("marks nothing and claims nothing while the parameter history is out", () => {
       // Every cold load. It must not read as "no dispute ran under different rules", which is
       // a claim about the court, so it says the history has not been read instead.

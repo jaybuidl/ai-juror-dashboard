@@ -92,6 +92,9 @@ ens-and-roster, architecture, project-history. Read the topic file before workin
 - **Any declared width needs a browser to confirm it was honoured.** `getComputedStyle` reports what
   was *asked*, `getBoundingClientRect` what was *given*, and the gap is silent — `table-layout: auto`
   crushed the matrix's row header for three tickets.
+- **A link you put inside a sentence is marked by colour alone until you say otherwise.** The
+  vendored `base.css` un-underlines every anchor and the accent is 1.22:1 on body ink, so a new
+  prose link ships a WCAG 1.4.1 violation. Underline it permanently, on the prose container.
 - **`title` is never the sole carrier of a fact** — `aria-hidden` on the abbreviation, a
   `VisuallyHidden` beside it. One that duplicates visible text is fine.
 - **`Thing.ts` and `Thing.tsx` differing only in case is a hard macOS TypeScript error** (`TS1149`).
