@@ -177,3 +177,12 @@ compares the commit and vote windows only — written here as a guard against a 
 and the 2026-08-26 change is that court: a real reconfiguration that marks nothing, because no
 figure on this dashboard is measured from the evidence period. The marker never moved, and the only
 thing that had to change was the prose.
+
+**2026-09-04 — ticket 20 split the tripwire this ticket built.** The paragraph above records that
+"exactly two assertions went red", and names them by what they pin. Those two are now three, and
+the names have changed: a separate assertion holds the **commit and vote** windows alone, over
+`measuredRegimes`, and it is the only one that fires when a figure on the page moves. The two that
+pin the history to `/method` and to the fixture still fire on every change, and alone they now mean
+documentation upkeep rather than an unread question. Nothing above is edited: it is a true account
+of the 2026-08-26 failure as this ticket's arrangement reported it, and of why one assertion
+answering two questions was worth splitting.

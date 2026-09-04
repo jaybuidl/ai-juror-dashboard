@@ -100,14 +100,31 @@ This is why any hard-coded parameter list goes stale on its own, and why the two
 that stood for the whole of tickets 08–18 is no longer current. Ticket 19 took the third
 configuration up — into the fixture, the live tripwire and `/method` — and tickets 20 and 21 exist
 because of the same change: 20 specifically to make the tripwire say whether a *figure* moved or
-only an account went stale, which ticket 19 had to work out by hand and by reading.
+only an account went stale, which ticket 19 had to work out by hand and by reading. **Ticket 20
+did that**, so the paragraph below is now what the test file says about itself rather than a
+procedure a maintainer has to carry out.
 
-**When `court-parameters.integration.test.ts` is red** — it and the nightly `live` CI job fail on
-*any* change to the history, including one that moves nothing a reader can see — read the history
-off chain before treating it as a regression. Running that one integration file prints the new
-regime in its own assertion diff, which is the cheapest way to see what changed. Then ask which
-windows moved: a change leaving **commit and vote** alone moves no figure on the page at all,
-because `sameMeasuredWindows` compares only those two and the evidence window is never printed.
+**When `court-parameters.integration.test.ts` is red**, read the red test names in order and stop
+at the first. The file and the nightly `live` CI job still fail on *any* change to the history,
+including one that moves nothing a reader can see; what changed is that four assertions divide the
+reasons between them, in three groups.
+
+1. **`reads the court's configurations…`** and **`reports no configuration that repeats the one
+   before it`** — the read itself broke. A renamed event or a redeployed core returns `[]`, which
+   marks no dispute and is silent everywhere else. A log counted twice is the other half, and it
+   is why the order matters: a duplicate leaves both groups below **green** — there are still
+   three configurations, and the fold in 2 swallows a repeat — so a reader who skipped to 3 would
+   recapture the fixture with the duplicate in it.
+2. **`has moved no commit or vote window…`** — a window the dashboard measures from moved.
+   `measuredRegimes` folds away every configuration that left both alone, so this fires only on
+   the costly kind: latencies either side are no longer comparable and the matrix's marker falls
+   on a different set of rows.
+3. **`still holds the three configurations…`** and **`returns what the captured fixture holds…`**,
+   with 1 and 2 green — documentation upkeep. Recapture the fixture, update the literal, rewrite
+   `/method`'s regime strip.
+
+Reading the history off chain is still worth doing before treating any of this as a regression,
+and running that one integration file prints the new regime in its own assertion diff.
 
 A red *live* suite has a second, unrelated cause — the Arbitrum rate limit (see
 `chain-and-subgraph.md`). Check which suite failed before assuming either.

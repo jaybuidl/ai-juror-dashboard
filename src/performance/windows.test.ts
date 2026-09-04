@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { Dispute, DisputeRound } from "../disputes/disputes";
 import fixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import {
+  measuredRegimes,
   type PeriodWindows,
   type RawCourtParameters,
   sameMeasuredWindows,
@@ -257,5 +258,71 @@ describe("sameMeasuredWindows", () => {
     // that changed only those would mark every older dispute for a difference the reader
     // cannot see in any figure. A marker that appears without a visible cause is noise.
     expect(sameMeasuredWindows(NEW, { ...NEW, evidenceSeconds: 1, appealSeconds: 2 })).toBe(true);
+  });
+});
+
+describe("measuredRegimes", () => {
+  it("collapses the court's three configurations into the two its figures were measured in", () => {
+    // Three configurations, two stretches of comparable time. The 2026-08-26 change moved the
+    // evidence period alone, so it opened nothing: every latency on this dashboard either side
+    // of it is measured from the same commit and vote windows and may be read against another.
+    expect(measuredRegimes(toRegimes(HISTORY))).toEqual([
+      { from: Number(CREATED), commitSeconds: 28_800, voteSeconds: 28_800 },
+      { from: Number(MODIFIED), commitSeconds: 2_700, voteSeconds: 1_800 },
+    ]);
+  });
+
+  it("folds a fourth configuration that moves neither the commit nor the vote window", () => {
+    // The case court 34 has already produced once and will produce again — a duration changed
+    // to suit a demonstration, touching nothing any figure here is measured from. It makes the
+    // fixture and `/method` stale and it makes no two figures incomparable, which is the whole
+    // distinction `court-parameters.integration.test.ts` is split along.
+    const demo = { from: 1_800_000_000, windows: { ...CURRENT, evidenceSeconds: 300 } };
+
+    expect(measuredRegimes([...toRegimes(HISTORY), demo])).toEqual(
+      measuredRegimes(toRegimes(HISTORY)),
+    );
+  });
+
+  it("opens a regime for a fourth configuration that moves the commit window", () => {
+    const shortened = { from: 1_800_000_000, windows: { ...CURRENT, commitSeconds: 900 } };
+
+    expect(measuredRegimes([...toRegimes(HISTORY), shortened])).toEqual([
+      { from: Number(CREATED), commitSeconds: 28_800, voteSeconds: 28_800 },
+      { from: Number(MODIFIED), commitSeconds: 2_700, voteSeconds: 1_800 },
+      { from: 1_800_000_000, commitSeconds: 900, voteSeconds: 1_800 },
+    ]);
+  });
+
+  it("opens one for the vote window too, which is the other half of what is measured", () => {
+    const shortened = { from: 1_800_000_000, windows: { ...CURRENT, voteSeconds: 900 } };
+
+    expect(measuredRegimes([...toRegimes(HISTORY), shortened])).toHaveLength(3);
+  });
+
+  it("dates a regime from the configuration that opened it, not from one that restated it", () => {
+    // What the fold is for. The moment worth reporting is when the measured windows last
+    // *moved*, because that is the line either side of which two latencies stop being
+    // comparable; a configuration that repeats them carries a later moment and it is the wrong
+    // one to answer with.
+    const restated = { from: 1_800_000_000, windows: CURRENT };
+
+    expect(measuredRegimes([...toRegimes(HISTORY), restated])[1]?.from).toBe(Number(MODIFIED));
+  });
+
+  it("counts a return to an earlier pair of windows as a regime of its own", () => {
+    // Consecutive only, and deliberately. A court that put its eight-hour commit window back
+    // would make the disputes before and after that change comparable with each other — but
+    // not with the ones that ran between, so it is a third regime and not a resumption of the
+    // first.
+    const restored = { from: 1_800_000_000, windows: OLD };
+
+    expect(measuredRegimes([...toRegimes(HISTORY), restored])).toHaveLength(3);
+  });
+
+  it("has nothing to say about a history it could not read", () => {
+    // An unread history is an absence, not a court that has never configured itself, and this
+    // answers with an absence in kind rather than inventing a regime to hold the difference.
+    expect(measuredRegimes([])).toEqual([]);
   });
 });

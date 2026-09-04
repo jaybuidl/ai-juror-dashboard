@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: done
 blocked_by: ["19"]
 ---
 
@@ -44,16 +44,69 @@ sharpens the tripwire rather than removing the reason for one.
 **Design:** No artboard. This is the shape of a test failure, which nothing on the canvas
 describes.
 
-- [ ] A change to the commit or vote window fails the live suite, in an assertion whose text says
+- [x] A change to the commit or vote window fails the live suite, in an assertion whose text says
       that figures either side of it are not comparable
-- [ ] A new configuration that leaves both measured windows alone fails the live suite in a
+- [x] A new configuration that leaves both measured windows alone fails the live suite in a
       separate assertion, whose text names the fixture and `/method` as what to update
-- [ ] An empty or short history — the redeployed-core and renamed-event case — still fails
+- [x] An empty or short history — the redeployed-core and renamed-event case — still fails
       distinctly from both, and not as a silent pass
-- [ ] The two failures are distinguishable from the CI log alone, without reading a diff of the
+- [x] The two failures are distinguishable from the CI log alone, without reading a diff of the
       history
-- [ ] `court-parameters.integration.test.ts` still passes against the live court after ticket 19
-- [ ] `/method` still states its account in prose, read from no model — the decision recorded in
+- [x] `court-parameters.integration.test.ts` still passes against the live court after ticket 19
+- [x] `/method` still states its account in prose, read from no model — the decision recorded in
       `MethodPage`'s doc comment is unchanged, and this ticket does not relitigate it
-- [ ] Whatever this changes about how the tripwire is described in `README.md` and in ticket 08's
+- [x] Whatever this changes about how the tripwire is described in `README.md` and in ticket 08's
       file is corrected there
+
+## What was built
+
+`measuredRegimes` in `src/performance/windows.ts` — the court's configurations folded into the
+stretches over which its **commit and vote** windows held, dated from the change that opened each
+rather than from any later one that restated it. That fold is the whole discrimination: a
+configuration leaving both alone disappears into the one before it, so an assertion over the result
+is blind to exactly the change that moves no figure.
+
+The live file now divides three ways, and its doc comment tells a CI reader to take the red names
+in order and stop at the first: the read broke, a figure moved, an account went stale. Each
+assertion also carries a message saying what to do about it. `sameMeasuredWindows` was not touched
+— it is still the one place that says which windows are measured, and the fold compares through it
+rather than restating the pair.
+
+The behaviour that cannot be triggered on the live chain is proved offline instead: seven tests in
+`windows.test.ts` run a synthetic fourth configuration of each kind past the fold. A throwaway
+harness over the three assertions confirmed the four cases before it was deleted — today all green;
+an evidence-only fourth, upkeep alone; a commit or a vote window moved, comparability **and**
+upkeep; an empty history, the read and not a silent pass.
+
+Left alone deliberately: ticket 08's account of "exactly two assertions", which is a true record of
+the 2026-08-26 failure and got a Comments entry instead; and `MethodPage`, which this ticket had no
+reason to open.
+
+## What review caught
+
+Four findings, all in the triage guidance rather than in the fold, and the guidance is the thing
+this ticket exists to deliver — so all four are fixed here.
+
+**The names it told a reader to match did not match the tests.** The header called case 3 "the two
+`…the fixture and /method describe` assertions"; only one test carried that phrase. A maintainer
+grepping the header for the red name they saw would have found nothing, which is the "distinguishable
+from the CI log alone" criterion failing in the one place it is read.
+
+**The list said three assertions and there were four.** `reports no configuration that repeats the
+one before it` appeared in no entry, and it is the only assertion that catches a duplicated
+`CourtModified` log. Confirmed against the fixture with a throwaway: a duplicate leaves the length
+assertion green — there are still three configurations — and leaves comparability green, because the
+fold swallows a repeat by design. A reader following the old guidance would have stopped at case 3
+and recaptured the fixture **with the duplicate in it**, then written it into `/method`. Both lists
+now name it, in case 1, and say why the ordering is what protects against this.
+
+**`MeasuredRegime` restates the measured pair by hand** while the fold delegates to
+`sameMeasuredWindows`. A third window added there and not here would split a regime correctly and
+print two entries differing only in `from` — a live failure whose diff shows no cause. Carried as a
+TRAP on the type.
+
+**`measuredRegimes` is not the marker's rule**, and nothing should later wire it up as one:
+`buildCourtPerformance` compares each dispute against the windows the court holds *now*, by value,
+while this folds consecutive regimes only. They agree today and would part the moment the court
+restored a window it had abandoned. Both are right about their own question; the doc comment now
+says so.

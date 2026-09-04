@@ -187,3 +187,82 @@ export function windowsFor(
 export function sameMeasuredWindows(a: PeriodWindows, b: PeriodWindows): boolean {
   return a.commitSeconds === b.commitSeconds && a.voteSeconds === b.voteSeconds;
 }
+
+/**
+ * One stretch of the court's life, and the two windows every figure in it was measured from.
+ *
+ * A `ParameterRegime` is what the court configured; this is what that configuration *changed
+ * about measurement*, which is a coarser thing and is often nothing. Court 34 has held three
+ * configurations and two of these: the 2026-08-26 change moved the evidence period alone, so
+ * the disputes either side of it are measured from the same commit and vote windows and their
+ * latencies may be read against each other.
+ *
+ * Only the two windows, and no evidence or appeal duration, because a shape carrying those
+ * would have to answer which of the folded configurations they came from — and there is no
+ * true answer, only the first one's, which reads as current and is not.
+ *
+ * TRAP: these two fields have to stay the same two `sameMeasuredWindows` compares. The fold
+ * asks that function what "measured" means, but the fields below are written out by hand, and
+ * a third window added there and not here would split a regime correctly while printing two
+ * entries identical in everything but `from` — a live failure whose diff shows no cause.
+ */
+export type MeasuredRegime = {
+  /**
+   * Unix seconds: the moment these windows came into force.
+   *
+   * The moment they last *moved*, never the moment they were last restated. That is the line
+   * either side of which two latencies stop being comparable, which is the only thing this
+   * shape is asked about.
+   */
+  from: number;
+  commitSeconds: number;
+  voteSeconds: number;
+};
+
+/**
+ * The court's configurations, reduced to the times its measured windows changed.
+ *
+ * Consecutive configurations that agree about the commit and vote windows are one regime, and
+ * that fold is the whole content of this function: it is what lets a caller tell a
+ * reconfiguration that moved a figure from one that only made an account of the court stale.
+ * `court-parameters.integration.test.ts` is split along exactly that line, so that a nightly
+ * failure says which kind it is in its own name rather than in a diff a maintainer has to
+ * read. Court 34 is reconfigured to suit demonstrations and the second kind is the common one
+ * (`docs/knowledge/court-34.md`); a job that is habitually red for it is a job nobody reads.
+ *
+ * Consecutive and not equal-valued: a court that restored a window it had abandoned opens a
+ * third regime rather than resuming the first, because the disputes that ran between are
+ * comparable with neither side.
+ *
+ * Takes regimes in the order `toRegimes` establishes, oldest first. Unsorted input would fold
+ * whichever pairs happened to be adjacent, which is why the sort is not repeated here — one
+ * ordering, in one place, that every caller of this module already depends on.
+ *
+ * **Not the marker's rule, and not a replacement for it.** `buildCourtPerformance` marks a
+ * dispute by comparing the windows it ran under against the ones the court holds *now*, by
+ * value; this folds *consecutive* regimes only. The two agree today and would disagree the
+ * moment the court restored a window it had abandoned — every dispute under the first regime
+ * would go unmarked, correctly, while this still reports three stretches. Both are right about
+ * their own question. Wiring one to the other would lose one of the two.
+ */
+export function measuredRegimes(regimes: readonly ParameterRegime[]): MeasuredRegime[] {
+  const measured: MeasuredRegime[] = [];
+
+  // The windows that opened the stretch, not the latest ones folded into it. They differ only
+  // in the evidence and appeal durations, which `sameMeasuredWindows` does not read — so this
+  // holds the configuration whose moment is the one being reported, and compares on the halves
+  // where the two are equal by construction.
+  let opened: PeriodWindows | null = null;
+
+  for (const regime of regimes) {
+    if (opened !== null && sameMeasuredWindows(opened, regime.windows)) continue;
+    opened = regime.windows;
+    measured.push({
+      from: regime.from,
+      commitSeconds: regime.windows.commitSeconds,
+      voteSeconds: regime.windows.voteSeconds,
+    });
+  }
+
+  return measured;
+}

@@ -190,9 +190,13 @@ template subgraph still resolves what those disputes are about, that Arbitrum st
 committed draw has a matching log run against the live reads rather than a snapshot of them — and
 that court 34 still reports the three period configurations `/method` describes in prose, so a
 fourth one fails in CI before anybody reads a stale account of the third. That check has fired
-once, on the 2026-08-26 change, and the rewrite it forced was ticket 19: it fails on *any* change
+once, on the 2026-08-26 change, and the rewrite it forced was ticket 19. It fails on *any* change
 to the court's history, including — as that one was — a change that moves no figure a reader can
-see. It runs on a daily cron and on
+see, and since ticket 20 it says which kind it was in the name of the assertion that went red. A
+separate one holds the **commit and vote** windows alone — the only two anything here is measured
+from — so a drifted history with that one still green is documentation upkeep, and one that has
+taken it red as well is a figure moving, which makes the latencies either side of the change
+incomparable. It runs on a daily cron and on
 `workflow_dispatch` only, and never gates a pull request: its failure mode there would be network
 flake, and a red that means nothing teaches people to ignore red.
 

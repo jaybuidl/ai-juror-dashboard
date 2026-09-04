@@ -6,26 +6,42 @@ import fixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import { fetchCourtParameters } from "./court-parameters";
 import { fetchCourtDraws } from "./draws-subgraph";
 import { buildCourtPerformance, type CourtPerformance } from "./performance";
-import { type RawCourtParameters, sameMeasuredWindows, toRegimes } from "./windows";
+import { measuredRegimes, type RawCourtParameters, toRegimes } from "./windows";
 
 /**
  * Live against Arbitrum One, held out of `yarn test` — run with `yarn test:integration`.
  *
- * Two jobs, and the second is the one that matters most. The first is what every live suite
- * here does: notice a renamed event or a redeployed core, which would return an empty history
- * and quietly leave every dispute unmarked. The second is that `MethodPage`'s account of the
- * three configurations is prose — it has to answer a reader arriving from the matrix's footnote
- * on a cold load, so it cannot wait on this read — and prose is free to drift from the chain.
- * These assertions are what stops it: a fourth configuration, or a change to any of the three,
- * fails here and the account gets rewritten. CI runs this nightly.
+ * Three jobs, and a failure here answers which of them went wrong by its own name. Read the
+ * red test names in this order and stop at the first:
  *
- * **It has fired once, and the rewrite was ticket 19.** Read the diff before treating a failure
- * here as a regression: it fails on any change to the history, including one that moves no
- * figure a reader can see. The 2026-08-26 change moved the evidence period alone, and the two
- * assertions below were the whole of what went red — the marker never moved, because
- * `sameMeasuredWindows` compares the commit and vote windows and nothing else. Court 34 is a
- * live demo instrument and gets reconfigured to suit a demo; expect more of these
- * (`docs/knowledge/court-34.md`).
+ * 1. **The read broke.** Two assertions, `reads the court's configurations…` and `reports no
+ *    configuration that repeats…`, and neither failure is visible anywhere else. A renamed
+ *    event or a redeployed core is the first: `KlerosCore.sol` has since gained an
+ *    `_eligibility` argument on both events, and a signature carrying it hashes to a different
+ *    topic, matches no log, and returns a court that was never configured — an empty history
+ *    that marks no dispute and fails no other check by saying so. A log counted twice is the
+ *    second, and it is the one that needs the ordering above: a duplicate leaves both
+ *    assertions below green, because there are still three configurations and the fold in case
+ *    2 swallows a repeat, so a reader who skipped to case 3 would recapture the fixture with
+ *    the duplicate in it and write it into `/method`.
+ * 2. **A figure moved.** `has moved no commit or vote window…` fires only when the court
+ *    changed a window this dashboard measures from. Latencies either side of that change are
+ *    not comparable, rows that carried no marker now carry one, and the fixture behind the
+ *    offline suite is a snapshot of a court that no longer exists. This is the one worth
+ *    waking up for.
+ * 3. **An account went stale.** `still holds the three configurations…` and `returns what the
+ *    captured fixture holds…` fire on *any* change to the history, including one that moves no
+ *    figure a reader can see. `MethodPage`'s account of the configurations is prose — it has to
+ *    answer a reader arriving from the matrix's footnote on a cold load, so it cannot wait on
+ *    this read — and prose is free to drift. With everything above green, these two are
+ *    documentation upkeep: recapture the fixture, rewrite the section, done.
+ *
+ * **It has fired once, and the rewrite was ticket 19.** The 2026-08-26 change moved the
+ * evidence period alone: it was case 3 and nothing else, and working out that it was took a
+ * maintainer reading a diff by hand — which is the whole reason for the split above. Court 34
+ * is a live demo instrument and gets reconfigured to suit a demo, so case 3 is the common one
+ * (`docs/knowledge/court-34.md`); a nightly job habitually red for it is a job nobody reads,
+ * and the next thing it reports will be case 1.
  *
  * Read once in `beforeAll` and shared: the public endpoint rate-limits per RPC call, and this
  * is two `eth_getLogs` plus a block read each.
@@ -60,10 +76,13 @@ describe("fetchCourtParameters", () => {
   }, 120_000);
 
   it("reads the court's configurations from the keyless default endpoint", () => {
-    // The deployed event signatures still matching is the thing being tested. `KlerosCore.sol`
-    // has since gained an `_eligibility` argument on both events, and that signature hashes to
-    // a different topic — which matches no log and returns a court that was never configured.
-    expect(history.length).toBeGreaterThanOrEqual(3);
+    // Case 1, and the first thing to read when this file is red. The deployed event signatures
+    // still matching is the thing being tested: a topic that matches no log returns a court
+    // that was never configured, which is an absence and not an error.
+    expect(
+      history.length,
+      "The court read back fewer configurations than it has held. Check the deployed event signatures in court-parameters.ts before reading anything else red in this file: a renamed event returns [] rather than failing.",
+    ).toBeGreaterThanOrEqual(3);
   });
 
   it("dates every change from its block and never from the log's own zero", () => {
@@ -74,11 +93,50 @@ describe("fetchCourtParameters", () => {
     }
   });
 
-  it("still reports exactly the three configurations the method page describes", () => {
-    // `MethodPage`'s window section states these in prose, in words, as the destination of the
-    // † marker's link. This is the assertion that keeps the page and the chain one account.
-    // A fourth configuration fails here first, before a reader ever reads a stale one.
-    expect(toRegimes(history)).toEqual([
+  it("reports no configuration that repeats the one before it", () => {
+    // Also case 1, from the other side: a log counted twice, or the two scans interleaved
+    // wrongly, shows up as a configuration that changed nothing. Written without presuming a
+    // direction — asserting that any particular window got *shorter* would go red if the court
+    // simply put 45 minutes back, which is not what this is about.
+    const regimes = toRegimes(history);
+
+    for (const [index, regime] of regimes.entries()) {
+      if (index === 0) continue;
+      expect(regime.windows, `configuration ${index} at ${regime.from}`).not.toEqual(
+        regimes[index - 1]?.windows,
+      );
+    }
+  });
+
+  it("has moved no commit or vote window, which would make latencies either side incomparable", () => {
+    // Case 2, and the assertion this file exists for. The commit and vote windows are the two
+    // reveal and commit latency are measured from, so a change to either splits the court into
+    // stretches whose figures cannot be read against each other and puts a marker on rows that
+    // carried none.
+    //
+    // Over the whole history and not the last two configurations, which is what ticket 19 left
+    // and what ticket 20 replaced: `measuredRegimes` folds away every configuration that left
+    // both of these alone, so a fourth of those changes nothing here and a fourth that moved a
+    // window arrives as an entry that was not expected. Fixed indices would have gone on
+    // comparing 2026-08-20 against 2026-08-26 for ever.
+    expect(
+      measuredRegimes(toRegimes(history)),
+      "A window this dashboard measures from has moved. Every latency either side of it is measured against a different allowance, so the two are not comparable and the matrix's marker now falls on a different set of rows: check CourtTotals.changedWindows and the footnote before recapturing anything.",
+    ).toEqual([
+      { from: 1_786_444_490, commitSeconds: 28_800, voteSeconds: 28_800 },
+      { from: 1_787_230_320, commitSeconds: 2_700, voteSeconds: 1_800 },
+    ]);
+  });
+
+  it("still holds the three configurations the fixture and /method describe, in full", () => {
+    // Case 3. `MethodPage`'s window section states these in prose, in words, as the
+    // destination of the † marker's link, and this is the assertion that keeps the page and
+    // the chain one account. It fires on any change at all — including the evidence-only kind
+    // the court has already made once, which reaches no figure on the page.
+    expect(
+      toRegimes(history),
+      "The court's history no longer matches this file's account of it. If the comparability assertion above is green, this is upkeep: recapture court-34-parameters.fixture.json, update the literal here, and rewrite the regime strip in MethodPage's window section, which states all of this in prose and reads from no model.",
+    ).toEqual([
       {
         from: 1_786_444_490,
         windows: {
@@ -112,30 +170,13 @@ describe("fetchCourtParameters", () => {
     ]);
   });
 
-  it("has moved no measured window in the court's most recent reconfiguration", () => {
-    // What ticket 19 learned, kept: the court's last two configurations differ, and differ
-    // nowhere this dashboard measures from. This is the assertion that says *which kind* of
-    // change the one above caught — a next one that moves a commit or a vote window fails here
-    // too, and that is the one worth waking up for.
-    //
-    // The **last two**, not positions 2 and 3. Destructuring fixed indices would keep comparing
-    // 2026-08-20 against 2026-08-26 forever, so a fourth configuration that moved a commit
-    // window would sail past this test and be caught only by the literal above — which is the
-    // assertion that fires on *every* change and therefore says nothing about which kind.
-    const [previous, current] = toRegimes(history).slice(-2);
-    if (previous === undefined || current === undefined) {
-      throw new Error("the court has fewer than two configurations");
-    }
-
-    expect(sameMeasuredWindows(previous.windows, current.windows)).toBe(true);
-    // A real reconfiguration and not a repeat, without presuming a direction: asserting the
-    // evidence window got *shorter* would go red if the court simply put 45 minutes back, which
-    // is not what this test is about.
-    expect(current.windows).not.toEqual(previous.windows);
-  });
-
   it("returns what the captured fixture holds, so the offline suite is reading this court", () => {
-    expect(history).toEqual(fixture as RawCourtParameters[]);
+    // Case 3 again, and the half of it the offline suite depends on: 900-odd tests read this
+    // fixture as though it were the court.
+    expect(
+      history,
+      "The captured fixture is a snapshot of a court that has since been reconfigured. Recapture court-34-parameters.fixture.json — and if the comparability assertion above is also red, expect the offline suite to move with it.",
+    ).toEqual(fixture as RawCourtParameters[]);
   });
 
   it("still resolves dispute 151 to the eight-hour commit window against the live court", () => {
