@@ -1,14 +1,15 @@
+---
+status: done
+blocked_by: ["01"]
+---
+
 # 03: List every dispute in the court
 
 **What to build:** A visitor sees every dispute in court 34 as a row, newest first, showing its core
 dispute ID, current period, and ruling where one exists.
 
-**Blocked by:** 01
-
 **Design:** `../canvas/Main.dc.html:131-134` (newest first, and the axes),
 `../canvas/Main.dc.html:156-173` (the dispute row header), `../canvas/README.md` for provenance
-
-**Status:** done
 
 - [x] Disputes are read from the Kleros v2 core subgraph, scoped to court 34
 - [x] Each dispute's round timeline — the observed moments each period opened — is fetched alongside it,

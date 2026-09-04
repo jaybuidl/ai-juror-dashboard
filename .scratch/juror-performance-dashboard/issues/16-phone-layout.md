@@ -1,3 +1,8 @@
+---
+status: done
+blocked_by: ["05", "07", "09", "12", "15"]
+---
+
 # 16: Fold the matrix into one card per dispute on a phone
 
 **What to build:** A visitor opening the dashboard from a phone reads the same record a desktop
@@ -46,14 +51,10 @@ applied twice, so a phone shows cards at any row count and never the compact gri
 ticket answers is what a stack of several hundred cards should do — the canvas draws four. That is
 left open here deliberately, and is worth settling before the record grows long enough to matter.
 
-**Blocked by:** 05, 07, 09, 12, 15
-
 **Design:** `../canvas/Mobile.dc.html` (the whole 390pt artboard — the collapsed nav at `:32-42`,
 what the hero keeps at `:44-52`, the live card at `:63-78`, a finalised card and the six-slot strip
 along its foot at `:81-95`, and the rule the layout rests on at `:129`), `../canvas/README.md` for
 provenance
-
-**Status:** done
 
 - [x] Below one declared breakpoint the matrix is not rendered at all — not scaled down, not scrolled
       sideways, not wrapped and not transposed into a narrower grid. One card per dispute replaces it,

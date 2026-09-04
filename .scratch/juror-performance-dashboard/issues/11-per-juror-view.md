@@ -1,16 +1,17 @@
+---
+status: done
+blocked_by: ["02", "06", "09", "10", "15"]
+---
+
 # 11: Look at one agent juror on its own
 
 **What to build:** A visitor clicks an agent juror and sees its own performance and which stack it
 runs, at its own linkable URL.
 
-**Blocked by:** 02, 06, 09, 10, 15
-
 **Design:** `../canvas/Juror.dc.html` (the whole view — identity and stat card at `:53-83`, the
 reveal-only latency profile at `:86-110`, the drawn-in table at `:113-134`),
 `../canvas/JurorEmpty.dc.html:56-97` (the agent juror never drawn), `../canvas/README.md` for
 provenance
-
-**Status:** done
 
 - [x] Each agent juror has its own route, linkable and reloadable, keyed on the roster nickname and not
       on the one ENS resolves, so a `name` text record cannot change the URL

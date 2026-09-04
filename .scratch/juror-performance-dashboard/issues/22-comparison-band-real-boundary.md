@@ -1,3 +1,8 @@
+---
+status: done
+blocked_by: []
+---
+
 # 22: Put the comparison band where an ordinary court actually sits
 
 **What to build:** A reader sees the real distance between these agent jurors and ordinary
@@ -76,14 +81,10 @@ not about how to draw it, and `CLAUDE.md` records that the rule does not extend 
 data. It is the fifth time that rule has been tested, so the ticket records the reading rather
 than leaving the next reader to re-argue it.
 
-**Blocked by:** None (can start immediately)
-
 **Design:** `../canvas/Main.dc.html:85-100` (the latency strip, its band, its label and its axis),
 which this ticket **amends** rather than builds against — see the data exception above.
 `../canvas/Juror.dc.html:89-109` for the agent juror view's plot, which shares the scale and
 whose own axis label is already superseded by the code.
-
-**Status:** done
 
 - [x] The comparison band begins at five days, and the figure lives in `strip.ts` beside the scale
       rather than in either component

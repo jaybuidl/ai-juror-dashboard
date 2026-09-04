@@ -1,3 +1,8 @@
+---
+status: done
+blocked_by: ["05"]
+---
+
 # 07: Show how fast each agent juror committed
 
 **What to build:** A visitor sees both halves of the speed dimension in every cell — commit latency
@@ -8,12 +13,8 @@ Because a truncating endpoint would produce a missing commit rather than an erro
 false `NO VOTE` for an agent juror that committed on time — this ticket also builds the
 cross-check that makes that impossible to miss.
 
-**Blocked by:** 05
-
 **Design:** `../canvas/Cell.dc.html:87-92` (cell anatomy), `../canvas/Cell.dc.html:180-196` (why the
 shared rail is logarithmic), `../canvas/README.md` for provenance
-
-**Status:** done
 
 - [x] Commit events are read from an Arbitrum endpoint, filtered by dispute and by agent juror
 - [x] Commit latency is derived per draw as seconds between the moment the commit period opened and the

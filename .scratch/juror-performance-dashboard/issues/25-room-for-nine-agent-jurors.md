@@ -1,3 +1,8 @@
+---
+status: ready-for-agent
+blocked_by: ["24"]
+---
+
 # 25: Make room for nine agent jurors
 
 **What to build:** The matrix stops being sized for exactly six columns.
@@ -71,15 +76,11 @@ which the **Panel** entry explicitly forbids ("A fact about the court, not about
 _Avoid_: … roster"). Its conclusion survives by luck, because the real panel is about five draws and
 does not track the roster; its stated reason becomes false at nine.
 
-**Blocked by:** 24
-
 **Design:** No artboard draws more than six columns. `Main.dc.html` and `MatrixDense.dc.html` both
 draw exactly six on a 1440px page, so neither can be cited for how a seventh or ninth column looks —
 this is the `docs/knowledge/architecture.md` rule that the artboard being read has to be the one that draws the element in
 that place. The densities, the cell, the row header and the flag styling are all cited as drawn; the
 column *count* is not, and is arithmetic instead.
-
-**Status:** ready-for-agent
 
 - [ ] `COMFORTABLE_GRID_MIN_PX` derives from the roster's length rather than holding 1328, and
       `View.tsx`'s `measure="grid"` follows it without a second literal

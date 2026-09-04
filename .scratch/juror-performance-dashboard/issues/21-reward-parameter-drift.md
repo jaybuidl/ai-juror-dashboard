@@ -1,3 +1,8 @@
+---
+status: ready-for-agent
+blocked_by: ["19"]
+---
+
 # 21: Notice a reconfiguration that moves a reward parameter
 
 **What to build:** If court 34 is ever reconfigured in a way that changes what a coherent draw
@@ -34,12 +39,8 @@ rather than inventing a second marker for a state that has never occurred. A fai
 the assumption is an acceptable floor if the display question is judged not worth answering
 until a court actually changes a fee — but the assumption must stop being unchecked either way.
 
-**Blocked by:** 19
-
 **Design:** No artboard. `../canvas/Errors.dc.html:168-218` draws the window marker this ticket
 is careful **not** to extend, and `../canvas/README.md` carries its provenance.
-
-**Status:** ready-for-agent
 
 - [ ] `RawCourtParameters` carries the reward parameters each configuration was emitted with,
       read from the logs the scan already fetches and costing no additional RPC call

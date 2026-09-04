@@ -2,7 +2,7 @@
 
 The skills speak in terms of five canonical triage roles. This file maps those roles to the actual label strings used in this repo's issue tracker.
 
-This repo uses a **local-markdown issue tracker** (see `issue-tracker.md`), so these strings are not tracker labels but the values written on the `Status:` line near the top of each issue file, e.g. `Status: ready-for-agent`.
+This repo uses a **local-markdown issue tracker** (see `issue-tracker.md`), so these strings are not tracker labels but the values of the `status:` key in each issue file's YAML frontmatter, e.g. `status: ready-for-agent` on line 2.
 
 | Label in mattpocock/skills | Label in our tracker | Meaning                                  |
 | -------------------------- | -------------------- | ---------------------------------------- |
@@ -18,7 +18,7 @@ Edit the right-hand column to match whatever vocabulary you actually use.
 
 ## Terminal states
 
-The five roles above are all *pre-implementation*: each describes a ticket that has not been built yet. A hosted tracker needs no more than that, because closure there is a native issue **state** sitting orthogonal to labels. This tracker has only the one `Status:` line, so both axes land on it — and a finished ticket had nowhere to say so, leaving tickets 01 and 02 parked at `ready-for-human` long after the human step was taken.
+The five roles above are all *pre-implementation*: each describes a ticket that has not been built yet. A hosted tracker needs no more than that, because closure there is a native issue **state** sitting orthogonal to labels. This tracker has only the one `status:` key, so both axes land on it — and a finished ticket had nowhere to say so, leaving tickets 01 and 02 parked at `ready-for-human` long after the human step was taken.
 
 `done` is a local addition closing that gap. It is not a mattpocock role and no skill emits it; it exists so that a finished ticket is distinguishable at a glance from a blocked one.
 
@@ -33,4 +33,4 @@ These two are the terminal values: a ticket at either is finished and nothing sh
 
 ## A different `Status:` vocabulary under `/wayfinder`
 
-Wayfinder writes `claimed` and `resolved` on the same `Status:` line, for the decision tickets hanging off a `.scratch/<effort>/map.md` (see `issue-tracker.md`). That vocabulary is scoped to a wayfinding effort and has nothing to do with the roles above; implementation tickets never use it, and this repo has no map.
+Wayfinder writes `claimed` and `resolved` on a `Status:` body line (not frontmatter), for the decision tickets hanging off a `.scratch/<effort>/map.md` (see `issue-tracker.md`). That vocabulary is scoped to a wayfinding effort and has nothing to do with the roles above; implementation tickets never use it, and this repo has no map.

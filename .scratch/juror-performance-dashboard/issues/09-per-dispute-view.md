@@ -1,16 +1,17 @@
+---
+status: done
+blocked_by: ["04", "05", "07", "08", "15"]
+---
+
 # 09: Read a whole panel's justifications for one dispute, side by side
 
 **What to build:** A visitor clicks a dispute and reads every panel member's justification next to
 each other, at its own URL they can paste into a chat. Comparing how different stacks reasoned about
 identical evidence is the thing this experiment exists to show.
 
-**Blocked by:** 04, 05, 07, 08, 15
-
 **Design:** `../canvas/Dispute.dc.html` (the whole view — header and ruling card at `:51-85`, the
 timeline strip at `:88-96`, the justification band at `:110-278`, the empty justification at
 `:149-177`, the ordering rule at `:276`), `../canvas/README.md` for provenance
-
-**Status:** done
 
 - [x] Each dispute has its own route, linkable and reloadable
 - [x] The view shows the dispute's title, question and ruling, and every draw in the panel

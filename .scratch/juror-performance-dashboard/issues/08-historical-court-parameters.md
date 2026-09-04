@@ -1,3 +1,8 @@
+---
+status: done
+blocked_by: ["07", "15"]
+---
+
 # 08: Make the court's parameter change visible and correctly handled
 
 **What to build:** A visitor never reads a figure that was computed silently across two different
@@ -8,13 +13,9 @@ counted. No latency is divided by a window at any altitude: a window appears bes
 absolute duration, never as a denominator. This dashboard is public and may be cited in research.
 See ADR-0005, which closes the question ADR-0001 left open.
 
-**Blocked by:** 07, 15
-
 **Design:** `../canvas/Errors.dc.html:168-218` (the dispute-151 marker, on the row and on every
 aggregate), `../canvas/Dispute.dc.html:88-96` (a configured window beside an elapsed one),
 `../canvas/Main.dc.html:208-216` (the footnotes), `../canvas/README.md` for provenance
-
-**Status:** done
 
 - [x] The court's parameter history is read from chain events rather than from its current parameters
 - [x] Each dispute resolves the period durations that were in force when it ran

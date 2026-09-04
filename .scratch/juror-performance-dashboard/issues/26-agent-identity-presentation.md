@@ -1,3 +1,8 @@
+---
+status: ready-for-agent
+blocked_by: ["24"]
+---
+
 # 26: Agent identity presentation — handles and stack icons
 
 **What to build:** The two agent-juror surfaces say a little more about who is running, without
@@ -73,16 +78,12 @@ sheet was a scratch file.
 - **Hermes** — `https://raw.githubusercontent.com/lobehub/lobe-icons/refs/heads/master/packages/static-png/light/hermesagent.png`
   — PNG only; the matching `static-svg` paths 404 in both light and dark
 
-**Blocked by:** 24
-
 **Design:** `Juror.dc.html:52-66` draws the identity block this touches — avatar, nickname `h1`,
 then a pill row whose first pill is the stack, followed by the ENS name, the short address and the
 Arbiscan link. The artboard draws **no icon** and `/agent-jurors` has no artboard at all, so the
 mark's size, placement and spacing are derived from the design system's own scale rather than cited
 from a drawing. This is the `docs/knowledge/architecture.md` rule about finding the artboard that draws the element in that
 place: here there is none, and the honest move is to say so rather than to borrow one.
-
-**Status:** ready-for-agent
 
 - [ ] `AgentJuror` gains an optional handle field whose doc comment states it holds the agent's own
       account and never an operator's

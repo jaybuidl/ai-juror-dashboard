@@ -1,3 +1,8 @@
+---
+status: done
+blocked_by: ["04", "05", "07"]
+---
+
 # 13: Fail loudly rather than showing a half-true dashboard
 
 **What to build:** When a data source cannot be reached, a visitor sees a prominent, unmissable
@@ -9,11 +14,7 @@ ticket did not have: **Unknown is its own cell state**, a sixth alongside the fi
 dispute whose data could not be read is a gap, and a gap must never be readable as "not drawn" or as
 "failed to act" — the two states the cell design already exists to keep apart.
 
-**Blocked by:** 04, 05, 07
-
 **Design:** `../canvas/Errors.dc.html:43-162` (failure states), `../canvas/README.md` for provenance
-
-**Status:** done
 
 - [x] A failure that changes a number is loud and blocking; a failure that changes only a label is
       quiet and local

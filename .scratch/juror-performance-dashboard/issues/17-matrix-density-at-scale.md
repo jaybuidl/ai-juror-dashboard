@@ -1,3 +1,8 @@
+---
+status: done
+blocked_by: ["06", "07", "10"]
+---
+
 # 17: Keep the matrix readable once it outgrows the screen
 
 **What to build:** A visitor scrolling a matrix hundreds of rows deep still reads every cell's reveal
@@ -47,8 +52,6 @@ This is the desktop path. Ticket 16 replaces the matrix with one card per disput
 breakpoint, so the two reductions never compose — a phone gets cards at any row count, not a compact
 grid. What a stack of several hundred cards should do is open, and belongs to 16.
 
-**Blocked by:** 06, 07, 10
-
 **Design:** `../canvas/MatrixDense.dc.html:45-122` (the compact matrix entire: the rule at `:50`, the
 corner cell at `:62-65`, the reduced column header at `:67-82`, the one-line row at `:85-92`, the
 single-line cell at `:94-107`, the legend and the sparsity line at `:111-118`),
@@ -56,8 +59,6 @@ single-line cell at `:94-107`, the legend and the sparsity line at `:111-118`),
 `../canvas/Main.dc.html:136-152` (the six-figure column header this reduces),
 `../canvas/Main.dc.html:176-196` (the comfortable cell, whose commit line at `:188-194` is already
 conditional on the density flag), `../canvas/README.md` for provenance
-
-**Status:** done
 
 - [x] Past a row-count threshold the matrix renders at the compact density; below it the comfortable
       density of `Main.dc.html` renders unchanged

@@ -1,3 +1,8 @@
+---
+status: done
+blocked_by: ["05", "14"]
+---
+
 # 15: Wrap every view in chrome that says what this is and what was read
 
 **What to build:** A visitor arriving from a pasted link lands on a page that names itself, says in
@@ -28,15 +33,11 @@ This ticket adds no host to `netlify.toml`: the lockup is an inline SVG, and the
 already returns the app shell for the new routes. Whether the visual system's fonts cost the CSP
 anything at all is ticket 14's question to settle, not this one's.
 
-**Blocked by:** 05, 14
-
 **Design:** `../canvas/Main.dc.html` (the nav at `:41-50`, the hero, deck and stat tiles at
 `:53-76`, the latency strip at `:79-109`, the provenance footer at `:225-227`),
 `../canvas/_logo.html` (the Kleros ×AI lockup, inlined into every artboard's nav),
 `../canvas/Juror.dc.html:47-51` (the breadcrumb, in the same shape on `Dispute.dc.html:52-56` and
 `JurorEmpty.dc.html:37-41`), `../canvas/README.md` for provenance
-
-**Status:** done
 
 - [x] Every view renders inside one shell — the same nav, the same read-only pill and the same
       footer — so a view reached from a pasted link is recognisably part of the same dashboard

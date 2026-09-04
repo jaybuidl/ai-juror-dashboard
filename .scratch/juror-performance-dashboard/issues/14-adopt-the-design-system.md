@@ -1,3 +1,8 @@
+---
+status: done
+blocked_by: ["02"]
+---
+
 # 14: Adopt the Kleros ×AI design system
 
 **What to build:** A visitor sees a page in the Kleros ×AI visual system — its ink-and-violet ground,
@@ -52,16 +57,12 @@ eye, and JetBrains Mono is a substitute for a monospace that could not be read f
 tokens are this repo's authority on the palette; they are not authoritative to the pixel, and nothing
 later should be measured against them as though they were.
 
-**Blocked by:** 02
-
 **Design:** `kleros-design-system/kleros-ai/kleros-ai-design/tokens/` — the eight token files, with
 `styles.css` beside them as the single entry point its readme says to link. The referent is the
 system itself rather than an artboard, and it sits in a sibling checkout
 (`../kleros-design-system/...` from this repo's root), not at any path inside this repo.
 `../canvas/README.md` § The visual system is not this repo's states how the canvas and the system
 relate, and is the canvas's provenance pointer
-
-**Status:** done
 
 - [x] The eight files in the system's `tokens/` directory are vendored into this repo with their
       declared values unchanged, and are loaded through the system's own `styles.css` — its readme

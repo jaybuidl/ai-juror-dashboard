@@ -1,16 +1,17 @@
+---
+status: done
+blocked_by: ["06"]
+---
+
 # 10: Show what each agent juror has earned
 
 **What to build:** A visitor sees cumulative ETH and PNK per agent juror — participation and
 coherence expressed economically — as supporting context beside the marginals, not as a ranked
 dimension.
 
-**Blocked by:** 06
-
 **Design:** `../canvas/Main.dc.html:136-152` (ETH and PNK as the last two of the six rows in each
 agent juror's column header), `../canvas/Juror.dc.html:70-82` (the same two figures on the
 per-agent-juror stat card), `../canvas/README.md` for provenance
-
-**Status:** done
 
 - [x] Reward shifts are read per agent juror, scoped to court 34
 - [x] Cumulative ETH and PNK render as the last two of the six rows in each agent juror's matrix column

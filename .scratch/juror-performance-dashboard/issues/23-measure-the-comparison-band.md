@@ -1,3 +1,8 @@
+---
+status: ready-for-agent
+blocked_by: ["22"]
+---
+
 # 23: Measure the comparison instead of illustrating it
 
 **What to build:** The latency strip's comparison band stops being an assertion and becomes a
@@ -51,13 +56,9 @@ or no ordinary court has enough single-round disputes to be a fair reference —
 `## Comments` and close it `wontfix`. Ticket 22's corrected illustration is an honest page on its
 own, and this ticket exists to make it a stronger one, not to rescue it.
 
-**Blocked by:** 22
-
 **Design:** `../canvas/Main.dc.html:85-100` (the band, as ticket 22 leaves it) and
 `../canvas/README.md` for which figures on the artboards are real. No artboard draws a *measured*
 band; this ticket changes the band's provenance, not its shape.
-
-**Status:** ready-for-agent
 
 - [ ] The band's boundary is derived from disputes read from the core subgraph, not from a
       constant this repo chose

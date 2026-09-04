@@ -1,3 +1,8 @@
+---
+status: done
+blocked_by: ["05", "07"]
+---
+
 # 12: Watch a live dispute without refetching history
 
 **What to build:** A team member monitoring an active dispute sees it update as agent jurors act,
@@ -10,13 +15,9 @@ Ticket 05 builds the cell and its five renderable states, the live one among the
 the seam: everything here is supply — what refreshes, what counts as finalised, what persists — and
 the surfaces below are what that supply is required to change.
 
-**Blocked by:** 05, 07
-
 **Design:** `../canvas/Main.dc.html:131-133` (the finalised-versus-live count) and `:302-306` (the
 live row's rail, tint and flag pill), `../canvas/Cell.dc.html:144-154` (the live cell state),
 `../canvas/README.md` for provenance
-
-**Status:** done
 
 - [x] Data refreshes on a five-second interval while any dispute is unfinalised
 - [x] ~~A dispute is treated as finalised once its period is execution~~ **Amended on

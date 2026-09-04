@@ -1,3 +1,8 @@
+---
+status: done
+blocked_by: ["02", "03", "14"]
+---
+
 # 05: The matrix answers the question, from subgraph data alone
 
 **What to build:** A visitor sees the dispute matrix working end to end — one row per dispute, one
@@ -11,13 +16,9 @@ into the dashboard model, with every subtle derivation inside it and no network 
 near it. Respect ADR-0001 (latency in seconds), ADR-0002 (coherence per draw) and ADR-0006
 (coherence carried by a glyph and a word before a colour).
 
-**Blocked by:** 02, 03, 14
-
 **Design:** `../canvas/Cell.dc.html:43-174` (the cell's anatomy and all five states),
 `../canvas/Main.dc.html:112-223` (the legend, the matrix grid, the row it hangs off and the footnote
 cards), `../canvas/README.md` for provenance
-
-**Status:** done
 
 - [x] A pure function converts raw fetched data into the dashboard model, returning agentkit's result
       envelope. It performs no I/O and reads no clock

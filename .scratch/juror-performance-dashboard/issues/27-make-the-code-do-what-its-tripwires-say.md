@@ -1,3 +1,8 @@
+---
+status: done
+blocked_by: []
+---
+
 # 27: Make the code do what its own tripwires say
 
 **What to build:** Four places where this repo states a rule and then does the other thing. Each
@@ -79,13 +84,9 @@ Note this does not let the tripwire leave `CLAUDE.md`: `package.json` admits no 
 warning still has nowhere to live. Fixing the script removes the trap from the happy path; the line
 stays for the person who types `vite preview` by hand.
 
-**Blocked by:** none
-
 **Design:** No artboard. Items 1 and 2 are conformance against WCAG and against the vendored design
 system's own focus ring (`--ring-focus` in `kleros-ai` `base.css`), not against a drawing; items 3
 and 4 are a comment and a script.
-
-**Status:** done
 
 - [x] `Matrix.tsx` uses a real `<caption>` with a `VisuallyHidden` inside it, matching
       `AgentJurorDraws.tsx`

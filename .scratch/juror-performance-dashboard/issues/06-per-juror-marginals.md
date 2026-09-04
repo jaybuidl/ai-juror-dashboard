@@ -1,3 +1,8 @@
+---
+status: done
+blocked_by: ["05", "07", "08"]
+---
+
 # 06: Summarise each agent juror in the margin of the matrix
 
 **What to build:** A visitor sees each agent juror's summary in the header of that agent juror's own
@@ -6,13 +11,9 @@ jurors are the columns here, so a column's summary belongs to the column rather 
 its own. Keeping it on screen as the matrix scrolls is ticket 17's freeze, not this ticket's. Nobody
 is ranked — these are marginals on a matrix, not a leaderboard.
 
-**Blocked by:** 05, 07, 08
-
 **Design:** `../canvas/Main.dc.html:136-152` (the marginals, under a hairline beneath each column
 header's identity block), `../canvas/JurorEmpty.dc.html:66-76` (a dash, never a zero),
 `../canvas/Errors.dc.html:201-217` (markers riding an aggregate), `../canvas/README.md` for provenance
-
-**Status:** done
 
 - [x] Marginals sit inside each agent juror's column header, separated from its identity block by a
       hairline. There is no seventh column: the grid stays one row-header column plus exactly six

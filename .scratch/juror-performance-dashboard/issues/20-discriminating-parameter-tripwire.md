@@ -1,3 +1,8 @@
+---
+status: ready-for-agent
+blocked_by: ["19"]
+---
+
 # 20: Tell a harmless reconfiguration from a costly one
 
 **What to build:** When court 34 is reconfigured, the live suite still fails — but the failure
@@ -36,12 +41,8 @@ reader arriving on a cold load, before any read has returned. Prose that cannot 
 is the point of it. The tripwire is what keeps that prose honest, which is why this ticket
 sharpens the tripwire rather than removing the reason for one.
 
-**Blocked by:** 19
-
 **Design:** No artboard. This is the shape of a test failure, which nothing on the canvas
 describes.
-
-**Status:** ready-for-agent
 
 - [ ] A change to the commit or vote window fails the live suite, in an assertion whose text says
       that figures either side of it are not comparable

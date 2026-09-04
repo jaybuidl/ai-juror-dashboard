@@ -1,12 +1,13 @@
+---
+status: done
+blocked_by: []
+---
+
 # 01: Scaffold the project and deploy it publicly
 
 **What to build:** A visitor can open a public URL and see the dashboard's shell — its name and an
 empty state. Nothing else works yet, but the deployment pipeline that every later ticket relies on
 is proven end to end.
-
-**Blocked by:** None (can start immediately)
-
-**Status:** done
 
 - [x] Vite + React + TypeScript application builds and runs locally
 - [x] yarn v4 with `nodeLinker: node-modules`

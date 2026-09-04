@@ -1,3 +1,8 @@
+---
+status: done
+blocked_by: []
+---
+
 # 28: The footnote link is not distinguishable without colour
 
 **What to build:** One WCAG 1.4.1 violation, live on `/` today, found by an axe audit run while
@@ -43,12 +48,8 @@ itself predates that sweep, but the footnote's surrounding prose was reworked af
 turned a standalone link into a text-block link is **not** established; it is the first thing to
 check, because if it is, the same move may have done it elsewhere.
 
-**Blocked by:** none
-
 **Design:** No artboard. This is conformance against WCAG 1.4.1 and against `docs/contrast.md`,
 not against a drawing.
-
-**Status:** done
 
 - [x] The link is distinguishable from its surrounding prose without relying on colour
 - [x] The chosen cue holds in both themes, and `docs/contrast.md` records the ratio or the

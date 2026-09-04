@@ -1,3 +1,8 @@
+---
+status: ready-for-human
+blocked_by: []
+---
+
 # 29: Stack the column header's identity block
 
 **What to build:** The matrix's column header puts each agent juror's avatar **above** the nickname
@@ -67,7 +72,7 @@ only — but it changes the tab stop's target and the hover affordance, and that
 nobody has made. Nor does this unblock the text-size criterion: that needs the `--type-*` tokens and
 the fixed-px boxes to move together, and the 148px column is still fixed.
 
-**Blocked by:** nothing. 24 is done. 25 is the width ticket and this one is deliberately
+**Sequencing:** 24 is done. 25 is the width ticket and this one is deliberately
 width-neutral, but both edit `Matrix.tsx` and should not run as parallel worktrees.
 
 **Design:** `Main.dc.html:138-144` and `MatrixDense.dc.html:69-75` draw this element, at 26px and
@@ -86,8 +91,6 @@ it.**
 
 A side effect worth having: the two artboards currently draw this one element at two sizes, 26px and
 24px, for no stated reason. After this they draw it at one.
-
-**Status:** ready-for-human
 
 - [x] The column header's avatar sits above the nickname, centred, at both densities
 - [x] The avatar is 44px at `radiusTile`, and the size is written once and read by both the image

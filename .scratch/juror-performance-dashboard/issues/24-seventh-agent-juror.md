@@ -1,3 +1,8 @@
+---
+status: done
+blocked_by: []
+---
+
 # 24: Be correct about the court — the seventh agent juror
 
 **What to build:** The dashboard measures the court it is actually looking at.
@@ -78,16 +83,12 @@ This is one ticket and not four because every part of it is the same claim — t
 account of the court matches the court — and because splitting it means two branches editing
 `agent-jurors.ts`, `CONTEXT.md` and `CLAUDE.md`, which `docs/knowledge/merging-and-branches.md` has a long entry about.
 
-**Blocked by:** None (can start immediately)
-
 **Design:** `Mobile.dc.html` draws the card and its strip at 390pt with six slots; it draws no
 seventh and no wrap, so the per-line count and the gap between lines are arithmetic against the
 artboard's 52px slot and 36px avatar rather than cited from it. `MatrixDense.dc.html` draws the
 compact grid at six columns, so the same applies to the share arithmetic. This is the `docs/knowledge/architecture.md` rule
 about finding the artboard that draws the element in that place: for a seventh column and a second
 line there is none.
-
-**Status:** done
 
 - [x] `grokleros` is in `ROSTER` with the checksummed address, stack `Grok Bot`, appended to the
       right of the drawn columns

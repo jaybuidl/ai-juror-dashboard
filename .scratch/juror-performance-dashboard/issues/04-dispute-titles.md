@@ -1,14 +1,15 @@
+---
+status: done
+blocked_by: ["03"]
+---
+
 # 04: Give each dispute row its real title
 
 **What to build:** A visitor scanning the dispute list reads what each dispute is actually about,
 rather than matching numbers.
 
-**Blocked by:** 03
-
 **Design:** `../canvas/Main.dc.html:156-173` (the row header: the title on the first line beside the
 core dispute ID, the category on the second), `../canvas/README.md` for provenance
-
-**Status:** done
 
 - [x] Dispute titles and categories are read from the dispute resolver template subgraph
 - [x] Template data is consumed as plain JSON — no IPFS resolution and no Kleros SDK dependency, so

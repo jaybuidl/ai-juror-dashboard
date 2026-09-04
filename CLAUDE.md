@@ -11,7 +11,7 @@ Live at <https://kleros-ai-jurors.netlify.app>. Seven views under one shell: the
 totals at `/`, a dispute index, `/disputes/:id`, `/agent-jurors`, `/agent-jurors/:nickname`,
 `/method`, and a 404.
 
-Ticket state lives on the tickets, never here: `grep -L 'Status:\*\* done'
+Ticket state is YAML frontmatter on each ticket, never here: `grep -L '^status: done'
 .scratch/juror-performance-dashboard/issues/*.md`. History is `project-history.md`, not current truth.
 
 ## Start here

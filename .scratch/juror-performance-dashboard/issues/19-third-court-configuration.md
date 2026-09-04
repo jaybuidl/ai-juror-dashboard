@@ -1,3 +1,8 @@
+---
+status: ready-for-agent
+blocked_by: []
+---
+
 # 19: Take the court's third configuration
 
 **What to build:** The dashboard's account of court 34 matches the court again. On
@@ -48,12 +53,8 @@ contract — the test exists to catch the prose drifting — so landing the fixt
 without the page ships a green suite over a public page that states a falsehood, which is the
 precise failure the tripwire was built to prevent.
 
-**Blocked by:** None (can start immediately)
-
 **Design:** No artboard. `/method` is prose with no canvas referent, and the window section it
 touches was written against ADR-0005 rather than against a drawing.
-
-**Status:** ready-for-agent
 
 - [ ] `court-34-parameters.fixture.json` holds all three configurations as the chain reports them
 - [ ] `court-parameters.integration.test.ts` passes against the live court, and still fails if a

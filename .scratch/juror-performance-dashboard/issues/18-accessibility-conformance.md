@@ -1,3 +1,8 @@
+---
+status: done
+blocked_by: ["05", "15", "16", "17"]
+---
+
 # 18: Sweep the built surfaces for the accessibility nobody specified
 
 **What to build:** A visitor who reads this dashboard with a screen reader, drives it from a
@@ -33,15 +38,11 @@ including the one that comment claims. The palette is adopted verbatim by ticket
 this dashboard ships, so this sweep is the first time anything about it is checked rather than
 eyeballed.
 
-**Blocked by:** 05, 15, 16, 17
-
 **Design:** `../canvas/Main.dc.html:40-50` (the nav), `:112-127` (the legend) and `:128-205` (the
 matrix grid, its row headers and its column headers), `../canvas/Cell.dc.html:96-174` (the five
 states and the not-drawn dot), `../canvas/Errors.dc.html:42-64` (the banner and its retry),
 `../canvas/Dispute.dc.html:110-278` (the justification band and the links inside it),
 `../canvas/Mobile.dc.html` (the phone reflow), `../canvas/README.md` for provenance
-
-**Status:** done
 
 - [x] Every colour in the shipped dark palette that carries text clears 4.5:1 against the surface it
       actually sits on — the page, the card, the raised card, and the wash behind a tinted cell — or
