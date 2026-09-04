@@ -268,6 +268,10 @@ describe("Marginals", () => {
       // and a reward depends on neither: both of court 34's reconfigurations carried `minStake`,
       // `alpha` and `feeForJuror` unchanged and moved only `timesPerPeriod`. Marking these
       // would be a caveat a reader can see is misplaced, which is one they stop reading.
+      //
+      // "Carried them unchanged" is compared on every run now rather than re-read by hand —
+      // `rewardParameterChanges`, ticket 21. The day it stops being true, these two figures are
+      // the ones that need saying something about, and this test is where that starts.
       renderMarginals({ changedWindows: [EARLIER] });
 
       // Two daggers: the reveal median and the commit median, and neither reward figure. The

@@ -16,7 +16,13 @@ type FakeLog = {
   /** What Arbitrum's endpoint carries and the JSON-RPC spec does not require. */
   blockTimestamp?: bigint;
   transactionHash: string;
-  args: { _timesPerPeriod?: readonly bigint[] };
+  args: {
+    _timesPerPeriod?: readonly bigint[];
+    _minStake?: bigint;
+    _alpha?: bigint;
+    _feeForJuror?: bigint;
+    _jurorsForCourtJump?: bigint;
+  };
 };
 
 /** What `getLogs` was asked for, so the request itself can be asserted. */
@@ -30,6 +36,20 @@ type Asked = {
 
 const OLD_TIMES = [43_200n, 28_800n, 28_800n, 129_600n] as const;
 const NEW_TIMES = [2_700n, 2_700n, 1_800n, 129_600n] as const;
+
+/**
+ * Court 34's reward parameters, on every log below that decodes.
+ *
+ * As `bigint`, which is how viem hands them over and the whole reason the reader is worth a
+ * test: `minStake` is 1.1e22, and it has to reach `RawCourtParameters` as the twenty-three
+ * digits the chain emitted rather than as a double that lost the last seven of them.
+ */
+const REWARDS = {
+  _minStake: 11_000_000_000_000_000_000_000n,
+  _alpha: 170n,
+  _feeForJuror: 270_000_000_000_000n,
+  _jurorsForCourtJump: 7n,
+} as const;
 
 /**
  * A client whose two scans answer separately, keyed by event name.
@@ -65,17 +85,29 @@ function fakeLog(overrides: Partial<FakeLog> = {}): FakeLog {
     blockNumber: 493_394_990n,
     logIndex: 3,
     transactionHash: "0xabc",
-    args: { _timesPerPeriod: OLD_TIMES },
+    args: { _timesPerPeriod: OLD_TIMES, ...REWARDS },
     ...overrides,
   };
 }
 
 describe("fetchCourtParameters", () => {
-  it("reads a configuration as its durations and the moment its block was mined", async () => {
+  it("reads a configuration as its durations, its rewards and the moment it was mined", async () => {
     const { client } = fakeClient({ created: [fakeLog()] }, { "493394990": 1_786_444_490n });
 
+    // `minStake` written out in full is the assertion behind the `String` in the reader. viem
+    // decodes it as a bigint and it is 1.1e22 — a double at that magnitude steps in units of
+    // about 2.1 million wei, so a `Number` on the way out would round the value before the
+    // model's guard ever saw it, and the comparison that guard exists for would be comparing two
+    // figures that had already lost the difference. Twenty-three digits, no exponent.
     expect(await fetchCourtParameters({ client })).toEqual([
-      { at: "1786444490", timesPerPeriod: ["43200", "28800", "28800", "129600"] },
+      {
+        at: "1786444490",
+        timesPerPeriod: ["43200", "28800", "28800", "129600"],
+        minStake: "11000000000000000000000",
+        alpha: "170",
+        feeForJuror: "270000000000000",
+        jurorsForCourtJump: "7",
+      },
     ]);
   });
 
@@ -99,8 +131,12 @@ describe("fetchCourtParameters", () => {
       {
         created: [fakeLog({ logIndex: 3 })],
         modified: [
-          fakeLog({ logIndex: 14, args: { _timesPerPeriod: NEW_TIMES } }),
-          fakeLog({ blockNumber: 496_518_927n, logIndex: 1, args: { _timesPerPeriod: OLD_TIMES } }),
+          fakeLog({ logIndex: 14, args: { _timesPerPeriod: NEW_TIMES, ...REWARDS } }),
+          fakeLog({
+            blockNumber: 496_518_927n,
+            logIndex: 1,
+            args: { _timesPerPeriod: OLD_TIMES, ...REWARDS },
+          }),
         ],
       },
       { "493394990": 1_786_444_490n, "496518927": 1_787_230_320n },
@@ -148,5 +184,19 @@ describe("fetchCourtParameters", () => {
     const { client } = fakeClient({ created: [fakeLog({ args: {} })] }, { "493394990": 1n });
 
     await expect(fetchCourtParameters({ client })).rejects.toThrow(/Undecodable/);
+  });
+
+  it("fails on a missing reward parameter too, and not only on a missing duration", async () => {
+    // The quieter half of the same guard. A configuration read back without its fee is not a
+    // gap a reader would see: it would agree with every other configuration about a fee it
+    // never stated, and `rewardParameterChanges` would report a court that had not changed —
+    // which is the exact answer that function exists to be trusted on.
+    for (const missing of ["_minStake", "_alpha", "_feeForJuror", "_jurorsForCourtJump"] as const) {
+      const args: FakeLog["args"] = { _timesPerPeriod: OLD_TIMES, ...REWARDS };
+      delete args[missing];
+      const { client } = fakeClient({ created: [fakeLog({ args })] }, { "493394990": 1n });
+
+      await expect(fetchCourtParameters({ client }), missing).rejects.toThrow(/Undecodable/);
+    }
   });
 });

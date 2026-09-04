@@ -15,7 +15,12 @@ import type { Dispute } from "../disputes/disputes";
  */
 
 /**
- * One `CourtCreated` or `CourtModified` event, reduced to the two things a window needs.
+ * One `CourtCreated` or `CourtModified` event, reduced to what this dashboard reads off it.
+ *
+ * More than a window, since ticket 21: the same two events carry what a coherent draw earns and
+ * what a wrong one risks, and a claim on this page rests on those never having moved. They are
+ * kept because reading them is free — they arrive already decoded on the logs the window scan
+ * fetches anyway — and because the alternative to keeping them is a claim nothing checks.
  *
  * Defined here rather than beside the other raw shapes in `performance.ts` because this model
  * is what gives it meaning, exactly as `RawDispute` sits beside `toDisputes`. Strings, like
@@ -32,6 +37,20 @@ export type RawCourtParameters = {
   at: string;
   /** `[evidence, commit, vote, appeal]` in seconds, as `timesPerPeriod` is indexed on chain. */
   timesPerPeriod: readonly string[];
+  /**
+   * The stake a juror must hold to be drawn, in wei of PNK.
+   *
+   * TRAP: 11000e18 today, which is 1.1e22 — a million times `Number.MAX_SAFE_INTEGER`. It stays
+   * a string the whole way through this module and is compared as one; see `RewardParameters`
+   * for what parsing it would cost.
+   */
+  minStake: string;
+  /** The share of `minStake` a vote ID puts at risk, per ten thousand. 170 today, so 1.7%. */
+  alpha: string;
+  /** What one coherent vote ID earns, in wei of ETH. */
+  feeForJuror: string;
+  /** The panel size beyond which an appeal moves the dispute up to the parent court. */
+  jurorsForCourtJump: string;
 };
 
 /**
@@ -48,11 +67,45 @@ export type PeriodWindows = {
   appealSeconds: number;
 };
 
+/**
+ * What one configuration paid and put at risk — the half of a court's parameters no window
+ * describes.
+ *
+ * Named exactly as `CourtCreated` and `CourtModified` name them, minus the leading underscore.
+ * The only thing ever done with these four is to *report* which of them changed, and the reader
+ * of that report goes to the chain to see it; a tidier `minStakeWei` would be a name Arbitrum
+ * does not answer to.
+ *
+ * TRAP: strings, compared as strings, never parsed. `minStake` is 1.1e22, and `Number` rounds
+ * that to a multiple of about two million wei — so two genuinely different stakes would compare
+ * equal and this module would report a court that had not changed, which is the exact failure
+ * it exists to catch. What makes string equality mean numeric equality is the canonical-decimal
+ * guard in `toRegimes`: "0170" never survives to be told apart from "170".
+ *
+ * No arithmetic is done on them anywhere, and none should be. The one question asked of these
+ * four is whether two configurations agree.
+ */
+export type RewardParameters = {
+  minStake: string;
+  alpha: string;
+  feeForJuror: string;
+  jurorsForCourtJump: string;
+};
+
 /** One configuration, and the moment it came into force. */
 export type ParameterRegime = {
   /** Unix seconds. The court held these windows from this moment until the next regime. */
   from: number;
   windows: PeriodWindows;
+  /**
+   * What a draw earned and risked under it.
+   *
+   * Beside the windows rather than modelled apart from them because the chain emits the two in
+   * one event: a configuration is one thing. Splitting them would also mean ordering the court's
+   * history twice, and the ordering this module establishes once — in `toRegimes` — is what
+   * every answer here depends on.
+   */
+  rewards: RewardParameters;
 };
 
 /** Same canonical-decimal guard as the rest of the model, and for the same reason. */
@@ -63,6 +116,20 @@ function toSeconds(value: string | undefined, what: string): number {
     throw new Error(`Court parameters carry an unreadable ${what}: ${JSON.stringify(value)}`);
   }
   return Number(value);
+}
+
+/**
+ * A reward parameter, kept as the decimal string it arrived as.
+ *
+ * Validated and deliberately not converted. The guard is the whole of it: it is what lets
+ * `rewardParameterChanges` compare with `===` and have that mean what a reader thinks it means.
+ * See `RewardParameters` for what `Number` would cost on a stake of 1.1e22.
+ */
+function toAmount(value: string | undefined, what: string): string {
+  if (value === undefined || !CANONICAL_DECIMAL.test(value)) {
+    throw new Error(`Court parameters carry an unreadable ${what}: ${JSON.stringify(value)}`);
+  }
+  return value;
 }
 
 /**
@@ -81,6 +148,12 @@ export function toRegimes(raw: readonly RawCourtParameters[]): ParameterRegime[]
         commitSeconds: toSeconds(change.timesPerPeriod[1], "commit window"),
         voteSeconds: toSeconds(change.timesPerPeriod[2], "vote window"),
         appealSeconds: toSeconds(change.timesPerPeriod[3], "appeal window"),
+      },
+      rewards: {
+        minStake: toAmount(change.minStake, "minimum stake"),
+        alpha: toAmount(change.alpha, "alpha"),
+        feeForJuror: toAmount(change.feeForJuror, "fee for juror"),
+        jurorsForCourtJump: toAmount(change.jurorsForCourtJump, "jurors for court jump"),
       },
     }))
     .sort((a, b) => a.from - b.from);
@@ -265,4 +338,98 @@ export function measuredRegimes(regimes: readonly ParameterRegime[]): MeasuredRe
   }
 
   return measured;
+}
+
+/**
+ * Every field of `RewardParameters`, as a value rather than a type.
+ *
+ * The `satisfies` is the point: a fifth reward parameter added to the type and not here is a
+ * compile error, rather than a parameter that silently stops being compared. That is the shape
+ * of failure this whole module is about — present, correctly typed, and unchecked — and the
+ * hand-written pair on `MeasuredRegime` is the same risk carried without this guard because
+ * there its two fields are a *choice* about what "measured" means. These four are not a choice:
+ * they are every reward parameter the events carry.
+ */
+const REWARD_PARAMETERS = Object.keys({
+  minStake: true,
+  alpha: true,
+  feeForJuror: true,
+  jurorsForCourtJump: true,
+} satisfies Record<keyof RewardParameters, true>) as readonly (keyof RewardParameters)[];
+
+/** One reward parameter moving, dated, with both values so the report can be read on its own. */
+export type RewardParameterChange = {
+  /** Unix seconds: the moment the configuration that moved it came into force. */
+  at: number;
+  /** The on-chain field name, so a maintainer can grep the log that carries it. */
+  parameter: keyof RewardParameters;
+  before: string;
+  after: string;
+};
+
+/**
+ * Every time the court changed what a draw earns or risks — empty when it never has.
+ *
+ * `[]` is the answer for court 34 and has been for its whole life: `minStake`, `alpha`,
+ * `feeForJuror` and `jurorsForCourtJump` are byte-identical across all three configurations and
+ * only `timesPerPeriod` has ever moved. That claim is load-bearing rather
+ * than incidental. `CourtTotals` sums cumulative ETH and net PNK across the court's whole life
+ * and the † window marker deliberately does **not** ride either of them, on the grounds that a
+ * reward depends on no window — which is only true while one fee has been in force throughout.
+ * `totals.test.ts` pins the arithmetic that follows: total ETH equals `feeForJuror` times the
+ * vote-ID count over the executed disputes, exact only under a single fee.
+ *
+ * So this exists to make that claim *checked* rather than inspected. It was verified by hand on
+ * 2026-08-20 and again on 2026-08-26 and it held both times, which is precisely the state worth
+ * worrying about: a changed `feeForJuror` would not throw, would not warn and would not blank a
+ * figure. Every cumulative sum would quietly span two fee regimes and the page would report six
+ * agent jurors' earnings as one comparable quantity when they were two.
+ *
+ * **Four parameters, and `hiddenVotes` is not one of them.** It rides the same two events and
+ * has been `true` throughout, but nothing here reads it — so an `[]` from this function is not a
+ * statement about it, and a reader who takes it as one is the reason this paragraph exists. It
+ * stayed out because it is not a reward parameter and this type is named for what it holds; the
+ * gap wants a ticket on its own terms, because a court that turned hidden votes off would have
+ * no commit period at all, and commit latency — half of what this dashboard measures — would be
+ * the duration of something that no longer happens. Nothing named catches that today. The live
+ * suite's full-history assertion would go red for it, but as case 3 upkeep, which is the wrong
+ * name for it.
+ *
+ * Consecutive pairs, like `measuredRegimes` and for the same reason: a fee lowered and later
+ * restored is reported twice, because the draws that ran between earned something the draws
+ * either side did not. Reporting it as "the history agrees" would be true of the endpoints and
+ * false of every figure summed across them.
+ *
+ * A change is reported per *parameter*, so a configuration that moved two of them arrives as two
+ * entries at the same moment. That is what a caller wants: the question a red assertion has to
+ * answer first is which quantity stopped being comparable, and an entry saying only "the rewards
+ * changed" sends a maintainer to a diff.
+ *
+ * Takes regimes oldest first, as `toRegimes` returns them. Nothing here re-sorts: unsorted input
+ * would compare whichever pairs happened to be adjacent and date the change from the wrong one.
+ *
+ * **No view reads this, deliberately.** Nothing is rendered while it is empty, and it has never
+ * been anything else — the display question is open, recorded on ticket 21. The floor it stands
+ * on instead is a pair of assertions: `windows.test.ts` fails the build the moment a recaptured
+ * fixture carries a moved parameter, and `court-parameters.integration.test.ts` fails nightly
+ * against the chain before any fixture is recaptured at all.
+ */
+export function rewardParameterChanges(
+  regimes: readonly ParameterRegime[],
+): RewardParameterChange[] {
+  const changes: RewardParameterChange[] = [];
+  let held: RewardParameters | null = null;
+
+  for (const regime of regimes) {
+    if (held !== null) {
+      for (const parameter of REWARD_PARAMETERS) {
+        const before = held[parameter];
+        const after = regime.rewards[parameter];
+        if (before !== after) changes.push({ at: regime.from, parameter, before, after });
+      }
+    }
+    held = regime.rewards;
+  }
+
+  return changes;
 }

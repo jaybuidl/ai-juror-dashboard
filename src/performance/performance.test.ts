@@ -36,6 +36,20 @@ const rawDisputes = disputeFixture as RawDispute[];
 const rawDraws = drawFixture as RawDraw[];
 const rawCommits = commitFixture as RawCommitCast[];
 const rawParameters = parameterFixture as RawCourtParameters[];
+
+/**
+ * One hand-built configuration, carrying the reward parameters the captured court holds.
+ *
+ * Every history built by hand below is about a *window*, and the four reward parameters are
+ * identical across its entries — so none of these is quietly a court that changed two things at
+ * once. Spread off the fixture rather than restated, so they stay identical the day court 34
+ * changes a fee and the fixture is recaptured.
+ */
+function rawRegime(at: string, timesPerPeriod: readonly string[]): RawCourtParameters {
+  const [first] = rawParameters;
+  if (first === undefined) throw new Error("The captured parameter history is empty");
+  return { ...first, at, timesPerPeriod };
+}
 /**
  * The 44 payouts the court had written on the same day, from `TokenAndETHShift`.
  *
@@ -1084,7 +1098,7 @@ describe("buildCourtPerformance", () => {
 
     it("refuses a history it cannot read rather than measuring against a fabricated window", () => {
       const result = buildCourtPerformance(
-        courtData({ parameters: [{ at: "not-a-moment", timesPerPeriod: ["1", "2", "3", "4"] }] }),
+        courtData({ parameters: [rawRegime("not-a-moment", ["1", "2", "3", "4"])] }),
       );
 
       expect(result.success).toBe(false);
@@ -1100,8 +1114,8 @@ describe("buildCourtPerformance", () => {
           disputes: [rawDispute()],
           draws: [rawDraw()],
           parameters: [
-            { at: "1000", timesPerPeriod: ["43200", "2700", "1800", "129600"] },
-            { at: "1787342000", timesPerPeriod: ["600", "2700", "1800", "129600"] },
+            rawRegime("1000", ["43200", "2700", "1800", "129600"]),
+            rawRegime("1787342000", ["600", "2700", "1800", "129600"]),
           ],
         }),
       );

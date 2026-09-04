@@ -3,8 +3,11 @@ import type { Dispute, DisputeRound } from "../disputes/disputes";
 import fixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import {
   measuredRegimes,
+  type ParameterRegime,
   type PeriodWindows,
   type RawCourtParameters,
+  type RewardParameters,
+  rewardParameterChanges,
   sameMeasuredWindows,
   toRegimes,
   windowsAt,
@@ -58,7 +61,42 @@ const CURRENT: PeriodWindows = {
   appealSeconds: 129_600,
 };
 
+/**
+ * What every configuration court 34 has held pays and puts at risk, decoded from the same three
+ * logs the windows come from (re-read 2026-09-04, ticket 21).
+ *
+ * Spelled out for the reason `CURRENT` is: a fourth configuration that moved a fee has to arrive
+ * here as a value that no longer matches, not as a spread that quietly absorbs it.
+ */
+const REWARDS: RewardParameters = {
+  minStake: "11000000000000000000000",
+  alpha: "170",
+  feeForJuror: "270000000000000",
+  jurorsForCourtJump: "7",
+};
+
 const HISTORY = fixture as RawCourtParameters[];
+
+/** One configuration as the chain reports it, with court 34's reward parameters by default. */
+function raw(overrides: Partial<RawCourtParameters> = {}): RawCourtParameters {
+  return {
+    at: CREATED,
+    timesPerPeriod: ["43200", "28800", "28800", "129600"],
+    ...REWARDS,
+    ...overrides,
+  };
+}
+
+/**
+ * One configuration as the model holds it.
+ *
+ * The rewards default to the court's own, so that a test about the window fold does not have to
+ * restate four amounts it is not asking about — and so that one supplying them is visibly asking
+ * about something else.
+ */
+function regime(from: number, windows: PeriodWindows, rewards = REWARDS): ParameterRegime {
+  return { from, windows, rewards };
+}
 
 function round(overrides: Partial<DisputeRound> = {}): DisputeRound {
   return {
@@ -89,9 +127,9 @@ describe("toRegimes", () => {
     const regimes = toRegimes(HISTORY);
 
     expect(regimes).toEqual([
-      { from: Number(CREATED), windows: OLD },
-      { from: Number(MODIFIED), windows: NEW },
-      { from: Number(TRIMMED), windows: CURRENT },
+      regime(Number(CREATED), OLD),
+      regime(Number(MODIFIED), NEW),
+      regime(Number(TRIMMED), CURRENT),
     ]);
   });
 
@@ -123,13 +161,29 @@ describe("toRegimes", () => {
   it("refuses a duration it cannot read rather than turning it into a number", () => {
     // `Number("")` is 0 and `Number("1e3")` is 1000. A window of zero seconds would make every
     // dispute look like it ran under different rules from every other.
-    expect(() =>
-      toRegimes([{ at: CREATED, timesPerPeriod: ["43200", "", "28800", "129600"] }]),
-    ).toThrow(/commit window/i);
-
-    expect(() => toRegimes([{ at: "", timesPerPeriod: ["1", "2", "3", "4"] }])).toThrow(
-      /took effect/i,
+    expect(() => toRegimes([raw({ timesPerPeriod: ["43200", "", "28800", "129600"] })])).toThrow(
+      /commit window/i,
     );
+
+    expect(() => toRegimes([raw({ at: "" })])).toThrow(/took effect/i);
+  });
+
+  it("refuses a reward parameter it cannot read, on the same terms as a duration", () => {
+    // The guard is what makes the comparison downstream mean anything: `rewardParameterChanges`
+    // compares these with `===`, and string equality is numeric equality only while every value
+    // is canonical decimal. A `"0170"` admitted here would report a court that changed its alpha
+    // and a `"2.7e14"` one that changed its fee, both from a history in which nothing moved.
+    expect(() => toRegimes([raw({ minStake: "11_000e18" })])).toThrow(/minimum stake/i);
+    expect(() => toRegimes([raw({ alpha: "0170" })])).toThrow(/alpha/i);
+    expect(() => toRegimes([raw({ feeForJuror: "2.7e14" })])).toThrow(/fee for juror/i);
+    expect(() => toRegimes([raw({ jurorsForCourtJump: "" })])).toThrow(/jurors for court jump/i);
+  });
+
+  it("carries the reward parameters through unparsed, at their full width", () => {
+    // 1.1e22 arriving as the string the chain emitted, digit for digit. This is the assertion
+    // that would fail the day someone reaches for `Number` in `toRegimes`, and it is the only
+    // place the full stake is written out.
+    expect(toRegimes(HISTORY)[0]?.rewards.minStake).toBe("11000000000000000000000");
   });
 });
 
@@ -277,7 +331,7 @@ describe("measuredRegimes", () => {
     // to suit a demonstration, touching nothing any figure here is measured from. It makes the
     // fixture and `/method` stale and it makes no two figures incomparable, which is the whole
     // distinction `court-parameters.integration.test.ts` is split along.
-    const demo = { from: 1_800_000_000, windows: { ...CURRENT, evidenceSeconds: 300 } };
+    const demo = regime(1_800_000_000, { ...CURRENT, evidenceSeconds: 300 });
 
     expect(measuredRegimes([...toRegimes(HISTORY), demo])).toEqual(
       measuredRegimes(toRegimes(HISTORY)),
@@ -285,7 +339,7 @@ describe("measuredRegimes", () => {
   });
 
   it("opens a regime for a fourth configuration that moves the commit window", () => {
-    const shortened = { from: 1_800_000_000, windows: { ...CURRENT, commitSeconds: 900 } };
+    const shortened = regime(1_800_000_000, { ...CURRENT, commitSeconds: 900 });
 
     expect(measuredRegimes([...toRegimes(HISTORY), shortened])).toEqual([
       { from: Number(CREATED), commitSeconds: 28_800, voteSeconds: 28_800 },
@@ -295,7 +349,7 @@ describe("measuredRegimes", () => {
   });
 
   it("opens one for the vote window too, which is the other half of what is measured", () => {
-    const shortened = { from: 1_800_000_000, windows: { ...CURRENT, voteSeconds: 900 } };
+    const shortened = regime(1_800_000_000, { ...CURRENT, voteSeconds: 900 });
 
     expect(measuredRegimes([...toRegimes(HISTORY), shortened])).toHaveLength(3);
   });
@@ -305,7 +359,7 @@ describe("measuredRegimes", () => {
     // *moved*, because that is the line either side of which two latencies stop being
     // comparable; a configuration that repeats them carries a later moment and it is the wrong
     // one to answer with.
-    const restated = { from: 1_800_000_000, windows: CURRENT };
+    const restated = regime(1_800_000_000, CURRENT);
 
     expect(measuredRegimes([...toRegimes(HISTORY), restated])[1]?.from).toBe(Number(MODIFIED));
   });
@@ -315,7 +369,7 @@ describe("measuredRegimes", () => {
     // would make the disputes before and after that change comparable with each other — but
     // not with the ones that ran between, so it is a third regime and not a resumption of the
     // first.
-    const restored = { from: 1_800_000_000, windows: OLD };
+    const restored = regime(1_800_000_000, OLD);
 
     expect(measuredRegimes([...toRegimes(HISTORY), restored])).toHaveLength(3);
   });
@@ -324,5 +378,101 @@ describe("measuredRegimes", () => {
     // An unread history is an absence, not a court that has never configured itself, and this
     // answers with an absence in kind rather than inventing a regime to hold the difference.
     expect(measuredRegimes([])).toEqual([]);
+  });
+});
+
+describe("rewardParameterChanges", () => {
+  it("reports nothing over the three configurations court 34 has held", () => {
+    // The claim this function exists to check, and the one `CourtTotals` rests on: no
+    // reconfiguration of court 34 has ever moved what a coherent draw earns or a wrong one
+    // risks. It held by inspection on 2026-08-20 and again on 2026-08-26; from here it holds
+    // because the build says so.
+    //
+    // Read from the captured fixture and not from a literal, deliberately. That is what makes
+    // this the offline half of the floor: recapturing the fixture after the court changed a fee
+    // turns this red, so the drift cannot arrive in the repository as a green commit. The live
+    // half fires earlier still, against the chain, before any fixture is touched.
+    expect(rewardParameterChanges(toRegimes(HISTORY))).toEqual([]);
+  });
+
+  it("names the parameter and both values when one moves", () => {
+    // What a red assertion has to hand a maintainer: which quantity stopped being comparable,
+    // when, and what it went from and to — enough to find the log without reading a diff.
+    const raised = regime(1_800_000_000, CURRENT, { ...REWARDS, feeForJuror: "540000000000000" });
+
+    expect(rewardParameterChanges([...toRegimes(HISTORY), raised])).toEqual([
+      {
+        at: 1_800_000_000,
+        parameter: "feeForJuror",
+        before: "270000000000000",
+        after: "540000000000000",
+      },
+    ]);
+  });
+
+  it("reports every one of the four, so none of them is the unwatched one", () => {
+    // One at a time, because a comparison that reads three fields and skips the fourth passes
+    // any test that changes them together. The fourth is the one a court would move alone.
+    for (const parameter of ["minStake", "alpha", "feeForJuror", "jurorsForCourtJump"] as const) {
+      const moved = regime(1_800_000_000, CURRENT, { ...REWARDS, [parameter]: "1" });
+
+      expect(
+        rewardParameterChanges([...toRegimes(HISTORY), moved]).map((change) => change.parameter),
+        parameter,
+      ).toEqual([parameter]);
+    }
+  });
+
+  it("reports one entry per parameter when a configuration moves two at once", () => {
+    // A court raising the fee and the stake together did two things, and a caller comparing
+    // figures across the change needs to know both. Collapsing them into one "the rewards
+    // changed" is what sends a maintainer back to the log.
+    const moved = regime(1_800_000_000, CURRENT, {
+      ...REWARDS,
+      minStake: "22000000000000000000000",
+      feeForJuror: "540000000000000",
+    });
+
+    expect(rewardParameterChanges([...toRegimes(HISTORY), moved])).toHaveLength(2);
+  });
+
+  it("tells apart two stakes that Number cannot", () => {
+    // The reason these are strings all the way through. `minStake` is 1.1e22, and a double at
+    // that magnitude steps in units of about 2.1 million wei — so `Number` maps this pair to
+    // one value and the comparison below would answer that the court had not changed.
+    //
+    // No court would raise a stake by a million wei — a trillionth of a token — and that is the
+    // point: this is the smallest change the comparison must not miss rather than one anybody
+    // expects. A guard pinned at the boundary is a guard nobody has to re-derive.
+    const nudged = regime(1_800_000_000, CURRENT, {
+      ...REWARDS,
+      minStake: "11000000000000001000000",
+    });
+
+    expect(Number("11000000000000001000000")).toBe(Number(REWARDS.minStake));
+    expect(rewardParameterChanges([...toRegimes(HISTORY), nudged])).toHaveLength(1);
+  });
+
+  it("reports a fee restored to what it was as a second change, not as no change", () => {
+    // Consecutive pairs, like `measuredRegimes`. A fee halved and later put back leaves the
+    // endpoints agreeing and every draw between them earning something neither side did, so a
+    // sum spanning all three is not one quantity — and an answer of "the history agrees" would
+    // be true of the first and last configurations and false of the page.
+    const halved = regime(1_800_000_000, CURRENT, { ...REWARDS, feeForJuror: "135000000000000" });
+    const restored = regime(1_900_000_000, CURRENT);
+
+    expect(
+      rewardParameterChanges([...toRegimes(HISTORY), halved, restored]).map(
+        (change) => change.after,
+      ),
+    ).toEqual(["135000000000000", "270000000000000"]);
+  });
+
+  it("has nothing to say about a history it could not read", () => {
+    // An unread history is an absence, not a court whose rewards have never moved. Both answer
+    // `[]` here, which is why no caller may read this as evidence on its own — the gate is
+    // `CourtParameters.read`, exactly as it is for the windows.
+    expect(rewardParameterChanges([])).toEqual([]);
+    expect(rewardParameterChanges(toRegimes(HISTORY).slice(0, 1))).toEqual([]);
   });
 });

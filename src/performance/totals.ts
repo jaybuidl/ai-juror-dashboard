@@ -376,9 +376,15 @@ export type AgentJurorMarginals = {
    * `jurorsForCourtJump` **unchanged** and moved only `timesPerPeriod`, decoded from the two
    * `CourtModified` logs against the `CourtCreated` before them (re-read 2026-09-04, ticket
    * 19). So every figure summed here was earned under one set of reward parameters, and a
-   * dagger claiming otherwise would be a marker placed in error. Nothing pins that in CI —
-   * ticket 21 — so it is a fact with a date on it rather than a guarantee. The ‡ does not ride
-   * them either: a panel of one makes coherence tautological and the fee it earned real.
+   * dagger claiming otherwise would be a marker placed in error. **Checked rather than
+   * inspected**, since ticket 21: `rewardParameterChanges` compares every configuration in the
+   * history against the one before it, `windows.test.ts` fails the build the moment a recaptured
+   * fixture carries a moved parameter, and `court-parameters.integration.test.ts` fails against
+   * the chain before any fixture is recaptured at all. It covers the four parameters named above
+   * and not `hiddenVotes`, which is read by no figure here. What is *not* settled is what this
+   * page would say if one of them moved — that display question is deferred to the day one of
+   * those assertions goes red, and recorded on ticket 21. The ‡ does not ride these two either:
+   * a panel of one makes coherence tautological and the fee it earned real.
    */
   rewards: AgentJurorRewards | null;
 };

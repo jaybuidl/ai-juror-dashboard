@@ -6,7 +6,13 @@ import fixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import { fetchCourtParameters } from "./court-parameters";
 import { fetchCourtDraws } from "./draws-subgraph";
 import { buildCourtPerformance, type CourtPerformance } from "./performance";
-import { measuredRegimes, type RawCourtParameters, toRegimes } from "./windows";
+import {
+  measuredRegimes,
+  type RawCourtParameters,
+  type RewardParameters,
+  rewardParameterChanges,
+  toRegimes,
+} from "./windows";
 
 /**
  * Live against Arbitrum One, held out of `yarn test` — run with `yarn test:integration`.
@@ -24,11 +30,19 @@ import { measuredRegimes, type RawCourtParameters, toRegimes } from "./windows";
  *    assertions below green, because there are still three configurations and the fold in case
  *    2 swallows a repeat, so a reader who skipped to case 3 would recapture the fixture with
  *    the duplicate in it and write it into `/method`.
- * 2. **A figure moved.** `has moved no commit or vote window…` fires only when the court
- *    changed a window this dashboard measures from. Latencies either side of that change are
- *    not comparable, rows that carried no marker now carry one, and the fixture behind the
- *    offline suite is a snapshot of a court that no longer exists. This is the one worth
- *    waking up for.
+ * 2. **A figure moved.** Two assertions, and both are worth waking up for. `has moved no commit
+ *    or vote window…` fires when the court changed a window this dashboard measures from:
+ *    latencies either side of it are not comparable, and rows that carried no marker now carry
+ *    one. `has changed no reward parameter…` fires when it changed what a coherent draw earns or
+ *    a wrong one risks, and the damage is quieter — every cumulative ETH and net PNK figure on
+ *    the page is summed over the court's whole life, so each would silently span two reward
+ *    regimes and report as one quantity what is two. The † deliberately does *not* ride those
+ *    sums, on the ground that a reward depends on no window; that ground holds only while one
+ *    fee has been in force throughout, so the sums would then be the figures on the page
+ *    carrying no marker and needing one. Ticket 21 defers the display question to the day this
+ *    goes red, which makes this assertion the thing that says the day has come. Either failure
+ *    also leaves the fixture behind the offline suite a snapshot of a court that no longer
+ *    exists.
  * 3. **An account went stale.** `still holds the three configurations…` and `returns what the
  *    captured fixture holds…` fire on *any* change to the history, including one that moves no
  *    figure a reader can see. `MethodPage`'s account of the configurations is prose — it has to
@@ -47,6 +61,22 @@ import { measuredRegimes, type RawCourtParameters, toRegimes } from "./windows";
  * is two `eth_getLogs` plus a block read each.
  */
 describe("fetchCourtParameters", () => {
+  /**
+   * What each of the three configurations pays and puts at risk, identical across all three.
+   *
+   * Shared between the three entries in the full-history assertion rather than restated there,
+   * and that is safe only because `has changed no reward parameter…` has already established the
+   * three are equal. Written the other way round — three copies — a court that changed a fee
+   * would show up as one number inside one of three blocks, which is the diff the split at the
+   * top of this file exists to spare a maintainer.
+   */
+  const REWARDS: RewardParameters = {
+    minStake: "11000000000000000000000",
+    alpha: "170",
+    feeForJuror: "270000000000000",
+    jurorsForCourtJump: "7",
+  };
+
   let history: RawCourtParameters[];
   let performance: CourtPerformance;
 
@@ -128,6 +158,21 @@ describe("fetchCourtParameters", () => {
     ]);
   });
 
+  it("has changed no reward parameter, which every cumulative figure is summed across", () => {
+    // Case 2, and the half no page element would show. A changed `feeForJuror` throws nothing,
+    // warns nothing and blanks nothing: every ETH sum goes on rendering, spanning two fees. It
+    // has never happened — checked by hand on 2026-08-20 and 2026-08-26 and by this assertion
+    // since — and the whole point is that it would not announce itself if it did.
+    //
+    // Against the chain and not the fixture, which is the half `windows.test.ts` cannot do: the
+    // offline assertion goes red when a recaptured fixture carries the drift, and this one goes
+    // red the night the court changes, before anybody recaptures anything.
+    expect(
+      rewardParameterChanges(toRegimes(history)),
+      "The court has changed what a coherent draw earns or a wrong one risks. Every cumulative ETH and net PNK figure on this page is summed over the court's whole life and now spans two reward regimes while reading as one quantity — and the † does not fall on them. Read CourtTotals and the marginals before recapturing anything: the display question ticket 21 deferred is now due.",
+    ).toEqual([]);
+  });
+
   it("still holds the three configurations the fixture and /method describe, in full", () => {
     // Case 3. `MethodPage`'s window section states these in prose, in words, as the
     // destination of the † marker's link, and this is the assertion that keeps the page and
@@ -145,6 +190,7 @@ describe("fetchCourtParameters", () => {
           voteSeconds: 28_800,
           appealSeconds: 129_600,
         },
+        rewards: REWARDS,
       },
       {
         from: 1_787_230_320,
@@ -154,6 +200,7 @@ describe("fetchCourtParameters", () => {
           voteSeconds: 1_800,
           appealSeconds: 129_600,
         },
+        rewards: REWARDS,
       },
       // The evidence period and nothing else, so this configuration reaches no figure on the
       // page. Written out in full anyway: a fourth that moved a commit or a vote window has to
@@ -166,6 +213,7 @@ describe("fetchCourtParameters", () => {
           voteSeconds: 1_800,
           appealSeconds: 129_600,
         },
+        rewards: REWARDS,
       },
     ]);
   });

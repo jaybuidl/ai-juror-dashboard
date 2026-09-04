@@ -38,9 +38,14 @@ import { browserStorage } from "./storage";
  * raw shape, which changes when Goldsky's schema does and not when this repository changes its
  * mind. `persistence.test.ts` pins both halves.
  *
- * The date is when the raw shape last changed, not when the file was last touched.
+ * The date is when the raw shape last changed, not when the file was last touched. Ticket 21
+ * moved it: `RawCourtParameters` gained the four reward parameters, and unlike a *derived* shape
+ * a raw one has no `rederive` to rebuild it — a cache written by the bundle before this one
+ * restores a parameter history with no `minStake` on it, `toRegimes` refuses to read it, and
+ * every return visit for the next day renders the whole page as a failed build rather than a
+ * cold read. Adding a field to a persisted raw payload is exactly the case this constant is for.
  */
-export const PERSISTED_MODEL_VERSION = "2026-08-25";
+export const PERSISTED_MODEL_VERSION = "2026-09-04";
 
 /** Namespaced, so nothing else this origin stores can collide with it. */
 export const PERSISTED_CACHE_KEY = "kleros-ai-juror-dashboard:query-cache";

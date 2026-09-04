@@ -107,9 +107,11 @@ jobs:
   # anything teaches people to ignore red.
   #
   # `yarn test:integration` runs every `src/**/*.integration.test.ts`, so a suite joins by
-  # filename and this comment never has to count them. What they cover today: ENS (all six
-  # subnames resolved against mainnet and cross-checked against the addresses the roster has
-  # checked in by hand), the core subgraph's disputes and its draws, the template subgraph
+  # filename and this comment never has to count them. What they cover today: ENS (every subname
+  # the roster holds, resolved against mainnet and cross-checked against the addresses checked in
+  # beside them — the suite counts `ROSTER.length` and so does not care that the roster grows,
+  # which is why no number appears here), the core subgraph's disputes and its draws, the
+  # template subgraph
   # that says what each dispute is about, Arbitrum's `CommitCast` logs — which also run
   # ADR-0004's cross-check live, asserting that every draw the subgraph calls committed has a
   # matching event — and court 34's own parameter history. Each asserts that the endpoint still
@@ -117,10 +119,17 @@ jobs:
   # fixture cannot notice.
   #
   # The parameter suite carries a second job, and it is the reason the nightly cadence matters:
-  # the method page's account of the court's two period regimes is prose, so that a reader
-  # arriving from the matrix's window footnote is answered on a cold load. That suite asserts
-  # the chain still reports exactly those two configurations, so a third one fails here before
-  # anybody reads a stale account of the second.
+  # the method page's account of the court's period regimes is prose, so that a reader arriving
+  # from the matrix's window footnote is answered on a cold load, and prose is free to drift from
+  # the chain. That suite asserts the whole configuration history — court 34 has held three — so
+  # a fourth fails here before anybody reads a stale account of the third. Its own doc comment
+  # splits the failure three ways and says which kind a red name is: the read broke, a figure
+  # moved, or only an account went stale. Do not read a red there as one thing.
+  #
+  # "A figure moved" now covers the reward parameters too. What a coherent draw earns and a wrong
+  # one risks has never changed in this court, and every cumulative ETH and PNK figure on the
+  # page is summed across its whole life on that basis — so a change would make each of them one
+  # number over two regimes, silently. This is where that is noticed.
   #
   # They hit ethereum-rpc.publicnode.com, api.goldsky.com and arb1.arbitrum.io from a shared
   # runner IP and may be rate-limited there in a way they never are from a laptop. The Arbitrum

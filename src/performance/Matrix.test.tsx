@@ -90,6 +90,20 @@ function build(raw: Partial<RawCourtData> = {}): CourtPerformance {
 }
 
 /**
+ * One hand-built configuration, carrying the reward parameters the captured court holds.
+ *
+ * Every history built by hand below is about a *window*, and the four reward parameters are
+ * identical across its entries — so none of these is quietly a court that changed two things at
+ * once. Spread off the fixture rather than restated, so they stay identical the day court 34
+ * changes a fee and the fixture is recaptured.
+ */
+function rawRegime(at: string, timesPerPeriod: readonly string[]): RawCourtParameters {
+  const [first] = parameterFixture as RawCourtParameters[];
+  if (first === undefined) throw new Error("The captured parameter history is empty");
+  return { ...first, at, timesPerPeriod };
+}
+
+/**
  * A fixed present, so the live rows' elapsed figures are not a moving target.
  *
  * Dispute 166 entered its appeal period at 1787604932, which this puts 3m 12s in the past —
@@ -699,7 +713,7 @@ describe("Matrix", () => {
       // placed and none is marked. The footnote still carries the rule, because the rule is not
       // conditional on anything having changed.
       const current = build({
-        parameters: [{ at: "1786444490", timesPerPeriod: ["2700", "2700", "1800", "129600"] }],
+        parameters: [rawRegime("1786444490", ["2700", "2700", "1800", "129600"])],
       });
       renderMatrix(current);
 
@@ -716,7 +730,7 @@ describe("Matrix", () => {
       // under the durations the court holds now" over that states the opposite of the truth,
       // with no error anywhere — the invariant that partial data must never render as complete.
       const short = build({
-        parameters: [{ at: "1787230320", timesPerPeriod: ["2700", "2700", "1800", "129600"] }],
+        parameters: [rawRegime("1787230320", ["2700", "2700", "1800", "129600"])],
       });
       renderMatrix(short);
 
@@ -749,8 +763,8 @@ describe("Matrix", () => {
         ],
         draws: [],
         parameters: [
-          { at: "1787144000", timesPerPeriod: ["43200", "28800", "28800", "129600"] },
-          { at: "1787230320", timesPerPeriod: ["2700", "2700", "1800", "129600"] },
+          rawRegime("1787144000", ["43200", "28800", "28800", "129600"]),
+          rawRegime("1787230320", ["2700", "2700", "1800", "129600"]),
         ],
       });
       renderMatrix(partial);

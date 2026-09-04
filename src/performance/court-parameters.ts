@@ -15,6 +15,11 @@ import type { RawCourtParameters } from "./windows";
  * Two events carry it, and both carry `timesPerPeriod` in full. That is what makes this a log
  * scan rather than an archive call: reconstructing the history from state would mean
  * `eth_call` at a historical block, which the public endpoint does not reliably serve.
+ *
+ * They carry the reward parameters in full too, and those are read for nothing: no extra call,
+ * no extra log, the same three decodes. What a coherent draw earns and a wrong one risks is a
+ * claim `CourtTotals` rests on, and until ticket 21 it was a claim checked by hand twice and by
+ * nothing since — see `rewardParameterChanges`.
  */
 
 /** KlerosCore on Arbitrum One. The deployed address, not the source's — see `docs/knowledge/court-34.md`. */
@@ -106,11 +111,36 @@ export async function fetchCourtParameters({
     // viem types the decoded arguments as optional because a log can fail to decode against
     // the event. One that did would be a configuration with no durations on it, and a window
     // this dashboard invented to fill the gap would be worse than not marking anything.
+    //
+    // All five together, and the reward parameters are not softer than the durations: a
+    // configuration read back without its fee would be one that agrees with every other about a
+    // fee it never stated, which is how a reward regime gets crossed in silence. viem decodes a
+    // log whole or not at all, so in practice these fail together — the guard is written out so
+    // that a partial decode could never be the quiet one.
     const timesPerPeriod = log.args._timesPerPeriod;
-    if (timesPerPeriod === undefined) {
+    const { _minStake, _alpha, _feeForJuror, _jurorsForCourtJump } = log.args;
+    if (
+      timesPerPeriod === undefined ||
+      _minStake === undefined ||
+      _alpha === undefined ||
+      _feeForJuror === undefined ||
+      _jurorsForCourtJump === undefined
+    ) {
       throw new Error(`Undecodable court change in ${log.transactionHash}`);
     }
 
-    return { at: String(timestamp), timesPerPeriod: timesPerPeriod.map(String) };
+    // `String` of a bigint is exact and canonical at any size — no exponent, no rounding, no
+    // separators — which is what `toRegimes`'s decimal guard is written against. `Number` here
+    // would round `minStake` to a multiple of about two million wei before the model ever saw
+    // it, and every guard downstream would be checking a figure that had already lost the
+    // difference it exists to notice.
+    return {
+      at: String(timestamp),
+      timesPerPeriod: timesPerPeriod.map(String),
+      minStake: String(_minStake),
+      alpha: String(_alpha),
+      feeForJuror: String(_feeForJuror),
+      jurorsForCourtJump: String(_jurorsForCourtJump),
+    };
   });
 }

@@ -61,18 +61,28 @@ this file is the full account.
   dust. Both are pinned in `totals.test.ts` and live in `rewards-subgraph.integration.test.ts`,
   because these two figures are *sums*: a read that comes back short renders as an agent juror that
   earned less, which nothing else on the page would catch.
-- **No reconfiguration of court 34 has changed a reward parameter — and the claim is meant to hold
-  for the next one too.** Across all three `CourtCreated`/`CourtModified` logs, `hiddenVotes`
-  (true), `minStake` (11000e18), `alpha` (170), `feeForJuror` (2.7e14) and `jurorsForCourtJump` (7)
-  are byte-identical; only `timesPerPeriod` moved. Re-decoded from chain on 2026-09-04 under ticket
-  19, third configuration included — the blocks are 493394990, 496518927 and 498587731. Stake at risk per vote ID is
-  `minStake × alpha / 10000` = **187 PNK** — the divisor is the part that gets dropped, and
-  `src/performance/rewards.ts` states the product without it.
-  Note the live suite pins only `timesPerPeriod`, so a future reconfiguration that moved a reward
-  parameter would go green (open ticket 21). So the `†` window marker must **not** ride
-  cumulative ETH or PNK — it would be a marker a reader can see is misplaced, and one they stop
-  reading. Decoded from the logs rather than assumed, because "the court was reconfigured" reads as
-  though everything about it changed.
+- **No reconfiguration of court 34 has changed a reward parameter, and that is now checked on
+  every run rather than inspected.** Across all three `CourtCreated`/`CourtModified` logs,
+  `hiddenVotes` (true), `minStake` (11000e18), `alpha` (170), `feeForJuror` (2.7e14) and
+  `jurorsForCourtJump` (7) are byte-identical; only `timesPerPeriod` moved. The blocks are
+  493394990, 496518927 and 498587731. Stake at risk per vote ID is `minStake × alpha / 10000` =
+  **187 PNK** — the divisor is the part that gets dropped, and `src/performance/rewards.ts` states
+  the product without it. So the `†` window marker must **not** ride cumulative ETH or PNK — it
+  would be a marker a reader can see is misplaced, and one they stop reading. Decoded from the logs
+  rather than assumed, because "the court was reconfigured" reads as though everything about it
+  changed.
+  Ticket 21 put the four reward parameters on `RawCourtParameters` and into the captured fixture,
+  where they cost no extra RPC call — the same three logs already carry them. `rewardParameterChanges`
+  compares each configuration against the one before it; `windows.test.ts` goes red the moment a
+  recaptured fixture carries a moved parameter, and `court-parameters.integration.test.ts` goes red
+  against the chain first, on the night of the change. **`hiddenVotes` is the one of the five not
+  compared** — it is not a reward parameter and no figure here reads it, though a court that turned
+  it off would have no commit period for a commit latency to be measured in. It is decoded by
+  nothing and is a claim of the by-hand kind this bullet used to be for all five.
+  They are compared as **canonical decimal strings and never parsed**: `minStake` is 1.1e22, and a
+  double at that magnitude steps in units of about 2.1 million wei, so a `Number` comparison would
+  answer that two different stakes were the same. What the page would *say* if one of them did move
+  is still open — the deferral is on ticket 21, with those two assertions as its floor.
 - Every appeal period ran ~18h against a 36h configured value, under all three configurations —
   the appeal window is the one period the court has never retimed. Unexplained, affects no metric
   here, but do not treat appeal duration as understood.

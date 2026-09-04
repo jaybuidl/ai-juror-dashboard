@@ -1,14 +1,26 @@
 [
   {
     "at": "1786444490",
-    "timesPerPeriod": ["43200", "28800", "28800", "129600"]
+    "timesPerPeriod": ["43200", "28800", "28800", "129600"],
+    "minStake": "11000000000000000000000",
+    "alpha": "170",
+    "feeForJuror": "270000000000000",
+    "jurorsForCourtJump": "7"
   },
   {
     "at": "1787230320",
-    "timesPerPeriod": ["2700", "2700", "1800", "129600"]
+    "timesPerPeriod": ["2700", "2700", "1800", "129600"],
+    "minStake": "11000000000000000000000",
+    "alpha": "170",
+    "feeForJuror": "270000000000000",
+    "jurorsForCourtJump": "7"
   },
   {
     "at": "1787750041",
-    "timesPerPeriod": ["600", "2700", "1800", "129600"]
+    "timesPerPeriod": ["600", "2700", "1800", "129600"],
+    "minStake": "11000000000000000000000",
+    "alpha": "170",
+    "feeForJuror": "270000000000000",
+    "jurorsForCourtJump": "7"
   }
 ]
