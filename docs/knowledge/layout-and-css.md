@@ -77,7 +77,7 @@ this file is the full account.
   16 folded the last two strays (`600px` in `MatrixPage.tsx`, `760px` in `DisputePage.tsx`) into
   it. A new `@media` with a literal in it is a regression, not a local decision.
   **Ticket 17 added a second number to that file and it is not a second `narrow`.**
-  `breakpoints.compactGrid` (1160px) asks a different question about a different element — whether
+  `breakpoints.compactGrid` asks a different question about a different element — whether
   the compact grid's own measurements fit the page — and its value is arithmetic rather than a
   choice: a 440px row header plus one column per agent juror at the ~104px a compact cell needs is
   `COMPACT_GRID_MIN_PX`, which this page's gutters put at that viewport. It was 1064 while the
@@ -87,6 +87,30 @@ this file is the full account.
   width is not "is there already one" but "does it answer a question none of these do, and is its
   value derived from something". Both live in `breakpoints.ts` because that is still the one place
   a width anything reduces at is written down.
+- **One element sized two ways will be sized wrong, and each way will look right on its own.**
+  The compact grid was described in pixels by `breakpoints.ts` — a `min-width` of a row header plus
+  one column per agent juror — and in percentages by `Matrix.tsx`, a `40%` header and the remainder
+  over the roster. Both were internally consistent and they were not the same grid: at the floor
+  the header took 467px of the 440 the floor was built from, leaving each column 100px of the 104.
+  Ticket 24 removed the second description rather than correcting it — the shares are now the pixel
+  model normalised, the same numerators over the same total, so they sum to 1 by construction and
+  the floor hands out precisely the widths it is the sum of. **When one layout has two
+  descriptions, delete one; do not reconcile them.** They will drift again at the next roster size.
+- **A test of derived values must assert them back against the model they came from, not against a
+  property they happen to have.** The first version of the share test checked that the shares summed
+  to 100% and that the row header asked for 40%. Both were true over the broken grid above, because
+  a sum is a property of the shares and says nothing about the pixels they were supposed to encode.
+  What catches it is applying the rendered shares to the declared floor and requiring the model
+  back. **A sum is not a model**; nor is a count, a ratio or an ordering. Ask what the number was
+  derived *from* and assert that round trip.
+- **`getComputedStyle` cannot see a box that is too small for what it correctly contains.** Ticket
+  24 read the phone strip at 320pt and found the sixth slot overhanging its card by 0.94px and
+  being clipped by the card's `overflow: hidden`. Every declared width was honoured exactly — the
+  slot was the width it asked for, and `getComputedStyle` said so. What was short was the box it
+  was declared against: the floor subtracted the page's 20px gutters and not the card's own 1px
+  border either side, so six slots wanted 2px more than the strip had. The declared-versus-given
+  rule above has a second half: **compare the child's rect against its parent's**, not against the
+  declaration. A width can be given in full and still not fit.
 - **Deciding whether to clip and then clipping never clips.** `useIsClipped` measured
   `scrollHeight > clientHeight` to decide whether to apply a `max-height` — and at the moment of
   the test nothing had bounded the element, so the two were always equal and the answer was always
