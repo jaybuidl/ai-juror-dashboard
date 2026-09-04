@@ -163,18 +163,9 @@ describe("a route change", () => {
 });
 
 describe("the shell", () => {
-  it("states what this dashboard is in the nav, on every view", () => {
-    for (const path of ROUTES) {
-      const { unmount } = renderAt(path);
-
-      expect(
-        within(screen.getByRole("navigation", { name: /dashboard/i })).getByText(/read only/i),
-        `nav at ${path}`,
-      ).toBeInTheDocument();
-      unmount();
-    }
-  });
-
+  // The nav used to state the invariant too, and this file asserted it on every view. The
+  // maintainer removed that label; the test below is what the guarantee rests on now, and it is
+  // the stronger of the two — the footer says it in full, and on `/nowhere` as well.
   it("states the read-only invariant in full in the footer, on every view", () => {
     for (const path of [...ROUTES, "/nowhere"]) {
       const { unmount } = renderAt(path);

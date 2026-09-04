@@ -19,15 +19,15 @@ import { Lockup } from "./Lockup";
  * it: `aria-current="page"`, a brighter ink and a rule under it, so the distinction survives a
  * reader who cannot separate the two colours.
  *
- * The read-only pill is not a control. It is the invariant from `CLAUDE.md` — this dashboard
- * never votes, stakes, holds a key or connects a wallet — restated where a visitor meets the
- * page, and it is a `<span>` so that nothing about it invites a click.
+ * **The bar carries no read-only label**, and the invariant is not weakened by that. There was
+ * one — a pill wide, the bare words folded — and the maintainer removed both, on the judgement
+ * that the chrome was stating the invariant a third time. Where a reader meets it now is the
+ * footer, which opens with it in full on every view, and the method page, which states it
+ * again. Nothing here should be written as though this nav were that place.
  *
  * **Folded, the bar is still one line.** Ticket 15 left the narrow nav stacked over three rows,
  * which was legible and not final; ticket 16 does what the artboard shows. The lockup becomes
- * its own wordmark, the four destinations go behind one menu affordance, and the read-only
- * label stays in the bar — it is the element the deck's read-only clause falls back to when
- * the hero drops the deck, so it is not the thing that gives way for width.
+ * its own wordmark and the four destinations go behind one menu affordance.
  *
  * The destinations *fold* and are never dropped. A menu that hid a route on a phone would be a
  * route a phone visitor could not reach, which is the same failure ticket 15 refused when it
@@ -145,28 +145,6 @@ const DestinationHere = styled.span`
   border-bottom-color: ${({ theme }) => theme.accent};
 `;
 
-const ReadOnly = styled.span`
-  display: inline-flex;
-  align-items: center;
-  padding: ${({ theme }) => `${theme.space3} ${theme.space5}`};
-  border: 1px solid ${({ theme }) => theme.borderCardColor};
-  border-radius: ${({ theme }) => theme.radiusChip};
-  font: ${({ theme }) => theme.typeMonoSm};
-  letter-spacing: ${({ theme }) => theme.trackingMono};
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.textMeta};
-`;
-
-/* Folded, the label is the bare words rather than a chip: at 390pt the chip's border and
-   padding cost more width than the affordance is worth, and the statement is the point. */
-const NarrowReadOnly = styled.span`
-  font: ${({ theme }) => theme.typeMonoSm};
-  letter-spacing: ${({ theme }) => theme.trackingMono};
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.textPending};
-  white-space: nowrap;
-`;
-
 const NarrowRight = styled.div`
   display: flex;
   align-items: center;
@@ -236,7 +214,7 @@ function WideNav({ pathname }: { pathname: string }) {
 }
 
 /**
- * The folded bar: wordmark, read-only label, menu.
+ * The folded bar: wordmark and menu.
  *
  * The panel closes on navigation, which is not a nicety — react-router does not unmount this
  * nav between routes, so a menu left open would stay open over the page the visitor just asked
@@ -301,9 +279,6 @@ function FoldedNav({ pathname }: { pathname: string }) {
       <NarrowInner>
         <Home pathname={pathname} wordmark />
         <NarrowRight>
-          {/* Kept, and kept in the bar. The hero drops its deck below this breakpoint and the
-              read-only clause in it survives here — so this is not the element that gives way
-              for width. */}
           <MenuButton
             ref={button}
             type="button"

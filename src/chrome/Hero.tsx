@@ -1,5 +1,4 @@
 import styled from "styled-components";
-import { COURT_ID } from "../disputes/court-subgraph";
 
 /**
  * The hero, built against `canvas/Main.dc.html:53-76` and, below the breakpoint,
@@ -12,11 +11,12 @@ import { COURT_ID } from "../disputes/court-subgraph";
  * they actually are, not editorial decoration to be trimmed.
  *
  * The phone artboard drops the deck and shortens the eyebrow, and neither drop costs a measured
- * fact. The eyebrow keeps the court number and the chain, which are what locate the data, and
- * loses the court's *name*, which is the one segment a reader can lose without losing the
- * scope. The deck's read-only clause is the one thing in it that could not simply go: it
- * survives in the nav's own read-only label, which is why that label is not the element that
- * gives way for width when the nav folds.
+ * fact. The eyebrow keeps the chain and loses the court's *name*, which is the one segment a
+ * reader can lose without losing the scope. The court's *number* is no longer in the eyebrow at
+ * either width — the maintainer took it out — so what locates the data is the footer's
+ * provenance line, "Read from court 34 on Arbitrum One", which is on every view. The deck's
+ * read-only clause is the one thing in it that could not simply go: it survives in the footer's
+ * opening statement, on every view likewise.
  *
  * The headline is the same sentence at a smaller size, never a shortened or a different one.
  * A hero that said something else on a phone would be a second claim about this court.
@@ -62,13 +62,11 @@ const Deck = styled.p`
 export function Hero({ narrow: isNarrow = false }: { narrow?: boolean }) {
   return (
     <Header>
-      <Eyebrow>
-        {isNarrow ? "" : "Agentic Commerce Court · "}Arbitrum One
-      </Eyebrow>
+      <Eyebrow>{isNarrow ? "" : "Agentic Commerce Court · "}Arbitrum One</Eyebrow>
       <Headline>Kleros AI Agent Jurors Dashboard</Headline>
       {/* Absent below the breakpoint rather than hidden there: the artboard drops it, and every
-          measured fact in it survives elsewhere — the read-only clause in the nav's label, and
-          what this page measures on the method page, one tap away in that same nav. It used to
+          measured fact in it survives elsewhere — the read-only clause in the footer's opening
+          line, and what this page measures on the method page, one tap away in the nav. It used to
           point at the caveat card further down this page; that card is gone, because all seven
           of its claims were the method page's said a second time. */}
       {/* No count in this sentence, deliberately: the roster gains entries, this deck has no

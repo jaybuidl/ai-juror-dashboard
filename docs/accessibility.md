@@ -365,3 +365,24 @@ this rule, `/` and `/agent-jurors/notanagent`, it no longer appears in `incomple
 underline settles the question axe could not, so there is nothing left to decline. That pair is
 what was checked for the `incomplete` list specifically; the zero-violations figure is all eight,
 at both widths. Which is the check, not "it looked fine".
+
+## Removed after the sweep, by the maintainer
+
+The nav's **"Read only" label is gone** — the bordered pill above the breakpoint and the bare
+words in the folded bar, both removed in `6dbab49` on the judgement that the chrome stated the
+invariant a third time. Two entries above are about it and neither is falsified, but one names an
+element a reader will now look for and not find:
+
+- *"Nothing focusable does nothing"* keeps its claim and loses its first example. What remains
+  carries it: the current nav destination and the breadcrumb leaf are `span`s with
+  `aria-current="page"`, and every remaining focusable resolves to a route or an external URL.
+  Nothing focusable was added or changed, so the tab order is what the sweep audited minus a
+  non-stop.
+- The `--text-4` argument in `docs/contrast.md` lists the pill among the roughly thirty sites the
+  token inks. That list is the record of what was measured when the token was raised, and the
+  raise stands on the other twenty-nine; it is deliberately not edited.
+
+**The invariant is not weakened.** It was never carried by the nav alone: the footer opens with it
+in full on every view including `/nowhere`, and `/method` states it again. `routes.test.tsx` used
+to assert both the nav label and the footer; the footer test is what the every-view guarantee
+rests on now, and it is the stronger of the two.

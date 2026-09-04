@@ -1044,10 +1044,13 @@ describe("the matrix view on a phone", () => {
     stubViewportWidth(PHONE_WIDTH);
     renderAt("/");
 
-    // The deck goes; its read-only clause survives in the nav's own label, which is why that
-    // label is not what gives way for width.
+    // The deck goes; its read-only clause survives in the footer, which states the invariant in
+    // full and is rendered at every width. It used to survive in the nav's own label instead —
+    // that label is gone, the clause is not.
     expect(screen.queryByText(/it never votes, stakes, or holds a key/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/^Read only$/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/never votes, stakes, holds a key, or connects a wallet/i),
+    ).toBeInTheDocument();
 
     // The strip goes; its headline figure is the median reveal, which the tiles now lead with,
     // and its comparison band was illustrative by its own caption.
@@ -1077,15 +1080,16 @@ describe("the matrix view on a phone", () => {
     expect(labels[2]).toBe("Disputes read");
   });
 
-  it("keeps the eyebrow's court number and chain and drops the court's name", () => {
+  it("keeps the eyebrow's chain and drops the court's name", () => {
     stubViewportWidth(PHONE_WIDTH);
     renderAt("/");
 
-    // The number and the chain locate the data; the name is the one segment a reader can lose
-    // without losing the scope.
-    const eyebrow = screen.getByText(/^Court 34/);
-    expect(eyebrow).toHaveTextContent("Arbitrum One");
+    // The chain is what the eyebrow still locates the data by; the court's name is the one
+    // segment a reader can lose without losing the scope. The court's *number* left the eyebrow
+    // at both widths, so what carries it is the footer's provenance line, asserted below.
+    const eyebrow = screen.getByText(/^Arbitrum One$/);
     expect(eyebrow).not.toHaveTextContent("Agentic Commerce Court");
+    expect(screen.getByText(/Read from court 34 on Arbitrum One/i)).toBeInTheDocument();
   });
 
   it("keeps the headline the same sentence, never a shorter or a different one", () => {
