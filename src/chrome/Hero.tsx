@@ -63,7 +63,7 @@ export function Hero({ narrow: isNarrow = false }: { narrow?: boolean }) {
   return (
     <Header>
       <Eyebrow>
-        Court {COURT_ID} · {isNarrow ? "" : "Agentic Commerce Court · "}Arbitrum One
+        {isNarrow ? "" : "Agentic Commerce Court · "}Arbitrum One
       </Eyebrow>
       <Headline>Kleros AI Agent Jurors Dashboard</Headline>
       {/* Absent below the breakpoint rather than hidden there: the artboard drops it, and every

@@ -229,8 +229,6 @@ function WideNav({ pathname }: { pathname: string }) {
           {DESTINATIONS.map((destination) => (
             <DestinationItem key={destination.path} {...destination} pathname={pathname} />
           ))}
-          {/* A statement, not a control: no button, no toggle, nothing focusable. */}
-          <ReadOnly>Read only</ReadOnly>
         </Destinations>
       </Inner>
     </Bar>
@@ -306,7 +304,6 @@ function FoldedNav({ pathname }: { pathname: string }) {
           {/* Kept, and kept in the bar. The hero drops its deck below this breakpoint and the
               read-only clause in it survives here — so this is not the element that gives way
               for width. */}
-          <NarrowReadOnly>Read only</NarrowReadOnly>
           <MenuButton
             ref={button}
             type="button"
