@@ -202,6 +202,18 @@ guards are needed rather than one being belt-and-braces — the vendored `base.c
 failure is one deleted declaration away at all times, and on the `AgentJurorPage` route axe reports
 the rule as `incomplete` rather than as a violation, so the tool would not catch its return.
 
+## The marks that owe no ratio
+
+**The four stack marks**, beside the stack label on `/agent-jurors` and on an agent juror's own
+page (ticket 26). WCAG 1.4.11 does not reach them: each is `aria-hidden`, each sits beside the
+label it stands for, and none carries anything the label does not — so a mark that failed to draw
+would cost a reader nothing. Three of them ink at `currentColor`, which means they take
+`--text-meta` on the roster and `--accent` in the pill, both already measured above. The fourth
+cannot: Hermes has no vector source, so it is a raster monochromed by a filter and set at
+`opacity: 0.6`. That number is a visual match to the label beside it — black or white composited
+over these surfaces lands near `--text-meta` at about 0.63 on dark and 0.55 on light — and not a
+measured ratio, because there is no ratio it owes. The arithmetic is in `StackIcon.tsx`.
+
 ## What is still not honoured
 
 **The type scale is px throughout, so a reader who raises their browser's default font size gets
@@ -221,3 +233,7 @@ enlarged one of these boxes and unblocked none of this, because a bigger box for
 still sized in px is the same defect at a different scale. Moving the type without moving those
 creates the clipping the criterion forbids. It wants doing together, with a browser
 at a raised base size, and it is recorded here rather than half-done.
+
+The 12px stack mark added in ticket 26 is absolute too, and it is the one item on that list that
+clips nothing: it holds no text, so a raised base size grows the label and leaves the mark where
+it is. What it loses is proportion, not legibility, and the label carries the meaning either way.

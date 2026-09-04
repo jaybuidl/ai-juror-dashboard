@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: done
 blocked_by: ["24"]
 ---
 
@@ -85,22 +85,22 @@ mark's size, placement and spacing are derived from the design system's own scal
 from a drawing. This is the `docs/knowledge/architecture.md` rule about finding the artboard that draws the element in that
 place: here there is none, and the honest move is to say so rather than to borrow one.
 
-- [ ] `AgentJuror` gains an optional handle field whose doc comment states it holds the agent's own
+- [x] `AgentJuror` gains an optional handle field whose doc comment states it holds the agent's own
       account and never an operator's
-- [ ] The three handles render on `/agent-jurors/:nickname` only, with capitalisation as given
-- [ ] The handle links out with `target="_blank"` and `rel="noopener noreferrer"`, matching the
+- [x] The three handles render on `/agent-jurors/:nickname` only, with capitalisation as given
+- [x] The handle links out with `target="_blank"` and `rel="noopener noreferrer"`, matching the
       Arbiscan link beside it, with no interstitial and a comment saying why the justification
       interstitial does not apply here
-- [ ] An agent juror with no handle renders the row unchanged — no empty slot, no separator left
+- [x] An agent juror with no handle renders the row unchanged — no empty slot, no separator left
       behind
-- [ ] Four stack icons are vendored into the repo, each with its source URL recorded beside it
-- [ ] Claude, Grok Bot and OpenClaw are inline SVG using `currentColor`, with no hard-coded colour
-- [ ] Hermes is a 2× raster monochromed by a theme-aware filter, correct on both themes
-- [ ] `netlify.toml` is **unchanged**: nothing here needs a new host, and a vendored asset is
+- [x] Four stack icons are vendored into the repo, each with its source URL recorded beside it
+- [x] Claude, Grok Bot and OpenClaw are inline SVG using `currentColor`, with no hard-coded colour
+- [x] Hermes is a 2× raster monochromed by a theme-aware filter, correct on both themes
+- [x] `netlify.toml` is **unchanged**: nothing here needs a new host, and a vendored asset is
       `'self'`
-- [ ] No font, stylesheet or script is taken from the source sheet — only the marks
-- [ ] The icon renders beside the stack label on both `/agent-jurors` and `/agent-jurors/:nickname`,
+- [x] No font, stylesheet or script is taken from the source sheet — only the marks
+- [x] The icon renders beside the stack label on both `/agent-jurors` and `/agent-jurors/:nickname`,
       is `aria-hidden`, and changes no accessible name
-- [ ] A stack with no icon renders the label alone rather than a gap
-- [ ] Checked in a browser in **both** themes and at 390pt, since the filter and the alignment are
+- [x] A stack with no icon renders the label alone rather than a gap
+- [x] Checked in a browser in **both** themes and at 390pt, since the filter and the alignment are
       layout and jsdom lays nothing out

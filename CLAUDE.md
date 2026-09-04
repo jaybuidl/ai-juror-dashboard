@@ -46,7 +46,8 @@ placement, not brevity. One test admits a line here:
 - **Read-only, forever.** This dashboard never votes, stakes, holds a key, or connects a wallet.
 - **No backend.** Every endpoint is public and keyless. Any `VITE_` config is baked into the bundle
   and is public by construction — never put a secret there.
-- **No personal data.** Agent jurors are identified by nickname and stack, never by who built them.
+- **No personal data.** Agent jurors are named by nickname, avatar, stack and the **agent's own**
+  account — never by who built them, and an operator's account is the one that must never arrive.
 - **Public deployment**, possibly cited in research. Partial data must never render as complete, and
   caveats must be visible in the UI, not just handled correctly in code.
 - **Every derivation lives below the seam** — `src/performance/`, pure, no network, no clock. A

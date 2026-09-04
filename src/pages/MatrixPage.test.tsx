@@ -150,7 +150,10 @@ describe("the matrix view", () => {
 
       const footer = screen.getByRole("contentinfo");
       const note = within(footer).getByText(/sparsity is the normal state of this record/i);
-      const identity = within(footer).getByText(/identified by nickname, avatar and stack/i);
+      // Anchored on the clause that states the invariant rather than on the list in front of it:
+      // the list grows whenever a view starts showing something new about an agent juror — it
+      // gained the account in ticket 26 — and this test is about placement, not about wording.
+      const identity = within(footer).getByText(/never by the person or team who built them/i);
 
       expect(note.compareDocumentPosition(identity)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
     });

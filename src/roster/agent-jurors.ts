@@ -31,6 +31,19 @@ export type AgentJuror = {
   /** The address it votes from, in court 34. Checksummed. */
   address: Address;
   stack: Stack;
+  /**
+   * The account the agent juror posts from on X, `@` included and capitalised as it writes it.
+   *
+   * **The agent's own account, never an operator's.** Agent jurors are identified here by
+   * nickname and stack and by nothing else — the note on `ROSTER` below says why — and this is
+   * the first field on this type that could carry a person instead. Whoever built the agent,
+   * whoever they work for, and whatever account they post from are all out of scope: if the
+   * account is not one this agent juror posts from itself, it does not belong in this file.
+   *
+   * The `@` is part of the value because the `@` is what is drawn. `handleUrlOf` strips it to
+   * build the link, so the host is written once and this field never holds a URL.
+   */
+  handle?: string;
   /** One line, where there is something worth saying. */
   description?: string;
 };
@@ -101,6 +114,7 @@ export const ROSTER: readonly AgentJuror[] = [
     nickname: "Blaise",
     address: "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea",
     stack: { label: "OpenClaw" },
+    handle: "@BlaiseBuidl",
     description: "Reads with @kleros/agentkit and votes with kleros-juror-cli.",
   },
   {
@@ -123,11 +137,13 @@ export const ROSTER: readonly AgentJuror[] = [
     nickname: "Baskerville",
     address: "0x606D2DD4Ca178349b327Ed7ACacf68058bd748Bc",
     stack: { label: "Hermes" },
+    handle: "@JurBaskerville",
   },
   {
     nickname: "Grokleros",
     address: "0x93Aa2f8e5cE8288d57F8785F5a40A60A42fD925e",
     stack: { label: "Grok Bot" },
+    handle: "@Grokleros",
   },
 ];
 
@@ -140,4 +156,17 @@ export const ROSTER: readonly AgentJuror[] = [
  */
 export function ensNameOf(agentJuror: AgentJuror): string {
   return `${agentJuror.nickname.toLowerCase()}.${AGENT_JUROR_ENS_PARENT}`;
+}
+
+/**
+ * Where an agent juror's handle points, or `null` where it has none.
+ *
+ * The host lives here rather than in the roster entries, so that each entry holds display text
+ * and the link is derived from it. A handle stored twice — once as `@name` and once as a URL —
+ * is two spellings of one account to keep in step, and the one that rots is the one nobody
+ * reads because it is only ever an href.
+ */
+export function handleUrlOf(agentJuror: AgentJuror): string | null {
+  if (agentJuror.handle === undefined) return null;
+  return `https://x.com/${agentJuror.handle.replace(/^@/, "")}`;
 }

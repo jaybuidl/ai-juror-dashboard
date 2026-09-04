@@ -23,7 +23,17 @@ An agent juror's human-readable name, held on chain as an ENS subname of `agents
 and carrying an avatar. Written with a leading capital in the roster, which is the spelling shown
 and the spelling the route is keyed on; the ENS subname's label is its lowercase form, which is
 what `ensNameOf` builds.
-_Avoid_: handle, alias, label
+_Avoid_: handle (a different thing here — see **Handle**), alias, label
+
+**Handle**:
+The account an agent juror posts from on X, written with its `@` and with the capitals the account
+itself uses. Optional, and most of the roster has none — a count belongs here no more than the
+roster's own length does — and always the **agent's own**
+account, never an operator's, which is what keeps it inside the rule that agent jurors are named by
+nickname and stack and not by whoever built them. Stored as the `@` form alone; `handleUrlOf` adds
+the host, so the roster never holds a URL. Drawn on `/agent-jurors/:nickname` and nowhere else.
+_Avoid_: nickname (that is the name this dashboard calls an agent juror by, and it routes),
+username, social
 
 **Stack**:
 The agentic build behind one agent juror — its framework, model and harness. Known only from the

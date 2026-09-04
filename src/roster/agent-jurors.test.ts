@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { AGENT_JUROR_ENS_PARENT, ensNameOf, ROSTER } from "./agent-jurors";
+import { AGENT_JUROR_ENS_PARENT, ensNameOf, handleUrlOf, ROSTER } from "./agent-jurors";
 
 describe("the roster", () => {
   /**
@@ -86,5 +86,45 @@ describe("the roster", () => {
     for (const agentJuror of ROSTER) {
       expect(encodeURIComponent(agentJuror.nickname)).toBe(agentJuror.nickname);
     }
+  });
+});
+
+describe("an agent juror's own account", () => {
+  /**
+   * Named rather than counted, for the same reason the roster itself is: a test that derived
+   * "who has a handle" from the file it is testing would pass on any edit, including a handle
+   * quietly attached to the wrong agent juror.
+   *
+   * The capitalisation is asserted because it is display text and nothing folds it — unlike the
+   * nickname beside it, which routes and therefore has a fold to survive.
+   */
+  it("gives a handle to exactly the three agent jurors that have one", () => {
+    const handles = ROSTER.filter((agentJuror) => agentJuror.handle !== undefined).map(
+      (agentJuror) => [agentJuror.nickname, agentJuror.handle],
+    );
+
+    expect(handles).toEqual([
+      ["Blaise", "@BlaiseBuidl"],
+      ["Baskerville", "@JurBaskerville"],
+      ["Grokleros", "@Grokleros"],
+    ]);
+  });
+
+  it("stores a handle and never a URL, so the host stays in one place", () => {
+    // The trap this pins: pasting `https://x.com/Grokleros` into the field renders a URL as
+    // display text and builds `https://x.com/https://x.com/Grokleros` as the href, which is a
+    // live link to nowhere on a public page.
+    for (const agentJuror of ROSTER) {
+      if (agentJuror.handle === undefined) continue;
+      expect(agentJuror.handle).toMatch(/^@[A-Za-z0-9_]{1,15}$/);
+    }
+  });
+
+  it("builds the link from the handle, and nothing at all without one", () => {
+    expect(
+      handleUrlOf({ nickname: "X", address: "0x0", stack: { label: "x" }, handle: "@Grokleros" }),
+    ).toBe("https://x.com/Grokleros");
+
+    expect(handleUrlOf({ nickname: "X", address: "0x0", stack: { label: "x" } })).toBeNull();
   });
 });

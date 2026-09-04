@@ -105,10 +105,21 @@ export function Footer({ provenance, note }: { provenance: Provenance; note?: Re
 
       {note}
 
+      {/* The enumeration is the load-bearing part, not the clause after the dash: it has to name
+          everything this dashboard shows about who an agent juror is, or the dash is asserting
+          something a reader can see is incomplete. Anything that starts identifying an agent
+          juror anywhere here belongs in this list on the day it ships, and in the two places that
+          state the invariant itself — README.md and CLAUDE.md — on the same day.
+
+          It is a claim about the dashboard and not about the page under it. Four views set
+          `identifiesAgentJurors`, and only one of them draws an account at all: "where it has
+          one" is a qualifier about agent jurors, not about views. That is deliberate — the
+          sentence is the standing statement of what this dashboard will and will not say about
+          who is running, and a reader meets it wherever they arrive. */}
       {identifiesAgentJurors && (
         <Line>
-          Agent jurors are identified by nickname, avatar and stack — never by the person or team
-          who built them.
+          Agent jurors are identified by nickname, avatar, stack, and the account an agent posts
+          from where it has one — never by the person or team who built them.
         </Line>
       )}
 

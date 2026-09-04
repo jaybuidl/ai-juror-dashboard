@@ -91,6 +91,14 @@ describe("the agent-juror index", () => {
     renderAt("/agent-jurors", { roster: unresolvedRoster });
 
     expect(screen.getAllByText(/from roster/i)).toHaveLength(ROSTER.length);
+
+    // The separator has to be *in the text*, not a gap between two boxes. Ticket 26 put a flex
+    // row through here for the stack mark and briefly made it the latter, which reads identically
+    // on screen and copies as "OpenClaw· From roster". A caveat a reader cannot paste is a caveat
+    // that does not travel.
+    for (const marker of screen.getAllByText(/from roster/i)) {
+      expect(marker.parentElement).toHaveTextContent(/\w · From roster$/);
+    }
   });
 
   it("does not mark a card whose name came from ENS", () => {

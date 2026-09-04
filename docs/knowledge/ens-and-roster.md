@@ -38,6 +38,32 @@ this file is the full account.
   no other tool shows. Anything building an ENS name goes through `ensNameOf` rather than
   interpolating the nickname, which is what `src/test/court.tsx` was doing.
 
+- **A handle is the agent's account and never an operator's** (2026-09-04, ticket 26). It is the
+  first field on `AgentJuror` that *could* carry a person, which is why the rule is written into
+  the type's doc comment rather than only into the ticket: the next person adding one reads the
+  type. A minority of entries carry one — deliberately not counted here, the same rule that keeps
+  the roster's own length out of prose — it is stored as the `@` form with the host in `handleUrlOf`,
+  and it is drawn only on the agent juror's own page — not on the index, not in the matrix, not in
+  a column header. It links out like the Arbiscan link beside it and deliberately **without** the
+  justification interstitial, because that interstitial exists for URLs the agents write and this
+  one is hard-coded here and reviewed in a pull request.
+
+- **`text-transform` hides a spelling from every test you can write.** The pill row is uppercased
+  by the mono label convention, which is harmless for the ENS name and the address — case-folding
+  identifiers whose text content is untouched — and wrong for a handle, whose capitals are the
+  fact. `@BlaiseBuidl` shipped as `@BLAISEBUIDL` through a green suite: the DOM, the accessible
+  name and every string assertion are identical either way. Found by looking at the page, and now
+  pinned through `getComputedStyle`, which jsdom does resolve for styled-components.
+
+- **The stack marks are vendored, and two of the four had to be recovered** (2026-09-04, ticket
+  26). Claude, Grok Bot and OpenClaw are inline SVG on `currentColor`; Hermes has **no vector
+  source** — lobehub's `static-svg` paths 404 in both light and dark — so it is a 24px raster
+  monochromed by a theme-aware filter, which is the one mark that cannot follow the accent ink
+  into the pill on the agent juror's page. They are the first image assets in the repo and they
+  are vendored rather than hot-linked *by choice*, not by policy: `img-src` already allows
+  arbitrary https hosts for ENS avatars. `src/roster/StackIcon.tsx` carries each source URL and
+  the reasoning in full.
+
 ## The roster grows, and the court grows first
 
 *Migrated from session memory, 2026-09-03; the seventh landed with ticket 24 on 2026-09-04.*

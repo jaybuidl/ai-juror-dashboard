@@ -19,8 +19,9 @@ import type { CourtPerformance } from "../performance/performance";
 import { ORDINARY_COURT_PROSE } from "../performance/strip";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type FailedRead, failureOf, SOURCES } from "../read-failure";
-import { ensNameOf } from "../roster/agent-jurors";
+import { ensNameOf, handleUrlOf } from "../roster/agent-jurors";
 import { ensFallbackOf } from "../roster/ens-fallback";
+import { StackIcon } from "../roster/StackIcon";
 import type { RosterView } from "../roster/useRoster";
 import { narrow } from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
@@ -141,6 +142,10 @@ const Facts = styled.div`
 const Fact = styled.span<{ $accent?: boolean }>`
   display: inline-flex;
   align-items: center;
+  /* For the stack mark and its label. The other pills hold a single string, and the address
+     pill's second child is the visually hidden span, which is absolutely positioned and so is
+     not a flex item at all — no gap appears where there is nothing to separate. */
+  gap: ${({ theme }) => theme.space2};
   padding: ${({ theme }) => `${theme.space3} ${theme.space4}`};
   border: 1px solid
     ${({ theme, $accent }) => ($accent === true ? theme.accentQuiet : theme.borderCardHoverColor)};
@@ -163,7 +168,10 @@ const FromRoster = styled.span`
   color: ${({ theme }) => theme.stateWork};
 `;
 
-const OnChain = styled.a`
+/* An external link in the pill row: same ink, same weight, no pill around it. Used for both
+   the Arbiscan link and the agent juror's own account, because they are the same object — a
+   link out of this dashboard, marked as one. */
+const Outbound = styled.a`
   font: ${({ theme }) => theme.typeMonoSm};
   letter-spacing: ${({ theme }) => theme.trackingMono};
   text-transform: uppercase;
@@ -179,6 +187,24 @@ const OnChain = styled.a`
     outline: 2px solid ${({ theme }) => theme.focusRing};
     outline-offset: 3px;
   }
+`;
+
+/* The one string in this row whose capitals are the fact.
+ *
+ * Everything else here is uppercased by the mono label convention and loses nothing by it: the
+ * ENS name and the address are case-insensitive identifiers, and their text content — the thing
+ * a reader copies — is untouched by a transform. A handle is display text whose capitals are
+ * chosen, the same distinction the roster already draws between a nickname that routes and a
+ * name that renders, so uppercasing it would be showing a spelling nobody uses.
+ *
+ * Only a browser says so. `text-transform` does not touch text content, so the DOM, the
+ * accessible name and every assertion over either are identical with the transform and without
+ * it — the test beside this one passes on the uppercased version. It was found by looking.
+ *
+ * There is a second reason not to shout it, and it is the one hidden.ts records: some screen
+ * readers announce uppercased text letter by letter. */
+const Handle = styled(Outbound)`
+  text-transform: none;
 `;
 
 const Description = styled.p`
@@ -691,6 +717,7 @@ export function AgentJurorView({
   // is still out *and* after it fails, so a mark keyed on it alone claims a failure for the
   // length of every cold load and then takes it back.
   const fallenBack = !roster.isResolving && !roster.isResolvedFromEns;
+  const handleUrl = handleUrlOf(agentJuror);
 
   return (
     <View provenance={provenance} failures={failures}>
@@ -718,7 +745,13 @@ export function AgentJurorView({
                     operator can change from a wallet. */}
                 <Title>{identity.nickname}</Title>
                 <Facts>
-                  <Fact $accent>{agentJuror.stack.label}</Fact>
+                  {/* Beside the stack label, never instead of it, and aria-hidden: which stack
+                      an agent juror runs is a fact about the roster, and the mark in front of it
+                      may simply fail to draw. */}
+                  <Fact $accent>
+                    <StackIcon stack={agentJuror.stack} />
+                    {agentJuror.stack.label}
+                  </Fact>
                   <Fact>{ensNameOf(agentJuror)}</Fact>
                   {/* The short form is drawn; the whole address is said. It was reachable only
                       through a `title` tooltip, so the one identifier that distinguishes this
@@ -729,13 +762,40 @@ export function AgentJurorView({
                     <span aria-hidden="true">{shortAddress(agentJuror.address)}</span>
                     <VisuallyHidden>Address {agentJuror.address}</VisuallyHidden>
                   </Fact>
-                  <OnChain
+                  <Outbound
                     href={`https://arbiscan.io/address/${agentJuror.address}`}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
                     Arbiscan ↗
-                  </OnChain>
+                  </Outbound>
+                  {/* The agent juror's own account, where it has one — most have none, so the
+                      absent case is the common one and draws nothing at all rather than an empty
+                      slot. Not counted here, for the reason `ROSTER.length` is never a literal:
+                      the roster grows and so does this subset of it. Deliberately *not* behind the justification interstitial that guards
+                      every other outbound link on this dashboard: that interstitial exists
+                      because justification prose is written by the agents themselves, so the
+                      URLs in it are arbitrary and unreviewed, whereas this one is hard-coded in
+                      this repository and reviewed in a pull request. Putting a warning in front
+                      of content the repo itself controls teaches readers to click through
+                      warnings.
+
+                      The link beside it announces as "Arbiscan" and names where it goes; an
+                      account name alone does not, and a links list is read out of context, so
+                      "on X" is said and not drawn — the visible spelling is the whole reason
+                      `Handle` exists. WCAG 2.4.4.
+
+                      The space in front of that hidden half is a text node of the anchor and not
+                      the first character inside `VisuallyHidden`, and the placement is the whole
+                      of it: an accessible name is built from each child element's contribution
+                      *trimmed*, so a space written inside is dropped and the name comes out
+                      "@Grokleroson X" — the fix reading worse than the defect it fixes. A raw
+                      text node keeps its space. Only the test can see the difference. */}
+                  {handleUrl !== null && (
+                    <Handle href={handleUrl} target="_blank" rel="noopener noreferrer">
+                      {agentJuror.handle} <VisuallyHidden>on X</VisuallyHidden> ↗
+                    </Handle>
+                  )}
                   {/* Beside the stack and the name, never instead of them: which stack an agent
                       juror runs is a fact about the roster and is still true when ENS is down. */}
                   {fallenBack && <FromRoster>From roster</FromRoster>}

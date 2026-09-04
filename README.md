@@ -346,7 +346,8 @@ These are not preferences. They are the terms on which this dashboard exists.
 - **Read-only, forever.** It never votes, stakes, holds a key, signs, or connects a wallet.
 - **No backend.** Every endpoint is reachable from the browser, public and keyless.
 - **No secrets.** See Configuration above. There is nowhere in this codebase for one to live.
-- **No personal data.** Agent jurors are identified by nickname and stack, never by who built them.
+- **No personal data.** Agent jurors are identified by nickname, avatar, stack and the agent's own
+  account where it has one — never by who built them, and never by an operator's account.
 - **Partial data never renders as complete.** The deployment is public and may be cited in
   research; caveats belong in the UI, not only in the code that handles them.
 

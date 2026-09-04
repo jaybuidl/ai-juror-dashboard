@@ -764,3 +764,61 @@ describe("the whole court's own reads, seen from here", () => {
     expect(screen.getByText(/court median of 68s across 56 reveals/i)).toBeVisible();
   });
 });
+
+describe("an agent juror's own account", () => {
+  it("links out to it, the same way the Arbiscan link beside it does", () => {
+    renderAt("/agent-jurors/Grokleros");
+
+    const account = screen.getByRole("link", { name: /^@Grokleros/ });
+
+    expect(account).toHaveAttribute("href", "https://x.com/Grokleros");
+    expect(account).toHaveAttribute("target", "_blank");
+    expect(account).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("shows the handle in the capitals it was given, and does not shout it", () => {
+    // The one thing here a DOM assertion cannot see. `text-transform` leaves text content alone,
+    // so the accessible name and every string assertion above are identical whether the link is
+    // uppercased or not — the row's other links are, by the mono label convention, and this one
+    // rendered as @GROKLEROS until a browser said so. Pinned through the computed style, which
+    // is the only place the difference exists.
+    renderAt("/agent-jurors/Grokleros");
+
+    const account = screen.getByRole("link", { name: /^@Grokleros/ });
+
+    expect(account).toHaveTextContent("@Grokleros");
+    expect(getComputedStyle(account).textTransform).toBe("none");
+  });
+
+  it("says where the link goes, since an account name does not", () => {
+    // The link beside it announces as "Arbiscan" and names its destination. A links list is read
+    // out of context, so "@Grokleros ↗" on its own leaves a screen-reader user with no way to
+    // know it leaves the dashboard, or for where. WCAG 2.4.4.
+    renderAt("/agent-jurors/Grokleros");
+
+    // Asserted as one name and not as two halves, because the join is where this breaks: an
+    // accessible name trims each child element's contribution, so a space written inside the
+    // hidden span disappears and the link announces as "@Grokleroson X". The space has to be a
+    // text node of the anchor. Nothing on screen changes either way.
+    expect(screen.getByRole("link", { name: "@Grokleros on X ↗" })).toBeVisible();
+  });
+
+  it("leaves the row exactly as it was for an agent juror with no account", () => {
+    // Three of the seven have one, so the absent case is the common one. No empty slot and no
+    // separator left standing where a link used to be.
+    renderAt("/agent-jurors/Columbo");
+
+    expect(screen.queryByRole("link", { name: /^@/ })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /Arbiscan/ })).toBeVisible();
+  });
+
+  it("appears on the agent juror's own page and nowhere else", () => {
+    // Not on the index, not in the matrix, not in a column header — a handle is a fact about one
+    // agent juror and the other views are about the court.
+    renderAt("/agent-jurors");
+    expect(screen.queryByRole("link", { name: /^@/ })).not.toBeInTheDocument();
+
+    renderAt("/");
+    expect(screen.queryByRole("link", { name: /^@/ })).not.toBeInTheDocument();
+  });
+});

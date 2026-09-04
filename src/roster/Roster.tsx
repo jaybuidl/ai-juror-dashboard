@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import styled from "styled-components";
+import { StackIcon } from "./StackIcon";
 import type { RosterView } from "./useRoster";
 
 const Section = styled.section`
@@ -125,13 +126,27 @@ const Nickname = styled(Link)`
 `;
 
 /* The system's mono label: uppercase, widely tracked, quiet. Same anatomy as base.css's
-   .ka-mono utility, written here because these are styled components and not class names. */
+   .ka-mono utility, written here because these are styled components and not class names.
+
+   Deliberately still inline flow, with the flex confined to the mark and its label below. A flex
+   row here would make the separator in front of "From roster" a layout gap instead of a
+   character, and a gap is not in the text: what a reader copies off the card would read
+   "OpenClaw· From roster", with nothing on screen to show for it. It would also stop wrapping,
+   which inline text does and a flex row does not. */
 const StackLabel = styled.span`
   font: ${({ theme }) => theme.typeMonoSm};
   font-feature-settings: ${({ theme }) => theme.featureMono};
   letter-spacing: ${({ theme }) => theme.trackingMono};
   text-transform: uppercase;
   color: ${({ theme }) => theme.textMeta};
+`;
+
+/* The mark and the label it stands for, level with each other, and nothing else inside it —
+   see the note on StackLabel above for what happens when this reaches wider than that. */
+const Stacked = styled.span`
+  display: inline-flex;
+  align-items: center;
+  gap: ${({ theme }) => theme.space2};
 `;
 
 const Description = styled.span`
@@ -173,9 +188,14 @@ export function Roster({ entries, isResolving, isResolvedFromEns }: RosterView) 
             <Identity>
               <Nickname to={`/agent-jurors/${agentJuror.nickname}`}>{identity.nickname}</Nickname>
               {/* Beside the stack label, never instead of it: which stack an agent juror is
-                  built on is a fact about the roster and is still true when ENS is down. */}
+                  built on is a fact about the roster and is still true when ENS is down. The
+                  same goes for the mark in front of it, which is aria-hidden and may simply
+                  fail to draw. */}
               <StackLabel>
-                {agentJuror.stack.label}
+                <Stacked>
+                  <StackIcon stack={agentJuror.stack} />
+                  {agentJuror.stack.label}
+                </Stacked>
                 {fallenBack && <FromRoster> · From roster</FromRoster>}
               </StackLabel>
               {agentJuror.description && <Description>{agentJuror.description}</Description>}
