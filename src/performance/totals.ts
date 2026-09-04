@@ -76,6 +76,24 @@ export type CourtTotals = {
    */
   lonePanelDisputes: readonly number[];
   /**
+   * Draws in this court that belong to a juror the roster does not hold, and the disputes holding
+   * them — a count and a list of dispute ids, never an address.
+   *
+   * The quantity nothing on this page could state until ticket 25. The roster is the column set,
+   * so a draw outside it has no cell, no column marginal and no line in the commit-coverage
+   * cross-check; it falls out of every figure here except the panel size it is counted in. Which
+   * makes it the one absence this dashboard could not distinguish from a court that simply drew
+   * fewer jurors.
+   *
+   * Here rather than reduced beside the footnote for the reason every figure in this file is here:
+   * the matrix and the phone's card list are two renderings of one record, and a caveat about the
+   * court must not be able to differ between them.
+   *
+   * Over the rows that were **read**, like `lonePanelDisputes` and unlike `changedWindows`. An
+   * unread row's panel size is 0 because nobody asked, so it can fall short of nothing.
+   */
+  offRoster: OffRoster;
+  /**
    * Disputes that ran under period durations the court has since changed, grouped by the
    * durations they ran under.
    *
@@ -248,6 +266,24 @@ export type Coherence = {
    * The marker rides this figure and no other: a lone panel says nothing about a latency.
    */
   lonePanelDisputes: readonly number[];
+};
+
+/**
+ * The draws the roster has no column for, counted two ways.
+ *
+ * Two figures because the footnote has to say both: how many draws are missing from the grid, and
+ * which rows to look at. One list of ids could not say the first — a dispute may hold several —
+ * and one count could not say the second.
+ *
+ * **Neither is an identity.** The addresses are in hand and are deliberately not carried: an
+ * off-roster juror is whoever the court drew, and `CLAUDE.md`'s no-personal-data invariant is
+ * about exactly this field. A count says everything the reader can act on.
+ */
+export type OffRoster = {
+  /** Draws in the court that no column holds. Zero wherever every draw is on the roster. */
+  draws: number;
+  /** The disputes holding them, ascending — the ids the footnote names. */
+  disputes: readonly number[];
 };
 
 /**
@@ -522,6 +558,10 @@ export function courtTotalsOf(
       .filter((row) => row.read && row.panelSize === 1)
       .map((row) => row.dispute.id),
     unreadDisputes: rows.filter((row) => !row.read).map((row) => row.dispute.id),
+    // Read rows only, and for the same reason the panel above is: a row nobody asked about has no
+    // panel to have fallen short of, and counting one would turn a gap in this dashboard into a
+    // claim about who the court drew.
+    offRoster: offRosterOf(rows),
     // Deliberately *not* filtered on `read`, unlike the panel above, because these two are
     // facts about the dispute rather than about its draws. Which windows a dispute ran under
     // comes from its own timeline and the court's parameter history — both read from sources
@@ -531,6 +571,21 @@ export function courtTotalsOf(
     changedWindows: changedWindowsOf(rows),
     unplacedDisputes: unplacedDisputesOf(rows),
     sparsity: sparsityOf(rows, agentJurors),
+  };
+}
+
+/**
+ * The draws with no column, summed over the read rows. See `OffRoster`.
+ *
+ * Ascending ids, because rows arrive newest first and a footnote naming "disputes 151, 158 and
+ * 162" reads forwards — the same reason every other list of ids in this file is sorted.
+ */
+function offRosterOf(rows: readonly MatrixRow[]): OffRoster {
+  const read = rows.filter((row) => row.read && row.offRosterDraws > 0);
+
+  return {
+    draws: read.reduce((total, row) => total + row.offRosterDraws, 0),
+    disputes: read.map((row) => row.dispute.id).sort((a, b) => a - b),
   };
 }
 

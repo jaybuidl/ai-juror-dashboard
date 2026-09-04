@@ -157,3 +157,18 @@ this file is the full account.
   identifier the way the rest of the codebase does — around a filename, say — the template literal
   closes there and the file fails to parse somewhere further down, with an error pointing at the
   wrong line. Write those comments without backticks.
+- **The matrix has two axes and only one of them was consulted for six tickets.** `densityOf` keyed
+  on the row count alone, which answers "is this grid too tall" and never "is it too wide". The
+  second is arithmetic and not a guess: a comfortable column is 148px against a compact 104, so
+  with a 440px row header and the page's own chrome, `COMPACT_FROM_COLUMNS` comes out at **six** on
+  a 1440px desktop — and the seventh agent juror (ticket 24) took the shipped roster past it. Past
+  the threshold the comfortable grid does not degrade, it *scrolls*: `View.tsx` measures the page
+  from `COMFORTABLE_GRID_MIN_PX`, so the page grows with the roster and the viewport does not, and
+  the far columns go off the edge of a page that is not otherwise scrollable. The compact density
+  is what buys them back — 440 plus eight compact columns is 1272 where eight comfortable ones are
+  1624. Ticket 25 gave `densityOf` both axes; either crossing is sufficient.
+- **Do not buy a column by shrinking the 440px row header.** It is the obvious place to find room
+  and it is the wrong one: everything in that cell is a fixed width except the dispute question, so
+  every pixel taken comes out of the question. An auto table once crushed the header to 239px and
+  clipped a title to 180px of its natural 836, and the tell — a clipped title — is exactly what a
+  title is supposed to look like when it does not fit. The comment lives on `ROW_HEADER_PX`.

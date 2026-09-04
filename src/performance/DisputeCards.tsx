@@ -17,7 +17,13 @@ import {
   UNREAD_FIGURE,
   UNREAD_PRESENTATION,
 } from "./cell";
-import { Footnotes, LonePanelFootnote, SparsityNote, WindowFootnote } from "./Footnotes";
+import {
+  Footnotes,
+  LonePanelFootnote,
+  OffRosterFootnote,
+  SparsityNote,
+  WindowFootnote,
+} from "./Footnotes";
 import { Legend, StateLegend } from "./Legend";
 import { panelPillOf } from "./panel";
 import type { CourtPerformance, Draw, MatrixRow } from "./performance";
@@ -551,6 +557,7 @@ export function DisputeCards({
 
           <Footnotes>
             <WindowFootnote performance={performance} />
+            <OffRosterFootnote performance={performance} />
             <LonePanelFootnote performance={performance} />
           </Footnotes>
         </>

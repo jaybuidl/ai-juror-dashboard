@@ -29,6 +29,9 @@ function row(over: Partial<MatrixRow> = {}): MatrixRow {
   return {
     dispute: dispute(),
     panelSize: 4,
+    // Every panel member has a column unless a case says otherwise: a fixture that left this to
+    // follow `panelSize` would put an off-roster flag on rows that are about something else.
+    offRosterDraws: 0,
     cells: ROSTER.map(() => null),
     windows: null,
     underEarlierWindows: false,

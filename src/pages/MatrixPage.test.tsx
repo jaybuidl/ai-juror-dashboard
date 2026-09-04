@@ -5,7 +5,11 @@ import { formatLatencySeconds } from "../performance/latency";
 import { ORDINARY_COURT_PROSE } from "../performance/strip";
 import { formatAgo, SOURCES } from "../read-failure";
 import { ROSTER } from "../roster/agent-jurors";
-import { COMFORTABLE_GRID_MIN_PX } from "../styles/breakpoints";
+import {
+  COMFORTABLE_COLUMN_PX,
+  COMFORTABLE_GRID_MIN_PX,
+  ROW_HEADER_PX,
+} from "../styles/breakpoints";
 import {
   arbitrumFailed,
   arbitrumPending,
@@ -13,7 +17,11 @@ import {
   denseUnpaidCourt,
   disputes,
   disputesWithNewcomer,
+  FIXTURE_ROSTER,
   measured,
+  OFF_ROSTER_ADDRESS,
+  OFF_ROSTER_DISPUTE,
+  offRosterCourt,
   pausedDisputes,
   pausedPerformance,
   READ_AT,
@@ -54,11 +62,11 @@ describe("the matrix view", () => {
   });
 
   it("takes the grid measure, so the grid is not asked to fit a prose page", () => {
-    // The matrix is the one view whose content has a measurement of its own — a 440px row
-    // header and six 148px columns, 1328px — and the shared "wide" measure gives 1104px of
+    // The matrix is the one view whose content has a measurement of its own — a 440px row header
+    // and one 148px column per agent juror — and the shared "wide" measure gives 1104px of
     // content on a 1440px screen. Under it the grid scrolled sideways in its own box on every
     // desktop, and it did something worse than scroll for three tickets: the table was laid out
-    // auto, so it absorbed the 224px shortfall by crushing the dispute title to 180px.
+    // auto, so it absorbed the shortfall by crushing the dispute title to 180px.
     renderAt("/");
 
     const frame = screen.getByRole("main").parentElement as HTMLElement;
@@ -66,6 +74,37 @@ describe("the matrix view", () => {
     // grid's own width, so the page follows the roster the moment the grid does. It was a
     // literal 1328 here and a literal six behind that constant until ticket 24.
     expect(getComputedStyle(frame).maxWidth).toContain(`${COMFORTABLE_GRID_MIN_PX}px`);
+  });
+
+  /**
+   * The chain the page measure hangs off, pinned link by link (ticket 25).
+   *
+   * The comment above `Frame` in `View.tsx` claims the grid measure "is derived from that
+   * measurement rather than chosen … so it cannot drift from the grid it exists to fit". That was
+   * true of the *page* and not of the grid: `COMFORTABLE_GRID_MIN_PX` held a literal 1328 for four
+   * tickets, which is six columns, so the page could not drift from the grid and both could drift
+   * from the roster together. Ticket 24 derived the constant and this pins the whole chain.
+   *
+   * Nothing here can add a roster entry — `ROSTER` is a module constant, and a test that could
+   * replace it would be testing a roster nobody ships. What it asserts instead is that the width
+   * is that arithmetic, so one more entry moves it by exactly one column, and that the page quotes
+   * the width rather than a number of its own.
+   */
+  it("moves the grid minimum and the page measure together when the roster grows", () => {
+    expect(COMFORTABLE_GRID_MIN_PX).toBe(ROW_HEADER_PX + ROSTER.length * COMFORTABLE_COLUMN_PX);
+
+    // What a seventh, eighth or ninth agent juror costs: one column each, and nothing taken from
+    // the row header. The ticket's own figures — seven columns give 1476 and nine give 1772.
+    const withOneMore = ROW_HEADER_PX + (ROSTER.length + 1) * COMFORTABLE_COLUMN_PX;
+    expect(withOneMore - COMFORTABLE_GRID_MIN_PX).toBe(COMFORTABLE_COLUMN_PX);
+
+    renderAt("/");
+    const frame = screen.getByRole("main").parentElement as HTMLElement;
+    // The page's own half of it: a `calc` over the constant, so there is no second number here to
+    // be left behind. A literal would pass the assertion above and still strand the page.
+    expect(getComputedStyle(frame).maxWidth).toBe(
+      `calc(${COMFORTABLE_GRID_MIN_PX}px + 2 * var(--gutter))`,
+    );
   });
 
   it("says what it measures and, in the same breath, that it does nothing else", () => {
@@ -185,9 +224,11 @@ describe("the matrix view", () => {
 
       const note = screen.getByText(/sparsity is the normal state of this record/i);
 
-      // One panel-less dispute is one blank per agent juror, so the count follows the roster.
+      // One panel-less dispute is one blank per agent juror, so the count follows the roster —
+      // the one this court was built over, which since ticket 25 is `FIXTURE_ROSTER` rather than
+      // the shipped list: a court of seven columns is compact at any row count.
       expect(note).toHaveTextContent(
-        new RegExp(`${ROSTER.length} of those blanks are a different absence`),
+        new RegExp(`${FIXTURE_ROSTER.length} of those blanks are a different absence`),
       );
       expect(note).toHaveTextContent(/dispute 167 has no panel at all yet/);
       expect(note).toHaveTextContent(/the draw has not happened/);
@@ -224,7 +265,7 @@ describe("the matrix view", () => {
   it("names every agent juror as a column, including the one never drawn", () => {
     renderAt("/");
 
-    for (const agentJuror of ROSTER) {
+    for (const agentJuror of FIXTURE_ROSTER) {
       expect(screen.getAllByText(agentJuror.nickname).length).toBeGreaterThan(0);
     }
   });
@@ -291,7 +332,7 @@ describe("the totals above the matrix", () => {
     renderAt("/");
 
     expect(screen.getByText("5")).toBeInTheDocument();
-    expect(screen.getByText(`/${ROSTER.length}`)).toBeInTheDocument();
+    expect(screen.getByText(`/${FIXTURE_ROSTER.length}`)).toBeInTheDocument();
   });
 
   it("plots one mark per revealed draw and says how many that is", () => {
@@ -1276,6 +1317,33 @@ describe("the matrix view past the density threshold", () => {
     // "…is shown yet" promises a figure that is coming, and at this density none is coming: the
     // header has no row for it. The same sentence, the same reason, one width up from the phone.
     expect(screen.queryByText(/payouts are still being read/i)).not.toBeInTheDocument();
+  });
+
+  /**
+   * The one caveat in the footer that is not about a figure being marked (ticket 25).
+   *
+   * Every other line there ends "counted above, and marked wherever counted". A draw the roster
+   * has no column for is counted in nothing above — not the draw count, not the vote count, not
+   * the median reveal, not a coherence figure — so a footer that stated the provenance of those
+   * figures without it would let a short count read as a whole one, on a page that may be cited.
+   */
+  it("says in the footer that a figure above is short by the draws with no column", () => {
+    renderAt("/", { performance: offRosterCourt });
+
+    const caveat = screen.getByText(/roster does not hold, so it is in no figure above/i);
+    expect(caveat).toHaveTextContent(new RegExp(`One draw in dispute ${OFF_ROSTER_DISPUTE}`));
+    expect(caveat).toHaveTextContent(/except the panel sizes/);
+    // A count and nothing else, wherever it is said: the address is below the seam and stays there.
+    expect(screen.queryByText(new RegExp(OFF_ROSTER_ADDRESS, "i"))).not.toBeInTheDocument();
+  });
+
+  it("says nothing in the footer where every draw has a column", () => {
+    // Which is this court, and every court since ticket 24 added the agent juror that was the
+    // only example. A caveat naming an absence that has stopped being one is the same failure as
+    // an unnamed absence, in the other direction.
+    renderAt("/");
+
+    expect(screen.queryByText(/roster does not hold/i)).not.toBeInTheDocument();
   });
 
   it("goes on saying everything that is not about a dropped figure", () => {

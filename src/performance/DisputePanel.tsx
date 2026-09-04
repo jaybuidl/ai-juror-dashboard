@@ -89,8 +89,11 @@ const Pill = styled.span`
  * minimum, so a long unbroken word in a justification would widen its column and push the row
  * sideways with nothing in the console. `DisputeList` carries the same pair for the same reason.
  *
- * Columns wrap to a readable minimum rather than shrinking indefinitely — six 256px columns do
- * not fit a phone, and prose narrower than about 30 characters is not prose anybody reads.
+ * Columns wrap to a readable minimum rather than shrinking indefinitely — a panel's worth of 256px
+ * columns does not fit a phone, and prose narrower than about 30 characters is not prose anybody
+ * reads. **The wrap is what lets this caption claim the whole panel is on screen at once** without
+ * a comparison against the roster's size, which `CONTEXT.md` forbids and which the sentence below
+ * used to make.
  */
 const Columns = styled.div`
   display: grid;
@@ -534,9 +537,15 @@ export function DisputePanel({
           </Columns>
           <Caption>
             <CaptionText>
-              Equal width, roster order. A panel is a handful of vote IDs and never larger than the
-              roster, so all of it fits at once — no carousel, no ranking, and the diverged reading
-              is never sorted last.
+              {/* Justified from the layout and from this panel's own measured size, never from the
+                  roster's. `CONTEXT.md` forbids the second explicitly — a panel is a fact about
+                  the court, and its size and the roster's move for unrelated reasons — and the
+                  sentence that stood here rested on the two coinciding. `Columns` is an auto-fit
+                  grid that wraps, so every column is on screen at any panel size, and the claim
+                  holds without a comparison it is not entitled to make. */}
+              Equal width, roster order. The columns wrap rather than scroll, so all of them are on
+              screen at once — no carousel, no ranking, and the diverged reading is never sorted
+              last.
               {drawn > shown &&
                 ` ${drawn - shown} of the ${drawn} drawn are not agent jurors on this dashboard's roster, so they have no column here.`}
             </CaptionText>

@@ -72,6 +72,21 @@ here is counted and measured in: an agent juror reasons once per dispute and act
 so two vote IDs are one draw, not two data points.
 _Avoid_: vote (means a single vote ID), participation
 
+**Off-roster draw**:
+A draw belonging to a juror the roster does not hold. The roster is the column set, so such a draw
+has no cell to sit in and falls out of every figure on the page except the panel size it is counted
+in — silently, because a roster miss has no cell to be missing from. It is the one absence this
+dashboard could not tell apart from a court that drew fewer jurors, and it is not hypothetical:
+Grokleros was staked and drawn across three disputes before the roster knew it existed. Counted per
+dispute on `MatrixRow.offRosterDraws` and court-wide on `CourtTotals.offRoster`, marked with § and
+decoded in a footnote on both layouts.
+
+**Always a count, never an identity.** The address is in hand below the seam and must not reach the
+page: an off-roster juror is whoever the court drew, and that is the personal data this dashboard
+does not hold. The flag has no subject the moment such an agent juror joins the roster, which is
+what it is for — it is the tripwire that says the next one has gone live.
+_Avoid_: unknown juror, stranger, naming the address, non-agent (it may well be an agent)
+
 **Coherence**:
 Having voted for the dispute's final ruling. Counted per draw. Only defined once the appeal period
 has closed and a ruling exists; a round majority before then is a prediction, not coherence. Always
@@ -175,8 +190,11 @@ _Avoid_: settled, closed, complete, resolved, treating `period === "execution"` 
 
 **Matrix**:
 The dispute matrix: one row per dispute, one column per agent juror, one cell per draw. Rows grow
-without bound as disputes arrive; the columns change only when the roster does. It is sparse by
-nature — 34 of its 78 cells were blank across the first thirteen disputes, and a column stays
+without bound as disputes arrive; the columns grow with the roster, and neither has an upper bound
+written down anywhere. One fixed column position per agent juror, reserved in every dispute whether
+or not that agent juror was drawn — ADR-0008, which records what that costs as the roster grows and
+what the deferred alternative is. Past a row or column count the grid compacts rather than widening
+past the desktop it is read on (`density.ts`). It is sparse by nature — 34 of its 78 cells were blank across the first thirteen disputes, and a column stays
 near-empty for as long as it takes the court to draw the agent juror it belongs to — and that
 sparsity is the normal state, not missing data.
 _Avoid_: grid where it implies every cell is filled, table, heatmap
@@ -210,10 +228,12 @@ to act.
 _Avoid_: tile, square (both name something drawn — a blank cell is still a cell), data point
 
 **Density** (comfortable, compact):
-How tightly the matrix is drawn, and the only thing that changes with the row count. **Comfortable**
-is the two-line cell and the two-line row; **compact** is what the matrix becomes past
-`COMPACT_FROM_ROWS` — the cell drops its commit line and halves, the row drops its second line, the
-column header keeps three of its six figures and freezes. Density is a legibility change and never
+How tightly the matrix is drawn. **Comfortable** is the two-line cell and the two-line row;
+**compact** is what the matrix becomes past either of the grid's two axes — `COMPACT_FROM_ROWS`
+rows, or `COMPACT_FROM_COLUMNS` agent jurors — and it drops the cell's commit line and halves it,
+drops the row's second line, and keeps three of the column header's six figures and freezes them.
+The row threshold is a heuristic about screen height; the column one is arithmetic, the count at
+which a comfortable grid stops fitting an ordinary desktop. Either crossing is sufficient. Density is a legibility change and never
 an edit to the record: no dispute leaves the page, no column moves, nothing is filtered, paginated,
 collapsed or windowed away. It is a *desktop* word — below `breakpoints.narrow` there is no grid to
 compact, and a phone shows cards at any row count.

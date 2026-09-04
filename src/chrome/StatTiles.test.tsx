@@ -39,6 +39,8 @@ function totalsOf(changedWindows: CourtTotals["changedWindows"]): CourtTotals {
     changedWindows,
     unplacedDisputes: [],
     unreadDisputes: [],
+    // Nor this one, and for the same reason: the off-roster count is a footnote's, not a tile's.
+    offRoster: { draws: 0, disputes: [] },
     // Not a figure any tile prints — the sparsity note quotes it, on the matrix and on the
     // phone's card list. Present because `CourtTotals` is one object and a tile takes all of it.
     sparsity: {

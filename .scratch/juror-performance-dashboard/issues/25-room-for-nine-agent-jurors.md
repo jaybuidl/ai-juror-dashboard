@@ -1,5 +1,5 @@
 ---
-status: ready-for-agent
+status: done
 blocked_by: ["24"]
 ---
 
@@ -82,36 +82,36 @@ this is the `docs/knowledge/architecture.md` rule that the artboard being read h
 that place. The densities, the cell, the row header and the flag styling are all cited as drawn; the
 column *count* is not, and is arithmetic instead.
 
-- [ ] `COMFORTABLE_GRID_MIN_PX` derives from the roster's length rather than holding 1328, and
+- [x] `COMFORTABLE_GRID_MIN_PX` derives from the roster's length rather than holding 1328, and
       `View.tsx`'s `measure="grid"` follows it without a second literal
-- [ ] A test pins that adding a roster entry moves both the grid minimum and the page measure, so
+- [x] A test pins that adding a roster entry moves both the grid minimum and the page measure, so
       the two cannot drift apart again
-- [ ] The 440px row header is unchanged, and a comment says why anyone reaching for it should not
-- [ ] `densityOf` takes the column count as well as the row count, and the new threshold is
+- [x] The 440px row header is unchanged, and a comment says why anyone reaching for it should not
+- [x] `densityOf` takes the column count as well as the row count, and the new threshold is
       documented as arithmetic — the width at which the comfortable grid stops fitting — in the
       same voice `COMPACT_FROM_ROWS` is documented in
-- [ ] `breakpoints.ts` gains no `@media` literal: any new width lives beside the existing two and
+- [x] `breakpoints.ts` gains no `@media` literal: any new width lives beside the existing two and
       answers a question neither of them answers
-- [ ] The off-roster count is derived below the seam, over draws already in `RawCourtData`, with no
+- [x] The off-roster count is derived below the seam, over draws already in `RawCourtData`, with no
       new network read
-- [ ] A fourth `ROW_FLAGS` entry renders third, after `window` and before `lone-panel`, with a
+- [x] A fourth `ROW_FLAGS` entry renders third, after `window` and before `lone-panel`, with a
       `label` and a `shortLabel` that cannot fork
-- [ ] The badge renders on the matrix row **and** the phone card, and a test asserts both
-- [ ] The badge is decoded wherever `†` and `‡` are decoded, on both layouts
-- [ ] The badge names no address and no identity — a count only, inside the no-personal-data
+- [x] The badge renders on the matrix row **and** the phone card, and a test asserts both
+- [x] The badge is decoded wherever `†` and `‡` are decoded, on both layouts
+- [x] The badge names no address and no identity — a count only, inside the no-personal-data
       invariant
-- [ ] A test covers the case that has no live example: a court where every draw is on the roster
+- [x] A test covers the case that has no live example: a court where every draw is on the roster
       renders no badge at all
-- [ ] `docs/adr/0008-*.md` records one fixed column position per agent juror, what it costs at
+- [x] `docs/adr/0008-*.md` records one fixed column position per agent juror, what it costs at
       eighteen columns, and that a rendering showing only the drawn agent jurors is the deferred
       alternative
-- [ ] `CONTEXT.md`'s **Matrix** entry no longer says the columns stay at six, and gains
+- [x] `CONTEXT.md`'s **Matrix** entry no longer says the columns stay at six, and gains
       **off-roster draw** as a term
-- [ ] `CLAUDE.md` counts eight ADRs rather than seven, in § Status and in the § Start here row that
+- [x] `CLAUDE.md` counts eight ADRs rather than seven, in § Status and in the § Start here row that
       names the range — writing an ADR without moving those two is how that table went stale before
-- [ ] `DisputePanel.tsx:530-531` justifies its layout from the panel's measured size rather than
+- [x] `DisputePanel.tsx:530-531` justifies its layout from the panel's measured size rather than
       from the roster's
-- [ ] Checked in a browser at 1440pt and 390pt with the roster temporarily grown to nine — jsdom
+- [x] Checked in a browser at 1440pt and 390pt with the roster temporarily grown to nine — jsdom
       lays nothing out, so no offline test can see any of this
 
 
@@ -138,3 +138,47 @@ on every screen between 1264 and 1327 — so it is a trade for this ticket to ma
 count in hand, not an obvious win. Recorded here rather than acted on, because 104 is documented as
 what a compact *cell* needs and both of these are facts about the *header*, which is a second
 question the constant has never been asked.
+
+**Built 2026-09-04.** Every criterion above is met. Four things worth knowing beyond them.
+
+**The column threshold is six, and the shipped roster is seven — so `COMPACT_FROM_COLUMNS` is live
+the moment it lands.** `floor((1440 − 96 − 440) / 148) = 6`, so a comfortable grid stops fitting an
+ordinary desktop at seven columns and `densityOf` compacts there whatever the row count. Production
+saw no change (46 rows already crossed `COMPACT_FROM_ROWS`), but **the offline suites did: 44
+assertions went red at once**, because every fixture built its court over `ROSTER` and every one of
+them was silently testing the compact grid under a name that said comfortable. The fix is a
+`FIXTURE_ROSTER` — `ROSTER.slice(0, COMPACT_FROM_COLUMNS)` — in `src/test/court.tsx` and
+`Matrix.test.tsx`, sliced to the threshold rather than to a literal six. It costs no measurement:
+`court-34-draws.fixture.json` holds draws for five agent jurors, all inside the slice, so every
+latency, coherence count, median and payout total is over the same draws. Only the column count and
+the position-derived figures move. Written up in `docs/knowledge/testing.md`.
+
+**The off-roster count went into the provenance footer as well as the footnote**, which the criteria
+do not ask for and which review would have. Every other caveat in that footer ends "counted above,
+and marked wherever counted"; this one is the opposite — the draw count, the vote count, the median
+reveal and every coherence figure on the page are taken over the roster's columns, so a draw with no
+column is in none of them. A footer that stated the provenance of those figures without it would let
+a short count read as a whole one.
+
+**The § is the third footnote mark and it sits third in `ROW_FLAGS`**, which puts it between the
+dagger and the double dagger on the page as well as in the ranking — so the order a reader meets the
+marks in is the order the marks come in. `not-read` still outranks everything, so the list is
+`not-read`, `window`, `off-roster`, `lone-panel`, `live`.
+
+**Checked in Chrome at 1440x900 and 390x844, on live court 34, in two passes.** With the roster
+temporarily grown to nine: ten column headers, the row header held at exactly 440px and every column
+at exactly 104px, table 1376px against a `min-width` of 1376, no horizontal scroll on the page
+itself, and the grid's own box scrolling with `role="region"`, its name and its tab stop intact —
+which is correct at 1440, since `breakpoints.compactGrid` is 1472 at nine columns. At 390 the cards
+carry nine slots wrapping 6 + 3, in the same positions on every card, with no horizontal scroll.
+Second pass with Grokleros temporarily removed, which reproduces the state the flag was built for:
+three rows marked `§ 1 OFF-ROSTER`, the footnote reading "3 draws in disputes 193, 194 and 195",
+the three footnotes sitting † § ‡ across the row, and no address anywhere on the page.
+
+**One thing deferred.** The comment above records that both `columbo`'s marginals and "Never drawn"
+overflow a 104px compact column at the 1264px floor, and that ~113px clears both at the cost of the
+header freeze between 1264 and 1327. Not taken: it is a fact about the *header* where 104 is
+documented as what a *cell* needs, and widening the column moves `COMPACT_GRID_MIN_PX` and the
+breakpoint derived from it — which is now also an input to `COMPACT_FROM_COLUMNS`, so the trade has
+a third consequence it did not have when it was recorded. Worth a ticket of its own with all three
+in hand.

@@ -189,6 +189,62 @@ describe("buildCourtPerformance", () => {
     expect(rowFor(151).panelSize).toBe(2);
   });
 
+  /**
+   * The draws with no column, which nothing on this model could state before ticket 25.
+   *
+   * The roster is the column set and `groupDraws` skips an address outside it, by design — but it
+   * counts that address in the panel first, and the difference between the two is the quantity.
+   * It went unstated for as long as it existed: Grokleros was drawn four times across three
+   * disputes with no cell, no column and no coverage counter able to see it.
+   */
+  describe("draws belonging to a juror the roster does not hold", () => {
+    /** Not an agent juror, and never will be. Lowercased, as The Graph returns an address. */
+    const stranger = "0x1111111111111111111111111111111111111111";
+
+    /** The captured court with one more draw in dispute 157, from an address off the roster. */
+    function withStranger(): CourtPerformance {
+      return built(
+        courtData({
+          draws: [
+            ...rawDraws,
+            {
+              id: "157-9-0",
+              juror: { id: stranger },
+              dispute: { disputeID: "157" },
+              round: { id: "157-0" },
+              vote: null,
+            },
+          ],
+        }),
+      );
+    }
+
+    it("counts one, and counts it in the panel too", () => {
+      const model = withStranger();
+      const row = rowFor(157, model);
+
+      // The panel grew by one and the cells did not: that is the whole of the state.
+      expect(row.offRosterDraws).toBe(1);
+      expect(row.panelSize).toBe(rowFor(157).panelSize + 1);
+      expect(row.cells.filter((cell) => cell !== null)).toHaveLength(
+        rowFor(157).cells.filter((cell) => cell !== null).length,
+      );
+    });
+
+    it("counts none on a court every one of whose draws has a column", () => {
+      // The state ticket 24 put this court into by adding the seventh agent juror, and the one
+      // with no live example — which is exactly why it is pinned rather than assumed.
+      for (const row of built().rows) {
+        expect(row.offRosterDraws).toBe(0);
+      }
+      expect(built().totals.offRoster).toEqual({ draws: 0, disputes: [] });
+    });
+
+    it("gathers them for the footnote, by dispute and as a count", () => {
+      expect(withStranger().totals.offRoster).toEqual({ draws: 1, disputes: [157] });
+    });
+  });
+
   it("leaves the column of an agent juror the record does not draw empty end to end", () => {
     // baskerville in this fixture, which was captured before the court first drew it. The
     // claim under test is about the shape — an undrawn column is null end to end rather than
@@ -1132,6 +1188,16 @@ describe("buildCourtPerformance", () => {
 
       expect(rowFor(170, model).panelSize).toBe(0);
       expect(model.totals.lonePanelDisputes).not.toContain(170);
+    });
+
+    it("never says an unread row held a draw the roster has no column for", () => {
+      // The same gate one field over. `panelSize` is 0 because nobody asked, so nothing can have
+      // fallen short of it — and an off-roster count on an unread row would turn a gap in this
+      // dashboard into a claim about who the court drew.
+      const model = drifted();
+
+      expect(rowFor(170, model).offRosterDraws).toBe(0);
+      expect(model.totals.offRoster.disputes).not.toContain(170);
     });
   });
 });

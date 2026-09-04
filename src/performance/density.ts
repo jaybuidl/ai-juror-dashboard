@@ -15,9 +15,16 @@
  *
  * Nothing here is a reader-facing control, deliberately. Both artboards expose density as an
  * editor prop — an authoring control in the canvas tool — and neither draws a toggle in its own
- * chrome; `MatrixDense.dc.html:128` makes the row count the control instead. So the row count is
- * what this switches on, and the matrix crosses over on its own as disputes arrive.
+ * chrome; `MatrixDense.dc.html:128` makes the row count the control instead. So the record is
+ * what this switches on, and the matrix crosses over on its own as the court and the roster grow.
  */
+
+import {
+  COMFORTABLE_COLUMN_PX,
+  ORDINARY_DESKTOP_PX,
+  PAGE_CHROME_PX,
+  ROW_HEADER_PX,
+} from "../styles/breakpoints";
 
 export type Density = "comfortable" | "compact";
 
@@ -42,15 +49,45 @@ export type Density = "comfortable" | "compact";
 export const COMPACT_FROM_ROWS = 40;
 
 /**
- * The density a matrix of this many rows is drawn at.
+ * The column count past which the matrix compacts, which is the other axis the grid has.
  *
- * "Past forty rows", so forty rows is still comfortable and forty-one is not. The argument is
- * the number of disputes in the model — every dispute that was read, whether or not its draws
- * were — because density is about how tall the grid is and an unread row is exactly as tall as
- * a read one.
+ * **Arithmetic, not a heuristic** — and that is the one way it differs from the row threshold
+ * above. How many columns fit is not a guess about a reader: the comfortable grid declares a
+ * 440px row header and a 148px column per agent juror, the page takes `PAGE_CHROME_PX` either
+ * side of it, and past some count that sum is wider than an ordinary desktop. This is that count,
+ * so its value moves on its own if any of the three measurements it is taken over does.
+ *
+ * What lies past it is not a taste in density, it is a sideways scroll: the grid keeps its
+ * `min-width` and its box scrolls, so a reader on a 1440px screen meets a matrix whose far
+ * columns are off the edge of a page that is not otherwise scrollable. The compact column is
+ * 104px against the comfortable 148, which is what buys them back — 440 plus eight compact
+ * columns is 1272 where eight comfortable ones are 1624.
+ *
+ * It comes out at six for today's measurements, which is exactly where the roster stood for four
+ * tickets, and this is the number the matrix was silently built around: `COMPACT_FROM_ROWS` was
+ * the only switch, so the seventh agent juror widened the comfortable grid past the desktop it
+ * was drawn on without anything on either axis noticing (ticket 25).
  */
-export function densityOf(rows: number): Density {
-  return rows > COMPACT_FROM_ROWS ? "compact" : "comfortable";
+export const COMPACT_FROM_COLUMNS = Math.floor(
+  (ORDINARY_DESKTOP_PX - PAGE_CHROME_PX - ROW_HEADER_PX) / COMFORTABLE_COLUMN_PX,
+);
+
+/**
+ * The density a matrix of this shape is drawn at.
+ *
+ * Both axes, because a grid has two and either one of them can be what stops the comfortable
+ * density fitting. Either crossing is sufficient: a court of five disputes and nine agent jurors
+ * is as unfittable as one of two hundred disputes and six, and the reduction each crossing asks
+ * for is the same one.
+ *
+ * "Past forty rows", so forty rows is still comfortable and forty-one is not; the columns cross
+ * the same way. `rows` is the number of disputes in the model — every dispute that was read,
+ * whether or not its draws were — because density is about how tall the grid is and an unread row
+ * is exactly as tall as a read one. `columns` is the roster's length, for the same reason at
+ * ninety degrees: a column is exactly as wide whether or not anyone was ever drawn in it.
+ */
+export function densityOf(rows: number, columns: number): Density {
+  return rows > COMPACT_FROM_ROWS || columns > COMPACT_FROM_COLUMNS ? "compact" : "comfortable";
 }
 
 /**

@@ -9,6 +9,7 @@ import { ROSTER } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
 import { theme } from "../styles/theme";
+import { OFF_ROSTER_DISPUTE, offRosterDraw } from "../test/court";
 import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
@@ -60,6 +61,18 @@ function build(raw: Partial<RawCourtData> = {}): CourtPerformance {
   });
   if (!result.success) throw new Error(`${result.code}: ${result.message}`);
   return result.data;
+}
+
+/**
+ * The same court `Matrix.test.tsx` builds for the off-roster flag, on the layout that has no grid.
+ *
+ * `row-flags.ts` is shared for exactly this: a badge is a string that names a row, so it reaches
+ * the card as surely as the row, and this repo's history is five sentences that were true on the
+ * desktop and false on the phone. The draw itself comes from `test/court.tsx`, so the two suites
+ * and the page suite build one shape rather than three.
+ */
+function offRosterCourt(): CourtPerformance {
+  return build({ draws: [...(drawFixture as RawDraw[]), offRosterDraw()] });
 }
 
 /** The same fixed present `Matrix.test.tsx` uses: dispute 166's period opened 3m 12s ago. */
@@ -470,6 +483,27 @@ describe("DisputeCards", () => {
     expect(within(card(151)).getByText(/8h window/)).toBeInTheDocument();
     expect(within(card(155)).getByText(/Lone panel/)).toBeInTheDocument();
     expect(within(card(155)).queryByText(/window/)).not.toBeInTheDocument();
+  });
+
+  it("carries the off-roster flag and its note, which no artboard draws for a phone", () => {
+    // The badge and the footnote both, because they are two halves of one caveat and the phone is
+    // where a caveat is most easily lost: `Footnotes.tsx` is shared for that reason.
+    renderCards(offRosterCourt());
+
+    expect(within(card(OFF_ROSTER_DISPUTE)).getByText(/1 off-roster draw/)).toBeInTheDocument();
+
+    const note = screen.getByText(/roster does not hold/i);
+    expect(note).toHaveTextContent(new RegExp(`One draw in dispute ${OFF_ROSTER_DISPUTE}`));
+    // A count and nothing else. The address is in hand below the seam and must not reach a page.
+    expect(screen.queryByText(/0x1111/i)).not.toBeInTheDocument();
+  });
+
+  it("says nothing about draws outside the roster where there are none", () => {
+    // The state the court is in today, ticket 24 having added the agent juror that was in it.
+    renderCards();
+
+    expect(screen.queryByText(/roster does not hold/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/off-roster/i)).not.toBeInTheDocument();
   });
 
   it("puts the legend and the sparsity note where a phone reader will meet them", () => {

@@ -9,18 +9,20 @@ import type { CourtPerformance } from "./performance";
  * The caveats that hang off the record itself, in the one place both layouts read them from.
  *
  * Lifted out of `Matrix.tsx` by ticket 16, which put the same disputes on a phone as one card
- * each. Every one of these is a fact about the court rather than about the grid — which
- * disputes ran under superseded windows, which were decided by a panel of one, how much of the
- * record is empty and why — so all three travel with the record and none of them is the
- * matrix's property. Two copies would be two wordings of one caveat, and a page that may be
- * cited would then say slightly different things depending on the width it was read at.
+ * each. Every one of these is a fact about the court rather than about the grid — which disputes
+ * ran under superseded windows, which held a draw the roster has no column for, which were decided
+ * by a panel of one, how much of the record is empty and why — so all of them travel with the
+ * record and none is the matrix's property. Two copies would be two wordings of one caveat, and a
+ * page that may be cited would then say slightly different things depending on the width it was
+ * read at. Counted as a *set* rather than as a number here on purpose: it was three until ticket
+ * 25 and the sentence that said so would have gone quietly false.
  *
  * `CLAUDE.md` requires caveats to be visible in the UI rather than merely handled correctly in
  * code, which is the whole reason the phone gets these rather than a link to them.
  */
 
 /*
- * How the three sit beside each other, declared here rather than on each of them.
+ * How they sit beside each other, declared here rather than on each of them.
  *
  * The flex basis belongs to the arrangement and not to the items: `SparsityNote` is rendered
  * on its own on the phone, inside a *column* flex container, and an item carrying
@@ -212,6 +214,52 @@ export function LonePanelFootnote({ performance }: { performance: CourtPerforman
 }
 
 /**
+ * The draws the grid has no column for, where the court drew somebody the roster does not hold.
+ *
+ * Renders nothing where every draw is on the roster, exactly as the lone-panel note does and for
+ * the same reason: a footnote naming a caveat that does not apply reads as a caveat about the
+ * whole page. **That is the state ticket 24 put this court in** — the seventh agent juror joined
+ * the roster and the count went to zero — and it is why this exists rather than in spite of it.
+ * The next build to go live is drawn before anyone here knows its address, and until this the
+ * only detection was a person noticing four vote IDs that no cell, no column and no coverage
+ * counter could see.
+ *
+ * A count and a list of dispute ids, and nothing else. Naming the addresses would be a fact about
+ * whoever the court drew, which this dashboard does not hold and must not print (`CLAUDE.md`);
+ * the count is what a reader can act on, and the ids are where to look.
+ */
+export function OffRosterFootnote({ performance }: { performance: CourtPerformance }) {
+  const { draws, disputes } = performance.totals.offRoster;
+  if (draws === 0) return null;
+
+  return (
+    <Footnote>
+      <FootnoteMark aria-hidden="true">§</FootnoteMark>
+      <VisuallyHidden>Note on draws outside the roster. </VisuallyHidden>
+      <span>
+        {/* Every verb and every noun here follows the count, which is the singular case as often
+            as not: one agent juror going live before the roster knows it is the whole reason this
+            footnote exists, so "one draw … belong to a juror" is the sentence a reader is most
+            likely to meet. `LonePanelFootnote` and `WindowFootnote` condition theirs the same way.
+
+            "A juror" only in the singular. Above one the count is over draws and the jurors behind
+            them are not counted at all — this dashboard knows how many draws have no column and
+            deliberately does not say how many addresses that is, which would be a fact about who
+            the court drew. */}
+        {draws === 1 ? "One draw in" : `${draws} draws in`}{" "}
+        {disputes.length === 1 ? "dispute" : "disputes"} {listOf(disputes)}{" "}
+        {draws === 1 ? "belongs to a juror" : "belong to jurors"} this dashboard's roster does not
+        hold, so {draws === 1 ? "it has" : "they have"} no column here and{" "}
+        {draws === 1 ? "is" : "are"} in none of the figures above except the{" "}
+        {disputes.length === 1 ? "panel size" : "panel sizes"}. That is a gap in the roster rather
+        than in the court: an agent juror can be staked and drawn before this dashboard knows it
+        exists. <Link to="/agent-jurors">Who the roster holds</Link>.
+      </span>
+    </Footnote>
+  );
+}
+
+/**
  * Why so much of the record is empty, counted — and which of two things each blank means.
  *
  * The one caveat this dashboard cannot afford to lose on a phone, because it is the one that
@@ -240,7 +288,7 @@ export function LonePanelFootnote({ performance }: { performance: CourtPerforman
 /**
  * How the note is dressed, which is the one thing that differs between its two renderings.
  *
- * "footnote" is the matrix's: a plain paragraph among the † and ‡ notes below the grid, in the
+ * "footnote" is the matrix's: a plain paragraph among the marked notes below the grid, in the
  * same family and reading as one of them. It used to be a bordered card there, which made a
  * caveat about the court look like a component of the grid and put a second box below a page
  * already carrying several.

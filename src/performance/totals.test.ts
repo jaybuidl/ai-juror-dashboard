@@ -415,6 +415,7 @@ function row(id: number, measured: { commitSeconds: number; voteSeconds: number 
     // a shape the seam cannot produce.
     dispute: { id, ruling: { state: "ruled", choice: 1 } } as never,
     panelSize: 2,
+    offRosterDraws: 0,
     cells: [],
     windows: measured === null ? null : { evidenceSeconds: 1, appealSeconds: 129_600, ...measured },
     underEarlierWindows: measured !== null,
@@ -429,6 +430,7 @@ function medianOfSeconds(seconds: readonly number[]): number | undefined {
   const rows = seconds.map((value, index) => ({
     dispute: { id: index, ruling: { state: "ruled", choice: 1 } } as never,
     panelSize: 2,
+    offRosterDraws: 0,
     // No window resolved and nothing marked: the median must be the same figure whether or not
     // the court's parameter history came back.
     windows: null,
@@ -859,6 +861,7 @@ function column({
       ruling: ruled ? { state: "ruled", choice: 1 } : { state: "pending" },
     } as never,
     panelSize,
+    offRosterDraws: 0,
     cells: ROSTER.map((agentJuror, column) =>
       column === at
         ? {

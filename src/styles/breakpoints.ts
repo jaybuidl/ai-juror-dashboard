@@ -28,12 +28,53 @@ import { ROSTER } from "../roster/agent-jurors";
  * what a compact cell needs before its durations spill into the column beside them, and
  * `COMFORTABLE_COLUMN_PX` is what `canvas/Main.dc.html` draws.
  */
+/**
+ * The row header, and the one width in this file that is not for sale.
+ *
+ * **Do not buy a column by shrinking it.** It is the obvious place to find room when the roster
+ * grows — 440px is a third of a desktop and the columns beside it are 148 — and it is the wrong
+ * one. An auto table once crushed it to 239px and clipped a dispute title to 180px of its natural
+ * 836, so a 1440px desktop showed a fifth of a question a 390pt phone showed whole. That cost
+ * three tickets and a review to find, because the tell is a clipped title and a clipped title is
+ * exactly what a title is supposed to look like when it does not fit.
+ *
+ * What the row header holds is why: an id, a dispute question, a flag, a panel pill and — at the
+ * compact density — the row's own commit median. Every one of those is a fixed width except the
+ * question, so every pixel taken from here comes out of the question and nothing else. Ticket 25
+ * needed room for nine columns and took none of it from here; the density switch is where the
+ * room comes from (`density.ts`).
+ */
 export const ROW_HEADER_PX = 440;
 export const COMPACT_COLUMN_PX = 104;
-const COMFORTABLE_COLUMN_PX = 148;
+export const COMFORTABLE_COLUMN_PX = 148;
+
+/**
+ * What a grid of this many columns comes to at each density — the row header plus one column each.
+ *
+ * **Functions of a column count, not constants over the roster, because the two are not always the
+ * same number.** The matrix draws `performance.agentJurors`, which the seam takes as a parameter;
+ * `ROSTER` is what ships. They coincide in the browser and deliberately do not in the offline
+ * suites, where a court is built over a shorter roster so the comfortable density is reachable at
+ * all (`density.ts`). A `min-width` taken over `ROSTER.length` while the cells were counted over
+ * something else is the second model of one grid that the shares below spent a ticket removing —
+ * and with `table-layout: fixed; width: 100%` the browser resolves the disagreement by
+ * redistributing the surplus, so the row header renders wider than it declares and nothing says so.
+ * jsdom lays nothing out, so no offline test could ever have caught it.
+ *
+ * The constants below are these functions at `ROSTER.length`, for the two callers that are about
+ * the *shipped* page rather than about a grid in hand: the page measure in `View.tsx` and the media
+ * query in `breakpoints` below, neither of which has a column count to ask.
+ */
+export function compactGridMinPx(columns: number): number {
+  return ROW_HEADER_PX + columns * COMPACT_COLUMN_PX;
+}
+
+export function comfortableGridMinPx(columns: number): number {
+  return ROW_HEADER_PX + columns * COMFORTABLE_COLUMN_PX;
+}
 
 /** What the compact grid's columns and its row header come to. See `breakpoints.compactGrid`. */
-export const COMPACT_GRID_MIN_PX = ROW_HEADER_PX + ROSTER.length * COMPACT_COLUMN_PX;
+export const COMPACT_GRID_MIN_PX = compactGridMinPx(ROSTER.length);
 
 /**
  * The same widths as shares of the table, because the compact grid is declared in percentages and
@@ -50,9 +91,18 @@ export const COMPACT_GRID_MIN_PX = ROW_HEADER_PX + ROSTER.length * COMPACT_COLUM
  * every column gets exactly `COMPACT_COLUMN_PX` and the row header exactly `ROW_HEADER_PX`, which
  * is what the floor was always claiming to buy, and above the floor everything scales together.
  * There is nowhere left for a share and a width to drift apart.
+ *
+ * Over the column count in hand for the same reason the two widths above are: the shares sum to 1
+ * only when the total they are taken over is the total the grid actually declares. Six columns
+ * sharing a table sized for seven come to 91%, and a browser hands the missing 9% back out.
  */
-export const COMPACT_ROW_HEADER_SHARE = ROW_HEADER_PX / COMPACT_GRID_MIN_PX;
-export const COMPACT_COLUMN_SHARE = COMPACT_COLUMN_PX / COMPACT_GRID_MIN_PX;
+export function compactSharesOf(columns: number): { rowHeader: string; column: string } {
+  const total = compactGridMinPx(columns);
+  return {
+    rowHeader: `${(ROW_HEADER_PX / total) * 100}%`,
+    column: `${(COMPACT_COLUMN_PX / total) * 100}%`,
+  };
+}
 
 /**
  * The same arithmetic for the comfortable grid, which is what `canvas/Main.dc.html` draws and
@@ -72,13 +122,13 @@ export const COMPACT_COLUMN_SHARE = COMPACT_COLUMN_PX / COMPACT_GRID_MIN_PX;
  * does". The comfortable grid never did. With this and `table-layout: fixed` beside it, it now
  * does, and that sentence is true for the first time.
  *
- * **Ticket 25 owns the rest of this density**, and this line is not it: the page that contains
- * the grid, the switch between the two densities and the comfortable column shares are still
- * sized for six. This is here only so that adding the seventh agent juror does not leave a
- * `min-width` below the sum of the widths the columns declare, which is the crush described
- * above, silently reintroduced.
+ * Ticket 24 derived it so that the seventh agent juror could not leave a `min-width` below the
+ * sum of the widths the columns declare — the crush above, silently reintroduced. Ticket 25 took
+ * the rest of the density: `Matrix.tsx` names these two widths rather than typing them at each
+ * cell that declares them, `View.tsx` measures the page from this constant, and `densityOf` gained
+ * the column axis that decides whether this density is drawn at all. There is no six left in it.
  */
-export const COMFORTABLE_GRID_MIN_PX = ROW_HEADER_PX + ROSTER.length * COMFORTABLE_COLUMN_PX;
+export const COMFORTABLE_GRID_MIN_PX = comfortableGridMinPx(ROSTER.length);
 
 /**
  * What the page's chrome takes either side of the grid, measured rather than derived.
@@ -88,7 +138,26 @@ export const COMFORTABLE_GRID_MIN_PX = ROW_HEADER_PX + ROSTER.length * COMFORTAB
  * max-width and the scrollbar come to this between them. It is a property of the page and not
  * of the roster, which is why it is a literal here and the two widths above are not.
  */
-const PAGE_CHROME_PX = 96;
+export const PAGE_CHROME_PX = 96;
+
+/**
+ * What this repo means by an ordinary desktop, and the one question neither width below asks.
+ *
+ * `narrow` asks which layout a reader gets and `compactGrid` asks whether the compact grid's own
+ * measurements fit the page. Neither can say how many *columns* a density affords, which is the
+ * question `COMPACT_FROM_COLUMNS` puts to it: past some column count the comfortable grid stops
+ * fitting a desktop at all and the reader gets a sideways scroll instead of a matrix.
+ *
+ * 1440 because that is the width everything else in this repo is settled at — both matrix
+ * artboards are drawn on a 1440px page, the accessibility sweep was run at 1440 and at 390, and
+ * every browser measurement in these files is quoted at 1440x900. A second figure here would be a
+ * second definition of "desktop" one import away from the first.
+ *
+ * Deliberately **not** a member of `breakpoints` below and deliberately not an `@media`: nothing
+ * switches on it in CSS. It is an input to arithmetic about how many columns a density can hold,
+ * and a media query at this width would be a third breakpoint nobody asked for.
+ */
+export const ORDINARY_DESKTOP_PX = 1440;
 
 export const breakpoints = {
   /** The phone artboard is 390pt; this is the width below which the desktop chrome stops fitting. */

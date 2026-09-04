@@ -17,7 +17,7 @@ import parameterFixture from "../performance/court-34-parameters.fixture.json" w
   type: "json",
 };
 import rewardFixture from "../performance/court-34-rewards.fixture.json" with { type: "json" };
-import { COMPACT_FROM_ROWS } from "../performance/density";
+import { COMPACT_FROM_COLUMNS, COMPACT_FROM_ROWS } from "../performance/density";
 import {
   buildCourtPerformance,
   type RawCommitCast,
@@ -45,6 +45,81 @@ import { theme } from "../styles/theme";
  * The failure shapes below are hand-built for the same reason `CLAUDE.md` gives — every fixture
  * in this repository is a read that worked, so no fixture can hand you a read that did not.
  */
+
+/**
+ * The roster every court below is built over, which is the shipped one **less its last entries**.
+ *
+ * Ticket 25 gave `densityOf` its second axis, and `COMPACT_FROM_COLUMNS` comes out at six: a
+ * comfortable column is 148px against a compact 104, so a seventh agent juror takes the grid past
+ * what a comfortable density fits on a desktop. Every court here would otherwise be compact
+ * whatever its row count, and `roomyCourt` — whose whole job is to be the comfortable half of a
+ * pair — could not exist at all.
+ *
+ * **It costs no measurement.** `court-34-draws.fixture.json` holds draws for five agent jurors,
+ * every one of them inside this slice, so the latencies, coherence counts, medians and payout
+ * totals every view test asserts are over exactly the same draws. What moves with it is the column
+ * count and the figures taken over positions: sparsity, its blanks, and the never-drawn columns.
+ *
+ * Sliced to the threshold rather than to a literal six, so it follows the arithmetic rather than
+ * restating it — `CLAUDE.md`'s rule about `ROSTER.length` applies to the reasons for a count as
+ * much as to the count.
+ */
+export const FIXTURE_ROSTER = ROSTER.slice(0, COMPACT_FROM_COLUMNS);
+
+/**
+ * The claim the slice rests on, asserted rather than trusted — at import, so it names itself.
+ *
+ * "It costs no measurement" is true only while every address the draws fixture holds is inside the
+ * slice, and two edits a long way from here can break that silently. The roster is **not** strictly
+ * append-only — `agent-jurors.ts` records Aletheia being placed before Baskerville by maintainer
+ * call — so an entry inserted before this index drops a *drawn* agent juror out of the fixture:
+ * every court here would gain phantom off-roster draws, the two "says nothing where every draw is
+ * on the roster" cases would invert, and every latency, coherence count and median would shift with
+ * no test naming the cause. Raising `ORDINARY_DESKTOP_PX` does the same thing from the other side,
+ * out of an edit that looks purely presentational.
+ *
+ * A thrown error at import beats forty puzzling assertions: this is the one place that knows why
+ * the slice is the length it is.
+ */
+const drawnOutsideFixtureRoster = [
+  ...new Set((drawFixture as RawDraw[]).map((draw) => draw.juror.id.toLowerCase())),
+].filter(
+  (address) => !FIXTURE_ROSTER.some((agentJuror) => agentJuror.address.toLowerCase() === address),
+);
+if (drawnOutsideFixtureRoster.length > 0) {
+  throw new Error(
+    `FIXTURE_ROSTER is missing ${drawnOutsideFixtureRoster.length} agent juror(s) the draws fixture holds draws for, so every court in this file has off-roster draws it was never meant to have. Either the roster order changed or COMPACT_FROM_COLUMNS moved; see the note above FIXTURE_ROSTER.`,
+  );
+}
+
+/**
+ * An address the roster will never hold, and the dispute a fixture hangs it on.
+ *
+ * 157 rather than 151, which already wears the dagger: `rowFlagOf` returns one flag, and a case
+ * about the off-roster mark needs a row wearing nothing else. The address is deliberately
+ * meaningless — what a page may say about it is a count, and these fixtures exist partly to prove
+ * that a page says nothing more.
+ */
+export const OFF_ROSTER_ADDRESS = "0x1111111111111111111111111111111111111111";
+export const OFF_ROSTER_DISPUTE = 157;
+
+/**
+ * One draw belonging to that address, ready to append to any court's draws.
+ *
+ * A fresh draw id because `groupDraws` dedupes on it, and the dispute's own round because a draw
+ * naming a round its dispute does not hold is a payload the seam rejects outright. Exported so the
+ * matrix suite, the card suite and the page suite build one shape rather than three: this fixture
+ * was written three times over during ticket 25 and `testing.md` already described it wrongly.
+ */
+export function offRosterDraw(dispute: number = OFF_ROSTER_DISPUTE): RawDraw {
+  return {
+    id: `${dispute}-9-0`,
+    juror: { id: OFF_ROSTER_ADDRESS },
+    dispute: { disputeID: String(dispute) },
+    round: { id: `${dispute}-0` },
+    vote: null,
+  };
+}
 
 /**
  * What the page has once ENS has been tried and answered for nobody.
@@ -117,7 +192,7 @@ const built = buildCourtPerformance({
   commits: commitFixture as RawCommitCast[],
   parameters: parameterFixture as RawCourtParameters[],
   rewards: rewardFixture as RawRewardShift[],
-  roster: ROSTER,
+  roster: FIXTURE_ROSTER,
   drawsReadAt: null,
 });
 if (!built.success) throw new Error(`${built.code}: ${built.message}`);
@@ -172,7 +247,7 @@ const building = buildCourtPerformance({
   // The payouts are in, so this fixture isolates the two Arbitrum reads exactly as its name
   // says. `rewardsPending` below is the one that holds them back.
   rewards: rewardFixture as RawRewardShift[],
-  roster: ROSTER,
+  roster: FIXTURE_ROSTER,
   drawsReadAt: null,
 });
 if (!building.success) throw new Error(`${building.code}: ${building.message}`);
@@ -227,7 +302,7 @@ const unpaid = buildCourtPerformance({
   commits: commitFixture as RawCommitCast[],
   parameters: parameterFixture as RawCourtParameters[],
   rewards: null,
-  roster: ROSTER,
+  roster: FIXTURE_ROSTER,
   drawsReadAt: null,
 });
 if (!unpaid.success) throw new Error(`${unpaid.code}: ${unpaid.message}`);
@@ -265,7 +340,7 @@ const emptied = buildCourtPerformance({
   commits: commitFixture as RawCommitCast[],
   parameters: parameterFixture as RawCourtParameters[],
   rewards: [],
-  roster: ROSTER,
+  roster: FIXTURE_ROSTER,
   drawsReadAt: null,
 });
 if (!emptied.success) throw new Error(`${emptied.code}: ${emptied.message}`);
@@ -290,7 +365,7 @@ const inFeeToken = buildCourtPerformance({
   rewards: (rewardFixture as RawRewardShift[]).map((shift, index) =>
     index < 2 ? { ...shift, feeTokenAmount: "1000000000000000000" } : shift,
   ),
-  roster: ROSTER,
+  roster: FIXTURE_ROSTER,
   drawsReadAt: null,
 });
 if (!inFeeToken.success) throw new Error(`${inFeeToken.code}: ${inFeeToken.message}`);
@@ -345,7 +420,7 @@ const drifted = buildCourtPerformance({
   // unread history marks no row, which keeps the drift the only thing it demonstrates.
   parameters: null,
   rewards: rewardFixture as RawRewardShift[],
-  roster: ROSTER,
+  roster: FIXTURE_ROSTER,
   drawsReadAt: DRAWS_READ_AT,
 });
 if (!drifted.success) throw new Error(`${drifted.code}: ${drifted.message}`);
@@ -442,7 +517,7 @@ function padded(disputeCount: number, over: Partial<RawCourtData> = {}) {
     ...padCourt(disputeCount),
     parameters: parameterFixture as RawCourtParameters[],
     rewards: rewardFixture as RawRewardShift[],
-    roster: ROSTER,
+    roster: FIXTURE_ROSTER,
     drawsReadAt: null,
     ...over,
   });
@@ -498,7 +573,25 @@ export const waitingCourt: CourtPerformanceView = {
       commits: commitFixture as RawCommitCast[],
       parameters: parameterFixture as RawCourtParameters[],
       rewards: rewardFixture as RawRewardShift[],
-      roster: ROSTER,
+      roster: FIXTURE_ROSTER,
+      drawsReadAt: null,
+    });
+    if (!result.success) throw new Error(`${result.code}: ${result.message}`);
+    return result.data;
+  })(),
+};
+
+/** The captured court with one draw belonging to an address the roster does not hold. */
+export const offRosterCourt: CourtPerformanceView = {
+  ...measured,
+  performance: (() => {
+    const result = buildCourtPerformance({
+      disputes: fixture as RawDispute[],
+      draws: [...(drawFixture as RawDraw[]), offRosterDraw()],
+      commits: commitFixture as RawCommitCast[],
+      parameters: parameterFixture as RawCourtParameters[],
+      rewards: rewardFixture as RawRewardShift[],
+      roster: FIXTURE_ROSTER,
       drawsReadAt: null,
     });
     if (!result.success) throw new Error(`${result.code}: ${result.message}`);

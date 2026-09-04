@@ -80,17 +80,19 @@ all render, the last as one block per dispute rather than a seven-column table �
 one place a phone reader can see what an agent juror has been paid, since the matrix's card layout
 has no column headers to carry it.
 
-**On a desktop it compacts as the court grows, and compacting is not editing.** Past a threshold in
-the region of forty rows the matrix drops to a denser form of itself: the cell keeps its reveal
+**On a desktop it compacts as the court and the roster grow, and compacting is not editing.** Past
+a threshold in the region of forty rows — or past the columns a comfortable grid fits on a desktop,
+which the roster has already crossed — the matrix drops to a denser form of itself: the cell keeps its reveal
 latency and its coherence state and gives up its commit line, halving in height; the row gives up
 its second line and gains the median commit over that dispute's own draws; each column header keeps
 its median reveal, its coherence count and its draw count, and freezes at the top of the page so a
 reader hundreds of rows down still knows which agent juror each column is. Nothing leaves: every
 dispute the court has held is still a row, every column is where it was, and no figure is
-paginated, filtered or collapsed away. The threshold is a guess about how much screen a reader has
-rather than a fact about this court, so it is one named constant with a comment saying so, and
-there is no control on the page for a reader to set — the matrix crosses over on its own as
-disputes arrive.
+paginated, filtered or collapsed away. The row threshold is a guess about how much screen a reader
+has rather than a fact about this court; the column threshold is arithmetic, the count at which a
+row header and one column per agent juror stop fitting an ordinary desktop. Both are named
+constants with comments saying which they are, and there is no control on the page for a reader to
+set — the matrix crosses over on its own as disputes arrive and as the roster grows.
 
 Commit latency is the one figure not read from a subgraph: it comes from `CommitCast` logs on an
 Arbitrum RPC, because the subgraph records only *whether* a juror committed and never *when*. Every

@@ -129,3 +129,24 @@ this file is the full account.
   you save it, which is proof the server on that port is compiling the tree you are editing. A
   `yarn preview` server is the opposite case and has to be restarted, because it serves a built
   `dist` that no edit reaches.
+- **The offline suites cannot reach the comfortable density over the shipped roster, and since
+  ticket 25 they build their courts over a shorter one.** `densityOf` takes the column count as
+  well as the row count and `COMPACT_FROM_COLUMNS` is six, so a court built with `roster: ROSTER`
+  is compact at *any* row count — thirteen disputes included. A fixture that ignored this would
+  test the compact grid under a name that said comfortable, which is how thirty-nine assertions in
+  `Matrix.test.tsx` failed at once when the axis landed. `src/test/court.tsx` exports
+  `FIXTURE_ROSTER` — `ROSTER.slice(0, COMPACT_FROM_COLUMNS)`, sliced to the threshold rather than to
+  a literal six — and every court in that file, in `Matrix.test.tsx` and in `DisputeCards.test.tsx`
+  is built over it. **One definition and not three**: the slice, the off-roster address and the
+  off-roster draw were each written three times during ticket 25 before review caught it.
+  **It costs no measurement**: `court-34-draws.fixture.json` holds draws for five agent jurors, all
+  of them inside the slice, so every latency, coherence count, median and payout total is over the
+  same draws. What moves with it is the column count and the figures taken over positions —
+  sparsity, its blanks, the never-drawn columns. A count asserted against `ROSTER.length` in those
+  files is now almost always wrong; the exceptions are deliberate and say so at the site.
+  **The load-bearing claim is asserted at import rather than trusted to the comment**: `court.tsx`
+  throws if any address in the draws fixture falls outside the slice. Two edits a long way away can
+  break it — the roster is not strictly append-only, so an entry inserted before the threshold drops
+  a *drawn* agent juror out, and raising `ORDINARY_DESKTOP_PX` moves `COMPACT_FROM_COLUMNS` out of
+  what looks like a purely presentational change. Either would give every fixture court phantom
+  off-roster draws and shift every median, with nothing naming the cause.

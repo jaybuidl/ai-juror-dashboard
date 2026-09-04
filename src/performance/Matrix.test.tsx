@@ -9,20 +9,27 @@ import { ROSTER } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
 import {
-  COMFORTABLE_GRID_MIN_PX,
   COMPACT_COLUMN_PX,
   COMPACT_GRID_MIN_PX,
+  comfortableGridMinPx,
+  compactGridMinPx,
   ROW_HEADER_PX,
 } from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
 import { theme } from "../styles/theme";
-import { padCourt } from "../test/court";
+import {
+  FIXTURE_ROSTER,
+  OFF_ROSTER_ADDRESS,
+  OFF_ROSTER_DISPUTE,
+  offRosterDraw,
+  padCourt,
+} from "../test/court";
 import { stubViewportWidth } from "../test/viewport";
 import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import rewardFixture from "./court-34-rewards.fixture.json" with { type: "json" };
-import { COMPACT_FROM_ROWS } from "./density";
+import { COMPACT_FROM_COLUMNS, COMPACT_FROM_ROWS } from "./density";
 import { HEADER_AVATAR_PX, Matrix } from "./Matrix";
 import {
   buildCourtPerformance,
@@ -33,6 +40,16 @@ import {
   type RawRewardShift,
 } from "./performance";
 import type { RawCourtParameters } from "./windows";
+
+/*
+ * `FIXTURE_ROSTER` — the shipped roster less its last entries — is what every court below is built
+ * over, and it comes from `test/court.tsx` so the page suite and this one build one court. It is
+ * short because `densityOf` gained the column axis: `COMPACT_FROM_COLUMNS` is six, the shipped
+ * roster is seven, and a fixture built over `ROSTER` would test the compact grid under a name that
+ * said comfortable. See the note at its definition for why it costs no measurement, and for the
+ * assertion that keeps that true. `compactCourt` aside, the cases that name the shipped roster ask
+ * for `ROSTER` explicitly and say why; that is where the seventh column is exercised.
+ */
 
 const roster: RosterView = {
   entries: ROSTER.map((agentJuror) => ({ agentJuror, identity: rosterIdentity(agentJuror) })),
@@ -64,7 +81,7 @@ function build(raw: Partial<RawCourtData> = {}): CourtPerformance {
     commits: commitFixture as RawCommitCast[],
     parameters: parameterFixture as RawCourtParameters[],
     rewards: rewardFixture as RawRewardShift[],
-    roster: ROSTER,
+    roster: FIXTURE_ROSTER,
     drawsReadAt: null,
     ...raw,
   });
@@ -179,6 +196,35 @@ function padTo(disputeCount: number, over: Partial<RawCourtData> = {}): CourtPer
   return build({ ...padCourt(disputeCount), ...over });
 }
 
+/**
+ * The court with a draw the roster has no column for — the state ticket 25 built the flag for.
+ *
+ * Built by *adding* a draw rather than by shortening the roster, so it isolates the one thing
+ * under test: every latency, coherence count and median stays exactly what the other cases here
+ * assert, and one dispute gains a panel member with nowhere to sit. That is the shape court 34 was
+ * actually in — Grokleros was staked and drawn for weeks before the roster knew it existed, and no
+ * cell, column or coverage counter could see it.
+ *
+ * The draw comes from `test/court.tsx` rather than being written here, so this suite, the card
+ * suite and the page suite build one shape between them; it was three shapes for a day.
+ * `OFF_ROSTER_DISPUTE` is 157 and not 151 for a reason that matters to every case below — 151 ran
+ * under the superseded windows and already wears the dagger, and `rowFlagOf` returns exactly one
+ * flag, so a case about what this mark *says* needs a row wearing nothing else. The case that is
+ * about the ranking asks for 151 on purpose.
+ */
+function offRosterCourt({
+  dispute,
+  disputeCount,
+}: {
+  dispute?: number;
+  disputeCount?: number;
+} = {}): CourtPerformance {
+  const base: Partial<RawCourtData> = disputeCount === undefined ? {} : padCourt(disputeCount);
+  const draws = base.draws ?? (drawFixture as RawDraw[]);
+
+  return build({ ...base, draws: [...draws, offRosterDraw(dispute)] });
+}
+
 /** A court just below the crossing point, and one just above it. */
 const comfortableCourt = () => padTo(COMPACT_FROM_ROWS);
 const compactCourt = () => padTo(COMPACT_FROM_ROWS + 1);
@@ -229,7 +275,7 @@ describe("the matrix's own structure", () => {
     renderMatrix();
 
     const row = rowOrThrow(151);
-    for (const agentJuror of ROSTER) {
+    for (const agentJuror of FIXTURE_ROSTER) {
       expect(
         within(row).getByText(new RegExp(`^${agentJuror.nickname}, dispute 151\\b`)),
       ).toBeInTheDocument();
@@ -384,10 +430,12 @@ describe("Matrix", () => {
 
     const columns = screen.getAllByRole("columnheader");
 
-    // The caption cell plus one per agent juror. Rows grow downward as disputes accumulate;
-    // the columns stay at six, because the roster does.
-    expect(columns).toHaveLength(1 + ROSTER.length);
-    for (const agentJuror of ROSTER) {
+    // The caption cell plus one per agent juror. Rows grow downward as disputes accumulate,
+    // and the columns grow sideways as the roster does — counted off the roster this court was
+    // built from, which is never a literal and, since ticket 25, is never `ROSTER.length` here
+    // either: the shipped roster is past the column threshold and draws a compact grid.
+    expect(columns).toHaveLength(1 + FIXTURE_ROSTER.length);
+    for (const agentJuror of FIXTURE_ROSTER) {
       expect(
         screen.getByRole("columnheader", { name: new RegExp(agentJuror.nickname) }),
       ).toBeInTheDocument();
@@ -723,7 +771,7 @@ describe("Matrix", () => {
     // how many columns there are to be empty.
     const empty = within(row).getAllByText("Not drawn");
 
-    expect(empty).toHaveLength(ROSTER.length - 1);
+    expect(empty).toHaveLength(FIXTURE_ROSTER.length - 1);
     expect(within(row).queryByText("Missed")).not.toBeInTheDocument();
     expect(within(row).queryByText("No vote")).not.toBeInTheDocument();
   });
@@ -854,7 +902,7 @@ describe("Matrix", () => {
       const [head] = screen.getAllByRole("rowgroup");
       if (head === undefined) throw new Error("The matrix has a header");
 
-      expect(within(head).getAllByRole("columnheader")).toHaveLength(ROSTER.length + 1);
+      expect(within(head).getAllByRole("columnheader")).toHaveLength(FIXTURE_ROSTER.length + 1);
     });
 
     it("shows dashes and a real zero for an agent juror this record never drew", () => {
@@ -969,7 +1017,7 @@ describe("Matrix", () => {
       // element sized two ways".
       for (const court of [comfortableCourt(), compactCourt()]) {
         renderMatrix(court);
-        for (const agentJuror of ROSTER) {
+        for (const agentJuror of FIXTURE_ROSTER) {
           const { block, names } = identityBlock(agentJuror.nickname);
           expect(getComputedStyle(block).flexDirection).toBe("column");
           expect(getComputedStyle(block).alignItems).toBe("center");
@@ -1015,7 +1063,7 @@ describe("Matrix", () => {
       // different baseline from the ones beside it, which is the comparison the marginals exist
       // to allow, and is the defect ticket 06 met and AgentStack still reserves two lines against.
       renderMatrix(compactCourt());
-      for (const agentJuror of ROSTER) {
+      for (const agentJuror of FIXTURE_ROSTER) {
         const { link } = identityBlock(agentJuror.nickname);
         expect(getComputedStyle(link).whiteSpace).toBe("nowrap");
         expect(getComputedStyle(link).textOverflow).toBe("ellipsis");
@@ -1325,8 +1373,8 @@ describe("Matrix", () => {
       // Twice per cell — once for the reveal, once for the commit — plus the row header's own
       // not-read badge. The words are what let a reader name the row a gap without consulting
       // the legend, which is the criterion; rose alone would not.
-      expect(within(row).getAllByText("Not read")).toHaveLength(ROSTER.length * 2 + 1);
-      expect(within(row).getAllByText("Unknown")).toHaveLength(ROSTER.length);
+      expect(within(row).getAllByText("Not read")).toHaveLength(FIXTURE_ROSTER.length * 2 + 1);
+      expect(within(row).getAllByText("Unknown")).toHaveLength(FIXTURE_ROSTER.length);
     });
 
     it("never draws an unread cell as not drawn", () => {
@@ -1388,7 +1436,13 @@ describe("Matrix", () => {
       // baskerville alone and the test was written as though it always would be; the court drew
       // baskerville and a seventh agent juror joined, and the count is a property of the capture
       // either way.
-      renderMatrix(build());
+      //
+      // Over the **shipped** roster rather than the fixture's, which is what makes the count two:
+      // `FIXTURE_ROSTER` is short by exactly the agent juror ticket 24 added, and this claim is
+      // the one that has to hold about the roster a reader actually meets. The grid is compact
+      // there — seven columns are past `COMPACT_FROM_COLUMNS` — and the stack label carries the
+      // words at both densities, which is why the assertion reads the same either way.
+      renderMatrix(build({ roster: ROSTER }));
       expect(screen.getAllByText("Never drawn")).toHaveLength(2);
 
       cleanup();
@@ -1447,7 +1501,7 @@ describe("Matrix", () => {
 
       expect(within(row).queryByText("Draws not read")).not.toBeInTheDocument();
       expect(within(row).queryByText("Unknown")).not.toBeInTheDocument();
-      expect(within(row).getAllByText("Not drawn")).toHaveLength(ROSTER.length);
+      expect(within(row).getAllByText("Not drawn")).toHaveLength(FIXTURE_ROSTER.length);
     });
 
     it("says nothing about it on a court where every dispute has a panel", () => {
@@ -1455,6 +1509,105 @@ describe("Matrix", () => {
       renderMatrix();
 
       expect(screen.queryByText(/a different absence/i)).not.toBeInTheDocument();
+    });
+  });
+
+  /**
+   * The draws with no column, which is the one quantity this grid could not state (ticket 25).
+   *
+   * The roster is the column set, so a draw belonging to an address outside it falls out of every
+   * figure on the page except the panel size — silently, because a roster miss has no cell to be
+   * missing from. Grokleros was in that state for weeks and a person noticing was the whole of the
+   * detection.
+   */
+  describe("a draw the roster has no column for", () => {
+    it("marks the row and says how many, at the comfortable density", () => {
+      renderMatrix(offRosterCourt());
+
+      const row = rowOrThrow(OFF_ROSTER_DISPUTE);
+      expect(within(row).getByText("1 off-roster draw")).toBeInTheDocument();
+    });
+
+    it("abbreviates to the count and the word that makes it mean something", () => {
+      // The noun is the qualifier and the only thing the compact row gives up, per the rule every
+      // flag in `row-flags.ts` follows: the flag still says which flag it is.
+      renderMatrix(offRosterCourt({ disputeCount: COMPACT_FROM_ROWS + 1 }));
+
+      const row = rowOrThrow(OFF_ROSTER_DISPUTE);
+      expect(within(row).getByText("1 off-roster")).toBeInTheDocument();
+    });
+
+    it("decodes the mark below the grid, where the other two are decoded", () => {
+      renderMatrix(offRosterCourt());
+
+      const note = screen.getByText(/roster does not hold/i);
+      expect(note).toHaveTextContent(new RegExp(`One draw in dispute ${OFF_ROSTER_DISPUTE}`));
+      expect(note).toHaveTextContent(/no column here/);
+      // The whole point of the caveat: it is a gap in the roster and not a smaller court.
+      expect(note).toHaveTextContent(/staked and drawn before this dashboard knows it exists/);
+    });
+
+    it("names no address and no identity, only a count", () => {
+      // `CLAUDE.md`'s no-personal-data invariant, at the one field able to breach it: the address
+      // is in hand here and must not reach the page. A count is the whole of the claim.
+      renderMatrix(offRosterCourt());
+
+      expect(screen.queryByText(new RegExp(OFF_ROSTER_ADDRESS, "i"))).not.toBeInTheDocument();
+      expect(screen.queryByText(/0x1111/i)).not.toBeInTheDocument();
+    });
+
+    it("agrees its verbs and its nouns with the count, in both directions", () => {
+      // The singular is the case that matters most — one agent juror going live before the roster
+      // knows it is the whole reason this flag exists — and it is the one a plural-only fixture
+      // reads straight past. "One draw … belong to a juror" shipped for an hour of ticket 25.
+      renderMatrix(offRosterCourt());
+      expect(screen.getByText(/roster does not hold/i)).toHaveTextContent(
+        new RegExp(`One draw in dispute ${OFF_ROSTER_DISPUTE} belongs to a juror .* panel size\\.`),
+      );
+
+      cleanup();
+
+      // And the plural, which is also the case where "a juror" stops being true: the count is over
+      // draws, and more than one draw may be more than one address. How many is deliberately not
+      // said — that would be a fact about who the court drew.
+      renderMatrix(
+        build({
+          draws: [
+            ...(drawFixture as RawDraw[]),
+            offRosterDraw(OFF_ROSTER_DISPUTE),
+            offRosterDraw(158),
+          ],
+        }),
+      );
+      expect(screen.getByText(/roster does not hold/i)).toHaveTextContent(
+        /2 draws in disputes 157 and 158 belong to jurors .* panel sizes\./,
+      );
+    });
+
+    it("says nothing at all where every draw is on the roster", () => {
+      // The case with no live example, and the one that matters most: ticket 24 put this court
+      // into exactly this state by adding the seventh agent juror, so the flag has no subject
+      // today. A footnote naming a caveat that does not apply reads as a caveat about the page.
+      renderMatrix();
+
+      expect(screen.queryByText(/roster does not hold/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/off-roster/i)).not.toBeInTheDocument();
+    });
+
+    it("ranks below the changed window and above the lone panel", () => {
+      // Dispute 151 ran under the superseded windows *and* now holds an off-roster draw, so it is
+      // the row that settles the order. `rowFlagOf` returns exactly one flag, which is why the
+      // ranking is the whole of the decision.
+      renderMatrix(offRosterCourt({ dispute: 151 }));
+
+      const row = rowOrThrow(151);
+      expect(within(row).getByText("8h window")).toBeInTheDocument();
+      expect(within(row).queryByText(/off-roster/)).not.toBeInTheDocument();
+      // And the footnote still counts it, because the count is a fact about the court rather than
+      // about which pill won the row's one slot.
+      expect(screen.getByText(/roster does not hold/i)).toHaveTextContent(
+        /One draw in dispute 151/,
+      );
     });
   });
 
@@ -1470,7 +1623,7 @@ describe("Matrix", () => {
       // The switch itself, from the row count in the model rather than from anything a reader
       // set: there is no control for this on the page.
       renderMatrix(comfortableCourt());
-      expect(screen.getAllByText("Median commit latency")).toHaveLength(ROSTER.length);
+      expect(screen.getAllByText("Median commit latency")).toHaveLength(FIXTURE_ROSTER.length);
 
       cleanup();
       renderMatrix(compactCourt());
@@ -1494,13 +1647,33 @@ describe("Matrix", () => {
       expect(compact).toEqual(expect.arrayContaining(comfortable));
     });
 
+    /**
+     * The second axis, and the reason this file has a roster of its own (ticket 25).
+     *
+     * A grid can be unfittable sideways as easily as downward, and only the row count was ever
+     * consulted. This court is thirteen disputes — a third of the row threshold — and it compacts
+     * anyway, on the roster that actually ships.
+     *
+     * Asserted through what the reduction *does* rather than by reading the flag back: the corner
+     * cell states where the commit figure went, and the column headers stop carrying one.
+     */
+    it("compacts a short matrix on the shipped roster, which is past the column threshold", () => {
+      expect(ROSTER.length).toBeGreaterThan(COMPACT_FROM_COLUMNS);
+
+      renderMatrix(build({ roster: ROSTER }));
+
+      expect(screen.getAllByRole("columnheader")).toHaveLength(ROSTER.length + 1);
+      expect(screen.getByText(/commit latency moves to the row/i)).toBeInTheDocument();
+      expect(screen.queryByText("Median commit latency")).not.toBeInTheDocument();
+    });
+
     it("keeps every column and their order", () => {
       renderMatrix(compactCourt());
 
       const columns = screen.getAllByRole("columnheader");
-      expect(columns).toHaveLength(ROSTER.length + 1);
+      expect(columns).toHaveLength(FIXTURE_ROSTER.length + 1);
       expect(columns.slice(1).map((column) => column.textContent)).toEqual(
-        ROSTER.map((agentJuror) => expect.stringContaining(agentJuror.nickname)),
+        FIXTURE_ROSTER.map((agentJuror) => expect.stringContaining(agentJuror.nickname)),
       );
     });
 
@@ -1623,7 +1796,7 @@ describe("Matrix", () => {
         "Coherent draws, of the draws the court has ruled on",
         "Draws, and the vote IDs they hold",
       ]) {
-        expect(screen.getAllByText(kept)).toHaveLength(ROSTER.length);
+        expect(screen.getAllByText(kept)).toHaveLength(FIXTURE_ROSTER.length);
       }
       for (const dropped of [
         "Median commit latency",
@@ -1681,9 +1854,18 @@ describe("Matrix", () => {
       // The floors are read off `breakpoints.ts` rather than written down, because both of them
       // are one column per agent juror plus a row header and both were literals sized for six
       // until ticket 24. A literal here would have gone on agreeing with a literal there.
+      //
+      // Over the columns the court under test actually draws, and not over `ROSTER.length`, which
+      // is what the two module constants hold. Those are the same number on the shipped page and
+      // are not here — `FIXTURE_ROSTER` is one short — and a floor sized for a column the grid
+      // does not draw is the *reverse* of the defect above: a table whose min-width exceeds the
+      // sum of its declared widths hands the surplus back out under `table-layout: fixed`, so
+      // every cell renders wider than it declares and `getComputedStyle` reports the width that
+      // was asked for either way. This test caught exactly that when the constants were still
+      // taken over the roster (ticket 25's review).
       for (const [court, floor] of [
-        [comfortableCourt(), COMFORTABLE_GRID_MIN_PX],
-        [compactCourt(), COMPACT_GRID_MIN_PX],
+        [comfortableCourt(), comfortableGridMinPx(FIXTURE_ROSTER.length)],
+        [compactCourt(), compactGridMinPx(FIXTURE_ROSTER.length)],
       ] as const) {
         renderMatrix(court);
         const table = screen.getByRole("table");
@@ -1691,6 +1873,12 @@ describe("Matrix", () => {
         expect(getComputedStyle(table).minWidth).toBe(`${floor}px`);
         cleanup();
       }
+
+      // And the shipped roster, where the constants and the rendered count agree — so the page a
+      // reader actually meets is pinned to the same arithmetic the two views of it are derived
+      // from (`View.tsx`'s page measure, `breakpoints.compactGrid`'s media query).
+      renderMatrix(padTo(COMPACT_FROM_ROWS + 1, { roster: ROSTER }));
+      expect(getComputedStyle(screen.getByRole("table")).minWidth).toBe(`${COMPACT_GRID_MIN_PX}px`);
     });
 
     /**
@@ -1711,7 +1899,10 @@ describe("Matrix", () => {
      * 1344px of table accounted for exactly.
      */
     it("shares the compact grid's width out to exactly one whole table", () => {
-      renderMatrix(compactCourt());
+      // The **shipped** roster, which is what the figures in the note above were read against and
+      // what the arithmetic has to hold for: the shares are one numerator over one total, so they
+      // sum to 1 at any column count, and the count that matters is the one on the page.
+      renderMatrix(padTo(COMPACT_FROM_ROWS + 1, { roster: ROSTER }));
 
       const header = screen.getAllByRole("columnheader") as HTMLElement[];
       expect(header).toHaveLength(ROSTER.length + 1);

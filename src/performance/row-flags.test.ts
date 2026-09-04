@@ -50,6 +50,10 @@ function row(over: Partial<MatrixRow> = {}): MatrixRow {
   return {
     dispute: dispute(),
     panelSize: 4,
+    // Declared rather than left to follow `panelSize`, and the two are deliberately not tied: a
+    // fixture whose panel of four had no cells would carry four off-roster draws by arithmetic,
+    // and every case in this file that is about some other flag would meet the new one first.
+    offRosterDraws: 0,
     cells: ROSTER.map(() => null),
     windows: CURRENT,
     underEarlierWindows: false,
@@ -101,6 +105,64 @@ describe("rowFlagOf", () => {
       windows: { ...EARLIER, commitSeconds: CURRENT.commitSeconds },
     });
     expect(rowFlagOf(voteOnly, context)?.label(voteOnly, context)).toBe("8h vote window");
+  });
+
+  describe("the off-roster flag, which ranks third", () => {
+    it("sits below a changed window", () => {
+      // A mis-dated latency is worse than an unattributed panel member: the window makes every
+      // figure on the row incomparable with the rows around it, where this says one is short.
+      const both = row({ underEarlierWindows: true, windows: EARLIER, offRosterDraws: 2 });
+
+      expect(rowFlagOf(both, context)?.key).toBe("window");
+    });
+
+    it("sits above a lone panel and above live", () => {
+      // Both of those describe the court's own shape. This one says something is missing from
+      // what the grid shows, and a reader needs that before being told the panel was one.
+      const lone = row({ offRosterDraws: 1, panelSize: 1 });
+      const live = row({
+        offRosterDraws: 1,
+        dispute: dispute({ period: "commit", ruling: { state: "pending" } }),
+      });
+
+      expect(rowFlagOf(lone, context)?.key).toBe("off-roster");
+      expect(rowFlagOf(live, context)?.key).toBe("off-roster");
+    });
+
+    it("stays below an unread row, which has nothing true to flag at all", () => {
+      const unread = row({ read: false, offRosterDraws: 3 });
+
+      expect(rowFlagOf(unread, context)?.key).toBe("not-read");
+    });
+
+    it("says the count and, at the compact density, gives up only the noun", () => {
+      const one = row({ offRosterDraws: 1 });
+      const several = row({ offRosterDraws: 4 });
+
+      expect(rowFlagOf(one, context)?.label(one, context)).toBe("1 off-roster draw");
+      expect(rowFlagOf(one, context)?.shortLabel(one, context)).toBe("1 off-roster");
+      expect(rowFlagOf(several, context)?.label(several, context)).toBe("4 off-roster draws");
+      expect(rowFlagOf(several, context)?.shortLabel(several, context)).toBe("4 off-roster");
+    });
+
+    it("cannot fork: the short form is a prefix of the long one at every count", () => {
+      // Both forms are composed from one reduction rather than one being cut out of the other,
+      // which is the rule `markedWindow` established — an abbreviation built by trimming a
+      // finished string is free to name something the long form does not.
+      for (const count of [1, 2, 9, 17]) {
+        const marked = row({ offRosterDraws: count });
+        const flag = rowFlagOf(marked, context);
+
+        expect(flag?.label(marked, context).startsWith(flag.shortLabel(marked, context))).toBe(
+          true,
+        );
+        expect(flag?.shortLabel(marked, context)).toContain(String(count));
+      }
+    });
+
+    it("does not fire where every draw has a column, which is this court today", () => {
+      expect(rowFlagOf(row({ offRosterDraws: 0 }), context)).toBeUndefined();
+    });
   });
 
   it("puts a lone panel above live", () => {

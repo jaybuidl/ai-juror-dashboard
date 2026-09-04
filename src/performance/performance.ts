@@ -305,6 +305,25 @@ export type MatrixRow = {
    * here, because "decided by a panel of one" is a claim about the court.
    */
   panelSize: number;
+  /**
+   * How many of those the roster does not hold — a count, and never who.
+   *
+   * The one thing the matrix has never been able to say. `draws-subgraph.ts` scopes its query by
+   * court and not by juror, so every draw in court 34 is already in hand; the roster is the column
+   * set, so a draw belonging to an address outside it has no cell to sit in and falls out of the
+   * grid, out of every column marginal and out of the commit-coverage cross-check. Nothing threw
+   * and nothing was blank — the row simply reported fewer draws than the court made.
+   *
+   * It is not hypothetical and it is not rare: Grokleros was drawn four times across three
+   * disputes before the roster knew it existed, and a human noticing was the whole of the
+   * detection. **The flag has no subject the moment that agent juror joins the roster** — this
+   * goes to zero — which is the point of it. The next agent goes live the same way.
+   *
+   * `0` on a row whose draws were never read, exactly as `panelSize` is: nobody asked, so nothing
+   * fell short. A count and never an address — an off-roster juror may be anyone, and naming one
+   * would be the personal data this dashboard does not hold (`CLAUDE.md`).
+   */
+  offRosterDraws: number;
   /** One entry per agent juror, in roster order. `null` means not drawn, which is the common case. */
   cells: readonly (Draw | null)[];
   /**
@@ -957,6 +976,12 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
       return {
         dispute,
         panelSize: drawn?.panel.size ?? 0,
+        // Everyone drawn, less everyone drawn who has a column. `byAgentJuror` is keyed only
+        // where the roster join above succeeded and `panel` takes every address unconditionally,
+        // so the difference is exactly the draws this grid cannot show — counted here, over reads
+        // already in hand, rather than by subtracting rendered cells from a panel size in a
+        // component, which is a reduction nobody could test.
+        offRosterDraws: (drawn?.panel.size ?? 0) - (drawn?.byAgentJuror.size ?? 0),
         cells,
         windows,
         // Both halves have to be known before anything is marked. An unresolved dispute is one

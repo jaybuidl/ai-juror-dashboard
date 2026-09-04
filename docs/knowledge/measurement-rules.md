@@ -50,3 +50,15 @@ this file is the full account.
   either side of dispute 152, and a percentage is false the moment it is quoted away from the page.
   ADR-0005. Where the window matters it appears *beside* how long the period actually ran, as two absolute
   durations.
+- **A draw belonging to a juror the roster does not hold is counted, and was silently dropped
+  before ticket 25.** `draws-subgraph.ts` scopes its query by court and not by juror, so every draw
+  in court 34 is in hand — but the roster is the column set, so an address outside it has no cell
+  to sit in, and `groupDraws` skips it after counting it in the panel. The result was an absence
+  with no shape: the row reported fewer draws than the court made, nothing threw, nothing was
+  blank, and no coverage counter could see it. `grokleros` was in that state across three disputes
+  and a person noticing was the whole of the detection. `MatrixRow.offRosterDraws` is the count per
+  dispute and `CourtTotals.offRoster` the court-wide pair; the § flag and its footnote say it on
+  both layouts. **The flag has no subject today** — ticket 24 added the agent juror that was its
+  only example — which is the point of it: it is the tripwire for the next one going live.
+  A count and never an address, `CLAUDE.md`'s no-personal-data invariant at the one field able to
+  breach it.

@@ -329,9 +329,9 @@ function failuresOf(
         : null,
       arbitrumFailureOf(performance),
     ),
-    // The matrix's column headers carry the same six nicknames and the same six avatars the
-    // roster does, so this view falls back exactly as `/agent-jurors` does and has to say so in
-    // the same words. Before ticket 13 it said nothing: the panel lived inside `Roster`, and
+    // The matrix's column headers carry the same nicknames and the same avatars the roster does —
+    // one of each per entry, counted off `ROSTER.length` and never written down — so this view
+    // falls back exactly as `/agent-jurors` does and has to say so in the same words. Before ticket 13 it said nothing: the panel lived inside `Roster`, and
     // ticket 15 had moved the roster to its own route.
     degraded: [ensFallbackOf(roster)].filter((read) => read !== null),
     offline: disputes.isPaused || performance.isPaused,
@@ -403,6 +403,25 @@ function provenanceOf(
   if (lonePanels.length > 0) {
     caveats.push(
       `${lonePanels.length === 1 ? "Dispute" : "Disputes"} ${lonePanels.join(", ")} ${lonePanels.length === 1 ? "was" : "were"} decided by a panel of one, where coherence is tautological. Counted above, and marked wherever counted.`,
+    );
+  }
+
+  // The one caveat here that is not about a figure being *marked* but about a figure being
+  // short. Every other line in this list says "counted above, and marked wherever counted"; this
+  // says the opposite, and that is why it belongs in a footer rather than only in a footnote
+  // under the grid — the draw count, the vote count, the median reveal and every coherence
+  // figure on this page are taken over the roster's columns, and a draw with no column is in
+  // none of them. `CLAUDE.md`: partial data must never render as complete.
+  //
+  // And the marking is qualified rather than promised, which the first draft of this sentence
+  // got wrong. `rowFlagOf` returns exactly one flag and `off-roster` ranks below `not-read` and
+  // `window`, so a dispute that both ran under superseded windows and holds an off-roster draw
+  // wears the dagger and nothing else — the count is still true and the mark is not there. A
+  // footer promising a marker the reader cannot find is the same failure as a missing caveat.
+  const offRoster = measured?.totals.offRoster;
+  if (offRoster !== undefined && offRoster.draws > 0) {
+    caveats.push(
+      `${offRoster.draws === 1 ? "One draw in dispute" : `${offRoster.draws} draws in ${offRoster.disputes.length === 1 ? "dispute" : "disputes"}`} ${offRoster.disputes.join(", ")} ${offRoster.draws === 1 ? "belongs to a juror" : "belong to jurors"} this dashboard's roster does not hold, so ${offRoster.draws === 1 ? "it is" : "they are"} in no figure above except the panel sizes. Marked on the rows that hold them, except where the row already carries a higher marker.`,
     );
   }
 
@@ -571,10 +590,12 @@ export function MatrixPage(props: MatrixPageProps) {
   // to afford them, and still there in a page a reader saves or prints.
   const isNarrow = useIsNarrow();
   // The third rendering of this record, and the second that drops elements the prose above names:
-  // past forty disputes the matrix compacts, which takes the commit median and both reward sums
-  // out of every column header. Read from the same function the matrix switches on, so the page
+  // past forty disputes — or past the columns a comfortable grid fits on a desktop — the matrix
+  // compacts, which takes the commit median and both reward sums out of every column header. Read
+  // from the same function the matrix switches on, and given both of its axes here, so the page
   // and the grid inside it can never disagree about which density the reader is looking at.
-  const isDense = measured !== null && densityOf(measured.rows.length) === "compact";
+  const isDense =
+    measured !== null && densityOf(measured.rows.length, measured.agentJurors.length) === "compact";
   // Asked of the core subgraph specifically, because that is the only source the tiles and the
   // strip read: disputes, draws, votes and reveal latency all come from it, and none of them
   // touches the template subgraph or Arbitrum. Labelling them partial over a missing title would
@@ -591,18 +612,20 @@ export function MatrixPage(props: MatrixPageProps) {
 
   return (
     // measure="grid" and not "wide": this is the one view whose content has a measurement of its
-    // own — a 440px row header and six 148px columns — and at "wide" the page gave it 1104px, so
-    // it scrolled sideways in its own box on every desktop. Unconditional because below the
-    // narrow breakpoint the grid is not rendered at all and a max-width above the viewport costs
-    // the card list nothing.
+    // own — a 440px row header and a 148px column per agent juror — and at "wide" the page gave it
+    // 1104px, so it scrolled sideways in its own box on every desktop. The width follows the
+    // roster rather than a column count written down here, which is what stops this comment from
+    // going stale the next time one joins. Unconditional because below the narrow breakpoint the
+    // grid is not rendered at all and a max-width above the viewport costs the card list nothing.
     <View
       provenance={provenanceOf(props, isNarrow, isDense)}
       failures={failures}
       measure="grid"
       /* The sparsity note, which reads as one of the footer's lines rather than as a footnote
-         under the grid: the † and ‡ notes below the matrix decode marks the reader can see in
-         it, and this one says what the whole record is like — the same kind of claim as the
-         two lines it now sits between.
+         under the grid: every footnote below the matrix decodes a mark the reader can see in it,
+         and this one says what the whole record is like — the same kind of claim as the two lines
+         it now sits between. Said of the *kind* rather than of a list, because that list has
+         grown once already: ticket 25 added the § note between the other two.
 
          `!isNarrow` because the phone already carries it, as a card at the head of the card
          list, which is where ticket 16 put it on purpose: it prevents a misreading rather than
@@ -672,8 +695,8 @@ export function MatrixPage(props: MatrixPageProps) {
           every vote in and no ruling would be a prediction.
 
           What could not move there stayed on this page rather than being dropped: the sparsity
-          note is in the footnotes below the grid, and the window and lone-panel accounts are the
-          † and ‡ footnotes beside it.
+          note is in the footnotes below the grid, and the window, off-roster and lone-panel
+          accounts are the †, § and ‡ footnotes beside it.
 
           This branch is not that card and does not go with it. A page that measured nothing must
           say so where the measurements would have been — a reader who is shown an empty matrix and

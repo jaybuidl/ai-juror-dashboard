@@ -7,10 +7,11 @@ import { isFinalised } from "../disputes/liveness";
 import type { RosterView } from "../roster/useRoster";
 import {
   belowCompactGrid,
-  COMFORTABLE_GRID_MIN_PX,
-  COMPACT_COLUMN_SHARE,
-  COMPACT_GRID_MIN_PX,
-  COMPACT_ROW_HEADER_SHARE,
+  COMFORTABLE_COLUMN_PX,
+  comfortableGridMinPx,
+  compactGridMinPx,
+  compactSharesOf,
+  ROW_HEADER_PX,
   useFitsCompactGrid,
 } from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
@@ -25,7 +26,7 @@ import {
   UNREAD_PRESENTATION,
 } from "./cell";
 import { CELL_HEIGHT_PX, COMPACT_CELL_HEIGHT_PX, type Density, densityOf } from "./density";
-import { Footnotes, LonePanelFootnote, WindowFootnote } from "./Footnotes";
+import { Footnotes, LonePanelFootnote, OffRosterFootnote, WindowFootnote } from "./Footnotes";
 import { Dot, Legend, LegendGroup, LegendItem, StateLegend } from "./Legend";
 import { railFraction } from "./latency";
 import { Marginals } from "./Marginals";
@@ -124,10 +125,43 @@ const TableScroll = styled.div<{ $compact: boolean }>`
  * is the point of it: a one-line row carries an id, a title, a flag, a panel and a figure, and it
  * was measured in a browser at 34% of the table with the title down to nothing.
  */
-const ROW_HEADER_SHARE = `${COMPACT_ROW_HEADER_SHARE * 100}%`;
-const COLUMN_SHARE = `${COMPACT_COLUMN_SHARE * 100}%`;
+/**
+ * Every width this grid declares, worked out once from the grid it is actually drawing.
+ *
+ * One object rather than four constants and a `$compact` branch at each cell that needs one. The
+ * branch was repeated in `CaptionCell`, `AgentColumn`, `RowHeaderCell` and `CellBox`, which is four
+ * copies of one decision — and the widths they chose between were module constants taken over
+ * `ROSTER.length` while the cells beside them were rendered over `performance.agentJurors`. Those
+ * are the same number on the shipped page and deliberately not in the offline suites, and with
+ * `table-layout: fixed; width: 100%` the disagreement is silent: a table whose `min-width` is sized
+ * for seven columns and whose cells declare six hands the surplus back out proportionally, so every
+ * cell renders wider than it declares and `getComputedStyle` reports the width that was asked for.
+ * That is this file's oldest defect, one model up. Ticket 25.
+ *
+ * The comfortable density declares pixels and the compact one shares of the table, which is what
+ * lets the compact header freeze against the page rather than inside a scrolling box — see
+ * `compactSharesOf` for why the shares are normalised out of the same pixel model.
+ */
+function gridMetricsOf(columns: number, density: Density) {
+  if (density === "comfortable") {
+    return {
+      minWidth: `${comfortableGridMinPx(columns)}px`,
+      rowHeader: `${ROW_HEADER_PX}px`,
+      column: `${COMFORTABLE_COLUMN_PX}px`,
+    };
+  }
 
-const Table = styled.table<{ $compact: boolean }>`
+  const shares = compactSharesOf(columns);
+  return {
+    minWidth: `${compactGridMinPx(columns)}px`,
+    rowHeader: shares.rowHeader,
+    column: shares.column,
+  };
+}
+
+type GridMetrics = ReturnType<typeof gridMetricsOf>;
+
+const Table = styled.table<{ $grid: GridMetrics }>`
   border-collapse: collapse;
   border-top: ${({ theme }) => theme.borderHairline};
 
@@ -144,7 +178,7 @@ const Table = styled.table<{ $compact: boolean }>`
      why both constants are derived from the roster rather than written down. Under it the box
      above scrolls sideways rather than crushing them, which is the one thing this grid may do
      with a page too narrow for it: no dispute leaves, no column moves, nothing is windowed away. */
-  min-width: ${({ $compact }) => ($compact ? COMPACT_GRID_MIN_PX : COMFORTABLE_GRID_MIN_PX)}px;
+  min-width: ${({ $grid }) => $grid.minWidth};
 `;
 
 /**
@@ -155,8 +189,8 @@ const Table = styled.table<{ $compact: boolean }>`
  * table paints the borders rather than the cell, and a sticky cell leaves its bottom border
  * behind as it moves — so the hairline travels as an inset shadow instead.
  */
-const CaptionCell = styled.th<{ $compact: boolean }>`
-  width: ${({ $compact }) => ($compact ? ROW_HEADER_SHARE : "440px")};
+const CaptionCell = styled.th<{ $compact: boolean; $grid: GridMetrics }>`
+  width: ${({ $grid }) => $grid.rowHeader};
   box-sizing: border-box;
   padding: ${({ theme }) => `${theme.space6} ${theme.space6} ${theme.space5} 0`};
   border-bottom: 1px solid ${({ theme }) => theme.lineStrongColor};
@@ -193,8 +227,8 @@ const CaptionBody = styled.div`
    carrying a marker's reason line is taller than the ones beside it, and bottom alignment would
    push that column's nickname and avatar down while the rest stayed put — a row of identity
    blocks at two different heights, from one footnote. */
-const AgentColumn = styled.th<{ $compact: boolean }>`
-  width: ${({ $compact }) => ($compact ? COLUMN_SHARE : "148px")};
+const AgentColumn = styled.th<{ $compact: boolean; $grid: GridMetrics }>`
+  width: ${({ $grid }) => $grid.column};
   box-sizing: border-box;
   /* Narrower left and right than the artboards' 11px, and the 4px is bought rather than saved.
      Stacking the identity gave the nickname the whole column, which cleared it at 1440 and left
@@ -430,8 +464,8 @@ const BodyRow = styled.tr<{ $live: boolean; $rail?: Tone }>`
     `}
 `;
 
-const RowHeaderCell = styled.th<{ $compact: boolean }>`
-  width: ${({ $compact }) => ($compact ? ROW_HEADER_SHARE : "440px")};
+const RowHeaderCell = styled.th<{ $compact: boolean; $grid: GridMetrics }>`
+  width: ${({ $grid }) => $grid.rowHeader};
   box-sizing: border-box;
   padding: 0;
   text-align: left;
@@ -448,8 +482,13 @@ const RowHeaderCell = styled.th<{ $compact: boolean }>`
  * different pixels for the compact cell (44px on `Cell.dc.html`, a 40px row on
  * `MatrixDense.dc.html`), so ticket 17 asks for the ratio and leaves the pixel open.
  */
-const CellBox = styled.td<{ $tone?: Tone; $filled?: boolean; $compact?: boolean }>`
-  width: ${({ $compact }) => ($compact === true ? COLUMN_SHARE : "148px")};
+const CellBox = styled.td<{
+  $tone?: Tone;
+  $filled?: boolean;
+  $compact?: boolean;
+  $grid: GridMetrics;
+}>`
+  width: ${({ $grid }) => $grid.column};
   height: ${({ $compact }) =>
     $compact === true ? `${COMPACT_CELL_HEIGHT_PX}px` : `${CELL_HEIGHT_PX}px`};
   box-sizing: border-box;
@@ -666,10 +705,12 @@ function CellWhere({ nickname, disputeId }: { nickname: string; disputeId: numbe
 
 function UnreadCell({
   density,
+  grid,
   nickname,
   disputeId,
 }: {
   density: Density;
+  grid: GridMetrics;
   nickname: string;
   disputeId: number;
 }) {
@@ -680,6 +721,7 @@ function UnreadCell({
       $tone={UNREAD_PRESENTATION.tone}
       $filled={UNREAD_PRESENTATION.filled}
       $compact={compact}
+      $grid={grid}
     >
       <CellWhere nickname={nickname} disputeId={disputeId} />
       {!compact && (
@@ -736,12 +778,14 @@ function DrawCell({
   draw,
   scanned,
   density,
+  grid,
   nickname,
   disputeId,
 }: {
   draw: Draw;
   scanned: boolean;
   density: Density;
+  grid: GridMetrics;
   nickname: string;
   disputeId: number;
 }) {
@@ -751,7 +795,12 @@ function DrawCell({
   const compact = density === "compact";
 
   return (
-    <CellBox $tone={presentation.tone} $filled={presentation.filled} $compact={compact}>
+    <CellBox
+      $tone={presentation.tone}
+      $filled={presentation.filled}
+      $compact={compact}
+      $grid={grid}
+    >
       <CellWhere nickname={nickname} disputeId={disputeId} />
       {!compact && (
         <CellHead>
@@ -852,12 +901,16 @@ function RowCommit({ row, scanned }: { row: MatrixRow; scanned: boolean }) {
 export function Matrix({ performance, roster, slotsFor, now = Date.now() }: MatrixProps) {
   const { agentJurors, rows, totals, marginals, commitCoverage, parameters, rewards } = performance;
   const flagContext: RowFlagContext = { current: parameters.current, now };
-  // One flag, read by the cell, the dispute row and the column header alike. It switches on how
-  // many disputes the model holds, so the matrix crosses into the compact density on its own as
-  // the court grows — no upper bound on the dispute range is written anywhere, here or below the
-  // seam, and there is no control on the page for a reader to set this with.
-  const density = densityOf(rows.length);
+  // One flag, read by the cell, the dispute row and the column header alike. It switches on the
+  // shape of the model — how many disputes it holds and how many agent jurors it has columns for
+  // — so the matrix crosses into the compact density on its own as the court grows and as the
+  // roster does. No upper bound on either is written anywhere, here or below the seam, and there
+  // is no control on the page for a reader to set this with.
+  const density = densityOf(rows.length, agentJurors.length);
   const compact = density === "compact";
+  // Every width the grid declares, over the columns it is actually drawing rather than over the
+  // roster the bundle ships with. See `gridMetricsOf`.
+  const grid = gridMetricsOf(agentJurors.length, density);
   // Whether the grid's own box is a scroll container right now, which is the only condition
   // under which it should be a tab stop. Mirrors `TableScroll`'s `overflow-x` exactly.
   const fitsCompactGrid = useFitsCompactGrid();
@@ -1000,7 +1053,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
               ? { role: "region" as const, "aria-label": "The matrix, scrollable", tabIndex: 0 }
               : {})}
           >
-            <Table $compact={compact}>
+            <Table $grid={grid}>
               {/* The table's own name, and the first child of <table> because a caption may be
                   nothing else. Without it the grid announces as "table" and a reader has to
                   infer the two axes from the headers. The corner cell below carries prose that
@@ -1029,7 +1082,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                       paragraph inside became the declared column header of every row header in
                       the grid, so a reader moving down the disputes met this sentence again and
                       again as though it named them. */}
-                  <CaptionCell $compact={compact}>
+                  <CaptionCell $compact={compact} $grid={grid}>
                     {/* Read off the model rather than reduced here. It is a court-wide count,
                         and those live on `CourtTotals` beside the ones the stat tiles print —
                         a caption that reduced the rows itself would be a second definition of
@@ -1074,7 +1127,12 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                     const neverDrawn = !drawn && unreadRows === 0 && panelled > 0;
 
                     return (
-                      <AgentColumn key={agentJuror.address} scope="col" $compact={compact}>
+                      <AgentColumn
+                        key={agentJuror.address}
+                        scope="col"
+                        $compact={compact}
+                        $grid={grid}
+                      >
                         <AgentIdentity>
                           {identity?.avatarUrl ? (
                             <Avatar src={identity.avatarUrl} alt="" loading="lazy" />
@@ -1130,7 +1188,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
 
                   return (
                     <BodyRow key={row.dispute.id} $live={isLive} $rail={flag?.tone}>
-                      <RowHeaderCell scope="row" $compact={compact}>
+                      <RowHeaderCell scope="row" $compact={compact} $grid={grid}>
                         <DisputeRow
                           as="div"
                           dispute={row.dispute}
@@ -1183,6 +1241,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                             <UnreadCell
                               key={agentJuror.address}
                               density={density}
+                              grid={grid}
                               nickname={agentJuror.nickname}
                               disputeId={row.dispute.id}
                             />
@@ -1194,7 +1253,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                           // no border and no glyph. The emptiest state and the loudest have to
                           // stay unconfusable however far the matrix is compressed, which is
                           // what compacting the *drawn* cell towards it must never cost.
-                          <EmptyCell key={agentJuror.address} $compact={compact}>
+                          <EmptyCell key={agentJuror.address} $compact={compact} $grid={grid}>
                             <CellWhere nickname={agentJuror.nickname} disputeId={row.dispute.id} />
                             <Dot aria-hidden="true" />
                             <VisuallyHidden>Not drawn</VisuallyHidden>
@@ -1205,6 +1264,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                             draw={cell}
                             scanned={commitCoverage.read}
                             density={density}
+                            grid={grid}
                             nickname={agentJuror.nickname}
                             disputeId={row.dispute.id}
                           />
@@ -1218,9 +1278,13 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
           </TableScroll>
 
           <Footnotes>
-            {/* † before ‡, as the artboard orders them and as `ROW_FLAGS` ranks them: dispute
-                151 carries both, and the window is the one that makes its figures
-                incomparable rather than merely uninformative.
+            {/* † before § before ‡, as the artboard orders the two it draws and as `ROW_FLAGS`
+                ranks all three: dispute 151 carries both of the marks the artboard knows, and the
+                window is the one that makes its figures incomparable rather than merely
+                uninformative. The section mark sits between them because it says a figure on the
+                row is short, where the other two describe the court's own shape — and because it
+                is the third footnote mark, so the order a reader meets them in is the order the
+                marks come in.
 
                 Both are shared with the phone's card list, which is what the artboard for it
                 does not answer and ticket 16 had to: they are caveats about the court, not
@@ -1235,6 +1299,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                 where ticket 16 put it, and both renderings still take their words from the one
                 `SparsityNote`. */}
             <WindowFootnote performance={performance} />
+            <OffRosterFootnote performance={performance} />
             <LonePanelFootnote performance={performance} />
           </Footnotes>
         </>
