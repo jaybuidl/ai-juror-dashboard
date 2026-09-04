@@ -58,6 +58,24 @@ this file is the full account.
   programmatic focus — Chrome matches `:focus-visible` on a scripted focus when the last
   interaction was a keyboard one, so `<main>` taking focus on a route change would have drawn a
   2px halo round the whole view. Suppress `box-shadow`, and do it on `:focus-visible`.
+
+- **Focusing an element scrolls it into view, so a landmark focused for announcement needs
+  `preventScroll`** (2026-09-04). The same `<main>` focus move as the entry above, and the second
+  thing it did that nobody asked for. `element.focus()` with no options also asks the browser to
+  bring the element into view, and a landmark focused to start the reading is exactly the case
+  where that is wrong: `<main>` is *deliberately* not at the top of the document — 68px of nav
+  plus a hairline, plus 48px of `View` frame padding. Every navigation therefore scrolled to
+  117px and left the header off screen, so a reader who wanted a second destination had to scroll
+  up to find one. `Shell` had already scrolled to the top three lines earlier; the focus undid it.
+  Pass `{ preventScroll: true }` — where the page sits is a separate decision, already taken, and
+  a focus call should move focus and nothing else. Reported by a reader on a desktop browser and
+  measured in Chrome; the suite was green throughout and stays green through the fix, because
+  jsdom has no layout and `focus` there never scrolls. Note what this repo already knew and where
+  it filed it: `testing.md` records that Chrome scrolls an element focused from script, but as a
+  *testing* hazard — the reason a scripted `.focus()` probe failed to reproduce ticket 29's
+  sticky-header defect. That is the same mechanism, written down only in the half where it hides a
+  defect and not in the half where it is one.
+
 - **A link inside body prose needs a cue that is not colour, and the design system's default
   denies it one.** The vendored `base.css` sets `text-decoration: none` on every `a`, so a link
   dropped into a sentence is marked by the accent and nothing else. WCAG 1.4.1 then wants 3:1

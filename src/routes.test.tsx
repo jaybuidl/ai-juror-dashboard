@@ -131,14 +131,34 @@ describe("a route change", () => {
     // The "not on first render" half matters as much as the other: a page that grabs focus on
     // load takes it away from the browser's own chrome, which is where a keyboard reader who
     // just typed a URL is standing.
-    renderInBrowserAt("/");
-    expect(document.activeElement).toBe(document.body);
+    const focus = vi.spyOn(HTMLElement.prototype, "focus");
 
-    fireEvent.click(screen.getByRole("link", { name: "Method" }));
+    try {
+      renderInBrowserAt("/");
+      expect(document.activeElement).toBe(document.body);
 
-    const main = screen.getByRole("main");
-    expect(document.activeElement).toBe(main);
-    expect(main).toHaveAttribute("tabindex", "-1");
+      fireEvent.click(screen.getByRole("link", { name: "Method" }));
+
+      const main = screen.getByRole("main");
+      expect(document.activeElement).toBe(main);
+      expect(main).toHaveAttribute("tabindex", "-1");
+
+      /*
+       * And it asks not to be scrolled to, which is the whole of what this can check.
+       *
+       * Focusing an element scrolls it into view, and `<main>` sits 117px down the page, so the
+       * default undoes the scroll to the top that `Shell` performs two lines earlier and takes
+       * the header off screen. jsdom has no layout: `scrollTop` is always 0, `focus` never
+       * scrolls, and the argument below is inert here. So this asserts that the argument was
+       * passed and *not* that the page stayed put — the second is a browser check, in the family
+       * `docs/knowledge/testing.md` describes.
+       */
+      expect(focus).toHaveBeenCalledWith({ preventScroll: true });
+    } finally {
+      // A spy on the prototype outlives `cleanup`, and two tests above this one assert where
+      // focus landed.
+      focus.mockRestore();
+    }
   });
 });
 

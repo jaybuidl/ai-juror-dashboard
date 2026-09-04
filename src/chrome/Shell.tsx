@@ -179,9 +179,17 @@ function useScrollForLocation(): void {
      * itself. Neither half is enough alone: a title change is what a reader hears on arrival
      * and reads back out of a history menu, and this is what decides where they are standing
      * once they get there.
+     *
+     * `preventScroll`, and it is not optional. Focusing an element also asks the browser to
+     * scroll it into view, and `<main>` deliberately does not start at the top of the document
+     * — the nav is 68px plus a hairline and `View`'s frame adds 48px of padding above it. So
+     * the default undid the `scrollTo` three lines up and left the reader 117px down with the
+     * header off screen, on every single navigation. Where the page should sit is decided
+     * above; this line moves focus and nothing else. Nothing in the offline suite can see any
+     * of this: jsdom has no layout, so both the scroll and its undoing are invisible there.
      */
     const main = document.querySelector("main");
-    if (main instanceof HTMLElement) main.focus();
+    if (main instanceof HTMLElement) main.focus({ preventScroll: true });
   }, [pathname, hash, navigationType]);
 
   // After every run, including the ones that returned early.
