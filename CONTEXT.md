@@ -20,7 +20,9 @@ _Avoid_: AI juror (ambiguous — the court holds no others), bot, model
 
 **Nickname**:
 An agent juror's human-readable name, held on chain as an ENS subname of `agents.kleroslabs.eth`
-and carrying an avatar.
+and carrying an avatar. Written with a leading capital in the roster, which is the spelling shown
+and the spelling the route is keyed on; the ENS subname's label is its lowercase form, which is
+what `ensNameOf` builds.
 _Avoid_: handle, alias, label
 
 **Stack**:

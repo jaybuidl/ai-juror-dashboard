@@ -16,9 +16,27 @@ this file is the full account.
   avatar URL before it ever reaches an `<img>`. Blocked, it fails *silently* — viem catches it and
   falls back to `new Image()`, so avatars still appear and the only symptom is a console violation
   on every load. This is why `euc.li` is in `connect-src` and not left to `img-src`.
-- **The ENS nickname is a display name, not a key.** `blaise` carries a `name` text record reading
-  "Blaise", so what renders is not what the roster holds. Route, key and join on the roster
-  nickname, never the resolved one.
+- **The ENS nickname is a display name, not a key.** A `name` text record is a text record: the
+  operator rewrites it from a wallet and what renders changes. Route, key and join on the roster
+  nickname, never the resolved one. Two subnames carry such a record today — `blaise` and
+  `grokleros` — and both read as the capitalised label, so the two sources happen to agree and
+  the rule cannot be checked by looking at the page. It is a rule about the source.
+
+- **The roster nickname is capitalised, and it is doing four jobs at once** (2026-09-04). It is
+  the display name, the ENS subname's label, the screen-reader text in every matrix cell, and
+  **the `/agent-jurors/:nickname` route key**. That last one is the one that bites: capitalising
+  the roster silently changed every agent juror's URL, and `/agent-jurors/blaise` was already a
+  public, linkable address. `AgentJurorPage`'s `entryNamedBy` folds case so old links still open,
+  and it folds in exactly one place — the document title resolves through the same helper,
+  because a fold applied to the view and not to the title is how the heading and the tab come to
+  disagree on a legacy link. `buildAgentJurorReading` below the seam matches **exactly** and must
+  stay that way: it is handed the roster entry the route already resolved, never a path segment.
+
+- **`ensNameOf` lowercases the label, and the display nickname does not.** ENS folds case on
+  resolution either way, so this is not about resolving — the full name is drawn on an agent
+  juror's own page as an identifier to paste into an ENS app, and a capital there is a spelling
+  no other tool shows. Anything building an ENS name goes through `ensNameOf` rather than
+  interpolating the nickname, which is what `src/test/court.tsx` was doing.
 
 ## The roster grows, and the court grows first
 

@@ -57,10 +57,11 @@ mode most reading happens in. Every cell now leads with a hidden `"{nickname}, d
 including the not-drawn and unread ones, which are the states that most need it: both are silence
 on the page, and hearing either without knowing whose column it is tells a reader nothing.
 
-The **roster** nickname, not the ENS one. The column header displays what ENS resolved — `blaise`
-publishes a name record reading "Blaise" — but the name this dashboard keys, routes and joins on
-is the roster's, and a name an operator can change from a wallet is not the thing to identify a
-measurement by.
+The **roster** nickname, not the ENS one. The column header displays what ENS resolved, but the
+name this dashboard keys, routes and joins on is the roster's, and a name an operator can rewrite
+from a wallet is not the thing to identify a measurement by. Since 2026-09-04 the roster spells
+its nicknames with a capital, so what a screen reader announces per cell is "Baskerville, dispute
+151" rather than "baskerville, dispute 151".
 
 Three more on the same surface:
 
