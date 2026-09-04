@@ -902,11 +902,23 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                   nothing else. Without it the grid announces as "table" and a reader has to
                   infer the two axes from the headers. The corner cell below carries prose that
                   is close to this, but it is prose about the *density* and it is drawn; this
-                  says what the thing is. */}
-              <VisuallyHidden as="caption">
-                The matrix. One row per dispute, newest first; one column per agent juror, in roster
-                order; one cell per draw.
-              </VisuallyHidden>
+                  says what the thing is.
+
+                  A real <caption> hidden from the inside, never `VisuallyHidden as="caption"`.
+                  `VisuallyHidden` is `position: absolute`, which computes the element away from
+                  `display: table-caption` — and several browser and screen-reader pairs then drop
+                  it from the table's accessible name, so the element added to name the grid stops
+                  naming it. `Matrix.test.tsx`'s "gives the grid a name of its own" passes either
+                  way, because `dom-accessibility-api` computes the name off the markup and lays
+                  nothing out; it cannot hold this shape in place. Ticket 27, cleaning up after
+                  `64e3906` put `as="caption"` on both tables and `1904247` fixed only
+                  `AgentJurorDraws`. */}
+              <caption>
+                <VisuallyHidden>
+                  The matrix. One row per dispute, newest first; one column per agent juror, in
+                  roster order; one cell per draw.
+                </VisuallyHidden>
+              </caption>
               <thead>
                 <tr>
                   {/* No `scope`. It is the corner cell — it sits above the row headers and to the

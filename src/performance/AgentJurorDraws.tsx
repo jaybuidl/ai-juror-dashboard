@@ -389,7 +389,9 @@ function DrawTable({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
       {/* A real <caption>, hidden from the inside. `VisuallyHidden` is `position: absolute`,
           which computes a caption away from `table-caption` display — and several browser and
           screen-reader pairs then drop it from the table's accessible name, so the element
-          added to name the table stops naming it. Ticket 18; the matrix carries the same. */}
+          added to name the table stops naming it. Ticket 18. `Matrix.tsx` carries the same
+          shape, but only since ticket 27 — `1904247` fixed this table alone and this comment
+          claimed both. */}
       <caption>
         <VisuallyHidden>
           Every dispute {nickname} was drawn in, newest first, with its panel size, what it voted,

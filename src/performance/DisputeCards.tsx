@@ -186,8 +186,16 @@ const CardLink = styled(Link)`
     inset: 0;
   }
 
+  /* The ring belongs on the whole card rather than on the digits that name it, and both halves
+     of the system's ring have to go for that: base.css gives every focusable an outline of none
+     and a --ring-focus box-shadow, so suppressing the outline alone suppresses nothing and leaves
+     the shadow drawing a second, smaller ring around the link text inside the one on the overlay.
+     Two rings, one focus. DisputeList.tsx records the same trap on the same card-overlay shape,
+     and View.tsx records it from the other side; ticket 27 found this was the one of the three
+     sites that never got the note. */
   &:focus-visible {
     outline: none;
+    box-shadow: none;
   }
 
   &:focus-visible::after {

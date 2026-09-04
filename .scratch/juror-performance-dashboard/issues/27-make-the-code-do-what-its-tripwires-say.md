@@ -85,24 +85,95 @@ stays for the person who types `vite preview` by hand.
 system's own focus ring (`--ring-focus` in `kleros-ai` `base.css`), not against a drawing; items 3
 and 4 are a comment and a script.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `Matrix.tsx` uses a real `<caption>` with a `VisuallyHidden` inside it, matching
+- [x] `Matrix.tsx` uses a real `<caption>` with a `VisuallyHidden` inside it, matching
       `AgentJurorDraws.tsx`
-- [ ] The matrix's accessible name is confirmed in a browser with a screen reader, at both
+- [x] The matrix's accessible name is confirmed in a browser with a screen reader, at both
       densities — not by `Matrix.test.tsx`, which passes either way
-- [ ] `AgentJurorDraws.tsx`'s comment no longer claims the matrix carries the same shape, or is
+- [x] `AgentJurorDraws.tsx`'s comment no longer claims the matrix carries the same shape, or is
       true when it says so
-- [ ] `docs/accessibility.md:221` states what is actually true of both tables
-- [ ] `DisputeCards.tsx` suppresses `box-shadow` as well as `outline` on `:focus-visible`, or the
+- [x] `docs/accessibility.md:221` states what is actually true of both tables
+- [x] `DisputeCards.tsx` suppresses `box-shadow` as well as `outline` on `:focus-visible`, or the
       double ring is shown in a browser not to occur and the ticket records why
-- [ ] A card's focus appearance is checked in a browser at phone width, keyboard-only
-- [ ] The three shift-count comments say 44, and the sentence still distinguishes shifts from the
+- [x] A card's focus appearance is checked in a browser at phone width, keyboard-only
+- [x] The three shift-count comments say 44, and the sentence still distinguishes shifts from the
       56 draws rather than just swapping a number
-- [ ] No "56" that refers to draws or cells has been changed — `cell.ts`, `MatrixPage.tsx` and
+- [x] No "56" that refers to draws or cells has been changed — `cell.ts`, `MatrixPage.tsx` and
       `react-query-and-persistence.md` are untouched
-- [ ] `yarn preview` uses `--strictPort`, and `README.md`'s script table says what that buys
-- [ ] The `<caption>` and `outline: none` entries are removed from `CLAUDE.md` § Tripwires — they
+- [x] `yarn preview` uses `--strictPort`, and `README.md`'s script table says what that buys
+- [x] The `<caption>` and `outline: none` entries are removed from `CLAUDE.md` § Tripwires — they
       are there only because these two defects are live, and the file is budgeted at 155 lines
-- [ ] `yarn verify` is green, and the browser checks above are reported with what was seen, not
+- [x] `yarn verify` is green, and the browser checks above are reported with what was seen, not
       with "no change observed"
+
+
+## Comments
+
+**The caption fix is right, and Chrome could not show it failing.** Measured in system Chrome
+against the dev server, reverting `Matrix.tsx` to `HEAD` between reads. The mechanism the tripwire
+describes is real and visible in the computed style — before, the caption computed
+`position: absolute` and `display: block`, blockified clean away from `table-caption`; after, it is
+`position: static`, `display: table-caption`, with the `VisuallyHidden` span inside. But Chrome's
+own accessibility tree gave the table **the identical accessible name in both states**, at both
+densities. So the defect does not manifest in Chrome/macOS, and the severity claim in this ticket's
+body — "several browser and screen-reader pairs then drop it" — is not one this session could
+demonstrate. The fix stands on the computed-style evidence and on matching `AgentJurorDraws`; what
+is still unverified is VoiceOver and NVDA announcement, which needs a person at a screen reader.
+Reported rather than claimed.
+
+Both densities were read because the live court is past `COMPACT_FROM_ROWS` and has no toggle:
+`density.ts`'s threshold was raised to 400 for one read and restored, which is the only way to see
+the comfortable grid with real data at 46 disputes.
+
+**The double ring was real, and the numbers are these.** At 390×844, keyboard-focused, first
+dispute card link. Before, the link carried `rgb(8, 6, 15) 0 0 0 2px, rgba(77, 223, 216, 0.55) 0 0
+0 4px` — the system's `--ring-focus`, a page-coloured spacer and a cyan halo drawn tight around the
+link text — *while* `::after` drew the intended `rgba(77, 223, 216, 0.55) solid 2px` around the
+whole card. Two rings, one focus, exactly as `DisputeList.tsx` predicted. After, the link's
+`box-shadow` computes `none` and only the card ring remains. This is the item the ticket said to
+measure rather than assume; it measured.
+
+**`--strictPort` demonstrated, not just added.** With 4173 held by another socket, `yarn preview`
+now exits 1 with "Port 4173 is already in use" instead of serving a different port in silence.
+
+**One pre-existing axe violation found and deliberately not fixed here.** An audit at
+`wcag2a,wcag2aa` returns exactly one violation on `/`: `link-in-text-block` on
+`Footnotes.tsx:170`'s "What that means for these figures" link to `/method#window`, at 1.21:1
+against its surrounding prose where 3:1 is the minimum, with no non-colour styling to distinguish
+it. It is outside this ticket — `Footnotes.tsx` is not in this diff. It is a link sitting at the end
+of a sentence of body prose, which is the shape the rule is about, and the footnote's surrounding
+prose was reworked in `9e69dc8`, `cf72fea` and `269d49b`, all after ticket 18's sweep at `5e8337b`
+reported zero violations on seven routes. Whether that is what turned it into a text-block link is
+not established here — only that the violation is live today and the sweep that cleared the page
+predates those commits. **Opened as ticket 28**, and recorded in `docs/accessibility.md` — a
+finding that lives only in the comments of a closed ticket is invisible to the `grep` that
+enumerates open work, which a `/code-review` over this diff pointed out before it became true. The other 187 nodes axe reported are `incomplete`, not violations:
+gradient and overlap backgrounds it cannot resolve, which is the reason a green axe run was never
+the sweep.
+
+**A regression guard was added, which the ticket did not ask for and the defect argues for.** This
+shape regressed silently and stayed wrong through a whole sweep because nothing pinned it: the
+existing "gives the grid a name of its own" passes either way, and so does Chrome. But jsdom *can*
+see the markup, so `Matrix.test.tsx` now also asserts the caption is the table's first child and
+holds its hidden span **inside**. Confirmed discriminating by reverting `Matrix.tsx` to `HEAD` and
+watching it go red, then restoring. The load-bearing assertion is the inner span, not the tag name:
+`VisuallyHidden as="caption"` renders a real `<caption>` element too, so the tag was true of the
+broken shape all along — which is most of why no test caught this. That is written on the
+assertion, so nobody prunes it as a duplicate of the line above it.
+
+**One stale citation fixed in passing, and more left.** `rewards-subgraph.ts` pointed at
+`CLAUDE.md` for the `blockTimestamp: "0x0"` trap, which the September cut moved to
+`docs/knowledge/chain-and-subgraph.md:15`; it is repointed, since it sits in the same comment this
+ticket was already correcting. Nine other bare `CLAUDE.md` citations remain in `src/` and they are
+**not** uniformly stale — `read-failure.ts:87` still resolves, because the rate-limit tripwire is
+one of the sixteen that stayed — while `liveness.ts:88` does not, because the epoch-zero trap left.
+Telling them apart is a file-by-file read and wants its own ticket, not a sweep here.
+
+**What the review changed.** A `/code-review` over this diff raised two, both real. The regression
+guard's last assertion was `querySelector("span") !== null`, which pins that *a* span exists rather
+than that it hides — a plain unstyled span would have passed while drawing the caption's sentence
+as visible text above the grid, the opposite defect. It now identifies the hider by
+`VisuallyHidden.styledComponentId` and separately asserts the caption itself is not positioned,
+and both were confirmed to fail against both broken shapes. The second was the invisible finding
+above, now ticket 28.

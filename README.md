@@ -150,7 +150,7 @@ yarn dev        # http://localhost:5173
 | --- | --- |
 | `yarn dev` | Vite dev server with fast refresh |
 | `yarn build` | Type-checks, then builds to `dist/` |
-| `yarn preview` | Serves the production build locally |
+| `yarn preview` | Serves the production build locally, on port 4173 or not at all (`--strictPort`) |
 | `yarn test` | Runs the offline test suite once |
 | `yarn test:watch` | Runs the offline test suite in watch mode |
 | `yarn test:integration` | Runs the live tests, which do hit the network |

@@ -218,13 +218,23 @@ worth seeing: **every one was a claim that looked verified and was not.**
   is the loudest thing that can happen to a cell.
 - **A `<caption>` styled `position: absolute`** computes away from `table-caption` display, and
   several browser and screen-reader pairs then drop it from the table's name — so the element
-  added to name the grid may not have named it. Both tables now hide from inside a real caption.
+  added to name the grid may not have named it. `64e3906` put the absolute caption on both
+  tables and `1904247` fixed only `AgentJurorDraws`, while this line claimed both — ticket 27
+  audited that and fixed the matrix. Both tables now hide from inside a real caption.
 
 The remaining finding is answered rather than fixed: see the "not drawn" dot in
 `docs/contrast.md` § Exemptions.
 
 None of the ten was caught by 832 passing tests, lint, types, a build, or an axe audit returning
 zero violations on seven routes.
+
+**And the page no longer returns zero.** An audit run during ticket 27, at `wcag2a,wcag2aa` on
+`/`, reports one violation: `link-in-text-block` on `Footnotes.tsx:170`, the window footnote's
+link to `/method#window`, at 1.21:1 against the prose it sits in where 3:1 is wanted, with no
+non-colour cue. That is **ticket 28**, open. This section is a record of what ticket 18 did and is
+left standing as one; the sentence above it is true of that sweep and is no longer true of the
+page. The other 187 nodes in that run are `incomplete` — backgrounds axe cannot resolve behind
+gradients and overlaps — and are not defects.
 
 ## Checked in a browser, because jsdom lays nothing out
 

@@ -14,7 +14,7 @@
     "start": "vite",
     "build": "yarn check-types && vite build",
     "build:ci": "yarn verify && vite build",
-    "preview": "vite preview",
+    "preview": "vite preview --strictPort",
     "check-types": "tsc --noEmit -p tsconfig.json && tsc --noEmit -p tsconfig.node.json",
     "lint": "biome check .",
     "lint:fix": "biome check --write .",

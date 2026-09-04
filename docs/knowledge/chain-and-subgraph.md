@@ -46,9 +46,10 @@ this file is the full account.
   passed alone, and fixed it by not scanning — liveness is read from the ruling and the round
   timeline, so it never needed the commitments. Before adding a commit scan to a live test, ask
   whether the test actually needs a moment, and run the whole suite rather than the one file.
-- **`TokenAndETHShift.isNativeCurrency` is `false` on a court that pays in native ETH.** All 56 of
-  court 34's payouts carry it, with `feeToken: null` and `feeTokenAmount: "0"`, while `ethAmount`
-  carries the full `feeForJuror` — and the raw `TokenAndETHShift` logs decode to
+- **`TokenAndETHShift.isNativeCurrency` is `false` on a court that pays in native ETH.** All 44 of
+  court 34's payouts carry it — a payout per *executed* draw, so fewer than the 56 draws — with
+  `feeToken: null` and `feeTokenAmount: "0"`, while `ethAmount` carries the full `feeForJuror` —
+  and the raw `TokenAndETHShift` logs decode to
   `_feeToken = address(0)`, which *is* native ETH. The v0.17.2 mapping is simply wrong about it.
   This is the `blockTimestamp: "0x0"` trap in another entity: present, correctly typed, and wrong.
   A reader that believed it would take the fee-token branch, find `0`, and report that every agent

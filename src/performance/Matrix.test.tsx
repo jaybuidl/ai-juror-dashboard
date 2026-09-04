@@ -8,6 +8,7 @@ import type { Dispute, RawDispute } from "../disputes/disputes";
 import { ROSTER } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
+import { VisuallyHidden } from "../styles/hidden";
 import { theme } from "../styles/theme";
 import { padCourt } from "../test/court";
 import { stubViewportWidth } from "../test/viewport";
@@ -258,6 +259,40 @@ describe("the matrix's own structure", () => {
     // A `<table>` with no caption and no label is announced as "table" and nothing else.
     renderMatrix();
     expect(screen.getByRole("table", { name: /one row per dispute/i })).toBeInTheDocument();
+  });
+
+  it("carries that name on a real caption element rather than on a positioned stand-in", () => {
+    // The shape, because the name above cannot see it. `dom-accessibility-api` computes the
+    // accessible name off the markup and lays nothing out, so the assertion above passed for
+    // four months against `<VisuallyHidden as="caption">` — an absolutely positioned element,
+    // which computes away from `table-caption` display and which several browser and
+    // screen-reader pairs then drop from the table's name. Ticket 27 found it by reading the
+    // tripwire rather than by running anything, and this is the assertion that would have
+    // caught it: a real `<caption>` that is the table's first child, hiding from the inside.
+    // Chrome's own accessibility tree gave the same name either way, so the browser check
+    // could not pin this either — the markup is the only place the rule is observable.
+    const { container } = renderMatrix();
+    const table = container.querySelector("table");
+    const caption = table?.firstElementChild;
+
+    expect(caption?.tagName).toBe("CAPTION");
+    expect(caption?.textContent).toMatch(/one row per dispute/i);
+    // **This is the assertion that discriminates, and it is not redundant with the tag check
+    // above.** `VisuallyHidden as="caption"` renders a `<caption>` element too — styled-components
+    // swaps the tag and keeps the styles — so the tag alone was already true of the broken shape
+    // and stayed true through the whole regression. What separates them is *where* the clipping
+    // sits: hidden from the inside means the caption is bare and the hiding is on a child.
+    //
+    // The hider is identified rather than merely counted. `querySelector("span")` alone would
+    // pass on a plain unstyled `<span>`, which draws the caption's sentence as visible text above
+    // the grid — the opposite defect, and one this test would then be nominally guarding while
+    // waving through. `styledComponentId` is the stable class styled-components puts on every
+    // instance of a component, so this pins the child to *this* hider.
+    const hider = caption?.querySelector("span");
+    expect(hider).not.toBeNull();
+    expect(hider?.className).toContain(VisuallyHidden.styledComponentId);
+    // And the caption itself must not be the thing being positioned — the tripwire exactly.
+    expect(caption && getComputedStyle(caption).position).not.toBe("absolute");
   });
 
   it("leaves focus where it was when the court is re-read under it", () => {

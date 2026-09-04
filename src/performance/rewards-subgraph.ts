@@ -17,8 +17,9 @@ import type { RawRewardShift } from "./performance";
  */
 
 /**
- * How many shifts to ask for per round trip. The court had produced 56 on 2026-08-25 — one per
- * agent juror per executed dispute — so this is one request today; it pages because a shift is
+ * How many shifts to ask for per round trip. The court had produced 44 on 2026-08-25 — one per
+ * agent juror per *executed* dispute, against 56 draws, the other twelve sitting in disputes
+ * 164-166 which were still in appeal — so this is one request today; it pages because a shift is
  * written for every draw the court executes and an upper bound guessed here would silently
  * truncate the totals rather than fail, which is the one failure that would understate what an
  * agent juror earned.
@@ -33,10 +34,11 @@ const PAGE_SIZE = 1000;
  * and dispute and never reads the order.
  *
  * **`isNativeCurrency` is deliberately not selected, and must not be.** It reads `false` on all
- * 56 shifts this court has produced, while the raw `TokenAndETHShift` logs carry
- * `_feeToken = address(0)` — native ETH — and `ethAmount` carries the full `feeForJuror` of
- * 270000000000000 wei. The field is present, correctly typed and wrong, exactly like the
- * `blockTimestamp: "0x0"` that `CLAUDE.md` records against `eth_getLogs`. A reader that
+ * 44 shifts this court has produced — one per *executed* draw, not one per draw — while the raw
+ * `TokenAndETHShift` logs carry `_feeToken = address(0)` — native ETH — and `ethAmount` carries
+ * the full `feeForJuror` of 270000000000000 wei. The field is present, correctly typed and
+ * wrong, exactly like the `blockTimestamp: "0x0"` that `docs/knowledge/chain-and-subgraph.md`
+ * records against `eth_getLogs`. A reader that
  * believed it would take the fee-token branch, find `feeTokenAmount` of `0`, and report that
  * every agent juror has earned nothing — with no error anywhere. Not selecting it is the guard:
  * a field that is not in the query cannot be reached for by someone who has not read this.

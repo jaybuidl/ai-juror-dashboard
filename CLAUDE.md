@@ -123,13 +123,6 @@ ens-and-roster, architecture, project-history. Read the topic file before workin
 - **When integrating, re-read every sentence that counts what is done**, and every helper both
   branches touched — then look for what the merge newly connects that neither parent could test.
 
-### Live and unfixed — delete these two when the fix lands
-
-- **A `<caption>` that is `position: absolute` can stop naming its table**, invisibly to jsdom. Use
-  a real `<caption>` with a `VisuallyHidden` *inside* it. `Matrix.tsx` still does the wrong one.
-- **`outline: none` does not suppress this repo's focus ring** — it is a box-shadow. Suppress
-  `box-shadow`, on `:focus-visible`. `DisputeCards.tsx` still writes it alone.
-
 ## Verified constants
 
 Every address, endpoint and court constant is **defined in `src/`**, and that is the source of
