@@ -14,7 +14,7 @@ per-user, unversioned, and subagents never see it.
 | File | Covers |
 | --- | --- |
 | [`architecture.md`](architecture.md) | The seam (`src/performance/`), the three models, where every derivation belongs, the design-canvas rule, and the kleros-v2 behaviour reference |
-| [`court-34.md`](court-34.md) | The court's parameters, its three reconfigurations, its economics, how big it is and what turns on that, and why a red parameters suite is usually the court being operated |
+| [`court-34.md`](court-34.md) | The court's parameters, its three configurations, its economics, how big it is and what turns on that, and why a red parameters suite is usually the court being operated |
 | [`chain-and-subgraph.md`](chain-and-subgraph.md) | What the Arbitrum RPC and the two Goldsky subgraphs actually return — including four fields that are present, correctly typed and wrong |
 | [`measurement-rules.md`](measurement-rules.md) | The unit of measurement, the dispute states that break an aggregate, and the one ratio this dashboard never shows |
 | [`react-query-and-persistence.md`](react-query-and-persistence.md) | Reads that drift apart, flags that lie while a read is in flight, and what may be persisted to `localStorage` |

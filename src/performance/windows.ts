@@ -118,19 +118,21 @@ export function windowsAt(
  * Period by period, and not once per dispute, because that is how the court itself works:
  * `passPeriod` reads `timesPerPeriod` at the moment it is called, so a dispute created under
  * one configuration and passed into its commit period under the next ran a commit window the
- * dispute's own creation moment knows nothing about. No *measured* period straddles court 34's
- * one change — dispute 151's commit and vote periods both closed before it, and dispute 152 was
- * created 48 minutes after — which is exactly why a per-dispute lookup would have looked
- * correct here and been wrong at the first dispute that did.
+ * dispute's own creation moment knows nothing about. Court 34 has been reconfigured twice and
+ * no evidence, commit or vote period has straddled either change — read off chain over all 46
+ * disputes on 2026-09-04: dispute 151's commit and vote periods both closed before the
+ * 2026-08-20 change, and dispute 152 was created 48 minutes after it — which is exactly why a
+ * per-dispute lookup would have looked correct here and been wrong at the first dispute that
+ * did.
  *
- * One period does straddle it: dispute 151's appeal period opened before the change and ran
- * past it. That costs nothing, because the appeal window was 36 hours in both configurations
- * and no figure on this dashboard is measured from the appeal period at all. It is also the
- * limit of this resolution, and worth stating rather than discovering: for a period that
- * straddles a change, the window resolved here is the one in force when the period *opened*,
- * while the court enforced whatever it held when `passPeriod` was finally called. The two agree
- * except across a change, and there is no reading of a single window that is true of a period
- * governed by two.
+ * One period does straddle the 2026-08-20 change: dispute 151's appeal period opened before it
+ * and ran past it. That costs nothing, because the appeal window has been 36 hours under every
+ * configuration the court has held and no figure on this dashboard is measured from the appeal
+ * period at all. It is also the limit of this resolution, and worth stating rather than
+ * discovering: for a period that straddles a change, the window resolved here is the one in
+ * force when the period *opened*, while the court enforced whatever it held when `passPeriod`
+ * was finally called. The two agree except across a change, and there is no reading of a single
+ * window that is true of a period governed by two.
  *
  * The round is the latest one, matching the round the matrix's cells are measured against. A
  * dispute whose rounds straddled a change would need a window per round; none has, and the
@@ -167,11 +169,20 @@ export function windowsFor(
 /**
  * Whether two configurations agree about the windows this dashboard's figures are measured in.
  *
+ * "Two configurations" means any two, and is not a count of how many court 34 has had — it has
+ * had three. This is a comparison, and it stays a comparison however long the history gets.
+ *
  * The commit and vote windows and nothing else: they are the periods reveal and commit latency
  * are measured from, so they are the only ones whose change makes two figures incomparable. A
  * court that reconfigured only its evidence or appeal period would otherwise mark every older
  * dispute for a difference no figure on the page reflects, and a marker with no visible cause
  * teaches a reader to ignore markers.
+ *
+ * **That court is this one.** On 2026-08-26 court 34 moved its evidence period from 45 minutes
+ * to 10 and left everything else alone, so its second and third configurations differ and this
+ * returns true across them — which is what keeps dispute 152 unmarked while being older than a
+ * change the court has since made. `MethodPage`'s window section owes a reader that sentence,
+ * because the marker cannot say it.
  */
 export function sameMeasuredWindows(a: PeriodWindows, b: PeriodWindows): boolean {
   return a.commitSeconds === b.commitSeconds && a.voteSeconds === b.voteSeconds;

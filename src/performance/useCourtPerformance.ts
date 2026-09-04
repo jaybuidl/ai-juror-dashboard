@@ -231,7 +231,7 @@ export function useCourtPerformance(
    * The court's parameter history, from the same chain and a different contract (ticket 08).
    *
    * Keyed on the court alone and on nothing else, because unlike the commit scan this read is
-   * not a cross-check against anything: it is the court's own configuration, two logs deep,
+   * not a cross-check against anything: it is the court's own configuration, three logs deep,
    * and it answers the same way whichever disputes have been read beside it.
    *
    * Not waited on, exactly like the commitments. An unread history costs the marker saying
@@ -241,9 +241,11 @@ export function useCourtPerformance(
     queryKey: ["courtParameters", COURT_ID],
     queryFn: ({ signal }) =>
       fetchCourtParameters({ client: createArbitrumClient(undefined, signal) }),
-    // The same minute as everything else. A court is reconfigured roughly never, so this is
-    // about the endpoint's rate limit rather than about freshness: it counts a batch as its
-    // size, and this read is four calls on top of the commit scan's fifty-odd.
+    // The same minute as everything else. Court 34 is retimed to suit a demo and has been
+    // reconfigured twice in a fortnight (`docs/knowledge/court-34.md`), but a minute is short
+    // against even that — so this is about the endpoint's rate limit rather than about
+    // freshness: it counts a batch as its size, and this read is four calls on top of the
+    // commit scan's fifty-odd.
     staleTime: 60 * 1000,
   });
 

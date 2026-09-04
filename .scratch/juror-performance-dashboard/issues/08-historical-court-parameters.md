@@ -62,7 +62,8 @@ Two findings worth carrying forward. The canvas samples the post-change vote win
 `/method`'s window section is deliberately **prose**: it is the destination of the marker's own link,
 so it has to answer on a cold load rather than waiting on an Arbitrum read. The guard against it
 drifting is `court-parameters.integration.test.ts`, which asserts the chain still reports exactly
-those two configurations — a third one fails nightly in CI before anybody reads a stale account.
+the configurations the page names — a new one fails nightly in CI before anybody reads a stale
+account. **It worked, on 2026-08-26**: see the Comments below.
 
 Also fixed in passing, because this ticket added a second read of the same shape: the commit caveat
 on `MatrixPage` was worded for a read in flight and shown for a read that had failed —
@@ -151,3 +152,28 @@ labelled every stat tile partial over a missing dispute title, contradicting a n
 pixels below it. And per `CLAUDE.md`, a new read is another query that can drift out of step with
 the ones beside it — check its own error, and where a figure joins two reads, say which half is
 stale rather than that "the court" is.
+
+## Comments
+
+**2026-09-04 — the tripwire fired, and ticket 19 was the rewrite.** Court 34 took a third
+configuration on 2026-08-26: the evidence period 45 minutes to 10, `timesPerPeriod` from
+`[2700, 2700, 1800, 129600]` to `[600, 2700, 1800, 129600]`, at 13:14:01 UTC in block 498587731.
+Exactly two assertions in `court-parameters.integration.test.ts` went red — the one pinning the
+history to what `/method` describes, and the one pinning it to the captured fixture — and nothing
+else in the suite moved. That is the arrangement this ticket built working as designed, and it is
+worth recording that the account it protected had in fact gone stale for nine days before anyone
+looked.
+
+**Two things above are true of the day they were written and no longer of the court.** The
+acceptance criterion "names both regimes as absolute durations" is now three regimes, and the
+`Pending` block ticket 15 left spoke of "the two period regimes". Neither is edited here: they
+record what this ticket delivered. `/method` is the live account, `docs/knowledge/court-34.md` is
+the durable one.
+
+**What ticket 19 learned that this ticket could not have.** The count of configurations and the
+count of *superseded measured windows* are different numbers, and the design already depended on
+their being different without anyone having met a case where they were. `sameMeasuredWindows`
+compares the commit and vote windows only — written here as a guard against a hypothetical court —
+and the 2026-08-26 change is that court: a real reconfiguration that marks nothing, because no
+figure on this dashboard is measured from the evidence period. The marker never moved, and the only
+thing that had to change was the prose.

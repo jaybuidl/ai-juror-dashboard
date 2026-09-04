@@ -23,9 +23,17 @@ import { COURT_ID } from "../disputes/court-subgraph";
  * that waited on an Arbitrum read would show a reader arriving from that link the very absence
  * they came to have explained. What it states is history — court 34's first configuration is
  * a fact from August 2026 and cannot change retroactively — and the guard against it drifting
- * is `court-parameters.integration.test.ts`, which reads the same two configurations from
+ * is `court-parameters.integration.test.ts`, which reads the same three configurations from
  * chain nightly and fails if the court is ever reconfigured again. The *marker*, and the
  * durations quoted beside the matrix, do come from that read.
+ *
+ * **That guard has fired once, and rewriting this section was ticket 19.** Court 34 is a live
+ * demo instrument and its periods get retimed to suit a demo, so expect it again. Two things
+ * to hold on to when it does. The prose here counts *configurations*, which is not the count
+ * of changes that moved a figure — the third moved the evidence period alone and moved
+ * nothing a reader can see. And the section has to keep saying so: a reader who knows the
+ * court was reconfigured on 26 August and meets an unmarked dispute 152 is owed the reason,
+ * and it is not one the marker can give them.
  */
 
 const Header = styled.header`
@@ -91,18 +99,30 @@ const Term = styled.span`
 `;
 
 /**
- * The two configurations, side by side.
+ * The court's configurations, one per line, oldest first.
  *
  * The shape `canvas/Errors.dc.html:190-197` gives it, which is the shape the dispute
  * timeline strip uses on `canvas/Dispute.dc.html:88-96`: the thing named, then its duration as
- * an absolute figure. Two configured windows here; ticket 09's dispute view sets a configured
+ * an absolute figure. Configured windows only; ticket 09's dispute view sets a configured
  * window beside how long the period in fact ran, in the same two columns. Neither divides one
  * by the other.
+ *
+ * **Stacked rather than side by side since ticket 19, and the reason is what a reader has to
+ * be able to see.** The artboard draws a two-up strip because the court had two configurations
+ * when it was drawn; it has three, and the third differs from the second in one window out of
+ * four. Down a column the four durations of each line up under the four above them, so the one
+ * that moved is the one thing that does not repeat — which is the whole finding, and it is not
+ * a finding two paragraphs of prose can hand over as quickly.
+ *
+ * All four windows, in the order `timesPerPeriod` is indexed on chain, rather than the commit
+ * and vote windows the figures are measured from. A line that showed only what is measured
+ * would print the second and third configurations identically and leave the reader looking for
+ * the difference between two rows that have none.
  */
 const Regimes = styled.div`
   display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.space8};
+  flex-direction: column;
+  gap: ${({ theme }) => theme.space5};
   padding: ${({ theme }) => `${theme.space6} ${theme.space7}`};
   border: ${({ theme }) => theme.borderHairline};
   border-radius: ${({ theme }) => theme.radiusTile};
@@ -110,13 +130,17 @@ const Regimes = styled.div`
 `;
 
 const Regime = styled.div`
-  flex: 1 1 200px;
   display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.space3};
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: ${({ theme }) => `${theme.space3} ${theme.space6}`};
 `;
 
 const RegimeLabel = styled.span`
+  /* Fixed rather than shrink-to-fit, so the durations beside three of these start at one x and
+     can be read down as a column. The basis is the longest label at this size and not a round
+     number; the wrap is what a narrow viewport gets instead of a squeezed one. */
+  flex: 0 0 92px;
   font: ${({ theme }) => theme.typeMonoSm};
   font-feature-settings: ${({ theme }) => theme.featureMono};
   letter-spacing: ${({ theme }) => theme.trackingMono};
@@ -158,9 +182,10 @@ const provenance: Provenance = {
   readAt: null,
   caveats: [
     // The one thing on this page that could go stale: it states what court 34 was configured
-    // with, and the court could be reconfigured a third time. Saying which date the account is
-    // true as of is what lets a reader who finds a third configuration know this page missed it.
-    "The two configurations named under the window are court 34's as of 25 August 2026, read from its parameter history on that date. The matrix itself reads that history on every load; this account does not.",
+    // with, and the court gets reconfigured — three times so far, the last of them after this
+    // caveat first named a date. Saying which date the account is true as of is what lets a
+    // reader who finds a fourth configuration know this page missed it.
+    "The three configurations named under the window are court 34's as of 4 September 2026, read from its parameter history on that date. The matrix itself reads that history on every load; this account does not.",
   ],
   identifiesAgentJurors: false,
 };
@@ -249,20 +274,26 @@ export function MethodPage() {
           fraction is false the moment it is quoted away from the page.
         </Body>
         <Body>
-          The court has been configured twice. It was created on 11 August 2026 with a 12-hour
+          The court has been configured three times. It was created on 11 August 2026 with a 12-hour
           evidence period, a commit window of 8 hours, a vote window of 8 hours and a 36-hour appeal
           period. On 20 August 2026 it was reconfigured: 45 minutes of evidence, a commit window of
-          45 minutes, a vote window of 30 minutes, and the appeal period left as it was.
+          45 minutes, a vote window of 30 minutes, and the appeal period left as it was. On 26
+          August 2026 it was reconfigured a third time, and that change moved the evidence period
+          alone, from 45 minutes to 10.
         </Body>
 
         <Regimes>
           <Regime>
-            <RegimeLabel>Dispute 151</RegimeLabel>
-            <RegimeWindows>Commit 8h · vote 8h</RegimeWindows>
+            <RegimeLabel>From 11 Aug</RegimeLabel>
+            <RegimeWindows>Evidence 12h · commit 8h · vote 8h · appeal 36h</RegimeWindows>
           </Regime>
           <Regime>
-            <RegimeLabel>152 onward</RegimeLabel>
-            <RegimeWindows>Commit 45m · vote 30m</RegimeWindows>
+            <RegimeLabel>From 20 Aug</RegimeLabel>
+            <RegimeWindows>Evidence 45m · commit 45m · vote 30m · appeal 36h</RegimeWindows>
+          </Regime>
+          <Regime>
+            <RegimeLabel>From 26 Aug</RegimeLabel>
+            <RegimeWindows>Evidence 10m · commit 45m · vote 30m · appeal 36h</RegimeWindows>
           </Regime>
         </Regimes>
 
@@ -271,6 +302,17 @@ export function MethodPage() {
           mined 48 minutes before dispute 152 was created. So it is the one row of the matrix
           carrying a <Term>†</Term>, and the marker travels with every figure it touches rather than
           sitting on the row alone — an aggregate that counts that dispute is marked too.
+        </Body>
+
+        <Body>
+          Only the first of the court's two reconfigurations reaches anything on this dashboard, and
+          the second is worth a sentence for what it does not do. Every latency here is measured
+          from the commit period or the vote period, and 26 August left both of them exactly where
+          they were. So dispute 152 ran under a configuration the court has since replaced and still
+          carries no marker: the windows it was measured against are the windows the court holds
+          now. Nothing on this dashboard is measured from the evidence period at all — where a
+          configured window would otherwise stand beside it, the dispute view gives the count of
+          evidence submissions instead.
         </Body>
 
         <Body>

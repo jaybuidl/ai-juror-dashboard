@@ -14,14 +14,20 @@ import {
  * The court's parameter history, and what a dispute ran under.
  *
  * The one thing this module exists to prevent is the trap `CLAUDE.md` names first: reading the
- * court's *current* `timesPerPeriod` as though it had always held. Court 34 was reconfigured
- * between dispute 151 and dispute 152, so every assertion here is about which side of that line
- * a moment falls on.
+ * court's *current* `timesPerPeriod` as though it had always held. Court 34's measured windows
+ * changed between dispute 151 and dispute 152, so most of what follows is about which side of
+ * that line a moment falls on.
+ *
+ * The third configuration is here for the opposite reason. It moved the evidence period and
+ * nothing else, so it changes no answer this module gives about a commit or a vote — and it is
+ * the one the court holds *now*, which is what makes it worth asserting over rather than
+ * leaving to the two that came before it.
  */
 
-/** The two configurations court 34 has had, as the chain reports them. */
+/** The three configurations court 34 has had, as the chain reports them. */
 const CREATED = "1786444490";
 const MODIFIED = "1787230320";
+const TRIMMED = "1787750041";
 
 const OLD: PeriodWindows = {
   evidenceSeconds: 43_200,
@@ -32,6 +38,20 @@ const OLD: PeriodWindows = {
 
 const NEW: PeriodWindows = {
   evidenceSeconds: 2_700,
+  commitSeconds: 2_700,
+  voteSeconds: 1_800,
+  appealSeconds: 129_600,
+};
+
+/**
+ * The third, which is `NEW` with a ten-minute evidence period — a live demo not spending three
+ * quarters of an hour waiting for a panel.
+ *
+ * Spelled out rather than spread from `NEW`, so that a fourth configuration touching a commit
+ * or a vote window cannot land here as a one-word edit that reads as though nothing moved.
+ */
+const CURRENT: PeriodWindows = {
+  evidenceSeconds: 600,
   commitSeconds: 2_700,
   voteSeconds: 1_800,
   appealSeconds: 129_600,
@@ -64,13 +84,26 @@ function dispute(overrides: Partial<Dispute> = {}): Dispute {
 }
 
 describe("toRegimes", () => {
-  it("reads the two configurations court 34 has had", () => {
+  it("reads the three configurations court 34 has had", () => {
     const regimes = toRegimes(HISTORY);
 
     expect(regimes).toEqual([
       { from: Number(CREATED), windows: OLD },
       { from: Number(MODIFIED), windows: NEW },
+      { from: Number(TRIMMED), windows: CURRENT },
     ]);
+  });
+
+  it("reads a change that moved the evidence window alone as a configuration like any other", () => {
+    // The court reads `timesPerPeriod` whole, so a change touching one period is still a full
+    // configuration and every window in it has to arrive intact. Reducing it to "what moved"
+    // anywhere below the seam would leave the three windows that did not with nothing to say.
+    const [, second, third] = toRegimes(HISTORY);
+
+    expect(third?.windows).toEqual({ ...second?.windows, evidenceSeconds: 600 });
+    expect(
+      sameMeasuredWindows(second?.windows as PeriodWindows, third?.windows as PeriodWindows),
+    ).toBe(true);
   });
 
   it("orders them by the moment they took effect, whatever order they arrived in", () => {
@@ -79,7 +112,11 @@ describe("toRegimes", () => {
     // dispute 151 the wrong window without failing anywhere.
     const regimes = toRegimes([...HISTORY].reverse());
 
-    expect(regimes.map((regime) => regime.from)).toEqual([Number(CREATED), Number(MODIFIED)]);
+    expect(regimes.map((regime) => regime.from)).toEqual([
+      Number(CREATED),
+      Number(MODIFIED),
+      Number(TRIMMED),
+    ]);
   });
 
   it("refuses a duration it cannot read rather than turning it into a number", () => {
@@ -108,13 +145,17 @@ describe("windowsAt", () => {
     expect(windowsAt(regimes, Number(CREATED))).toEqual(OLD);
     expect(windowsAt(regimes, Number(MODIFIED) - 1)).toEqual(OLD);
     expect(windowsAt(regimes, Number(MODIFIED))).toEqual(NEW);
+    expect(windowsAt(regimes, Number(TRIMMED) - 1)).toEqual(NEW);
+    expect(windowsAt(regimes, Number(TRIMMED))).toEqual(CURRENT);
   });
 
   it("reads a period that has not opened against the configuration in force now", () => {
     // A period yet to open will run under whatever the court holds when it does, and the best
     // available reading of that is the latest configuration. Dating it from the dispute's
-    // creation instead would quote a window the court may already have replaced.
-    expect(windowsAt(regimes, null)).toEqual(NEW);
+    // creation instead would quote a window the court may already have replaced — which is
+    // what the third configuration makes concrete: `NEW` is what the court held for six days
+    // and is no longer what an unopened period will run under.
+    expect(windowsAt(regimes, null)).toEqual(CURRENT);
   });
 
   it("has nothing to say at all until the history has been read", () => {

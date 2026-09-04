@@ -148,7 +148,7 @@ describe("courtTotalsOf", () => {
 
   it("gathers them by the windows they ran under rather than listing them flat", () => {
     // A flat list could not say what the difference was, which is the whole content of the
-    // footnote. Two supersededconfigurations are two sentences, not one list of ids.
+    // footnote. Two superseded configurations are two sentences, not one list of ids.
     const rows = [
       row(151, { commitSeconds: 28_800, voteSeconds: 28_800 }),
       row(152, { commitSeconds: 28_800, voteSeconds: 28_800 }),
@@ -405,8 +405,13 @@ describe("rowCommitLatencyOf", () => {
 /**
  * One row with nothing in it but the windows it ran under.
  *
- * Hand-built rather than captured: the court has been reconfigured once, so no fixture can
- * hold two superseded configurations at the same time, and grouping is the thing being tested.
+ * Hand-built rather than captured: no fixture can hold two superseded configurations at the
+ * same time, and grouping is the thing being tested.
+ *
+ * The *reason* changed under ticket 19 while the claim did not, which is why it is spelled out
+ * rather than left as a count. The court has been reconfigured twice, so a capture now holds
+ * three configurations — but the second reconfiguration moved the evidence period alone, and
+ * grouping is over the measured windows. Two reconfigurations, still one superseded group.
  */
 function row(id: number, measured: { commitSeconds: number; voteSeconds: number } | null) {
   return {
@@ -770,8 +775,9 @@ describe("agentJurorMarginalsOf", () => {
 });
 
 describe("markedWindows", () => {
+  /** What the court holds now: the 2026-08-26 configuration, evidence 10m. */
   const CURRENT = {
-    evidenceSeconds: 2700,
+    evidenceSeconds: 600,
     commitSeconds: 2700,
     voteSeconds: 1800,
     appealSeconds: 129_600,
@@ -822,15 +828,16 @@ describe("markedWindows", () => {
   });
 });
 
-/** The windows court 34 ran under before it was reconfigured, as `windows.ts` resolves them. */
+/** The windows court 34 ran under before the 2026-08-20 change, as `windows.ts` resolves them. */
 const EARLIER = { commitSeconds: 28_800, voteSeconds: 28_800 };
 
 /**
  * One row with one draw in one column, for the cases the captured court cannot produce.
  *
  * Hand-built for the reason `CLAUDE.md` gives: every fixture here is one successful read of a
- * working court, so none of them holds a lone panel that is still live, a court reconfigured
- * twice, or one column drawn under earlier windows while the column beside it was not.
+ * working court, so none of them holds a lone panel that is still live, a court that has
+ * superseded two sets of measured windows, or one column drawn under earlier windows while the
+ * column beside it was not.
  */
 function column({
   id,

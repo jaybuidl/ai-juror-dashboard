@@ -5,8 +5,21 @@ Court 34 "Agentic Commerce Court" on Arbitrum One is the single subject of this 
 **Count carefully: three configurations, two `CourtModified` events.** One `CourtCreated`
 (2026-08-11) and two modifications (2026-08-20, 2026-08-26). The 2026-08-20 change — commit 8h →
 45m, vote 8h → 30m — is the one behind most of the arithmetic traps below, and the entries that
-follow were written while it was the only one, so they say "the one reconfiguration". Read that as
-*that* reconfiguration. The 2026-08-26 change is open ticket 19 and is not in the fixture yet.
+follow were written while it was the only one, so some still say "the one reconfiguration". Read
+that as *that* reconfiguration.
+
+**Both counts are load-bearing and they are not the same count**, which is the trap ticket 19 spent
+most of its effort on. Three configurations is what `/method` and the live tripwire state. *One*
+superseded set of **measured** windows is what the marker, `changedWindows` and every "the court
+has been reconfigured once" comment are about — because the 2026-08-26 change moved the evidence
+period alone, and no figure here is measured from it. A sentence counting one of these is almost
+never improved by being made to count the other, and a global replace across the repo gets it
+wrong in both directions.
+
+All three configurations are in `court-34-parameters.fixture.json` as of ticket 19, and the third
+is what `CourtParameters.current` holds — so the offline suite pins "a harmless change marks
+nothing" over captured data rather than only over the invented one-second evidence window in
+`windows.test.ts`.
 
 Each entry below cost real effort to discover and is easy to get wrong again.
 They are facts about this codebase and the live court, verified against chain, subgraph
@@ -49,9 +62,10 @@ this file is the full account.
   because these two figures are *sums*: a read that comes back short renders as an agent juror that
   earned less, which nothing else on the page would catch.
 - **No reconfiguration of court 34 has changed a reward parameter — and the claim is meant to hold
-  for the next one too.** Across every `CourtCreated`/`CourtModified` pair to date, `minStake`
-  (11000e18), `alpha` (170), `feeForJuror` (2.7e14) and `jurorsForCourtJump` (7) are
-  byte-identical; only `timesPerPeriod` moved. Stake at risk per vote ID is
+  for the next one too.** Across all three `CourtCreated`/`CourtModified` logs, `hiddenVotes`
+  (true), `minStake` (11000e18), `alpha` (170), `feeForJuror` (2.7e14) and `jurorsForCourtJump` (7)
+  are byte-identical; only `timesPerPeriod` moved. Re-decoded from chain on 2026-09-04 under ticket
+  19, third configuration included — the blocks are 493394990, 496518927 and 498587731. Stake at risk per vote ID is
   `minStake × alpha / 10000` = **187 PNK** — the divisor is the part that gets dropped, and
   `src/performance/rewards.ts` states the product without it.
   Note the live suite pins only `timesPerPeriod`, so a future reconfiguration that moved a reward
@@ -59,8 +73,18 @@ this file is the full account.
   cumulative ETH or PNK — it would be a marker a reader can see is misplaced, and one they stop
   reading. Decoded from the logs rather than assumed, because "the court was reconfigured" reads as
   though everything about it changed.
-- Every appeal period ran ~18h against a 36h configured value. Unexplained, affects no metric here,
-  but do not treat appeal duration as understood.
+- Every appeal period ran ~18h against a 36h configured value, under all three configurations —
+  the appeal window is the one period the court has never retimed. Unexplained, affects no metric
+  here, but do not treat appeal duration as understood.
+- **No evidence, commit or vote period has straddled either reconfiguration.** Read off chain over
+  all 46 disputes on 2026-09-04. Dispute 151's commit and vote periods closed ~11h before dispute
+  152 was created; what happened 48 minutes before 152's creation is the **2026-08-20 change
+  itself**, and those are two different gaps that a sentence naming only one number will
+  cheerfully swap (it did, and ticket 19's review caught it). Nothing was mid-period on 2026-08-26
+  either. One period does straddle 2026-08-20 — dispute 151's appeal — and it costs nothing,
+  because the appeal window never moved. This is why `windowsFor`'s per-period resolution has never yet *had* to disagree
+  with a per-dispute one, and why it must stay per-period anyway: the first dispute that straddles
+  a change is the one a per-dispute lookup gets wrong, and it will look correct until then.
 
 ## Court 34 is a live demo instrument, and gets reconfigured
 
@@ -68,15 +92,15 @@ this file is the full account.
 
 Court 34 is not a static experiment. Its period durations get changed on chain to suit whatever is
 being demonstrated: on **2026-08-26 the evidence period went 45 minutes to 10 minutes** — the
-court's third configuration, its *second* `CourtModified`, at 13:14:01 UTC in block 498587731 — so a live demo in
-front of an audience would not spend three
-quarters of an hour waiting for a panel to be drawn. **Expect more of these.**
+court's third configuration, its *second* `CourtModified`, at 13:14:01 UTC (unix 1787750041) in
+block 498587731 — so a live demo in front of an audience would not spend three quarters of an hour
+waiting for a panel to be drawn. **Expect more of these.**
 
 This is why any hard-coded parameter list goes stale on its own, and why the two-event account
-that stood for the whole of tickets 08–18 is no longer current. The fixture
-(`src/performance/court-34-parameters.fixture.json`) still holds two entries; taking up the third is
-open ticket 19, and tickets 20 and 21 exist because of the same change — 20 specifically to make the
-tripwire say whether a *figure* moved or only an account went stale.
+that stood for the whole of tickets 08–18 is no longer current. Ticket 19 took the third
+configuration up — into the fixture, the live tripwire and `/method` — and tickets 20 and 21 exist
+because of the same change: 20 specifically to make the tripwire say whether a *figure* moved or
+only an account went stale, which ticket 19 had to work out by hand and by reading.
 
 **When `court-parameters.integration.test.ts` is red** — it and the nightly `live` CI job fail on
 *any* change to the history, including one that moves nothing a reader can see — read the history

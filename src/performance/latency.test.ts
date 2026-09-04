@@ -92,10 +92,14 @@ describe("railFraction", () => {
 });
 
 describe("formatWindowSeconds", () => {
-  it("reads court 34's two configurations the way the court configured them", () => {
+  it("reads court 34's three configurations the way the court configured them", () => {
+    expect(formatWindowSeconds(43_200)).toBe("12h");
     expect(formatWindowSeconds(28_800)).toBe("8h");
     expect(formatWindowSeconds(2_700)).toBe("45m");
     expect(formatWindowSeconds(1_800)).toBe("30m");
+    // The evidence window the court took up on 2026-08-26, and the only duration on the method
+    // page's third line that differs from its second.
+    expect(formatWindowSeconds(600)).toBe("10m");
     expect(formatWindowSeconds(129_600)).toBe("36h");
   });
 

@@ -41,8 +41,8 @@ export const COURT_MODIFIED = parseAbiItem(
 /**
  * The whole chain, unchunked, exactly as the commit scan reads it.
  *
- * The court has been configured twice in its life and the filter is on an indexed topic, so
- * this is two logs and answers in ~320ms from `fromBlock: 0`. A deployment block held here
+ * The court has been configured three times in its life and the filter is on an indexed topic,
+ * so this is three logs and answers in ~320ms from `fromBlock: 0`. A deployment block held here
  * would be one more number to keep true, and getting it wrong would drop the court's *first*
  * configuration — the one dispute 151 ran under, and the only one the marker is about.
  */

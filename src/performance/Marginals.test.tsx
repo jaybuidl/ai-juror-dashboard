@@ -14,20 +14,27 @@ import type { PeriodWindows } from "./windows";
  * One agent juror's column header, on its own.
  *
  * Rendered apart from the matrix because the states worth checking are ones the captured court
- * cannot produce: a court reconfigured twice, a commit scan that came back empty over
- * commitments the subgraph records, and a column whose only lone panel is still being decided.
- * `Matrix.test.tsx` checks that the block reaches the column headers at all, over the real court.
+ * cannot produce: a court that has superseded two sets of *measured* windows, a commit scan that
+ * came back empty over commitments the subgraph records, and a column whose only lone panel is
+ * still being decided. `Matrix.test.tsx` checks that the block reaches the column headers at
+ * all, over the real court.
+ *
+ * "Superseded two sets of measured windows" is not "reconfigured twice", and the difference is
+ * the point rather than pedantry: court 34 *has* been reconfigured twice, and its second
+ * reconfiguration moved the evidence period alone, so the real court still supersedes exactly
+ * one set of windows anything here is measured against. This file's two-group case remains one
+ * the chain has never produced.
  */
 
-/** What court 34 holds now: 45m commit, 30m vote. */
+/** What court 34 holds now: 10m evidence, 45m commit, 30m vote — the 2026-08-26 configuration. */
 const CURRENT: PeriodWindows = {
-  evidenceSeconds: 2700,
+  evidenceSeconds: 600,
   commitSeconds: 2700,
   voteSeconds: 1800,
   appealSeconds: 129_600,
 };
 
-/** What it held before, and the group dispute 151 falls into: 8h commit, 8h vote. */
+/** What it held two configurations ago, and the group dispute 151 falls into: 8h commit, 8h vote. */
 const EARLIER: WindowChange = {
   disputes: [151],
   windows: { commitSeconds: 28_800, voteSeconds: 28_800 },
@@ -258,7 +265,7 @@ describe("Marginals", () => {
 
     it("does not mark either figure with the window dagger", () => {
       // A measured fact rather than an omission. The † is about the commit and vote windows,
-      // and a reward depends on neither: court 34's one reconfiguration carried `minStake`,
+      // and a reward depends on neither: both of court 34's reconfigurations carried `minStake`,
       // `alpha` and `feeForJuror` unchanged and moved only `timesPerPeriod`. Marking these
       // would be a caveat a reader can see is misplaced, which is one they stop reading.
       renderMarginals({ changedWindows: [EARLIER] });

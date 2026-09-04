@@ -401,10 +401,13 @@ export function periodsOf(
       elapsedSeconds: between(round?.voteOpenedAt ?? null, round?.appealOpenedAt ?? null),
     },
     {
-      // The one period whose two numbers disagree and are still both shown. Every appeal in this
-      // court has run about eighteen hours against a configured thirty-six, across both
-      // configurations, and no one has explained the gap — so appeal duration is not understood
-      // here, and nothing may be derived from the configured value as though it were.
+      // The one period whose two numbers disagree and are still both shown. Every appeal in the
+      // captured court has run about eighteen hours against a configured thirty-six, and no one
+      // has explained the gap — so appeal duration is not understood here and nothing may be
+      // derived from the configured value as though it were. The *window* is the one the court
+      // has never moved: 36h in all three configurations. How long an appeal in fact runs under
+      // the third has not been measured — the capture stops at dispute 166, two days before it
+      // — so the eighteen hours is a claim about the capture and not about the court.
       period: "appeal",
       windowSeconds: windows?.appealSeconds ?? null,
       elapsedSeconds: between(round?.appealOpenedAt ?? null, round?.executionOpenedAt ?? null),

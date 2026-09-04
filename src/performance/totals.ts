@@ -98,9 +98,12 @@ export type CourtTotals = {
    * durations they ran under.
    *
    * Grouped rather than listed flat because the footnote has to name what the difference *was*
-   * — "an 8h commit window against 45m now" — and one list of ids could not say that if the
-   * court were ever reconfigured twice. Empty until the parameter history has been read, and
-   * empty is not a claim: `CourtParameters.read` is what says whether it was looked for.
+   * — "an 8h commit window against 45m now" — and one list of ids could not say that if two
+   * different sets of measured windows were ever superseded at once. Court 34 has been
+   * reconfigured twice and there is still only one such group: the 2026-08-26 change moved the
+   * evidence period alone, and nothing here is measured from it. Empty until the parameter
+   * history has been read, and empty is not a claim: `CourtParameters.read` is what says
+   * whether it was looked for.
    *
    * Carried here for the same reason `lonePanelDisputes` is: any aggregate over latency has to
    * disclose them, and ticket 06's marginals are the first figures that will.
@@ -368,13 +371,14 @@ export type AgentJurorMarginals = {
    * The marker is about the commit and vote windows, and a reward depends on none of them: it
    * is `feeForJuror` per coherent **vote ID** and `minStake × alpha / 10000` (187 PNK) at risk
    * per vote ID — not per draw, which is why nine of the 44 shifts are fractions of a fee and
-   * nothing here may assume a payout divides evenly. Court 34's one
-   * reconfiguration, on 2026-08-20, carried `minStake`, `alpha`, `feeForJuror` and
-   * `jurorsForCourtJump` **unchanged** and moved only `timesPerPeriod` — decoded from the
-   * `CourtModified` log against the `CourtCreated` before it. So every figure summed here was
-   * earned under one set of reward parameters, and a dagger claiming otherwise would be a
-   * marker placed in error. The ‡ does not ride them either: a panel of one makes coherence
-   * tautological and the fee it earned real.
+   * nothing here may assume a payout divides evenly. Both of court 34's reconfigurations —
+   * 2026-08-20 and 2026-08-26 — carried `minStake`, `alpha`, `feeForJuror` and
+   * `jurorsForCourtJump` **unchanged** and moved only `timesPerPeriod`, decoded from the two
+   * `CourtModified` logs against the `CourtCreated` before them (re-read 2026-09-04, ticket
+   * 19). So every figure summed here was earned under one set of reward parameters, and a
+   * dagger claiming otherwise would be a marker placed in error. Nothing pins that in CI —
+   * ticket 21 — so it is a fact with a date on it rather than a guarantee. The ‡ does not ride
+   * them either: a panel of one makes coherence tautological and the fee it earned real.
    */
   rewards: AgentJurorRewards | null;
 };
@@ -496,10 +500,12 @@ function unplacedDisputesOf(rows: readonly MatrixRow[]): number[] {
  * vote period and a commit from the commit period, so a group whose vote window matches what the
  * court holds now says nothing about a reveal median, however different its commit window is.
  * Court 34 changed both at once and every group qualifies both today, which is exactly why this
- * had to be written down rather than left to hold by coincidence: the next reconfiguration that
- * moves one window would otherwise print "ran under a vote window of 30m, which the court has
- * since changed" against a court whose vote window is 30m. `windowFlagLabel` in `Matrix.tsx`
- * makes the same comparison on the row for the same reason.
+ * had to be written down rather than left to hold by coincidence: a reconfiguration that moved
+ * one window alone would otherwise print "ran under a vote window of 30m, which the court has
+ * since changed" against a court whose vote window is 30m. **The court has since reconfigured
+ * without touching either** — 2026-08-26, the evidence period alone — which is the same lesson
+ * arriving from the other side: a change can be real and reach no figure here at all.
+ * `windowFlagLabel` in `Matrix.tsx` makes the same comparison on the row for the same reason.
  *
  * An unread parameter history is `current === null`, and everything qualifies: nothing is known
  * to compare against, and the view says the history is unread in its own words.

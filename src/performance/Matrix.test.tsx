@@ -105,7 +105,7 @@ function harness(
   rosterView: RosterView = roster,
 ) {
   // Inside a router since ticket 08: the window footnote links to the method page's account of
-  // the two period regimes, which is a part of the matrix and not of the page around it.
+  // the court's period regimes, which is a part of the matrix and not of the page around it.
   return (
     <ThemeProvider theme={theme}>
       <MemoryRouter>
@@ -141,9 +141,9 @@ function grid() {
 /**
  * One dispute, for the cases the captured court cannot produce.
  *
- * The court has been reconfigured once and its oldest dispute is the one that reconfiguration
- * marks, so no read of it can hold a dispute that is both older than 151 and placeable against
- * the parameter history. That combination has to be built.
+ * The court's oldest dispute is the one its 2026-08-20 reconfiguration marks, so no read of it
+ * can hold a dispute that is both older than 151 and placeable against the parameter history.
+ * That combination has to be built.
  */
 function rawDispute(overrides: Partial<RawDispute>, timeline: readonly string[]): RawDispute {
   return {
@@ -618,7 +618,7 @@ describe("Matrix", () => {
       expect(within(row).queryByText("Lone panel")).not.toBeInTheDocument();
     });
 
-    it("sets the two configurations beside each other as absolute durations", () => {
+    it("sets the superseded windows beside the current ones as absolute durations", () => {
       renderMatrix();
 
       const footnote = screen.getByText(/ran with a commit window of/i).closest("p");

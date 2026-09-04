@@ -48,18 +48,43 @@ describe("the method page", () => {
     ).toBeInTheDocument();
   });
 
-  it("names both configurations as absolute durations", () => {
-    // The account the † marker's link exists to reach. Both regimes, in the units the court
+  it("names all three configurations as absolute durations", () => {
+    // The account the † marker's link exists to reach. Every regime, in the units the court
     // was configured in, and no ratio anywhere between them — ADR-0005.
     renderAt("/method");
 
     const section = screen.getByRole("region", { name: /the window/i });
 
+    expect(section).toHaveTextContent(/configured three times/i);
     expect(section).toHaveTextContent(/commit window of 8 hours/i);
     expect(section).toHaveTextContent(/commit window of 45 minutes/i);
     expect(section).toHaveTextContent(/vote window of 30 minutes/i);
-    expect(section).toHaveTextContent(/Commit 8h · vote 8h/);
-    expect(section).toHaveTextContent(/Commit 45m · vote 30m/);
+    expect(section).toHaveTextContent(/Evidence 12h · commit 8h · vote 8h · appeal 36h/);
+    expect(section).toHaveTextContent(/Evidence 45m · commit 45m · vote 30m · appeal 36h/);
+    expect(section).toHaveTextContent(/Evidence 10m · commit 45m · vote 30m · appeal 36h/);
+  });
+
+  it("says the third change moved the evidence period and reached no figure", () => {
+    // Ticket 19. The court was reconfigured on 26 August and dispute 152 is older than that
+    // change and unmarked, which is a contradiction to anyone who has not been told that the
+    // marker is about the commit and vote windows alone. This is where they are told.
+    renderAt("/method");
+
+    const section = screen.getByRole("region", { name: /the window/i });
+
+    expect(section).toHaveTextContent(/moved the evidence period alone, from 45 minutes to 10/i);
+    // Which change is which. The one that reaches a figure is the court's *first*
+    // reconfiguration and its *second* configuration, and a sentence naming the wrong ordinal
+    // reads as though the marked dispute were the wrong one.
+    expect(section).toHaveTextContent(
+      /Only the first of the court's two reconfigurations reaches anything on this dashboard/i,
+    );
+    expect(section).toHaveTextContent(
+      /dispute 152 ran under a configuration the court has since replaced and still carries no marker/i,
+    );
+    expect(section).toHaveTextContent(
+      /nothing on this dashboard is measured from the evidence period at all/i,
+    );
   });
 
   it("says which disputes ran under which, and how that is decided", () => {
@@ -88,7 +113,7 @@ describe("the method page", () => {
     // is what stops that convenience becoming a quiet falsehood.
     renderAt("/method");
 
-    expect(screen.getByText(/as of 25 August 2026/i)).toBeInTheDocument();
+    expect(screen.getByText(/as of 4 September 2026/i)).toBeInTheDocument();
   });
 
   it("carries no figure of its own, and says so", () => {

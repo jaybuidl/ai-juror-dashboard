@@ -17,9 +17,9 @@ import { StatTiles } from "./StatTiles";
  * `MatrixPage.test.tsx` covers the real court through the real page.
  */
 
-/** What the court holds now. */
+/** What the court holds now: the 2026-08-26 configuration, evidence 10m. */
 const CURRENT: PeriodWindows = {
-  evidenceSeconds: 2700,
+  evidenceSeconds: 600,
   commitSeconds: 2700,
   voteSeconds: 1800,
   appealSeconds: 129_600,

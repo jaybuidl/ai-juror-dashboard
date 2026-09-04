@@ -188,8 +188,11 @@ subgraph still returns the court's disputes and its draws in the shape the model
 template subgraph still resolves what those disputes are about, that Arbitrum still emits the
 `CommitCast` event this dashboard reads commit latency from — with the cross-check that every
 committed draw has a matching log run against the live reads rather than a snapshot of them — and
-that court 34 still reports the two period configurations `/method` describes in prose, so a third
-one fails in CI before anybody reads a stale account of the second. It runs on a daily cron and on
+that court 34 still reports the three period configurations `/method` describes in prose, so a
+fourth one fails in CI before anybody reads a stale account of the third. That check has fired
+once, on the 2026-08-26 change, and the rewrite it forced was ticket 19: it fails on *any* change
+to the court's history, including — as that one was — a change that moves no figure a reader can
+see. It runs on a daily cron and on
 `workflow_dispatch` only, and never gates a pull request: its failure mode there would be network
 flake, and a red that means nothing teaches people to ignore red.
 

@@ -1055,7 +1055,7 @@ describe("buildCourtPerformance", () => {
       const { parameters } = built();
 
       expect(parameters.read).toBe(true);
-      expect(parameters.regimes).toHaveLength(2);
+      expect(parameters.regimes).toHaveLength(3);
       expect(parameters.current?.commitSeconds).toBe(2_700);
     });
 
@@ -1107,6 +1107,26 @@ describe("buildCourtPerformance", () => {
       );
 
       expect(evidenceOnly.rows[0]?.underEarlierWindows).toBe(false);
+    });
+
+    it("takes the third configuration from the fixture and marks no row for it", () => {
+      // The property ticket 19 recaptured the fixture to pin: the court's third configuration
+      // moved the evidence period from 45 minutes to 10 and nothing else, and no figure on this
+      // dashboard is measured from the evidence period. So it becomes what `current` holds
+      // without marking a single row — the synthetic case above, over captured data.
+      //
+      // It is the *third* regime being `current` that gives this its teeth. Every marked row is
+      // decided against `current`, so a change that reached the marker would show up here as
+      // dispute 152 onward suddenly wearing a †.
+      const { parameters, rows } = built();
+      const [, second, third] = parameters.regimes;
+
+      expect(parameters.regimes).toHaveLength(3);
+      expect(third?.windows).toEqual({ ...second?.windows, evidenceSeconds: 600 });
+      expect(parameters.current).toEqual(third?.windows);
+      expect(rows.filter((row) => row.underEarlierWindows).map((row) => row.dispute.id)).toEqual([
+        151,
+      ]);
     });
   });
 

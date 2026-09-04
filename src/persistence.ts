@@ -99,9 +99,12 @@ const PERSISTED_QUERIES: readonly string[] = [
   // `RawCourtParameters[]` is a raw payload of plain numbers — no Map, no bigint, no Date — and
   // `toRegimes`/`windowsFor` re-derive from it inside the pure seam on every render, so it is
   // the same bargain as the three above. It is also the read that most wants persisting: a
-  // court is reconfigured roughly never, and without it a return visit renders the whole
-  // restored matrix under a footnote saying the parameter history is not in hand, which then
-  // retracts itself a moment later. A caveat that comes and goes teaches a reader to ignore
+  // court's history only ever *gains* an entry, so a restored copy is short rather than wrong,
+  // and without it a return visit renders the whole restored matrix under a footnote saying the
+  // parameter history is not in hand, which then retracts itself a moment later. Not "a court
+  // is reconfigured roughly never", which is what this said until ticket 19 and is false of
+  // this one — court 34 is a demo instrument and was reconfigured twice in a fortnight. The
+  // argument never needed that premise, and stating it invited a longer TTL off a false fact. A caveat that comes and goes teaches a reader to ignore
   // caveats — see `docs/knowledge/prose-and-caveats.md`.
   "courtParameters",
   // Ticket 10's payouts, admitted on the same two questions. The value is the raw

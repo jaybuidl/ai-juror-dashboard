@@ -188,10 +188,13 @@ function offRosterCount(row: MatrixRow): string {
 /**
  * Which of this row's two windows the marker is actually about, and how long it was.
  *
- * Naming the commit window unconditionally would be right for court 34's one reconfiguration
- * and wrong for the next one. A court that changed only its vote window would put `† 45m
- * window` on every older row — a duration identical to the one the court holds now, so the
- * marker would read as if it had been placed in error.
+ * Naming the commit window unconditionally would be right for the one reconfiguration of court
+ * 34 that this marker is about — 2026-08-20, which moved both measured windows — and wrong for
+ * a reconfiguration that moved one of them. A court that changed only its vote window would put
+ * `† 45m window` on every older row: a duration identical to the one the court holds now, so
+ * the marker would read as if it had been placed in error. The court's *other* reconfiguration
+ * shows how narrow that escape is — 2026-08-26 moved the evidence period alone and this marker
+ * never hears about it.
  *
  * `null` where the parameter history cannot place the row at all. `windows` is non-null wherever
  * `underEarlierWindows` is true, the seam setting one from the other; the fallback is here rather

@@ -13,8 +13,9 @@ import type { PeriodWindows } from "./windows";
  * one dispute the same way. A test that rendered a matrix could only prove it for the matrix.
  */
 
+/** What the court holds now: the 2026-08-26 configuration, evidence 10m. */
 const CURRENT: PeriodWindows = {
-  evidenceSeconds: 2700,
+  evidenceSeconds: 600,
   commitSeconds: 2700,
   voteSeconds: 1800,
   appealSeconds: 129_600,
