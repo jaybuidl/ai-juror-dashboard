@@ -59,6 +59,17 @@ this file is the full account.
   `PERSISTED_MODEL_VERSION` busts the cache and `src/persistence.test.ts` pins those three shapes
   so that changing one fails a test naming the constant to bump. It is only a guard if the shapes
   stay pinned.
+- **A *raw* payload gaining a required field is the same hazard with no test to catch it.** The
+  bullet above is about the three derived shapes, and they are pinned. The raw ones are not: a
+  restored raw payload is handed back exactly as it was written, and the only thing standing
+  between an older bundle's cache and today's model is `PERSISTED_MODEL_VERSION`. Ticket 21 put
+  four reward parameters on `RawCourtParameters`; a cache written before it restores a parameter
+  history with no `minStake`, `toRegimes` refuses to read it, `buildCourtPerformance` returns a
+  failure, and every return visit for a day renders the whole page as a failed build rather than a
+  cold read. Nothing failed while the constant was still `2026-08-25` — not a type, not a test, not
+  the offline suite — because the fixture on disk had already been recaptured with the new fields
+  and no fixture is old. **The question to ask of any change to a `Raw…` type is what the deployed
+  bundle's cache holds**, and the answer is always the shape before yours.
 - **A disabled react-query query is `pending` for ever, and that is the fourth face of the
   "flag that is false while a read is in flight" trap.** `useQuery({enabled: false})` leaves
   `status: "pending"` with no data and never resolves, so `isPending` is true for the whole life
