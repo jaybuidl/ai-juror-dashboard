@@ -1,5 +1,7 @@
 import styled from "styled-components";
-import { ORDINARY_COURT_FROM_SECONDS, ORDINARY_COURT_LABEL, stripFraction } from "./strip";
+import { formatElapsedSeconds } from "./latency";
+import type { Comparison } from "./reference";
+import { stripFraction } from "./strip";
 
 /**
  * The comparison band: where an ordinary Kleros court sits on either latency plot.
@@ -11,11 +13,18 @@ import { ORDINARY_COURT_FROM_SECONDS, ORDINARY_COURT_LABEL, stripFraction } from
  * be the same defect on the one element whose whole purpose is a comparison.
  *
  * It is decoration behind the marks and never in front of them, and it lives inside a plot that
- * is `aria-hidden` — so nothing here is the carrier of a fact. What it means, and that it is
- * illustrative rather than read, is said in words in each page's provenance footer.
+ * is `aria-hidden` — so nothing here is the carrier of a fact. Which court it was read from,
+ * over how many disputes and what period, is said in words in each page's provenance footer.
  *
- * **The label sits to the left of the boundary, right-aligned against it.** At five days the
- * band is the last eighth of the axis, and a label placed inside it — which is what the canvas
+ * **Since ticket 23 it is a reading, so it has states, and none of them is a band at a
+ * default.** The boundary is court 29's median time to ruling, read on every load. While that
+ * read is out, and wherever it failed or came back short, there is no band. The label moves to
+ * the plot's right-hand edge and says which of those it is. A band drawn at the old five days
+ * "until the reading lands" would put a boundary nothing measured on the chart whose subject is
+ * that comparison, in the same violet as the one that was measured.
+ *
+ * **The label sits to the left of the boundary, right-aligned against it.** At four or five days
+ * the band is the last seventh or eighth of the axis, and a label placed inside it — which is what the canvas
  * does at an hour, with 27% to lay out in — has about 12% and would wrap to a column of single
  * words or overflow the plot. Hard against the band's own edge it reads as annotating the line,
  * and it has the whole left of the axis to lay out in.
@@ -62,8 +71,28 @@ const Quiet = styled.span`
   color: ${({ theme }) => theme.textMeta};
 `;
 
-export function StripBand() {
-  const from = stripFraction(ORDINARY_COURT_FROM_SECONDS);
+/** What the label's second line says where there is no band to draw. */
+function absenceOf(comparison: Exclude<Comparison, { state: "measured" }>): string {
+  if (comparison.state === "pending") return "being read";
+  // A court that has ruled no single-round dispute is a fact about that court, not a failure,
+  // and must not be worded as one.
+  if (comparison.reading?.state === "unmeasured") return "nothing to compare";
+  return "not read";
+}
+
+export function StripBand({ comparison }: { comparison: Comparison }) {
+  if (comparison.state !== "measured") {
+    return (
+      <Label $from={1}>
+        Ordinary Kleros court
+        <br />
+        <Quiet>{absenceOf(comparison)}</Quiet>
+      </Label>
+    );
+  }
+
+  const { reading } = comparison;
+  const from = stripFraction(reading.medianSeconds);
 
   return (
     <>
@@ -71,10 +100,12 @@ export function StripBand() {
       <Label $from={from}>
         Ordinary Kleros court
         <br />
-        {/* A minimum, and one round. Court 34 is single-round throughout, so the comparison is
-            like-for-like; that an appeal makes it longer still is said in the footer, where a
-            reader who cannot see this label meets it. */}
-        <Quiet>{ORDINARY_COURT_LABEL} minimum, single round</Quiet>
+        {/* A median over single-round disputes only, because court 34's are single-round. The
+            count, the period and the exclusion are said in the footer, where a reader who cannot
+            see this label meets them. */}
+        <Quiet>
+          Court {reading.court.id} · {formatElapsedSeconds(reading.medianSeconds)} median
+        </Quiet>
       </Label>
     </>
   );

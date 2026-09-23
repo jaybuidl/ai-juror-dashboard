@@ -1,8 +1,7 @@
 import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { arbitrumSource } from "../performance/arbitrum";
-import { formatLatencySeconds } from "../performance/latency";
-import { ORDINARY_COURT_PROSE } from "../performance/strip";
+import { formatElapsedSeconds, formatLatencySeconds } from "../performance/latency";
 import { formatAgo, SOURCES } from "../read-failure";
 import { ROSTER } from "../roster/agent-jurors";
 import {
@@ -25,6 +24,11 @@ import {
   pausedDisputes,
   pausedPerformance,
   READ_AT,
+  REFERENCE,
+  referenceFailed,
+  referencePending,
+  referenceShort,
+  referenceStale,
   refused,
   renderAt,
   resolvingRoster,
@@ -359,21 +363,16 @@ describe("the totals above the matrix", () => {
     expect(screen.getByText(`${median} median`)).toBeInTheDocument();
   });
 
-  it("calls the comparison band illustrative on the page, not only in the source", () => {
-    // It is said once, in the provenance footer. The strip carried a caption saying it a
-    // second time and no longer does — but the claim itself must stay *on the page* rather
-    // than only in the source, because `CLAUDE.md` requires a caveat to be visible in the UI
-    // and this is the one figure on this view that never came from a read. So this test kept
-    // its name and changed where it looks.
+  it("states where the comparison band comes from, on the page and not only in the source", () => {
+    // Ticket 23 made the band a reading. Its provenance is said once, in the footer, as every
+    // other read's is. It is not said beside the strip, where a caption once said the band was
+    // illustrative.
     renderAt("/");
 
     const footer = screen.getByRole("contentinfo");
+    const caveat = within(footer).getByText(/the comparison band on the latency strip is read/i);
 
-    expect(
-      within(footer).getByText(/the comparison band on the latency strip is illustrative/i),
-    ).toBeInTheDocument();
-    expect(within(footer).getByText(/measures no court/i)).toBeInTheDocument();
-    // And not beside the strip, where it used to be.
+    expect(caveat).toHaveTextContent(/court 29 \(Corte de Disputas de Consumo y Vecindad\)/);
     expect(screen.queryByText(/each mark is one draw/i)).not.toBeInTheDocument();
   });
 
@@ -389,24 +388,23 @@ describe("the totals above the matrix", () => {
     expect(screen.queryByText(/comparison band on the latency strip/i)).not.toBeInTheDocument();
   });
 
-  it("says what the band's boundary is, in the scale's own words rather than transcribed", () => {
-    // Ticket 22 moved the boundary from an hour to five days, and the sentence has to carry the
-    // number rather than the adjective it used to: "hours to days" was true of nothing and was
-    // wrong by about two orders of magnitude. Read from `strip.ts` so that ticket 23, which may
-    // measure this, moves the caveat with the band instead of leaving the footer behind.
+  it("says which court, over how many disputes, what period, and that appeals are left out", () => {
+    // The four things the ticket asks a reader be told, each read from the fixture's reading
+    // rather than typed out, so a recaptured court moves the test with the figure.
     renderAt("/");
 
-    const footer = screen.getByRole("contentinfo");
-    const caveat = within(footer).getByText(
-      /the comparison band on the latency strip is illustrative/i,
+    if (REFERENCE.state !== "measured") throw new Error(`reading is ${REFERENCE.state}`);
+    const caveat = within(screen.getByRole("contentinfo")).getByText(
+      /the comparison band on the latency strip is read/i,
     );
 
-    expect(caveat).toHaveTextContent(ORDINARY_COURT_PROSE);
-    // Single-round, because court 34 is single-round throughout and the comparison is only
-    // like-for-like if the reader knows it — and an appeal makes an ordinary court longer still.
-    expect(caveat).toHaveTextContent(/at minimum/i);
-    expect(caveat).toHaveTextContent(/single-round/i);
-    expect(caveat).toHaveTextContent(/appeal/i);
+    expect(caveat).toHaveTextContent(formatElapsedSeconds(REFERENCE.medianSeconds));
+    expect(caveat).toHaveTextContent(`over the ${REFERENCE.count} single-round disputes`);
+    expect(caveat).toHaveTextContent(/created between 2024-11-14 and 2026-09-09/);
+    expect(caveat).toHaveTextContent(/appealed disputes are left out/i);
+    // And the two halves of the old sentence that the reading made false are gone.
+    expect(caveat).not.toHaveTextContent(/illustrative/i);
+    expect(screen.queryByText(/did not come from a read/i)).not.toBeInTheDocument();
   });
 
   it("says it has nothing rather than showing zeros, when nothing was measured", () => {
@@ -432,14 +430,6 @@ describe("the matrix view's footer", () => {
     renderAt("/");
 
     expect(screen.getByText(/never by the person or team who built them/i)).toBeInTheDocument();
-  });
-
-  it("names what on the page did not come from a read", () => {
-    renderAt("/");
-
-    expect(
-      screen.getByText(/the only thing above that did not come from a read/i),
-    ).toBeInTheDocument();
   });
 
   it("discloses a fallback to the roster when ENS could not be reached", () => {
@@ -1094,7 +1084,7 @@ describe("the matrix view on a phone", () => {
     ).toBeInTheDocument();
 
     // The strip goes; its headline figure is the median reveal, which the tiles now lead with,
-    // and its comparison band was illustrative by its own caption.
+    // and its comparison band is drawn at every width on the agent juror view.
     expect(screen.queryByText(/median reveal, fastest and slowest/i)).not.toBeInTheDocument();
 
     // `getAllByText`: the same duration is also one card's slot figure, which is the point —
@@ -1188,9 +1178,8 @@ describe("the matrix view on a phone", () => {
     renderAt("/");
 
     // The footer states what the figures above it rest on, and a provenance note about something
-    // the reader cannot see sends them looking for it, on a page that may be cited. The band is
-    // the only one of these the fold drops that was never a read; merging ticket 10 added three
-    // more that were, and the test below covers those.
+    // the reader cannot see sends them looking for it, on a page that may be cited. Merging
+    // ticket 10 added three more such caveats the fold drops, and the test below covers those.
     expect(screen.queryByText(/comparison band on the latency strip/i)).not.toBeInTheDocument();
   });
 
@@ -1357,5 +1346,67 @@ describe("the matrix view past the density threshold", () => {
     expect(screen.getAllByText(/decided by a panel of one/i).length).toBeGreaterThan(0);
     expect(screen.getByText(/ran under a commit window of/i)).toBeInTheDocument();
     expect(screen.getByText(/comparison band on the latency strip/i)).toBeInTheDocument();
+  });
+});
+
+/**
+ * Ticket 23: the comparison band is a reading now, so it can be in flight, fail, or come back
+ * short. Each of those is said, and none is drawn as a band at a default.
+ */
+describe("the comparison band's read", () => {
+  it("draws the band's place as being read while the read is out, and raises no alarm", () => {
+    renderAt("/", { performance: referencePending });
+
+    expect(screen.getByText("being read")).toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(
+      within(screen.getByRole("contentinfo")).getByText(
+        /the comparison band on the latency strip is still being read/i,
+      ),
+    ).toBeInTheDocument();
+  });
+
+  it("names a failed read once in the banner, and says so where the band would be", () => {
+    renderAt("/", { performance: referenceFailed });
+
+    const banner = screen.getByRole("alert");
+    expect(
+      within(banner).getByText(/the comparison court's disputes could not be read/i),
+    ).toBeInTheDocument();
+    expect(within(banner).getAllByText(SOURCES.core.name)).toHaveLength(1);
+    expect(screen.getByText("not read")).toBeInTheDocument();
+    // The failed half is the banner's; the footer says nothing about the band at all.
+    expect(screen.queryByText(/comparison band on the latency strip/i)).not.toBeInTheDocument();
+  });
+
+  it("reports a short read as the two counts, with no error anywhere", () => {
+    renderAt("/", { performance: referenceShort });
+
+    const banner = screen.getByRole("alert");
+    expect(within(banner).getByText(/came back short, 47 of the 87 it holds/i)).toBeInTheDocument();
+    expect(screen.getByText("not read")).toBeInTheDocument();
+  });
+
+  it("keeps drawing an earlier reading when a re-read fails, and says it is earlier", () => {
+    renderAt("/", { performance: referenceStale });
+
+    expect(screen.getByText(/comes from an earlier read/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(/the comparison band on the latency strip is read/i),
+    ).toBeInTheDocument();
+  });
+
+  it("ranks below every other core-subgraph failure, which costs more than the band does", () => {
+    renderAt("/", { performance: { ...referenceFailed, rewardsError: new Error("HTTP 502") } });
+
+    expect(screen.getByText(/the court's payouts could not be read/i)).toBeInTheDocument();
+    expect(screen.queryByText(/comparison court's disputes/i)).not.toBeInTheDocument();
+  });
+
+  it("does not label the tiles partial over a read none of them depends on", () => {
+    renderAt("/", { performance: referenceFailed });
+
+    const heading = screen.getByRole("heading", { name: /reveal latency ·/i });
+    expect(heading).not.toHaveTextContent(/partial/i);
   });
 });

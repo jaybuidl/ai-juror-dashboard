@@ -133,7 +133,8 @@ ens-and-roster, architecture, project-history. Read the topic file before workin
 Every address, endpoint and court constant is **defined in `src/`**, and that is the source of
 truth: `disputes/court-subgraph.ts` (court id, core subgraph), `disputes/drt-subgraph.ts`,
 `performance/commit-logs.ts` (DisputeKitClassic), `performance/court-parameters.ts` (KlerosCore),
-`performance/arbitrum.ts` (arb1 RPC), `roster/ens.ts` (mainnet), `roster/agent-jurors.ts`. Parameter
+`performance/arbitrum.ts` (arb1 RPC), `performance/reference.ts` (the comparison court),
+`roster/ens.ts` (mainnet), `roster/agent-jurors.ts`. Parameter
 history, economics and event shapes are in `court-34.md` and `chain-and-subgraph.md`; none needs a key.
 **Three configurations, but only one superseded a *measured* window** — the third moved the
 evidence period alone. Never make one count into the other; `court-34.md` says which is which.

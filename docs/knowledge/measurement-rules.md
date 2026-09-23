@@ -62,3 +62,14 @@ this file is the full account.
   only example — which is the point of it: it is the tripwire for the next one going live.
   A count and never an address, `CLAUDE.md`'s no-personal-data invariant at the one field able to
   breach it.
+- **The comparison band is court 29's median time to ruling, over single-round disputes only**
+  (ticket 23). It was a five-day constant until then, the only figure on the page that did not
+  come from a read. Four choices shape it, and each was made against something that would
+  flatter the experiment. **Single-round only**, because court 34's are single-round and an
+  appealed dispute takes far longer. **One named court, not a pool**, because the courts are
+  configured differently and a pooled median describes no court a reader can check. **Court 29**,
+  because on 2026-09-23 it had 87 disputes against 33 for the next court. Its median was 3d 23h,
+  against about 4.0d for court 32 and 6.2d for court 31, so it was not chosen for being slow.
+  **No band at a default**: in flight, failed, short, or nothing to measure, the plot draws no
+  band and says which. A short read is compared against the court's own `numberDisputes` and
+  reported as the two counts, because a median over part of a court is not that court's.

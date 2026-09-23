@@ -64,8 +64,18 @@ export function rangeOf(ids: readonly number[]): DisputeRange | null {
  */
 export function formatReadAt(readAt: number): string {
   const at = new Date(readAt);
-  const pad = (value: number) => String(value).padStart(2, "0");
+  return `${formatDateUtc(readAt)} ${pad(at.getUTCHours())}:${pad(at.getUTCMinutes())} UTC`;
+}
 
-  const date = `${at.getUTCFullYear()}-${pad(at.getUTCMonth() + 1)}-${pad(at.getUTCDate())}`;
-  return `${date} ${pad(at.getUTCHours())}:${pad(at.getUTCMinutes())} UTC`;
+/**
+ * A day, in UTC, as `2026-09-23`: the date half of `formatReadAt`, for a period stated by the
+ * day. Takes epoch milliseconds, as `formatReadAt` does.
+ */
+export function formatDateUtc(at: number): string {
+  const date = new Date(at);
+  return `${date.getUTCFullYear()}-${pad(date.getUTCMonth() + 1)}-${pad(date.getUTCDate())}`;
+}
+
+function pad(value: number): string {
+  return String(value).padStart(2, "0");
 }

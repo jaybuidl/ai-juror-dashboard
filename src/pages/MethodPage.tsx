@@ -4,6 +4,7 @@ import type { Provenance } from "../chrome/provenance";
 import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import { COURT_ID } from "../disputes/court-subgraph";
+import { REFERENCE_COURT_ID } from "../performance/reference";
 
 /**
  * How this dashboard measures what it measures.
@@ -159,6 +160,7 @@ const RegimeWindows = styled.span`
 const SECTIONS: readonly { id: string; label: string }[] = [
   { id: "unit", label: "The unit" },
   { id: "latency", label: "Latency" },
+  { id: "comparison", label: "The comparison" },
   { id: "coherence", label: "Coherence" },
   { id: "window", label: "The window" },
   { id: "caveats", label: "Caveats" },
@@ -249,6 +251,44 @@ export function MethodPage() {
         <Body>
           Latency is never shown as a fraction of a period's window — not in a cell, not in a total,
           not anywhere. See the window, below.
+        </Body>
+      </Section>
+
+      {/* Ticket 23. Directly after latency, because it is what a latency is compared against
+          on both plots, and it is the one read on this dashboard that is not of court 34. The
+          figures themselves are not quoted here: this page reads nothing, and a median typed
+          into it would go stale the next time court 29 ruled. The footer under each plot states
+          the reading as it was taken on that load. */}
+      <Section id="comparison" heading="The comparison band is another court's time to ruling">
+        <Body>
+          Both latency plots carry a violet band marking where an ordinary Kleros court sits on the
+          same time axis. It is read, not drawn by hand. Its boundary is the median{" "}
+          <Term>time to ruling</Term> of court {REFERENCE_COURT_ID} on the same core subgraph, over
+          every single-round dispute that court has ruled: the seconds from a dispute's creation to
+          the moment its execution period opened, when the ruling became final.
+        </Body>
+        <Body>
+          Court {REFERENCE_COURT_ID} is the reference because it has ruled more disputes than any
+          other court on this deployment, by a wide margin. On 23 September 2026 the next two courts
+          by number of disputes took a median of about four and about six days, so it was not chosen
+          for being slow. It is one named court and not a pool of several. The courts are configured
+          differently, and a pooled figure would describe no court a reader could go and check.
+        </Body>
+        <Body>
+          Appealed disputes are left out, and so are disputes not yet ruled. Court 34's disputes are
+          single-round, and an appeal adds at least one more round with its own vote and its own
+          appeal period. Folding appealed disputes in would move the band to the right and flatter
+          this experiment with a gap it did not earn. The footer under each plot says which court
+          the band was read from, how many disputes it is over, when they were created, and how many
+          were left out.
+        </Body>
+        <Body>
+          A read of that court can come back short without failing. So the disputes returned are
+          counted against the number the court itself says it holds, and a shortfall is reported as
+          those two numbers. Where the read is short, has failed, or is still out, no band is drawn
+          at all. The band's place on the plot says which, and a failure raises the banner. The band
+          is never drawn at a default, and no latency is shown as a fraction of it: it is a position
+          on an absolute time axis, like every mark beside it.
         </Body>
       </Section>
 
@@ -412,10 +452,12 @@ export function MethodPage() {
       <Section id="sources" heading="Sources">
         <Body>
           Everything is read in your browser from public, keyless endpoints: the Kleros v2 core
-          subgraph for disputes, rounds, draws, votes and payouts; the dispute resolver template
-          subgraph for what each dispute is about; an Arbitrum RPC for the commitment logs and the
-          court's own parameter history; and Ethereum mainnet for the agent jurors' ENS names and
-          avatars. There is no backend, no database and no stored copy — a reload reads again.
+          subgraph for disputes, rounds, draws, votes and payouts, and for court{" "}
+          {REFERENCE_COURT_ID}'s disputes, which the comparison band is read from; the dispute
+          resolver template subgraph for what each dispute is about; an Arbitrum RPC for the
+          commitment logs and the court's own parameter history; and Ethereum mainnet for the agent
+          jurors' ENS names and avatars. There is no backend, no database and no stored copy — a
+          reload reads again.
         </Body>
         <Body>
           This dashboard is read-only forever. It has no wallet, holds no key, and can neither vote

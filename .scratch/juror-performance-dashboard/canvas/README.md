@@ -110,6 +110,17 @@ order despite its caption saying they are.
   the axis names `5d` and `30d`, the median line to the position the new scale puts 85s at, and
   the label to the left of the boundary — at 12% of the plot it no longer fits inside the band.
 
+  **Ticket 23 then made the boundary a reading, and the artboard was deliberately not amended
+  again.** The band now begins at court 29's median time to ruling over its single-round
+  disputes, read on every load: 3d 23h over 87 disputes on 2026-09-23. So the band's *position*
+  on `Main.dc.html` and `Juror.dc.html` (five days) is a figure the artboard asserts and the code
+  no longer draws, and the `5d` tick is gone from the code for the same reason: it would read as
+  a second claim about where the band begins. The band's *shape* is still the artboard's: the
+  violet wash, the hairline boundary, and the label right-aligned against it. No artboard draws
+  the states a reading adds (being read, not read, nothing to compare). In those states the
+  label moves to the plot's right-hand edge and no band is drawn, which is `StripBand.tsx`'s call
+  and not the canvas's.
+
 - **`Juror.dc.html:89` still labels its plot "Log scale · 1s to 1h", and is superseded.** It was
   already wrong before ticket 22: ticket 11 had that plot share the court strip's scale, which
   ran to a day. It now runs to thirty days and the code derives the words from the scale itself

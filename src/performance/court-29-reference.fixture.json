@@ -1,0 +1,1488 @@
+{
+  "court": {
+    "id": "29",
+    "name": "Corte de Disputas de Consumo y Vecindad",
+    "numberDisputes": "87"
+  },
+  "disputes": [
+    {
+      "id": "220",
+      "disputeID": "220",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1788915812",
+      "lastPeriodChange": "1789261848",
+      "currentRoundIndex": "0",
+      "templateId": "231",
+      "rounds": [
+        {
+          "id": "220-0",
+          "timeline": ["1788937456", "0", "1789153821", "1789261848"]
+        }
+      ]
+    },
+    {
+      "id": "219",
+      "disputeID": "219",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1788911358",
+      "lastPeriodChange": "1789232936",
+      "currentRoundIndex": "0",
+      "templateId": "230",
+      "rounds": [
+        {
+          "id": "219-0",
+          "timeline": ["1788933107", "0", "1789124511", "1789232936"]
+        }
+      ]
+    },
+    {
+      "id": "218",
+      "disputeID": "218",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1788911334",
+      "lastPeriodChange": "1789257532",
+      "currentRoundIndex": "0",
+      "templateId": "229",
+      "rounds": [
+        {
+          "id": "218-0",
+          "timeline": ["1788933105", "0", "1789149489", "1789257532"]
+        }
+      ]
+    },
+    {
+      "id": "145",
+      "disputeID": "145",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1784637031",
+      "lastPeriodChange": "1784983302",
+      "currentRoundIndex": "0",
+      "templateId": "155",
+      "rounds": [
+        {
+          "id": "145-0",
+          "timeline": ["1784659003", "0", "1784875186", "1784983302"]
+        }
+      ]
+    },
+    {
+      "id": "144",
+      "disputeID": "144",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1784208155",
+      "lastPeriodChange": "1784560108",
+      "currentRoundIndex": "0",
+      "templateId": "153",
+      "rounds": [
+        {
+          "id": "144-0",
+          "timeline": ["1784235906", "0", "1784452043", "1784560108"]
+        }
+      ]
+    },
+    {
+      "id": "143",
+      "disputeID": "143",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1783454859",
+      "lastPeriodChange": "1783800915",
+      "currentRoundIndex": "0",
+      "templateId": "152",
+      "rounds": [
+        {
+          "id": "143-0",
+          "timeline": ["1783476679", "0", "1783692831", "1783800915"]
+        }
+      ]
+    },
+    {
+      "id": "133",
+      "disputeID": "133",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1777296631",
+      "lastPeriodChange": "1777643219",
+      "currentRoundIndex": "0",
+      "templateId": "142",
+      "rounds": [
+        {
+          "id": "133-0",
+          "timeline": ["1777318382", "0", "1777534750", "1777643219"]
+        }
+      ]
+    },
+    {
+      "id": "117",
+      "disputeID": "117",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1766514111",
+      "lastPeriodChange": "1766831375",
+      "currentRoundIndex": "0",
+      "templateId": "126",
+      "rounds": [
+        {
+          "id": "117-0",
+          "timeline": ["1766535963", "0", "1766723292", "1766831375"]
+        }
+      ]
+    },
+    {
+      "id": "116",
+      "disputeID": "116",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1763492125",
+      "lastPeriodChange": "1763838280",
+      "currentRoundIndex": "0",
+      "templateId": "125",
+      "rounds": [
+        {
+          "id": "116-0",
+          "timeline": ["1763514074", "0", "1763730198", "1763838280"]
+        }
+      ]
+    },
+    {
+      "id": "115",
+      "disputeID": "115",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1762866203",
+      "lastPeriodChange": "1763159788",
+      "currentRoundIndex": "0",
+      "templateId": "124",
+      "rounds": [
+        {
+          "id": "115-0",
+          "timeline": ["1762887894", "0", "1763051535", "1763159788"]
+        }
+      ]
+    },
+    {
+      "id": "114",
+      "disputeID": "114",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1762865920",
+      "lastPeriodChange": "1763164102",
+      "currentRoundIndex": "0",
+      "templateId": "123",
+      "rounds": [
+        {
+          "id": "114-0",
+          "timeline": ["1762887892", "0", "1763055843", "1763164102"]
+        }
+      ]
+    },
+    {
+      "id": "113",
+      "disputeID": "113",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1762783204",
+      "lastPeriodChange": "1763103845",
+      "currentRoundIndex": "0",
+      "templateId": "122",
+      "rounds": [
+        {
+          "id": "113-0",
+          "timeline": ["1762804867", "0", "1762995549", "1763103845"]
+        }
+      ]
+    },
+    {
+      "id": "112",
+      "disputeID": "112",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1761494009",
+      "lastPeriodChange": "1761811634",
+      "currentRoundIndex": "0",
+      "templateId": "121",
+      "rounds": [
+        {
+          "id": "112-0",
+          "timeline": ["1761515611", "0", "1761703365", "1761811634"]
+        }
+      ]
+    },
+    {
+      "id": "111",
+      "disputeID": "111",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1761171299",
+      "lastPeriodChange": "1761508804",
+      "currentRoundIndex": "0",
+      "templateId": "120",
+      "rounds": [
+        {
+          "id": "111-0",
+          "timeline": ["1761193214", "0", "1761400229", "1761508804"]
+        }
+      ]
+    },
+    {
+      "id": "110",
+      "disputeID": "110",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1761164900",
+      "lastPeriodChange": "1761511900",
+      "currentRoundIndex": "0",
+      "templateId": "119",
+      "rounds": [
+        {
+          "id": "110-0",
+          "timeline": ["1761187038", "0", "1761403313", "1761511900"]
+        }
+      ]
+    },
+    {
+      "id": "109",
+      "disputeID": "109",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1761064165",
+      "lastPeriodChange": "1761382309",
+      "currentRoundIndex": "0",
+      "templateId": "118",
+      "rounds": [
+        {
+          "id": "109-0",
+          "timeline": ["1761086107", "0", "1761274173", "1761382309"]
+        }
+      ]
+    },
+    {
+      "id": "108",
+      "disputeID": "108",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1761059184",
+      "lastPeriodChange": "1761392198",
+      "currentRoundIndex": "0",
+      "templateId": "117",
+      "rounds": [
+        {
+          "id": "108-0",
+          "timeline": ["1761081177", "0", "1761284062", "1761392198"]
+        }
+      ]
+    },
+    {
+      "id": "107",
+      "disputeID": "107",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1759249604",
+      "lastPeriodChange": "1759593000",
+      "currentRoundIndex": "0",
+      "templateId": "116",
+      "rounds": [
+        {
+          "id": "107-0",
+          "timeline": ["1759271785", "0", "1759484891", "1759593000"]
+        }
+      ]
+    },
+    {
+      "id": "106",
+      "disputeID": "106",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1758035823",
+      "lastPeriodChange": "1758332902",
+      "currentRoundIndex": "0",
+      "templateId": "115",
+      "rounds": [
+        {
+          "id": "106-0",
+          "timeline": ["1758057776", "0", "1758224352", "1758332902"]
+        }
+      ]
+    },
+    {
+      "id": "105",
+      "disputeID": "105",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1757707336",
+      "lastPeriodChange": "1758033019",
+      "currentRoundIndex": "0",
+      "templateId": "114",
+      "rounds": [
+        {
+          "id": "105-0",
+          "timeline": ["1757729445", "0", "1757924688", "1758033019"]
+        }
+      ]
+    },
+    {
+      "id": "104",
+      "disputeID": "104",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1757707336",
+      "lastPeriodChange": "1758018873",
+      "currentRoundIndex": "0",
+      "templateId": "113",
+      "rounds": [
+        {
+          "id": "104-0",
+          "timeline": ["1757729444", "0", "1757910535", "1758018873"]
+        }
+      ]
+    },
+    {
+      "id": "103",
+      "disputeID": "103",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1757514239",
+      "lastPeriodChange": "1757835439",
+      "currentRoundIndex": "0",
+      "templateId": "112",
+      "rounds": [
+        {
+          "id": "103-0",
+          "timeline": ["1757536046", "0", "1757726977", "1757835439"]
+        }
+      ]
+    },
+    {
+      "id": "101",
+      "disputeID": "101",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1757026711",
+      "lastPeriodChange": "1757373415",
+      "currentRoundIndex": "0",
+      "templateId": "110",
+      "rounds": [
+        {
+          "id": "101-0",
+          "timeline": ["1757048427", "0", "1757264885", "1757373415"]
+        }
+      ]
+    },
+    {
+      "id": "100",
+      "disputeID": "100",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1757026711",
+      "lastPeriodChange": "1757373413",
+      "currentRoundIndex": "0",
+      "templateId": "109",
+      "rounds": [
+        {
+          "id": "100-0",
+          "timeline": ["1757048425", "0", "1757264884", "1757373413"]
+        }
+      ]
+    },
+    {
+      "id": "98",
+      "disputeID": "98",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1756574044",
+      "lastPeriodChange": "1756887347",
+      "currentRoundIndex": "0",
+      "templateId": "107",
+      "rounds": [
+        {
+          "id": "98-0",
+          "timeline": ["1756596158", "0", "1756779313", "1756887347"]
+        }
+      ]
+    },
+    {
+      "id": "97",
+      "disputeID": "97",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1756574044",
+      "lastPeriodChange": "1756882399",
+      "currentRoundIndex": "0",
+      "templateId": "106",
+      "rounds": [
+        {
+          "id": "97-0",
+          "timeline": ["1756596157", "0", "1756774379", "1756882399"]
+        }
+      ]
+    },
+    {
+      "id": "93",
+      "disputeID": "93",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1755033108",
+      "lastPeriodChange": "1755375426",
+      "currentRoundIndex": "0",
+      "templateId": "99",
+      "rounds": [
+        {
+          "id": "93-0",
+          "timeline": ["1755054928", "0", "1755267081", "1755375426"]
+        }
+      ]
+    },
+    {
+      "id": "92",
+      "disputeID": "92",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1755033108",
+      "lastPeriodChange": "1755372336",
+      "currentRoundIndex": "0",
+      "templateId": "98",
+      "rounds": [
+        {
+          "id": "92-0",
+          "timeline": ["1755054926", "0", "1755264006", "1755372336"]
+        }
+      ]
+    },
+    {
+      "id": "91",
+      "disputeID": "91",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1755033108",
+      "lastPeriodChange": "1755326191",
+      "currentRoundIndex": "0",
+      "templateId": "97",
+      "rounds": [
+        {
+          "id": "91-0",
+          "timeline": ["1755054924", "0", "1755217740", "1755326191"]
+        }
+      ]
+    },
+    {
+      "id": "90",
+      "disputeID": "90",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1754923972",
+      "lastPeriodChange": "1755246739",
+      "currentRoundIndex": "0",
+      "templateId": "96",
+      "rounds": [
+        {
+          "id": "90-0",
+          "timeline": ["1754951367", "0", "1755138239", "1755246739"]
+        }
+      ]
+    },
+    {
+      "id": "85",
+      "disputeID": "85",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1754505975",
+      "lastPeriodChange": "1754852715",
+      "currentRoundIndex": "0",
+      "templateId": "91",
+      "rounds": [
+        {
+          "id": "85-0",
+          "timeline": ["1754527956", "0", "1754744146", "1754852715"]
+        }
+      ]
+    },
+    {
+      "id": "84",
+      "disputeID": "84",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1754505376",
+      "lastPeriodChange": "1754811392",
+      "currentRoundIndex": "0",
+      "templateId": "90",
+      "rounds": [
+        {
+          "id": "84-0",
+          "timeline": ["1754527340", "0", "1754702793", "1754811392"]
+        }
+      ]
+    },
+    {
+      "id": "83",
+      "disputeID": "83",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1753474615",
+      "lastPeriodChange": "1753771066",
+      "currentRoundIndex": "0",
+      "templateId": "87",
+      "rounds": [
+        {
+          "id": "83-0",
+          "timeline": ["1753496692", "0", "1753662660", "1753771066"]
+        }
+      ]
+    },
+    {
+      "id": "82",
+      "disputeID": "82",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1752694270",
+      "lastPeriodChange": "1753041239",
+      "currentRoundIndex": "0",
+      "templateId": "86",
+      "rounds": [
+        {
+          "id": "82-0",
+          "timeline": ["1752716478", "0", "1752932808", "1753041239"]
+        }
+      ]
+    },
+    {
+      "id": "81",
+      "disputeID": "81",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1752671572",
+      "lastPeriodChange": "1752956704",
+      "currentRoundIndex": "0",
+      "templateId": "85",
+      "rounds": [
+        {
+          "id": "81-0",
+          "timeline": ["1752693737", "0", "1752848237", "1752956704"]
+        }
+      ]
+    },
+    {
+      "id": "80",
+      "disputeID": "80",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1752181482",
+      "lastPeriodChange": "1752465999",
+      "currentRoundIndex": "0",
+      "templateId": "84",
+      "rounds": [
+        {
+          "id": "80-0",
+          "timeline": ["1752203209", "0", "1752357653", "1752465999"]
+        }
+      ]
+    },
+    {
+      "id": "79",
+      "disputeID": "79",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1751363901",
+      "lastPeriodChange": "1751698923",
+      "currentRoundIndex": "0",
+      "templateId": "83",
+      "rounds": [
+        {
+          "id": "79-0",
+          "timeline": ["1751385567", "0", "1751590413", "1751698923"]
+        }
+      ]
+    },
+    {
+      "id": "78",
+      "disputeID": "78",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1751363901",
+      "lastPeriodChange": "1751676869",
+      "currentRoundIndex": "0",
+      "templateId": "82",
+      "rounds": [
+        {
+          "id": "78-0",
+          "timeline": ["1751385565", "0", "1751568334", "1751676869"]
+        }
+      ]
+    },
+    {
+      "id": "77",
+      "disputeID": "77",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1751363901",
+      "lastPeriodChange": "1751676240",
+      "currentRoundIndex": "0",
+      "templateId": "81",
+      "rounds": [
+        {
+          "id": "77-0",
+          "timeline": ["1751385563", "0", "1751567718", "1751676240"]
+        }
+      ]
+    },
+    {
+      "id": "76",
+      "disputeID": "76",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1751137615",
+      "lastPeriodChange": "1751478195",
+      "currentRoundIndex": "0",
+      "templateId": "80",
+      "rounds": [
+        {
+          "id": "76-0",
+          "timeline": ["1751159439", "0", "1751369604", "1751478195"]
+        }
+      ]
+    },
+    {
+      "id": "75",
+      "disputeID": "75",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1750255709",
+      "lastPeriodChange": "1750495780",
+      "currentRoundIndex": "0",
+      "templateId": "79",
+      "rounds": [
+        {
+          "id": "75-0",
+          "timeline": ["1750277537", "0", "1750387578", "1750495780"]
+        }
+      ]
+    },
+    {
+      "id": "72",
+      "disputeID": "72",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1750194133",
+      "lastPeriodChange": "1750540067",
+      "currentRoundIndex": "0",
+      "templateId": "76",
+      "rounds": [
+        {
+          "id": "72-0",
+          "timeline": ["1750215866", "0", "1750431880", "1750540067"]
+        }
+      ]
+    },
+    {
+      "id": "71",
+      "disputeID": "71",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1750194133",
+      "lastPeriodChange": "1750540064",
+      "currentRoundIndex": "0",
+      "templateId": "75",
+      "rounds": [
+        {
+          "id": "71-0",
+          "timeline": ["1750215865", "0", "1750431878", "1750540064"]
+        }
+      ]
+    },
+    {
+      "id": "70",
+      "disputeID": "70",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1750194133",
+      "lastPeriodChange": "1750540062",
+      "currentRoundIndex": "0",
+      "templateId": "74",
+      "rounds": [
+        {
+          "id": "70-0",
+          "timeline": ["1750215863", "0", "1750431876", "1750540062"]
+        }
+      ]
+    },
+    {
+      "id": "69",
+      "disputeID": "69",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1750167094",
+      "lastPeriodChange": "1750469976",
+      "currentRoundIndex": "0",
+      "templateId": "73",
+      "rounds": [
+        {
+          "id": "69-0",
+          "timeline": ["1750188744", "0", "1750361755", "1750469976"]
+        }
+      ]
+    },
+    {
+      "id": "66",
+      "disputeID": "66",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1749842647",
+      "lastPeriodChange": "1750148792",
+      "currentRoundIndex": "0",
+      "templateId": "70",
+      "rounds": [
+        {
+          "id": "66-0",
+          "timeline": ["1749864291", "0", "1750040733", "1750148792"]
+        }
+      ]
+    },
+    {
+      "id": "64",
+      "disputeID": "64",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1749505375",
+      "lastPeriodChange": "1749775397",
+      "currentRoundIndex": "0",
+      "templateId": "68",
+      "rounds": [
+        {
+          "id": "64-0",
+          "timeline": ["1749527330", "0", "1749667013", "1749775397"]
+        }
+      ]
+    },
+    {
+      "id": "63",
+      "disputeID": "63",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1749153096",
+      "lastPeriodChange": "1749500305",
+      "currentRoundIndex": "0",
+      "templateId": "67",
+      "rounds": [
+        {
+          "id": "63-0",
+          "timeline": ["1749175690", "0", "1749391947", "1749500305"]
+        }
+      ]
+    },
+    {
+      "id": "62",
+      "disputeID": "62",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1748626739",
+      "lastPeriodChange": "1748925837",
+      "currentRoundIndex": "0",
+      "templateId": "66",
+      "rounds": [
+        {
+          "id": "62-0",
+          "timeline": ["1748648730", "0", "1748817371", "1748925837"]
+        }
+      ]
+    },
+    {
+      "id": "61",
+      "disputeID": "61",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1748528551",
+      "lastPeriodChange": "1748868847",
+      "currentRoundIndex": "0",
+      "templateId": "65",
+      "rounds": [
+        {
+          "id": "61-0",
+          "timeline": ["1748550233", "0", "1748760378", "1748868847"]
+        }
+      ]
+    },
+    {
+      "id": "60",
+      "disputeID": "60",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1748373890",
+      "lastPeriodChange": "1748654256",
+      "currentRoundIndex": "0",
+      "templateId": "64",
+      "rounds": [
+        {
+          "id": "60-0",
+          "timeline": ["1748395866", "0", "1748545928", "1748654256"]
+        }
+      ]
+    },
+    {
+      "id": "59",
+      "disputeID": "59",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1748358907",
+      "lastPeriodChange": "1748692305",
+      "currentRoundIndex": "0",
+      "templateId": "63",
+      "rounds": [
+        {
+          "id": "59-0",
+          "timeline": ["1748381114", "0", "1748584049", "1748692305"]
+        }
+      ]
+    },
+    {
+      "id": "58",
+      "disputeID": "58",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1748357138",
+      "lastPeriodChange": "1748703988",
+      "currentRoundIndex": "0",
+      "templateId": "62",
+      "rounds": [
+        {
+          "id": "58-0",
+          "timeline": ["1748379269", "0", "1748595750", "1748703988"]
+        }
+      ]
+    },
+    {
+      "id": "57",
+      "disputeID": "57",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1748292063",
+      "lastPeriodChange": "1748625856",
+      "currentRoundIndex": "0",
+      "templateId": "61",
+      "rounds": [
+        {
+          "id": "57-0",
+          "timeline": ["1748313868", "0", "1748517552", "1748625856"]
+        }
+      ]
+    },
+    {
+      "id": "56",
+      "disputeID": "56",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1748291936",
+      "lastPeriodChange": "1748633962",
+      "currentRoundIndex": "0",
+      "templateId": "60",
+      "rounds": [
+        {
+          "id": "56-0",
+          "timeline": ["1748313866", "0", "1748525557", "1748633962"]
+        }
+      ]
+    },
+    {
+      "id": "55",
+      "disputeID": "55",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1748290391",
+      "lastPeriodChange": "1748627191",
+      "currentRoundIndex": "0",
+      "templateId": "59",
+      "rounds": [
+        {
+          "id": "55-0",
+          "timeline": ["1748312023", "0", "1748518784", "1748627191"]
+        }
+      ]
+    },
+    {
+      "id": "54",
+      "disputeID": "54",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "0",
+      "createdAt": "1748290391",
+      "lastPeriodChange": "1748592045",
+      "currentRoundIndex": "0",
+      "templateId": "58",
+      "rounds": [
+        {
+          "id": "54-0",
+          "timeline": ["1748312021", "0", "1748483754", "1748592045"]
+        }
+      ]
+    },
+    {
+      "id": "53",
+      "disputeID": "53",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1748290391",
+      "lastPeriodChange": "1748626488",
+      "currentRoundIndex": "0",
+      "templateId": "57",
+      "rounds": [
+        {
+          "id": "53-0",
+          "timeline": ["1748312019", "0", "1748518168", "1748626488"]
+        }
+      ]
+    },
+    {
+      "id": "52",
+      "disputeID": "52",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1747928258",
+      "lastPeriodChange": "1748244449",
+      "currentRoundIndex": "0",
+      "templateId": "56",
+      "rounds": [
+        {
+          "id": "52-0",
+          "timeline": ["1747950171", "0", "1748136063", "1748244449"]
+        }
+      ]
+    },
+    {
+      "id": "51",
+      "disputeID": "51",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1747339154",
+      "lastPeriodChange": "1747685955",
+      "currentRoundIndex": "0",
+      "templateId": "55",
+      "rounds": [
+        {
+          "id": "51-0",
+          "timeline": ["1747360996", "0", "1747577424", "1747685955"]
+        }
+      ]
+    },
+    {
+      "id": "50",
+      "disputeID": "50",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1746629676",
+      "lastPeriodChange": "1747065761",
+      "currentRoundIndex": "0",
+      "templateId": "54",
+      "rounds": [
+        {
+          "id": "50-0",
+          "timeline": ["1746661554", "0", "1746849671", "1747065761"]
+        }
+      ]
+    },
+    {
+      "id": "48",
+      "disputeID": "48",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1746548526",
+      "lastPeriodChange": "1747039937",
+      "currentRoundIndex": "0",
+      "templateId": "52",
+      "rounds": [
+        {
+          "id": "48-0",
+          "timeline": ["1746648379", "0", "1746823602", "1747039937"]
+        }
+      ]
+    },
+    {
+      "id": "47",
+      "disputeID": "47",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1746548424",
+      "lastPeriodChange": "1746927265",
+      "currentRoundIndex": "0",
+      "templateId": "51",
+      "rounds": [
+        {
+          "id": "47-0",
+          "timeline": ["1746644631", "0", "1746711233", "1746927265"]
+        }
+      ]
+    },
+    {
+      "id": "46",
+      "disputeID": "46",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1746548362",
+      "lastPeriodChange": "1746872044",
+      "currentRoundIndex": "0",
+      "templateId": "50",
+      "rounds": [
+        {
+          "id": "46-0",
+          "timeline": ["1746640885", "0", "1746655867", "1746872044"]
+        }
+      ]
+    },
+    {
+      "id": "45",
+      "disputeID": "45",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1746548280",
+      "lastPeriodChange": "1746868298",
+      "currentRoundIndex": "0",
+      "templateId": "49",
+      "rounds": [
+        {
+          "id": "45-0",
+          "timeline": ["1746640881", "0", "1746652121", "1746868298"]
+        }
+      ]
+    },
+    {
+      "id": "44",
+      "disputeID": "44",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1746548196",
+      "lastPeriodChange": "1747002402",
+      "currentRoundIndex": "0",
+      "templateId": "48",
+      "rounds": [
+        {
+          "id": "44-0",
+          "timeline": ["1746569814", "0", "1746786338", "1747002402"]
+        }
+      ]
+    },
+    {
+      "id": "43",
+      "disputeID": "43",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1746481540",
+      "lastPeriodChange": "1746920426",
+      "currentRoundIndex": "0",
+      "templateId": "47",
+      "rounds": [
+        {
+          "id": "43-0",
+          "timeline": ["1746503711", "0", "1746703775", "1746920426"]
+        }
+      ]
+    },
+    {
+      "id": "42",
+      "disputeID": "42",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1746481476",
+      "lastPeriodChange": "1746935917",
+      "currentRoundIndex": "0",
+      "templateId": "46",
+      "rounds": [
+        {
+          "id": "42-0",
+          "timeline": ["1746503089", "0", "1746719303", "1746935917"]
+        }
+      ]
+    },
+    {
+      "id": "41",
+      "disputeID": "41",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1746481401",
+      "lastPeriodChange": "1746883864",
+      "currentRoundIndex": "0",
+      "templateId": "45",
+      "rounds": [
+        {
+          "id": "41-0",
+          "timeline": ["1746503085", "0", "1746667764", "1746883864"]
+        }
+      ]
+    },
+    {
+      "id": "40",
+      "disputeID": "40",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1746481337",
+      "lastPeriodChange": "1746896910",
+      "currentRoundIndex": "0",
+      "templateId": "44",
+      "rounds": [
+        {
+          "id": "40-0",
+          "timeline": ["1746503080", "0", "1746680809", "1746896910"]
+        }
+      ]
+    },
+    {
+      "id": "39",
+      "disputeID": "39",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1746481263",
+      "lastPeriodChange": "1746912999",
+      "currentRoundIndex": "0",
+      "templateId": "43",
+      "rounds": [
+        {
+          "id": "39-0",
+          "timeline": ["1746503076", "0", "1746696944", "1746912999"]
+        }
+      ]
+    },
+    {
+      "id": "38",
+      "disputeID": "38",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1746481190",
+      "lastPeriodChange": "1746935913",
+      "currentRoundIndex": "0",
+      "templateId": "42",
+      "rounds": [
+        {
+          "id": "38-0",
+          "timeline": ["1746503072", "0", "1746719299", "1746935913"]
+        }
+      ]
+    },
+    {
+      "id": "37",
+      "disputeID": "37",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1746481117",
+      "lastPeriodChange": "1746883219",
+      "currentRoundIndex": "0",
+      "templateId": "41",
+      "rounds": [
+        {
+          "id": "37-0",
+          "timeline": ["1746503068", "0", "1746667138", "1746883219"]
+        }
+      ]
+    },
+    {
+      "id": "36",
+      "disputeID": "36",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "0",
+      "createdAt": "1746470938",
+      "lastPeriodChange": "1746924771",
+      "currentRoundIndex": "0",
+      "templateId": "40",
+      "rounds": [
+        {
+          "id": "36-0",
+          "timeline": ["1746492572", "0", "1746708744", "1746924771"]
+        }
+      ]
+    },
+    {
+      "id": "35",
+      "disputeID": "35",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1746470440",
+      "lastPeriodChange": "1746893173",
+      "currentRoundIndex": "0",
+      "templateId": "39",
+      "rounds": [
+        {
+          "id": "35-0",
+          "timeline": ["1746492567", "0", "1746677076", "1746893173"]
+        }
+      ]
+    },
+    {
+      "id": "34",
+      "disputeID": "34",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1744909909",
+      "lastPeriodChange": "1745364688",
+      "currentRoundIndex": "0",
+      "templateId": "38",
+      "rounds": [
+        {
+          "id": "34-0",
+          "timeline": ["1744931900", "0", "1745148508", "1745364688"]
+        }
+      ]
+    },
+    {
+      "id": "18",
+      "disputeID": "18",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1740596341",
+      "lastPeriodChange": "1741024620",
+      "currentRoundIndex": "0",
+      "templateId": "22",
+      "rounds": [
+        {
+          "id": "18-0",
+          "timeline": ["1740618101", "0", "1740808103", "1741024620"]
+        }
+      ]
+    },
+    {
+      "id": "13",
+      "disputeID": "13",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1739996679",
+      "lastPeriodChange": "1740534927",
+      "currentRoundIndex": "0",
+      "templateId": "17",
+      "rounds": [
+        {
+          "id": "13-0",
+          "timeline": ["1740104840", "0", "1740318394", "1740534927"]
+        }
+      ]
+    },
+    {
+      "id": "12",
+      "disputeID": "12",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1739996482",
+      "lastPeriodChange": "1740537407",
+      "currentRoundIndex": "0",
+      "templateId": "16",
+      "rounds": [
+        {
+          "id": "12-0",
+          "timeline": ["1740104837", "0", "1740320850", "1740537407"]
+        }
+      ]
+    },
+    {
+      "id": "11",
+      "disputeID": "11",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1737057792",
+      "lastPeriodChange": "1737595579",
+      "currentRoundIndex": "0",
+      "templateId": "11",
+      "rounds": [
+        {
+          "id": "11-0",
+          "timeline": ["1737166185", "0", "1737379017", "1737595579"]
+        }
+      ]
+    },
+    {
+      "id": "10",
+      "disputeID": "10",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1736517959",
+      "lastPeriodChange": "1737058845",
+      "currentRoundIndex": "0",
+      "templateId": "10",
+      "rounds": [
+        {
+          "id": "10-0",
+          "timeline": ["1736626218", "0", "1736842243", "1737058845"]
+        }
+      ]
+    },
+    {
+      "id": "9",
+      "disputeID": "9",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "1",
+      "createdAt": "1736263626",
+      "lastPeriodChange": "1736770438",
+      "currentRoundIndex": "0",
+      "templateId": "9",
+      "rounds": [
+        {
+          "id": "9-0",
+          "timeline": ["1736372075", "0", "1736554413", "1736770438"]
+        }
+      ]
+    },
+    {
+      "id": "4",
+      "disputeID": "4",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1732708478",
+      "lastPeriodChange": "1733240862",
+      "currentRoundIndex": "0",
+      "templateId": "4",
+      "rounds": [
+        {
+          "id": "4-0",
+          "timeline": ["1732816485", "0", "1733024674", "1733240862"]
+        }
+      ]
+    },
+    {
+      "id": "3",
+      "disputeID": "3",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1732624264",
+      "lastPeriodChange": "1733156738",
+      "currentRoundIndex": "0",
+      "templateId": "3",
+      "rounds": [
+        {
+          "id": "3-0",
+          "timeline": ["1732732335", "0", "1732940541", "1733156738"]
+        }
+      ]
+    },
+    {
+      "id": "2",
+      "disputeID": "2",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1731650726",
+      "lastPeriodChange": "1732191663",
+      "currentRoundIndex": "0",
+      "templateId": "2",
+      "rounds": [
+        {
+          "id": "2-0",
+          "timeline": ["1731759019", "0", "1731975339", "1732191663"]
+        }
+      ]
+    },
+    {
+      "id": "1",
+      "disputeID": "1",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1731650477",
+      "lastPeriodChange": "1732151752",
+      "currentRoundIndex": "0",
+      "templateId": "1",
+      "rounds": [
+        {
+          "id": "1-0",
+          "timeline": ["1731759015", "0", "1731935386", "1732151752"]
+        }
+      ]
+    },
+    {
+      "id": "0",
+      "disputeID": "0",
+      "period": "execution",
+      "ruled": true,
+      "currentRuling": "2",
+      "createdAt": "1731564893",
+      "lastPeriodChange": "1732032507",
+      "currentRoundIndex": "0",
+      "templateId": "0",
+      "rounds": [
+        {
+          "id": "0-0",
+          "timeline": ["1731672963", "0", "1731816152", "1732032507"]
+        }
+      ]
+    }
+  ]
+}

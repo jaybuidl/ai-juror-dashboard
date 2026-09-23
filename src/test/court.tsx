@@ -11,6 +11,7 @@ import {
 } from "../disputes/dispute-templates";
 import { type RawDispute, toDisputes } from "../disputes/disputes";
 import type { DisputesView } from "../disputes/useDisputes";
+import referenceFixture from "../performance/court-29-reference.fixture.json" with { type: "json" };
 import commitFixture from "../performance/court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "../performance/court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "../performance/court-34-parameters.fixture.json" with {
@@ -25,6 +26,7 @@ import {
   type RawDraw,
   type RawRewardShift,
 } from "../performance/performance";
+import { type RawReference, referenceReadingOf } from "../performance/reference";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import type { RawCourtParameters } from "../performance/windows";
 import { ReadFailure, SOURCES } from "../read-failure";
@@ -186,6 +188,13 @@ export const disputes: DisputesView = {
   templateFor: (dispute) => templateFor(templates, dispute),
 };
 
+/**
+ * Court 29's record, measured: the comparison band every court below is drawn against.
+ *
+ * Ticket 23's reading, captured from Goldsky on 2026-09-23 like every other fixture here.
+ */
+export const REFERENCE = referenceReadingOf(referenceFixture as RawReference);
+
 const built = buildCourtPerformance({
   disputes: fixture as RawDispute[],
   draws: drawFixture as RawDraw[],
@@ -205,6 +214,8 @@ export const measured: CourtPerformanceView = {
   commitError: null,
   parametersError: null,
   rewardsError: null,
+  reference: REFERENCE,
+  referenceError: null,
   failure: null,
   readAt: READ_AT,
   isPaused: false,
@@ -222,6 +233,8 @@ export const unmeasured: CourtPerformanceView = {
   commitError: null,
   parametersError: null,
   rewardsError: null,
+  reference: REFERENCE,
+  referenceError: null,
   failure: null,
   // The draws never landed at all, so this page has never been complete and the banner says
   // "Never" rather than dating it to the dispute read that did succeed.
@@ -263,6 +276,8 @@ export const arbitrumPending: CourtPerformanceView = {
   commitError: null,
   parametersError: null,
   rewardsError: null,
+  reference: REFERENCE,
+  referenceError: null,
   failure: null,
   readAt: READ_AT,
   isPaused: false,
@@ -347,6 +362,44 @@ if (!emptied.success) throw new Error(`${emptied.code}: ${emptied.message}`);
 
 /** What the page has when the payouts were read and what came back cannot be all of them. */
 export const rewardsShort: CourtPerformanceView = { ...measured, performance: emptied.data };
+
+/**
+ * The comparison court still being read: every cold load not served from the cache.
+ *
+ * Ticket 23's fifth read, and the fifth to need the in-flight and failed pair split. `reference`
+ * is `null` in both, so only the error tells a band that is coming from one that is not.
+ */
+export const referencePending: CourtPerformanceView = { ...measured, reference: null };
+
+/** The same read having failed, with nothing held from before. */
+export const referenceFailed: CourtPerformanceView = {
+  ...referencePending,
+  referenceError: new ReadFailure("The core subgraph returned HTTP 502 Bad Gateway", {
+    source: SOURCES.core,
+    status: "HTTP 502",
+  }),
+};
+
+/** A re-read that failed over a reading already held: the band stays, from the earlier read. */
+export const referenceStale: CourtPerformanceView = {
+  ...measured,
+  referenceError: referenceFailed.referenceError,
+};
+
+/**
+ * The comparison read that **succeeded** and came back short, with no error anywhere.
+ *
+ * Built from the captured payload less its last forty disputes, which is what a reindexing
+ * Goldsky serves: HTTP 200, the court's own count intact, part of its list. Without the count
+ * the band would move to the median of what came back and nothing on the page would say so.
+ */
+export const referenceShort: CourtPerformanceView = {
+  ...measured,
+  reference: referenceReadingOf({
+    ...(referenceFixture as RawReference),
+    disputes: (referenceFixture as RawReference).disputes.slice(0, -40),
+  }),
+};
 
 /**
  * A court paying in a registered fee token, which no fixture can hold.
@@ -441,6 +494,8 @@ export const staleDraws: CourtPerformanceView = {
   commitError: null,
   parametersError: null,
   rewardsError: null,
+  reference: REFERENCE,
+  referenceError: null,
   failure: null,
   // An hour older than the dispute read beside it, which is the whole shape of the drift: the
   // banner has to date the page to *this* moment and not to the fresh half.
@@ -623,6 +678,8 @@ export const refused: CourtPerformanceView = {
   commitError: null,
   parametersError: null,
   rewardsError: null,
+  reference: REFERENCE,
+  referenceError: null,
   readAt: null,
   failure: {
     code: "MALFORMED_COURT_DATA",

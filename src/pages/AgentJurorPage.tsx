@@ -1,6 +1,7 @@
 import { Link, useParams } from "react-router";
 import styled from "styled-components";
 import { Breadcrumb } from "../chrome/Breadcrumb";
+import { comparisonCaveatOf, comparisonFailureOf } from "../chrome/comparison";
 import { Notice } from "../chrome/Failure";
 import { type Failures, olderOf, present } from "../chrome/failures";
 import { type Provenance, rangeOf } from "../chrome/provenance";
@@ -16,7 +17,7 @@ import { type AgentJurorReading, buildAgentJurorReading } from "../performance/a
 import { arbitrumSource } from "../performance/arbitrum";
 import { formatWindowSeconds } from "../performance/latency";
 import type { CourtPerformance } from "../performance/performance";
-import { ORDINARY_COURT_PROSE } from "../performance/strip";
+import { comparisonOf } from "../performance/reference";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type FailedRead, failureOf, SOURCES } from "../read-failure";
 import { ensNameOf, handleUrlOf } from "../roster/agent-jurors";
@@ -255,10 +256,11 @@ function shortAddress(address: string): string {
 /**
  * The core subgraph's half, at most once — the same worst-first shape the other two views use.
  *
- * Four of this dashboard's reads come from one Goldsky deployment, so an outage there takes all
- * four and listing them separately would report one source as four faults. The ordering is by
+ * Five of this dashboard's reads come from one Goldsky deployment, so an outage there takes all
+ * five and listing them separately would report one source as five faults. The ordering is by
  * what each costs *this* page: the disputes and the draws cost every figure on it, the payouts
- * cost two of the six on the card.
+ * cost two of the six on the card, and ticket 23's comparison court costs where the band on the
+ * latency plot begins.
  */
 function coreFailureOf(
   nickname: string,
@@ -325,7 +327,9 @@ function coreFailureOf(
     };
   }
 
-  return null;
+  // Last, as on the matrix view and in the same words, because it is the same band read by the
+  // same query. The plot says it is missing in the band's own place, so this is the second voice.
+  return comparisonFailureOf(performance.reference, performance.referenceError);
 }
 
 /**
@@ -460,18 +464,21 @@ function provenanceOf({
   if (drawn && reading !== null) {
     const { marginals } = reading;
 
-    // The one thing on this page that is not a read, said in the one place this page says such
-    // things — the same rule and the same words as the matrix view's, because it is the same
-    // band on a plot sharing the same axis, and two pages disagreeing about what it stands for
-    // is the prose fork `CLAUDE.md` records over and over.
+    // Where the comparison band comes from, said in the one place this page says such things.
+    // The same words as the matrix view's, from the same function, because it is the same band
+    // on a plot sharing the same axis. Two pages disagreeing about what it stands for is the
+    // prose fork `CLAUDE.md` records over and over. Until ticket 23 the sentence called the band
+    // illustrative, which it no longer is.
     //
     // Gated on the plot being on the screen and not merely on the agent juror having draws:
     // `AgentJurorLatency` shows a sentence instead of a picture where none of those draws has
     // revealed, and a footer naming a band nobody can see sends a reader looking for it.
     if (marginals.revealLatency !== null) {
-      caveats.push(
-        `The comparison band on the latency plot is illustrative and measures no court: it marks the ${ORDINARY_COURT_PROSE} an ordinary Kleros court takes at minimum over a single-round dispute, before any appeal, which makes it longer still. It is the only thing above that did not come from a read.`,
+      const caveat = comparisonCaveatOf(
+        comparisonOf(performance.reference, performance.referenceError),
+        "latency plot",
       );
+      if (caveat !== null) caveats.push(caveat);
     }
 
     const lone = marginals.coherence.lonePanelDisputes;
@@ -843,6 +850,7 @@ export function AgentJurorView({
             court={measured.totals.revealLatency}
             changedWindows={reading.marginals.changedWindows}
             current={measured.parameters.current}
+            comparison={comparisonOf(performance.reference, performance.referenceError)}
           />
           <AgentJurorDraws
             nickname={agentJuror.nickname}

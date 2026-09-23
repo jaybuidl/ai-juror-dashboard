@@ -1,6 +1,7 @@
 import styled from "styled-components";
 import { narrow } from "../styles/breakpoints";
 import { formatLatencySeconds, formatWindowSeconds } from "./latency";
+import type { Comparison } from "./reference";
 import { StripBand } from "./StripBand";
 import { STRIP_RANGE_LABEL, STRIP_TICKS, stripFraction, stripMarks } from "./strip";
 import { type LatencySummary, markedWindows, type WindowChange } from "./totals";
@@ -26,8 +27,9 @@ import type { PeriodWindows } from "./windows";
  * — the fork `CLAUDE.md` records the matrix and the card list being lifted apart to prevent. Of
  * the remaining two, a bare wider axis leaves the right third of the plot empty with nothing to
  * say why, and the band is what that emptiness *means*: it is the distance this page exists to
- * measure. It is illustrative here exactly as it is on the matrix page, and said so in the same
- * place — this view's provenance footer, gated on this plot being on the screen at all.
+ * measure. It is read here exactly as it is on the matrix page, from the same `Comparison`, and
+ * its provenance is stated in the same place: this view's footer, gated on this plot being on
+ * the screen at all.
  *
  * **What is plotted is reveal latency, and the reason on the artboard is false.**
  * `Juror.dc.html:108` gives it as "commit latency is not comparable across dispute 151, which ran
@@ -222,6 +224,8 @@ export type AgentJurorLatencyProps = {
   changedWindows: readonly WindowChange[];
   /** The windows the court is configured with today, against which an earlier one is named. */
   current: PeriodWindows | null;
+  /** Where the comparison band begins, or why it is not drawn. See `reference.ts`. */
+  comparison: Comparison;
 };
 
 export function AgentJurorLatency({
@@ -230,6 +234,7 @@ export function AgentJurorLatency({
   court,
   changedWindows,
   current,
+  comparison,
 }: AgentJurorLatencyProps) {
   if (own === null) {
     // An axis with the court on it and nothing of this agent juror's would be a comparison with
@@ -267,7 +272,7 @@ export function AgentJurorLatency({
       {/* Decoration over figures printed in full beneath it: the medians are in the reading
           below and in the stat card above, and the marks carry nothing the durations do not. */}
       <Plot aria-hidden="true">
-        <StripBand />
+        <StripBand comparison={comparison} />
         <Axis />
 
         {courtMarks.map((mark) => (

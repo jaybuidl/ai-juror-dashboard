@@ -397,7 +397,7 @@ export type AgentJurorMarginals = {
  * a duration something actually took. It is also what the canvas quotes: 44 draws whose middles
  * are 85s and 86s are labelled 85s there (`canvas/Main.dc.html:73`).
  */
-function medianOf(ascending: readonly number[]): number {
+export function medianOf(ascending: readonly number[]): number {
   const middle = ascending[Math.ceil(ascending.length / 2) - 1];
   if (middle === undefined) throw new Error("Median of an empty distribution");
   return middle;

@@ -1,6 +1,7 @@
 import styled from "styled-components";
 import { narrow } from "../styles/breakpoints";
 import { formatLatencySeconds } from "./latency";
+import type { Comparison } from "./reference";
 import { StripBand } from "./StripBand";
 import { STRIP_TICKS, stripFraction, stripMarks } from "./strip";
 import type { LatencySummary } from "./totals";
@@ -141,9 +142,12 @@ function markBottom(stack: number): string {
 
 export function LatencyStrip({
   latency,
+  comparison,
   partial = false,
 }: {
   latency: LatencySummary | null;
+  /** Where the comparison band begins, or why it is not drawn. See `reference.ts`. */
+  comparison: Comparison;
   /**
    * True when a read behind this distribution failed.
    *
@@ -185,7 +189,7 @@ export function LatencyStrip({
       {/* The plot is decoration over a figure that is printed in full below it: every value
           here is in the summary, and the marks carry no information the durations do not. */}
       <Plot aria-hidden="true">
-        <StripBand />
+        <StripBand comparison={comparison} />
         <Axis />
 
         {marks.map((mark) => (
