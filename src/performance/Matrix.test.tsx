@@ -1446,25 +1446,25 @@ describe("Matrix", () => {
       // asked. Saying "never drawn" there is an unread state rendering as a fact about the
       // court, over the single observation this dashboard was built to catch.
       //
-      // Two columns are in that state in this fixture rather than one. That used to be
+      // Three columns are in that state in this fixture rather than one. That used to be
       // baskerville alone and the test was written as though it always would be; the court drew
-      // baskerville and a seventh agent juror joined, and the count is a property of the capture
+      // baskerville and two more agent jurors joined, and the count is a property of the capture
       // either way.
       //
-      // Over the **shipped** roster rather than the fixture's, which is what makes the count two:
-      // `FIXTURE_ROSTER` is short by exactly the agent juror ticket 24 added, and this claim is
-      // the one that has to hold about the roster a reader actually meets. The grid is compact
-      // there — seven columns are past `COMPACT_FROM_COLUMNS` — and the stack label carries the
+      // Over the **shipped** roster rather than the fixture's, which is what makes the count three:
+      // `FIXTURE_ROSTER` is short by exactly the agent jurors appended from ticket 24 onward, and this claim
+      // is the one that has to hold about the roster a reader actually meets. The grid is compact
+      // there — the shipped roster is past `COMPACT_FROM_COLUMNS` — and the stack label carries the
       // words at both densities, which is why the assertion reads the same either way.
       renderMatrix(build({ roster: ROSTER }));
-      expect(screen.getAllByText("Never drawn")).toHaveLength(2);
+      expect(screen.getAllByText("Never drawn")).toHaveLength(3);
 
       cleanup();
       renderDrifted();
       expect(screen.queryByText("Never drawn")).not.toBeInTheDocument();
       // The stack is a fact about how the agent juror was built, not about the court, so it
       // stands in — the column goes quiet about the record rather than blank about everything.
-      expect(screen.getAllByText(ROSTER[5]?.stack.label ?? "").length).toBeGreaterThan(0);
+      expect(screen.getAllByText(ROSTER[5]?.stack?.label ?? "").length).toBeGreaterThan(0);
     });
   });
 

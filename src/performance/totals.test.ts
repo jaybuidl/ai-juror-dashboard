@@ -219,12 +219,12 @@ describe("sparsity", () => {
   });
 
   it("names the agent jurors no read dispute drew", () => {
-    // Two of them in this fixture, and the number is a fact about the capture rather than about
-    // the court: it was taken before the court first drew baskerville and before grokleros
-    // joined the roster, so both columns are blank end to end in it against five that carry
-    // draws. Stating that is the record this dashboard exists partly to keep — an empty column
+    // Three of them in this fixture, and the number is a fact about the capture rather than about
+    // the court: it was taken before the court first drew baskerville and before grokleros and
+    // jonesy joined the roster, so all three columns are blank end to end in it against five
+    // that carry draws. Stating that is the record this dashboard exists partly to keep — an empty column
     // is something the court did, not a read that came up short.
-    expect(courtTotalsOf(built.rows, ROSTER).sparsity.emptyColumns).toBe(2);
+    expect(courtTotalsOf(built.rows, ROSTER).sparsity.emptyColumns).toBe(3);
   });
 
   it("counts an unread row out of every figure rather than as a blank per agent juror", () => {
@@ -303,7 +303,7 @@ describe("sparsity", () => {
   it("still names the agent jurors no drawn dispute picked, beside disputes with no panel", () => {
     // The other direction: an undrawn row among drawn ones must not suppress the claim, or a
     // court in its ordinary state would stop saying the one thing this dashboard was built to
-    // record. Two of the fixture's columns are blank across every dispute that has a panel.
+    // record. Three of the fixture's columns are blank across every dispute that has a panel.
     const waiting = {
       ...(built.rows[0] as MatrixRow),
       dispute: { ...(built.rows[0] as MatrixRow).dispute, id: 167 },
@@ -311,7 +311,7 @@ describe("sparsity", () => {
       cells: ROSTER.map(() => null),
     };
 
-    expect(courtTotalsOf([waiting, ...built.rows], ROSTER).sparsity.emptyColumns).toBe(2);
+    expect(courtTotalsOf([waiting, ...built.rows], ROSTER).sparsity.emptyColumns).toBe(3);
   });
 
   it("never counts an unread row as a dispute with no panel", () => {

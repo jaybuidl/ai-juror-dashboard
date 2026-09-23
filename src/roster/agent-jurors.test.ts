@@ -1,5 +1,14 @@
 import { describe, expect, it } from "vitest";
-import { AGENT_JUROR_ENS_PARENT, ensNameOf, handleUrlOf, ROSTER } from "./agent-jurors";
+import {
+  AGENT_JUROR_ENS_PARENT,
+  agentJurorPathOf,
+  ensNameOf,
+  handleUrlOf,
+  pathSegmentOf,
+  ROSTER,
+  stackLabelOf,
+  UNKNOWN_STACK_LABEL,
+} from "./agent-jurors";
 
 describe("the roster", () => {
   /**
@@ -26,24 +35,37 @@ describe("the roster", () => {
       "Aletheia",
       "Baskerville",
       "Grokleros",
+      "Jonesy The First",
     ]);
   });
 
   it("identifies every agent juror by nickname and stack", () => {
     for (const agentJuror of ROSTER) {
       expect(agentJuror.nickname).not.toHaveLength(0);
-      expect(agentJuror.stack.label).not.toHaveLength(0);
+      expect(stackLabelOf(agentJuror)).not.toHaveLength(0);
+      // A recorded stack is a name, and an empty one would render as a blank pill that no
+      // fallback catches: `null` is the only way to say it is not known.
+      if (agentJuror.stack !== null) expect(agentJuror.stack.label).not.toHaveLength(0);
     }
+  });
+
+  it("says a stack is unknown rather than leaving it blank", () => {
+    expect(stackLabelOf({ nickname: "X", address: "0x0", stack: null })).toBe(UNKNOWN_STACK_LABEL);
+    expect(stackLabelOf({ nickname: "X", address: "0x0", stack: { label: "Hermes" } })).toBe(
+      "Hermes",
+    );
   });
 
   // Case-insensitively for the nicknames, and that is load-bearing rather than fussy:
   // `AgentJurorPage` folds case to keep links made before the nicknames were capitalised
   // working, so two entries differing only in case would give one URL two pages.
-  it("gives every agent juror a distinct nickname and address", () => {
+  it("gives every agent juror a distinct nickname, route and address", () => {
     const nicknames = new Set(ROSTER.map((agentJuror) => agentJuror.nickname.toLowerCase()));
+    const segments = new Set(ROSTER.map((agentJuror) => pathSegmentOf(agentJuror).toLowerCase()));
     const addresses = new Set(ROSTER.map((agentJuror) => agentJuror.address.toLowerCase()));
 
     expect(nicknames.size).toBe(ROSTER.length);
+    expect(segments.size).toBe(ROSTER.length);
     expect(addresses.size).toBe(ROSTER.length);
   });
 
@@ -64,10 +86,25 @@ describe("the roster", () => {
     );
 
     for (const agentJuror of ROSTER) {
-      expect(ensNameOf(agentJuror)).toBe(
-        `${agentJuror.nickname.toLowerCase()}.${AGENT_JUROR_ENS_PARENT}`,
-      );
-      expect(ensNameOf(agentJuror)).toBe(ensNameOf(agentJuror).toLowerCase());
+      const ensName = ensNameOf(agentJuror);
+      if (ensName === null) continue;
+      expect(ensName).toBe(`${agentJuror.nickname.toLowerCase()}.${AGENT_JUROR_ENS_PARENT}`);
+      expect(ensName).toBe(ensName.toLowerCase());
+    }
+  });
+
+  it("builds no ENS name for an agent juror without a subname, rather than guessing one", () => {
+    expect(
+      ensNameOf({ nickname: "Jonesy The First", address: "0x0", stack: null, ensSubname: false }),
+    ).toBeNull();
+  });
+
+  it("keeps every nickname with a subname a single word, because that nickname is the label", () => {
+    // `ensSubname: false` is the only way a nickname may carry a space: ENSIP-15 disallows one
+    // in a label, so a spaced nickname with a subname would build a name `normalize` rejects.
+    for (const agentJuror of ROSTER) {
+      if (ensNameOf(agentJuror) === null) continue;
+      expect(agentJuror.nickname, agentJuror.nickname).not.toMatch(/\s/);
     }
   });
 
@@ -82,9 +119,17 @@ describe("the roster", () => {
     }
   });
 
-  it("uses a nickname that survives a URL, because ticket 11 routes on it", () => {
+  it("routes on a segment that survives a URL, because ticket 11 routes on it", () => {
     for (const agentJuror of ROSTER) {
-      expect(encodeURIComponent(agentJuror.nickname)).toBe(agentJuror.nickname);
+      expect(encodeURIComponent(pathSegmentOf(agentJuror))).toBe(pathSegmentOf(agentJuror));
+      expect(agentJurorPathOf(agentJuror)).toBe(`/agent-jurors/${pathSegmentOf(agentJuror)}`);
+    }
+  });
+
+  it("routes on the nickname itself wherever it can, so no existing link moved", () => {
+    for (const agentJuror of ROSTER) {
+      if (encodeURIComponent(agentJuror.nickname) !== agentJuror.nickname) continue;
+      expect(agentJuror.pathSegment, agentJuror.nickname).toBeUndefined();
     }
   });
 });

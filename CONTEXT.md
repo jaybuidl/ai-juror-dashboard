@@ -22,7 +22,10 @@ _Avoid_: AI juror (ambiguous — the court holds no others), bot, model
 An agent juror's human-readable name, held on chain as an ENS subname of `agents.kleroslabs.eth`
 and carrying an avatar. Written with a leading capital in the roster, which is the spelling shown
 and the spelling the route is keyed on; the ENS subname's label is its lowercase form, which is
-what `ensNameOf` builds.
+what `ensNameOf` builds. Two exceptions, both marked on the roster entry: an agent juror with no
+subname (`ensSubname: false`) is named by the roster alone and has no ENS name to show, and a
+nickname with a space in it — which can be neither a label nor a clean path segment — is routed by
+an explicit `pathSegment` (`pathSegmentOf`).
 _Avoid_: handle (a different thing here — see **Handle**), alias, label
 
 **Handle**:
@@ -38,7 +41,8 @@ username, social
 **Stack**:
 The agentic build behind one agent juror — its framework, model and harness. Known only from the
 roster: nothing on chain reports it, and the one agent juror that mentions its own stack does so in
-the prose of some justifications, which is not a source anything should parse.
+the prose of some justifications, which is not a source anything should parse. Where the roster has
+not recorded one it is `null`, and the page says "Stack unknown" rather than leaving a blank.
 _Avoid_: agent, framework, model (each names one part of a stack, not the whole)
 
 **Roster**:

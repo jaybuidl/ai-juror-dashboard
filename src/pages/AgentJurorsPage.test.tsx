@@ -1,6 +1,6 @@
 import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { ROSTER } from "../roster/agent-jurors";
+import { agentJurorPathOf, ensNameOf, ROSTER, stackLabelOf } from "../roster/agent-jurors";
 import { renderAt, resolvingRoster, unresolvedRoster } from "../test/court";
 
 /**
@@ -32,7 +32,7 @@ describe("the agent-juror index", () => {
       expect(
         screen.getByRole("link", { name: agentJuror.nickname }),
         agentJuror.nickname,
-      ).toHaveAttribute("href", `/agent-jurors/${agentJuror.nickname}`);
+      ).toHaveAttribute("href", agentJurorPathOf(agentJuror));
     }
   });
 
@@ -42,7 +42,7 @@ describe("the agent-juror index", () => {
     // Two agent jurors can share a stack, so the assertion is that each label is present —
     // not that it is unique.
     for (const agentJuror of ROSTER) {
-      expect(screen.getAllByText(agentJuror.stack.label).length).toBeGreaterThan(0);
+      expect(screen.getAllByText(stackLabelOf(agentJuror)).length).toBeGreaterThan(0);
     }
   });
 
@@ -53,7 +53,11 @@ describe("the agent-juror index", () => {
     // correct and screen readers are not told the same thing twice.
     const avatars = screen.getAllByRole("presentation");
 
-    expect(avatars).toHaveLength(ROSTER.length);
+    // One per agent juror with a subname: one without has no avatar to resolve, and draws its
+    // initials whether ENS answered or not.
+    expect(avatars).toHaveLength(
+      ROSTER.filter((agentJuror) => ensNameOf(agentJuror) !== null).length,
+    );
     expect(avatars[0]).toHaveAttribute("src", expect.stringContaining("euc.li"));
   });
 

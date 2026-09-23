@@ -18,6 +18,15 @@ export type Stack = {
   label: string;
 };
 
+/**
+ * What is drawn where an agent juror's stack has not been recorded.
+ *
+ * Said on the page rather than left blank, because a blank pill beside a nickname reads as a
+ * rendering fault, and a stack is a fact about the roster that a reader is entitled to know is
+ * missing.
+ */
+export const UNKNOWN_STACK_LABEL = "Stack unknown";
+
 export type AgentJuror = {
   /**
    * The subname's own label, capitalised for display — see `ensNameOf` for the full ENS name.
@@ -28,9 +37,24 @@ export type AgentJuror = {
    * capitals still open.
    */
   nickname: string;
+  /**
+   * The route key, where the nickname cannot be one — see `pathSegmentOf`.
+   *
+   * Absent for every entry whose nickname is a single URL-safe word, which is every entry whose
+   * nickname is also its ENS label. Present only where the nickname is a display name with a
+   * space in it, which a path segment would carry as `%20`.
+   */
+  pathSegment?: string;
   /** The address it votes from, in court 34. Checksummed. */
   address: Address;
-  stack: Stack;
+  /** `null` where nobody has recorded it yet: nothing on chain says, so it waits on the roster. */
+  stack: Stack | null;
+  /**
+   * `false` where the agent juror has no subname under `agents.kleroslabs.eth`, so `ensNameOf`
+   * builds none and nothing is resolved. Absent means it has one, as every entry did until an
+   * operator joined the court without one.
+   */
+  ensSubname?: false;
   /**
    * The account the agent juror posts from on X, `@` included and capitalised as it writes it.
    *
@@ -70,7 +94,9 @@ export type AgentJuror = {
  * Reconcile against the chain, not against the tests.
  *
  * Addresses were verified two ways: each forward-resolves from its ENS subname on mainnet,
- * and every one of them appears as a drawn juror in court 34 in the core subgraph.
+ * and every one of them appears as a drawn juror in court 34 in the core subgraph. An entry
+ * marked `ensSubname: false` has only the second: its address is checked against the court's
+ * stakes and draws, and nothing on mainnet vouches for it.
  *
  * Deliberately absent: who operates each agent juror. That mapping exists elsewhere and
  * must not arrive here — agent jurors are identified by nickname and stack, never by the
@@ -145,17 +171,51 @@ export const ROSTER: readonly AgentJuror[] = [
     stack: { label: "Grok Bot" },
     handle: "@Grokleros",
   },
+  {
+    // Staked and drawn in court 34 from 2026-09-18, and tracked from 2026-09-24. No subname
+    // and no reverse record, and its stack has not been recorded: both show on the page as
+    // what they are rather than as a guess.
+    nickname: "Jonesy The First",
+    pathSegment: "Jonesy",
+    address: "0x136041c8f81a6c6BA2a45E43D898c9d219E6DBda",
+    stack: null,
+    ensSubname: false,
+  },
 ];
 
 /**
- * The full ENS name to resolve records from, lowercased.
+ * The full ENS name to resolve records from, lowercased, or `null` where there is no subname.
  *
  * The nickname above carries a capital for display and an ENS label does not have one. Case is
  * folded on resolution either way, but this string is also drawn on the agent juror's own page
  * as an identifier to paste into an ENS app, where a capital is a spelling no other tool shows.
+ *
+ * `null` rather than a guessed name: the page draws this as a fact, and a name nobody has
+ * registered would send a reader to an ENS app to find nothing.
  */
-export function ensNameOf(agentJuror: AgentJuror): string {
+export function ensNameOf(agentJuror: AgentJuror): string | null {
+  if (agentJuror.ensSubname === false) return null;
   return `${agentJuror.nickname.toLowerCase()}.${AGENT_JUROR_ENS_PARENT}`;
+}
+
+/**
+ * The segment an agent juror is routed by: `/agent-jurors/<this>`.
+ *
+ * The nickname wherever it survives a URL unchanged, so no existing link moved when this was
+ * introduced; the explicit `pathSegment` only where the nickname has a space in it.
+ */
+export function pathSegmentOf(agentJuror: AgentJuror): string {
+  return agentJuror.pathSegment ?? agentJuror.nickname;
+}
+
+/** The link to an agent juror's own page. Built here, never by interpolating a nickname. */
+export function agentJurorPathOf(agentJuror: AgentJuror): string {
+  return `/agent-jurors/${pathSegmentOf(agentJuror)}`;
+}
+
+/** The stack as the page names it, including where nobody has recorded one. */
+export function stackLabelOf(agentJuror: AgentJuror): string {
+  return agentJuror.stack?.label ?? UNKNOWN_STACK_LABEL;
 }
 
 /**

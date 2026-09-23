@@ -144,17 +144,26 @@ export const resolvingRoster: RosterView = {
   isResolvedFromEns: false,
 };
 
-/** What the page has once ENS answers for everyone. */
+/**
+ * What the page has once ENS answers for everyone it can: an entry with no subname keeps its
+ * roster identity, exactly as `resolveAgentJurorIdentity` leaves it.
+ */
 export const resolvedRoster: RosterView = {
-  entries: ROSTER.map((agentJuror) => ({
-    agentJuror,
-    identity: {
-      address: agentJuror.address,
-      nickname: agentJuror.nickname,
-      avatarUrl: `https://euc.li/${ensNameOf(agentJuror)}`,
-      resolvedFromEns: true,
-    },
-  })),
+  entries: ROSTER.map((agentJuror) => {
+    const ensName = ensNameOf(agentJuror);
+    return {
+      agentJuror,
+      identity:
+        ensName === null
+          ? rosterIdentity(agentJuror)
+          : {
+              address: agentJuror.address,
+              nickname: agentJuror.nickname,
+              avatarUrl: `https://euc.li/${ensName}`,
+              resolvedFromEns: true,
+            },
+    };
+  }),
   isResolving: false,
   isResolvedFromEns: true,
 };

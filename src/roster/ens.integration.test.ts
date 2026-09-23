@@ -5,11 +5,20 @@ import { createMainnetClient, resolveAgentJurorIdentities } from "./ens";
 
 const client = createMainnetClient();
 
+/** The entries mainnet can vouch for. One with no subname has nothing there to check. */
+const withSubnames = ROSTER.flatMap((agentJuror) => {
+  const ensName = ensNameOf(agentJuror);
+  return ensName === null ? [] : [{ agentJuror, ensName }];
+});
+
 describe("ENS against mainnet", () => {
   it("resolves every agent juror's nickname and avatar", async () => {
-    const identities = await resolveAgentJurorIdentities(client, ROSTER);
+    const identities = await resolveAgentJurorIdentities(
+      client,
+      withSubnames.map(({ agentJuror }) => agentJuror),
+    );
 
-    expect(identities).toHaveLength(ROSTER.length);
+    expect(identities).toHaveLength(withSubnames.length);
     for (const identity of identities) {
       expect(identity.resolvedFromEns).toBe(true);
       expect(identity.nickname).not.toHaveLength(0);
@@ -24,10 +33,10 @@ describe("ENS against mainnet", () => {
    */
   it("agrees with the roster about which address each nickname belongs to", async () => {
     const resolved = await Promise.all(
-      ROSTER.map(async (agentJuror) => ({
+      withSubnames.map(async ({ agentJuror, ensName }) => ({
         nickname: agentJuror.nickname,
         expected: agentJuror.address,
-        actual: await client.getEnsAddress({ name: normalize(ensNameOf(agentJuror)) }),
+        actual: await client.getEnsAddress({ name: normalize(ensName) }),
       })),
     );
 

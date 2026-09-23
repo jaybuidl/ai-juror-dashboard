@@ -9,8 +9,8 @@
  * says so at the top; `--font-sans` and `--font-mono` there are unchanged, and these packages
  * declare the family names `Manrope` and `JetBrains Mono` exactly as those stacks name them.
  *
- * Latin subset only — every string this dashboard renders is ASCII, and the agent jurors'
- * nicknames are ENS labels, which are too. A nickname outside it would fall back to the system
+ * Latin subset only — every string this dashboard renders is ASCII, the agent jurors'
+ * nicknames included. A nickname outside it would fall back to the system
  * stack rather than fail.
  *
  * Weights follow the system's own @import, with one addition: JetBrains Mono 800. That import

@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { stackLabelOf } from "../roster/agent-jurors";
 import type { AgentJurorIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
 import { narrow } from "../styles/breakpoints";
@@ -399,7 +400,7 @@ function PanelMember({
             {/* The ENS nickname is a display name; the roster's is the key, because a `name`
                 record is rewritable from a wallet. */}
             <Nickname>{identity?.nickname ?? draw.agentJuror.nickname}</Nickname>
-            <StackLabel>{draw.agentJuror.stack.label}</StackLabel>
+            <StackLabel>{stackLabelOf(draw.agentJuror)}</StackLabel>
           </Named>
           <Mark $tone={presentation.tone}>
             <span aria-hidden="true">{presentation.glyph}</span>

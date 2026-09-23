@@ -4,6 +4,7 @@ import { Notice } from "../chrome/Failure";
 import { DisputeRow, type DisputeRowSlots } from "../disputes/DisputeList";
 import type { Dispute } from "../disputes/disputes";
 import { isFinalised } from "../disputes/liveness";
+import { agentJurorPathOf, stackLabelOf } from "../roster/agent-jurors";
 import type { RosterView } from "../roster/useRoster";
 import {
   belowCompactGrid,
@@ -1146,19 +1147,16 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                                 above it read the same. Keyed on the roster address regardless:
                                 the resolved name is a display name, and joining a matrix on one
                                 would key it on something an operator can rewrite from a wallet. */}
-                            <AgentNickname
-                              to={`/agent-jurors/${agentJuror.nickname}`}
-                              $drawn={drawn}
-                            >
+                            <AgentNickname to={agentJurorPathOf(agentJuror)} $drawn={drawn}>
                               {identity?.nickname ?? agentJuror.nickname}
                             </AgentNickname>
                             <AgentStack>
-                              {neverDrawn ? "Never drawn" : agentJuror.stack.label}
+                              {neverDrawn ? "Never drawn" : stackLabelOf(agentJuror)}
                             </AgentStack>
                           </AgentNames>
                         </AgentIdentity>
                         {/* The column's own summary, under a hairline and inside the column it
-                            is about. There is no seventh column and no margin of its own:
+                            is about. There is no extra column and no margin of its own:
                             agent jurors are the columns here. Keyed by position because the
                             marginals are built over the roster in roster order, which is the
                             same order these headers are — the seam guarantees one entry per

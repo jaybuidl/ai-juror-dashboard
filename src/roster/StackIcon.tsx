@@ -173,7 +173,7 @@ function HermesMark(): ReactElement {
 /**
  * The stacks that have a mark, keyed by the label in the roster.
  *
- * Four and not seven, because agent jurors share stacks. Keyed on the label rather than on the
+ * Fewer than the roster, because agent jurors share stacks. Keyed on the label rather than on the
  * agent juror so that the next entry running an existing stack draws its mark with no edit here.
  */
 const MARKS: Record<string, () => ReactElement> = {
@@ -202,8 +202,8 @@ export function hasStackIcon(label: string): boolean {
  * `Object.prototype`, so a stack labelled `toString` or `valueOf` indexes to a function: the
  * undefined check would pass it through and React would draw a prototype method into the pill.
  */
-export function StackIcon({ stack }: { stack: Stack }): ReactElement | null {
-  if (!hasStackIcon(stack.label)) return null;
+export function StackIcon({ stack }: { stack: Stack | null }): ReactElement | null {
+  if (stack === null || !hasStackIcon(stack.label)) return null;
 
   const Draw = MARKS[stack.label] as () => ReactElement;
   return <Draw />;

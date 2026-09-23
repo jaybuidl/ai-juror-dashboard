@@ -20,7 +20,7 @@ import type { CourtPerformance } from "../performance/performance";
 import { comparisonOf } from "../performance/reference";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type FailedRead, failureOf, SOURCES } from "../read-failure";
-import { ensNameOf, handleUrlOf } from "../roster/agent-jurors";
+import { ensNameOf, handleUrlOf, pathSegmentOf, stackLabelOf } from "../roster/agent-jurors";
 import { ensFallbackOf } from "../roster/ens-fallback";
 import { StackIcon } from "../roster/StackIcon";
 import type { RosterView } from "../roster/useRoster";
@@ -651,7 +651,7 @@ export type AgentJurorViewProps = AgentJurorPageProps & {
  */
 function entryNamedBy(entries: RosterView["entries"], pathNickname: string | undefined) {
   return entries.find(
-    ({ agentJuror }) => agentJuror.nickname.toLowerCase() === pathNickname?.toLowerCase(),
+    ({ agentJuror }) => pathSegmentOf(agentJuror).toLowerCase() === pathNickname?.toLowerCase(),
   );
 }
 
@@ -725,6 +725,7 @@ export function AgentJurorView({
   // length of every cold load and then takes it back.
   const fallenBack = !roster.isResolving && !roster.isResolvedFromEns;
   const handleUrl = handleUrlOf(agentJuror);
+  const ensName = ensNameOf(agentJuror);
 
   return (
     <View provenance={provenance} failures={failures}>
@@ -757,9 +758,11 @@ export function AgentJurorView({
                       may simply fail to draw. */}
                   <Fact $accent>
                     <StackIcon stack={agentJuror.stack} />
-                    {agentJuror.stack.label}
+                    {stackLabelOf(agentJuror)}
                   </Fact>
-                  <Fact>{ensNameOf(agentJuror)}</Fact>
+                  {/* Left out, not guessed, where there is no subname: a name nobody registered
+                      would send a reader to an ENS app to find nothing. */}
+                  {ensName !== null && <Fact>{ensName}</Fact>}
                   {/* The short form is drawn; the whole address is said. It was reachable only
                       through a `title` tooltip, so the one identifier that distinguishes this
                       agent juror from any other was available to a mouse and to nothing else.

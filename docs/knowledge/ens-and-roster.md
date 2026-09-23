@@ -132,9 +132,49 @@ positional address fails validation. The filter bug has been reported but not ye
 **State on 2026-09-23:**
 - Seven addresses were staked in court 34, and six of them were roster entries.
 - The seventh, `0x136041c8f81a6c6BA2a45E43D898c9d219E6DBda`, had 11,593 PNK staked. It was drawn
-  15 times across disputes 270–287 from 2026-09-18 onward, and it has no reverse ENS name. It is
-  the one staked address the dashboard does not track. Its draws are counted as off-roster (§).
+  15 times across disputes 270–287 from 2026-09-18 onward, and it has no reverse ENS name. It was
+  the one staked address the dashboard did not track, and its draws were counted as off-roster
+  (§). **Tracked from 2026-09-24** as `Jonesy The First` — see the section below.
 - Baskerville (`0x606D…48Bc`) is on the roster and staked **nowhere**. The court cannot draw it
   again until it restakes.
 - `0xd66b90529427cb761e0f81633861c1dca04ebe41` was drawn 3 times in disputes 216–217 on
   2026-09-08, and it holds no stake now.
+
+## An agent juror with no subname, no known stack and a spaced name
+
+*2026-09-24.*
+
+`Jonesy The First` joined the roster with none of the three things every earlier entry had. The
+maintainer named it, but there is no subname under `agents.kleroslabs.eth` and none is planned, the
+address has no reverse record, and its stack is not known. Each gap is a field on the entry, not a
+placeholder value:
+
+- **`ensSubname: false`.** `ensNameOf` returns `null`, `resolveAgentJurorIdentity` asks mainnet
+  nothing, and the agent juror's page leaves the ENS-name pill out rather than showing a name
+  nobody registered. Its avatar is initials whether ENS answered or not, so the "From roster"
+  caveat is **not** raised for it: `isResolvedFromEns` is roster-wide and the other entries carry
+  it. The live ENS integration test checks only entries with a subname, because mainnet has
+  nothing to vouch for here. The address was checked against court-34 stakes and draws instead.
+- **`pathSegment: "Jonesy"`.** A space cannot be an ENS label (ENSIP-15, so `normalize` throws), and
+  in a path it becomes `%20`. The nickname stays the display string everywhere; the route is
+  `/agent-jurors/Jonesy`. Every other entry routes on its nickname exactly as before, so no link
+  moved. Links are built by `agentJurorPathOf`, never by interpolating a nickname.
+- **`stack: null`.** Rendered as "Stack unknown" through `stackLabelOf`, with no mark.
+  `StackIcon.test.tsx`'s every-stack-has-a-mark check skips it.
+
+**The trap this exposed.** `normalize` used to run *outside* the `try` in
+`resolveAgentJurorIdentity`. A nickname it rejects would have made the roster-wide `Promise.all`
+reject, so every avatar fell back and the page blamed a mainnet that had answered. It now runs
+inside, and `ens.test.ts` pins that one bad label costs only its own identity.
+
+**If a subname is created later:** drop `ensSubname: false`. The nickname would then have to *be*
+the label, which is a single word, so either the display name loses its spaces or the ENS label
+gets its own field. `agent-jurors.test.ts` fails a spaced nickname that claims a subname.
+
+**Measured in a browser on 2026-09-24.** The matrix header draws the nickname on one line with an
+ellipsis. "Jonesy The First" needs 119px and gets 93px at 1440 wide and 88px at 1024, so it shows as
+"Jonesy Th…". Every other nickname fits: Daemonhill is the widest, at 83px. The full name is in the
+accessible name, on the index and on the agent juror's own page. "Stack unknown" wraps to two lines
+in the header, where every recorded stack fits on one. With an eighth column the compact grid's
+floor is 1272px, which puts its breakpoint at 1368px. A 1280px window now scrolls the table inside
+its own box and loses the pinned header, where seven columns fit.

@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import styled from "styled-components";
+import { agentJurorPathOf, stackLabelOf } from "./agent-jurors";
 import { StackIcon } from "./StackIcon";
 import type { RosterView } from "./useRoster";
 
@@ -186,7 +187,7 @@ export function Roster({ entries, isResolving, isResolvedFromEns }: RosterView) 
               </AvatarFallback>
             )}
             <Identity>
-              <Nickname to={`/agent-jurors/${agentJuror.nickname}`}>{identity.nickname}</Nickname>
+              <Nickname to={agentJurorPathOf(agentJuror)}>{identity.nickname}</Nickname>
               {/* Beside the stack label, never instead of it: which stack an agent juror is
                   built on is a fact about the roster and is still true when ENS is down. The
                   same goes for the mark in front of it, which is aria-hidden and may simply
@@ -194,7 +195,7 @@ export function Roster({ entries, isResolving, isResolvedFromEns }: RosterView) 
               <StackLabel>
                 <Stacked>
                   <StackIcon stack={agentJuror.stack} />
-                  {agentJuror.stack.label}
+                  {stackLabelOf(agentJuror)}
                 </Stacked>
                 {fallenBack && <FromRoster> · From roster</FromRoster>}
               </StackLabel>

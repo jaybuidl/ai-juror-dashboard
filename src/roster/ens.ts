@@ -42,7 +42,7 @@ export type AgentJurorIdentity = {
   address: Address;
   nickname: string;
   avatarUrl: string | null;
-  /** False when mainnet could not be reached, or the subname has no records. */
+  /** False when mainnet could not be reached, or the agent juror has no subname to read. */
   resolvedFromEns: boolean;
 };
 
@@ -71,9 +71,15 @@ export async function resolveAgentJurorIdentity(
   client: PublicClient,
   agentJuror: AgentJuror,
 ): Promise<AgentJurorIdentity> {
-  const name = normalize(ensNameOf(agentJuror));
+  const ensName = ensNameOf(agentJuror);
+  // No subname, so nothing to ask: the roster's own identity is the whole answer, and it is not
+  // a failure — `resolvedFromEns` is false here exactly as it is for a subname with no records.
+  if (ensName === null) return rosterIdentity(agentJuror);
 
   try {
+    // Inside the `try`, because `normalize` throws on a label ENSIP-15 disallows, and a throw
+    // outside it would reject the whole roster's `Promise.all` below rather than this entry.
+    const name = normalize(ensName);
     const [avatarUrl, nameRecord] = await Promise.all([
       client.getEnsAvatar({ name }),
       client.getEnsText({ name, key: "name" }),

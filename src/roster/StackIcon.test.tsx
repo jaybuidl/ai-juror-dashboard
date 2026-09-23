@@ -3,10 +3,10 @@ import { ThemeProvider } from "styled-components";
 import { describe, expect, it } from "vitest";
 import { theme } from "../styles/theme";
 import { renderAt } from "../test/court";
-import { ROSTER, type Stack } from "./agent-jurors";
+import { ROSTER, type Stack, stackLabelOf } from "./agent-jurors";
 import { hasStackIcon, StackIcon } from "./StackIcon";
 
-function drawn(stack: Stack) {
+function drawn(stack: Stack | null) {
   return render(
     <ThemeProvider theme={theme}>
       <StackIcon stack={stack} />
@@ -24,9 +24,15 @@ describe("the stack marks", () => {
    * what fails this rather than a number nobody updated.
    */
   it("has a mark for every stack the roster names", () => {
+    // An unrecorded stack names nothing, so there is nothing to draw a mark for.
     for (const { stack } of ROSTER) {
+      if (stack === null) continue;
       expect(hasStackIcon(stack.label), `no mark for ${stack.label}`).toBe(true);
     }
+  });
+
+  it("draws nothing for a stack nobody has recorded", () => {
+    expect(drawn(null).container).toBeEmptyDOMElement();
   });
 
   it("draws nothing for a stack it has no mark for, rather than a gap", () => {
@@ -61,6 +67,7 @@ describe("the stack marks", () => {
 
   it("says nothing to a screen reader, because the label beside it already does", () => {
     for (const { stack } of ROSTER) {
+      if (stack === null) continue;
       const { container } = drawn(stack);
 
       expect(container.firstElementChild, stack.label).toHaveAttribute("aria-hidden", "true");
@@ -74,8 +81,8 @@ describe("the stack marks in place", () => {
     // and the stack is a fact about the roster that is true either way.
     renderAt("/agent-jurors");
 
-    for (const { stack } of ROSTER) {
-      expect(screen.getAllByText(stack.label).length).toBeGreaterThan(0);
+    for (const agentJuror of ROSTER) {
+      expect(screen.getAllByText(stackLabelOf(agentJuror)).length).toBeGreaterThan(0);
     }
   });
 });
