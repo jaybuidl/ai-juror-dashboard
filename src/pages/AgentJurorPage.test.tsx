@@ -1,6 +1,7 @@
 import { screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { ORDINARY_COURT_PROSE, STRIP_RANGE_LABEL } from "../performance/strip";
+import { formatElapsedSeconds } from "../performance/latency";
+import { STRIP_RANGE_LABEL } from "../performance/strip";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { ROSTER } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
@@ -8,6 +9,8 @@ import type { RosterView } from "../roster/useRoster";
 import {
   disputes,
   measured,
+  REFERENCE,
+  referenceFailed,
   renderAt,
   resolvedRoster,
   resolvingRoster,
@@ -247,23 +250,36 @@ describe("the latency profile", () => {
     expect(within(plot).getByText(`Log scale · ${STRIP_RANGE_LABEL}`)).toBeVisible();
   });
 
-  it("says the comparison band on it is illustrative, on the page and not only in the source", () => {
+  it("states where the comparison band on it comes from, in the matrix view's own words", () => {
     // The band is on this plot as well as the matrix's, deliberately — the two share one axis
     // and the court's own distribution is drawn on both, so a scale of this page's own would
-    // draw one set of numbers two shapes. What comes with it is the disclosure, said in this
-    // page's own footer exactly as the matrix view says it in its own.
+    // draw one set of numbers two shapes. What comes with it is the band's provenance, said in
+    // this page's own footer from the same function the matrix view uses.
     renderAt("/agent-jurors/Columbo");
 
-    const footer = screen.getByRole("contentinfo");
-    const caveat = within(footer).getByText(
-      /the comparison band on the latency plot is illustrative/i,
+    if (REFERENCE.state !== "measured") throw new Error(`reading is ${REFERENCE.state}`);
+    const caveat = within(screen.getByRole("contentinfo")).getByText(
+      /the comparison band on the latency plot is read/i,
     );
 
-    expect(caveat).toHaveTextContent(/measures no court/i);
-    expect(caveat).toHaveTextContent(ORDINARY_COURT_PROSE);
-    expect(caveat).toHaveTextContent(/at minimum/i);
-    expect(caveat).toHaveTextContent(/single-round/i);
-    expect(caveat).toHaveTextContent(/appeal/i);
+    expect(caveat).toHaveTextContent(/court 29 \(Corte de Disputas de Consumo y Vecindad\)/);
+    expect(caveat).toHaveTextContent(formatElapsedSeconds(REFERENCE.medianSeconds));
+    expect(caveat).toHaveTextContent(`over the ${REFERENCE.count} single-round disputes`);
+    expect(caveat).toHaveTextContent(/appealed disputes are left out/i);
+    expect(caveat).not.toHaveTextContent(/illustrative/i);
+  });
+
+  it("draws the band's place as not read, and names the failure in the banner once", () => {
+    renderAt("/agent-jurors/Columbo", { performance: referenceFailed });
+
+    const plot = screen.getByRole("region", { name: /reveals against the whole court/i });
+    expect(within(plot).getByText("not read")).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("alert")).getByText(
+        /the comparison court's disputes could not be read/i,
+      ),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/comparison band on the latency plot/i)).not.toBeInTheDocument();
   });
 
   it("does not name a band on a page whose plot is a sentence instead of a picture", () => {

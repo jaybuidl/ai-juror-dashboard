@@ -1,6 +1,6 @@
 ---
-status: ready-for-agent
-blocked_by: ["22"]
+status: done
+blocked_by: []
 ---
 
 # 23: Measure the comparison instead of illustrating it
@@ -60,23 +60,67 @@ own, and this ticket exists to make it a stronger one, not to rescue it.
 `../canvas/README.md` for which figures on the artboards are real. No artboard draws a *measured*
 band; this ticket changes the band's provenance, not its shape.
 
-- [ ] The band's boundary is derived from disputes read from the core subgraph, not from a
+- [x] The band's boundary is derived from disputes read from the core subgraph, not from a
       constant this repo chose
-- [ ] The reference is single-round disputes only, so the comparison is like-for-like with court
+- [x] The reference is single-round disputes only, so the comparison is like-for-like with court
       34, and the exclusion is stated on the page rather than only in the source
-- [ ] The page states which court the comparison is over, how many disputes it is over, and what
+- [x] The page states which court the comparison is over, how many disputes it is over, and what
       period they span
-- [ ] A read that comes back short is detectable — the guard is a count or an arithmetic identity,
+- [x] A read that comes back short is detectable — the guard is a count or an arithmetic identity,
       not a `response.ok` check — and a shortfall is reported as a number rather than as an error
-- [ ] A failed read raises one banner line, collapsed with the other core-subgraph reads, and the
+- [x] A failed read raises one banner line, collapsed with the other core-subgraph reads, and the
       band's own place says what is missing rather than drawing a default
-- [ ] `MatrixPage.tsx`'s caveat no longer calls the band illustrative or the only thing on the
+- [x] `MatrixPage.tsx`'s caveat no longer calls the band illustrative or the only thing on the
       page that did not come from a read, and the sentence that replaces it is still gated to the
       layouts that show the strip, tested in both directions
-- [ ] `/method` accounts for the comparison's provenance the way it accounts for every other read
-- [ ] The persisted-query decision is made explicitly: whether this payload joins the allowlist in
+- [x] `/method` accounts for the comparison's provenance the way it accounts for every other read
+- [x] The persisted-query decision is made explicitly: whether this payload joins the allowlist in
       `src/persistence.ts`, having answered whether its value survives a JSON round trip and
       whether a *failed* read of it restores safely
-- [ ] No latency is drawn as a fraction of the band or of any window (ADR-0005)
-- [ ] Verified in a browser: the measured band lands somewhere the axis can show, and ticket 22's
+- [x] No latency is drawn as a fraction of the band or of any window (ADR-0005)
+- [x] Verified in a browser: the measured band lands somewhere the axis can show, and ticket 22's
       label placement still holds wherever the boundary lands
+
+## Comments
+
+**Built, not closed `wontfix`.** The read is cheap: court 29's count is one query and its disputes
+one page of the same `fetchCourtDisputes` court 34 is read through. There is a fair reference:
+87 single-round disputes, all ruled.
+
+**Court 29 is the reference, and why.** On 2026-09-23 the deployment held disputes in seven
+courts. Court 29 had 87, the next (32) had 33, and the General Court had 6. Its median time to
+ruling was 3d 23h, against about 4.0d for court 32 and 6.2d for court 31, so it was not picked for
+being slow. The band moved **left**, from the illustrative five days to 3d 23h. It is one named
+court, not a pool: a pooled median would describe no court a reader can check.
+`REFERENCE_COURT_ID` in `src/performance/reference.ts` holds the choice and the reasoning.
+
+**Time to ruling** is creation to the execution period opening, read from the round timeline's
+execution slot. Only that slot is read. Court 29 has no hidden votes, so its disputes skip the
+commit period and the earlier slots do not mean what `disputes.ts` names them
+(`docs/knowledge/chain-and-subgraph.md`).
+
+**The guard** compares the disputes returned against the court's own `numberDisputes`, read
+*first*, so more is a dispute created between the two requests and fewer is a short read,
+reported as the two counts. No dispute on the deployment has ever been appealed. The first appeal
+that jumps courts may make that count disagree with the list for another reason, which fails
+loud as a false shortfall. That is recorded at the guard.
+
+**States.** Measured draws the band. Being read, failed, short, and nothing-to-measure draw no
+band: the label moves to the plot's right edge and says which. A failed or short read is one
+banner line, ranked last in `coreFailureOf` on both pages, and not in the tiles' "partial" tier.
+The footer's sentence replaces the illustrative one and stays gated on the plot being on screen,
+tested both ways (phone and dense layouts, and an agent juror with no reveals).
+
+**Persisted:** `referenceCourt` joins the allowlist. The value is a raw payload of strings, and the
+median is re-derived from it on every render. A failed read is a failed query with no fallback.
+No `PERSISTED_MODEL_VERSION` bump, because no older bundle wrote this key.
+
+**Ticks.** The `5d` tick went with the constant, because a tick at five days under a band at four
+would read as a second claim about where the band begins. `7d` replaces it, and the tick-gap test
+still holds.
+
+**Verified in a browser** at 1440, 1024 and 390, against the live court: the band lands at 86% of
+the axis, and ticket 22's label placement holds (label under the median value on both plots, clear
+of the marks). The failed state was forced by answering the court-29 request with HTTP 502. The
+dashboard ships dark only, so there is one theme to check, and no colour changed. The artboards
+were not amended: they still draw the band at five days, and `canvas/README.md` says so.

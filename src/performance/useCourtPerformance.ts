@@ -9,6 +9,8 @@ import { fetchCommitCasts } from "./commit-logs";
 import { fetchCourtParameters } from "./court-parameters";
 import { fetchCourtDraws } from "./draws-subgraph";
 import { buildCourtPerformance, type CourtPerformance } from "./performance";
+import { REFERENCE_COURT_ID, type ReferenceReading, referenceReadingOf } from "./reference";
+import { fetchReference } from "./reference-subgraph";
 import { fetchCourtRewards } from "./rewards-subgraph";
 
 export type CourtPerformanceView = {
@@ -60,6 +62,25 @@ export type CourtPerformanceView = {
    * single entry, exactly as `arbitrumFailureOf` does for the two reads that share Arbitrum.
    */
   rewardsError: Error | null;
+  /**
+   * What an ordinary Kleros court takes to rule, read from court 29 (ticket 23), or `null`
+   * before the read lands and wherever it has never succeeded.
+   *
+   * Outside `performance` because it is not a measurement of court 34 and nothing in the
+   * matrix depends on it. A matrix waiting on another court's record would be the worse
+   * failure. It is still built below the seam: `referenceReadingOf` is pure, and this hook only
+   * calls it.
+   */
+  reference: ReferenceReading | null;
+  /**
+   * Why that read failed, on the same terms as the three errors above.
+   *
+   * Non-blocking, and read from the **core subgraph**, the same deployment as the disputes, the
+   * draws and the payouts. So an outage raises this with the others, and `coreFailureOf` ranks
+   * it last and states one failure once. It is also the only thing that tells a read in flight
+   * from one that failed: `reference` is `null` in both.
+   */
+  referenceError: Error | null;
   /**
    * The seam's own rejection, unflattened.
    *
@@ -277,6 +298,40 @@ export function useCourtPerformance(
   });
 
   const rewards = rewardsQuery.data;
+
+  /**
+   * The comparison court's record (ticket 23): its dispute count, then its disputes.
+   *
+   * Keyed on that court alone. Nothing about court 34 changes the answer. **No interval**, for
+   * the payouts' reason and more so: this is another court's finished record, and it moves when
+   * that court rules, which is days apart. It refetches on mount with the same minute of
+   * staleness as everything else.
+   *
+   * Not waited on. What an unread comparison costs is where the band begins on the latency
+   * plots, and the plot says so in the band's place.
+   */
+  const referenceQuery = useQuery({
+    queryKey: ["referenceCourt", REFERENCE_COURT_ID],
+    queryFn: ({ signal }) => fetchReference({ signal }),
+    staleTime: 60 * 1000,
+  });
+
+  const rawReference = referenceQuery.data;
+  // Derived in a memo rather than inside the query function, so that what is stored, and
+  // persisted, is the payload and never the figure. See `persistence.ts`.
+  //
+  // A payload `toDisputes` cannot believe throws. It is caught here and becomes the query's
+  // error rather than a crashed render: the banner then names the core subgraph, which is where
+  // the garbled value came from.
+  const referenceResult = useMemo(() => {
+    if (rawReference === undefined) return { reading: null, error: null };
+    try {
+      return { reading: referenceReadingOf(rawReference), error: null };
+    } catch (error) {
+      return { reading: null, error: error instanceof Error ? error : new Error(String(error)) };
+    }
+  }, [rawReference]);
+
   // The moment the draws on screen were *asked for*. This is what tells a row whose draws were
   // read from a row created after the last read that could have seen it. react-query keeps what
   // it holds when a refetch fails, so it can be an hour older than the dispute list beside it —
@@ -321,6 +376,8 @@ export function useCourtPerformance(
     commitError: commitQuery.error,
     parametersError: parametersQuery.error,
     rewardsError: rewardsQuery.error,
+    reference: referenceResult.reading,
+    referenceError: referenceQuery.error ?? referenceResult.error,
     readAt: drawsReadAt,
     failure:
       failure === null
@@ -333,6 +390,7 @@ export function useCourtPerformance(
       void query.refetch();
       void commitQuery.refetch();
       void rewardsQuery.refetch();
+      void referenceQuery.refetch();
       disputes.retry();
     },
   };

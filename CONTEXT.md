@@ -103,6 +103,18 @@ _Avoid_: commit speed, commit time (ambiguous — could be the timestamp)
 The same measure for `castVote`, from the moment the vote period opened.
 _Avoid_: reveal speed, vote latency
 
+**Time to ruling**:
+Seconds from a dispute's creation to the moment its execution period opened, when its ruling
+became final. Measured in another court, never in court 34: it is what the comparison band is
+read from (ticket 23), over single-round disputes only.
+_Avoid_: dispute duration, resolution time (both blur whether appeals are in)
+
+**Comparison band**:
+The violet region on both latency plots marking where an ordinary Kleros court sits: it begins at
+court 29's median time to ruling. A reading, not an illustration, since ticket 23, with its court,
+count, period and exclusions stated in the footer. Never a denominator (ADR-0005).
+_Avoid_: benchmark, baseline (both suggest a latency is scored against it)
+
 **Participation**:
 Having been drawn, and having acted on the draw. Distinct from coherence: an agent juror can
 participate perfectly and be incoherent, or be coherent in every dispute it was drawn in while

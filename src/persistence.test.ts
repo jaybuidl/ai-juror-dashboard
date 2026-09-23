@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import fixture from "./disputes/court-34.fixture.json" with { type: "json" };
 import { toDisputeTemplates } from "./disputes/dispute-templates";
 import { type RawDispute, toDisputes } from "./disputes/disputes";
+import referenceFixture from "./performance/court-29-reference.fixture.json" with { type: "json" };
 import drawFixture from "./performance/court-34-draws.fixture.json" with { type: "json" };
 import rewardFixture from "./performance/court-34-rewards.fixture.json" with { type: "json" };
 import {
@@ -9,6 +10,7 @@ import {
   type RawDraw,
   type RawRewardShift,
 } from "./performance/performance";
+import { type RawReference, referenceReadingOf } from "./performance/reference";
 import {
   PERSISTED_MAX_AGE_MS,
   PERSISTED_MODEL_VERSION,
@@ -46,6 +48,15 @@ describe("shouldPersistQuery", () => {
     // amounts are `bigint` above the seam — and does not: the subgraph serves every one of them
     // as a decimal string, and the parsing happens inside the pure model on every render.
     expect(shouldPersistQuery(["courtRewards", "34"])).toBe(true);
+    // Ticket 23's comparison court. Strings and arrays only, and the median is taken above the
+    // cache on every render, so what is stored is the court's record and never the figure.
+    expect(shouldPersistQuery(["referenceCourt", "29"])).toBe(true);
+  });
+
+  it("stores a comparison payload that measures the same after a JSON round trip", () => {
+    const payload = referenceFixture as RawReference;
+    const restored = JSON.parse(JSON.stringify(payload)) as RawReference;
+    expect(referenceReadingOf(restored)).toEqual(referenceReadingOf(payload));
   });
 
   it("refuses the ENS identities, because a failed read of them succeeds", () => {

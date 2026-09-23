@@ -1,4 +1,5 @@
 import styled from "styled-components";
+import { comparisonCaveatOf, comparisonFailureOf } from "../chrome/comparison";
 import { Notice } from "../chrome/Failure";
 import { affects, type Failures, olderOf, present } from "../chrome/failures";
 import { Hero } from "../chrome/Hero";
@@ -17,7 +18,7 @@ import { SparsityNote } from "../performance/Footnotes";
 import { LatencyStrip } from "../performance/LatencyStrip";
 import { formatWindowSeconds } from "../performance/latency";
 import { Matrix } from "../performance/Matrix";
-import { ORDINARY_COURT_PROSE } from "../performance/strip";
+import { comparisonOf } from "../performance/reference";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type FailedRead, failureOf, SOURCES } from "../read-failure";
 import { ensFallbackOf } from "../roster/ens-fallback";
@@ -228,7 +229,15 @@ function coreFailureOf({
     };
   }
 
-  return null;
+  // Ticket 23's comparison court, read from this same deployment. Last because it costs the
+  // least: where the comparison band begins, and no figure of court 34's. It is the loud tier
+  // all the same, because since that ticket the band *is* a figure, the one the page's whole
+  // speed comparison is drawn against. The band's own place on the plot says it is missing,
+  // which makes the banner the second voice and not the only one. On a phone there is no strip on
+  // this page, and it still stands for the reason the payouts' does: the agent juror view draws
+  // the band at every width, one link away.
+  const comparison = comparisonFailureOf(performance.reference, performance.referenceError);
+  return comparison === null ? null : { read: comparison, costsTiles: false };
 }
 
 /**
@@ -461,10 +470,18 @@ function provenanceOf(
   // nothing above came from a read either. Ticket 22 gated the sibling view on exactly this and
   // left this one on `!narrow` for a day; the question to ask of a caveat is never "which
   // layout" but "is the thing this names on the screen the reader has".
+  //
+  // Until ticket 23 this sentence called the band illustrative and "the only thing above that did
+  // not come from a read". The band is read now, from another court, and both halves of that
+  // would be false. What replaces it states the reading's provenance: which court, how many
+  // disputes, what period, and that appeals are left out. The failed and short reads are the
+  // banner's, so `comparisonCaveatOf` says nothing about them.
   if (!narrow && measured?.totals.revealLatency != null) {
-    caveats.push(
-      `The comparison band on the latency strip is illustrative and measures no court: it marks the ${ORDINARY_COURT_PROSE} an ordinary Kleros court takes at minimum over a single-round dispute, before any appeal, which makes it longer still. It is the only thing above that did not come from a read.`,
+    const caveat = comparisonCaveatOf(
+      comparisonOf(performance.reference, performance.referenceError),
+      "latency strip",
     );
+    if (caveat !== null) caveats.push(caveat);
   }
   // Retired by ticket 10, which read them. It said "Cumulative ETH and PNK rewards per agent
   // juror have not been read at all" — the last "not read" claim this view made about itself —
@@ -654,17 +671,20 @@ export function MatrixPage(props: MatrixPageProps) {
         narrow={isNarrow}
       />
       {/* Absent below the breakpoint, and no measured figure leaves the page with it: the
-          strip's headline figure is the median reveal, which the tiles now lead with, and its
-          comparison band is not a reading of any court.
+          strip's headline figure is the median reveal, which the tiles now lead with. Its
+          comparison band is a reading of another court since ticket 23, and the agent juror view
+          draws the same band at every width, so the phone loses it here and not everywhere.
 
-          The strip carried a caption saying so, and the caption is gone. What says it now is
-          the provenance footer's caveat, which said the same thing already — the strip was
-          stating it a second time, immediately above a figure that is measured, which is the
-          duplication `CLAUDE.md` warns costs a reader their attention for the caveats that are
-          load-bearing. The caveat is still gated on `!narrow` alongside this, for the reason
+          What the band rests on is said in the provenance footer's caveat, and not in a caption
+          on the strip, which would be the second voice `CLAUDE.md` warns costs a reader their
+          attention. The caveat is gated on `!narrow` alongside this, for the reason
           `provenanceOf` gives: below the breakpoint there is no band to name. */}
       {!isNarrow && (
-        <LatencyStrip latency={measured?.totals.revealLatency ?? null} partial={partial} />
+        <LatencyStrip
+          latency={measured?.totals.revealLatency ?? null}
+          comparison={comparisonOf(performance.reference, performance.referenceError)}
+          partial={partial}
+        />
       )}
 
       {/* This text narrows as each measurement lands: it claimed no dispute had been

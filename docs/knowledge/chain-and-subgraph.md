@@ -122,3 +122,17 @@ this file is the full account.
   attacker-influenced input in a way the court-wide reads are not. It is capped at
   `MAX_CHOICES` for exactly that reason: filling a ballot from 0 to an eighty-digit number
   hangs the tab with no error and nothing on screen.
+- **Each `Round.timeline` slot is the moment a period *closed*, and a court without hidden votes
+  skips a slot.** `disputes.ts` names the slots by the period that opens next (commit, vote,
+  appeal, execution), which is right for court 34's hidden votes. Court 29 has none, so its
+  disputes skip the commit period: slot 0 is when voting opened and slot 1 is `0`. Read as
+  court 34's, that is a vote that "never opened" in a dispute that was ruled. The execution slot
+  means the same in every court (the appeal period closed) and equals `lastPeriodChange` on every
+  ruled dispute captured (checked 2026-09-23). It is the only slot ticket 23's comparison reads
+  from another court. Reading any other slot from another court has to handle the skip first.
+- **`Court.numberDisputes` matched `disputes(where: {court})` exactly for all seven courts with
+  disputes on 2026-09-23, and no dispute on the deployment had ever been appealed.** That is what
+  ticket 23's short-read guard compares against. An appeal that jumps courts moves the dispute's
+  `court` field. So the first appeal may make that count disagree with the list for a reason
+  other than a short read. It would fail loud, as a false shortfall, and the fix is to read the
+  court's disputes through their rounds, not to relax the comparison (`reference.ts`).

@@ -1,8 +1,7 @@
 import { describe, expect, it } from "vitest";
+import referenceFixture from "./court-29-reference.fixture.json" with { type: "json" };
+import { type RawReference, referenceReadingOf } from "./reference";
 import {
-  ORDINARY_COURT_FROM_SECONDS,
-  ORDINARY_COURT_LABEL,
-  ORDINARY_COURT_PROSE,
   STRIP_MAX_SECONDS,
   STRIP_RANGE_LABEL,
   STRIP_TICKS,
@@ -15,35 +14,40 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
 /**
- * The scale behind both latency plots, and the one number on either of them that is not a read.
+ * The scale behind both latency plots, and where the comparison band lands on it.
  *
- * Ticket 22 moved the comparison band from an hour to five days, which is where an ordinary
- * Kleros court finishes a single-round dispute. The axis had to move with it — five days was off
- * the end of a one-day axis entirely — so every assertion here is about the pair rather than
- * about either alone, and the ones that matter are stated against the constants: the boundary is
- * a fact about arbitration and the maximum is a judgement, and a test that hard-coded either
- * would fail the day ticket 23 measures the first or someone re-argues the second.
+ * Ticket 22 moved the band from an hour to five days and widened the axis to a month to hold it.
+ * Ticket 23 replaced the five days with a reading: court 29's median time to ruling. So the
+ * band's boundary is no longer this module's to state. These assertions are about whether the
+ * axis holds the *captured* reading as a region, and they are stated against the reading and
+ * the constant, not against either as a literal. A later capture that moved the band would still
+ * pass, as long as the axis can still show it.
  */
 
-describe("the comparison band", () => {
-  it("begins where an ordinary Kleros court finishes a single-round dispute, at five days", () => {
-    expect(ORDINARY_COURT_FROM_SECONDS).toBe(5 * DAY);
+const reading = referenceReadingOf(referenceFixture as RawReference);
+if (reading.state !== "measured") throw new Error(`reading is ${reading.state}`);
+const boundary = reading.medianSeconds;
+
+describe("the comparison band, where the reading puts it", () => {
+  it("is on the axis at all", () => {
+    expect(STRIP_MAX_SECONDS).toBeGreaterThan(boundary);
   });
 
-  it("is on the axis at all, which is what ticket 22 had to move the maximum for", () => {
-    expect(STRIP_MAX_SECONDS).toBeGreaterThan(ORDINARY_COURT_FROM_SECONDS);
-  });
-
-  // The wall this ticket exists to avoid: at a seven-day maximum the band begins at 97.5% and is
-  // a sliver against the right edge, which reads as the axis ending rather than as a region an
-  // ordinary court occupies.
+  // The wall ticket 22 avoided: a band beginning past about 97% is a sliver against the right
+  // edge, which reads as the axis ending rather than as a region an ordinary court occupies.
   it("reads as a region rather than as the right-hand edge", () => {
-    expect(1 - stripFraction(ORDINARY_COURT_FROM_SECONDS)).toBeGreaterThanOrEqual(0.1);
+    expect(1 - stripFraction(boundary)).toBeGreaterThanOrEqual(0.1);
   });
 
-  // And the other side of that trade. Compressing the axis is the point, but compress far enough
-  // and court 34's whole record is the blob at the left that a log scale exists to prevent —
-  // 14s to 3,236s is the range the live court has held since ticket 07 read it.
+  // And it has to leave room to the left for its own label, which is right-aligned against the
+  // boundary and must not reach the median value printed at the top of the plot.
+  it("leaves the left of the axis for its label, past where court 34's record ends", () => {
+    expect(stripFraction(boundary)).toBeGreaterThan(stripFraction(3236));
+  });
+
+  // The other side of the trade. Compress far enough and court 34's whole record is the blob at
+  // the left a log scale exists to prevent. 14s to 3,236s is the range the live court has held
+  // since ticket 07 read it.
   it("leaves court 34's own record a distribution rather than a blob at the origin", () => {
     const width = stripFraction(3236) - stripFraction(14);
     expect(width).toBeGreaterThanOrEqual(0.3);
@@ -79,17 +83,11 @@ describe("the axis ticks", () => {
     }
   });
 
-  // The boundary has three faces — a number, a tick label and a sentence — and ticket 23 will
-  // move all three at once if it measures the band. They are one object in `strip.ts` for that
-  // reason, and this is the assertion that none of them is a stray literal somewhere else.
-  it("spells the boundary for prose as well, so a footer need not transcribe it", () => {
-    expect(ORDINARY_COURT_PROSE).toBe("five days");
-  });
-
-  it("puts a tick under the band's own boundary, so the axis names where it begins", () => {
-    const boundary = STRIP_TICKS.find((tick) => tick.seconds === ORDINARY_COURT_FROM_SECONDS);
-    expect(boundary).toBeDefined();
-    expect(ORDINARY_COURT_LABEL).toBe(boundary?.label);
+  // A tick at the old five days under a band beginning at four would read as a second claim about
+  // where it begins. The band carries its own measured value in its label, and no tick names a
+  // duration an ordinary court was *said* to take.
+  it("puts no tick where the old illustrative boundary was", () => {
+    expect(STRIP_TICKS.some((tick) => tick.seconds === 5 * DAY)).toBe(false);
   });
 });
 

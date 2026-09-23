@@ -11,7 +11,7 @@ import { renderAt } from "../test/court";
  */
 
 /** The anchors this page promises to keep. */
-const ANCHORS = ["unit", "latency", "coherence", "window", "caveats", "sources"];
+const ANCHORS = ["unit", "latency", "comparison", "coherence", "window", "caveats", "sources"];
 
 describe("the method page", () => {
   it("is reachable by URL and says what it is", () => {
@@ -46,6 +46,21 @@ describe("the method page", () => {
     expect(
       screen.getByText(/the choice it revealed is the dispute's final ruling/i),
     ).toBeInTheDocument();
+  });
+
+  it("accounts for where the comparison band comes from, as it does for every other read", () => {
+    // Ticket 23 made the band a reading, so it is provenance now and this page owes it an
+    // account: which court, what is measured, what is left out, and what a short read does.
+    renderAt("/method");
+
+    const section = screen.getByRole("region", { name: /the comparison band/i });
+
+    expect(section).toHaveTextContent(/court 29/i);
+    expect(section).toHaveTextContent(/time to ruling/i);
+    expect(section).toHaveTextContent(/appealed disputes are left out/i);
+    expect(section).toHaveTextContent(/counted against the number the court itself says it holds/i);
+    expect(section).toHaveTextContent(/never drawn at a default/i);
+    expect(section).not.toHaveTextContent(/illustrative/i);
   });
 
   it("names all three configurations as absolute durations", () => {

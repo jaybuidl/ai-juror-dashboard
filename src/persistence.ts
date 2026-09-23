@@ -125,6 +125,25 @@ const PERSISTED_QUERIES: readonly string[] = [
   // every return visit renders that and then retracts it a moment later — a caveat that comes
   // and goes teaches a reader to ignore caveats.
   "courtRewards",
+  // Ticket 23's comparison court, admitted on the same two questions, answered rather than
+  // assumed. The value is `RawReference`: the court's name and count, and the same `RawDispute`
+  // payload `courtDisputes` holds, all strings and plain arrays. No Map, no bigint, no Date. The
+  // median is taken from it in `useCourtPerformance`'s memo on every render and is never
+  // stored, so a restored cache is re-measured by today's `referenceReadingOf`, exactly as the
+  // disputes are re-derived by today's `toDisputes`. A failed read is a failed query:
+  // `fetchReference` has no fallback and throws a `ReadFailure`, so there is no
+  // successful-but-empty result to re-serve. A *short* read is a successful query, and it
+  // restores as short. It is labelled short again on the way back in, because the count it is
+  // compared against is part of the same payload, and it refetches on mount like every other
+  // entry here.
+  //
+  // It wants persisting for the reason the two above do. Without it, every return visit draws
+  // "being read" where the band belongs and then the band, a caveat that comes and goes.
+  //
+  // No version bump. `PERSISTED_MODEL_VERSION` is for a *changed* raw shape under a key an
+  // older bundle already wrote. No older bundle wrote this key, so a restored cache from one
+  // simply has no entry for it and the read is cold.
+  "referenceCourt",
 ];
 
 /** Whether one query's result is written to storage. Keyed on the head of the query key. */
