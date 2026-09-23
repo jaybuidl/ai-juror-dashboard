@@ -111,3 +111,30 @@ Nothing in this dashboard depends on it — it resolves forward from the roster'
 unaffected either way. The visible effect if they do complete it is that the Kleros Court app starts
 rendering nicknames instead of addresses. **Reverse-resolution coverage changing is expected, not a
 regression to investigate**, and nobody should "fix" the forward-resolution design in response to it.
+
+## Who is staked in court 34, and whether the dashboard tracks them
+
+*2026-09-23.*
+
+**"Tracked" is an address test and nothing else.** `groupDraws` in `src/performance/performance.ts`
+matches every draw to `ROSTER` by lowercased address. Nicknames, ENS names and reverse records only
+change what is displayed, and no entry is gated at runtime. So a staked address is tracked if, and
+only if, it is in `src/roster/agent-jurors.ts`. Nothing else is needed to answer the question.
+
+**Read court-34 stakes per court, never from a ranking.** `kleros juror top --chain arbitrum-one
+--court 34` (agentkit 0.3.0) does **not** filter to the court. It returned 44 jurors ranked by
+root-court stake, and only 7 of them held any stake in court 34. The rest were human jurors staked
+in courts 1, 9, 10, 31 and 32. Two sources agree with each other: the core subgraph's
+`jurorTokensPerCourts(where: {court: "34", effectiveStake_gt: "0"})` and `kleros stake list
+--address <addr> --chain arbitrum-one`. The address must be passed as `--address`, because a bare
+positional address fails validation. The filter bug has been reported but not yet filed upstream.
+
+**State on 2026-09-23:**
+- Seven addresses were staked in court 34, and six of them were roster entries.
+- The seventh, `0x136041c8f81a6c6BA2a45E43D898c9d219E6DBda`, had 11,593 PNK staked. It was drawn
+  15 times across disputes 270–287 from 2026-09-18 onward, and it has no reverse ENS name. It is
+  the one staked address the dashboard does not track. Its draws are counted as off-roster (§).
+- Baskerville (`0x606D…48Bc`) is on the roster and staked **nowhere**. The court cannot draw it
+  again until it restakes.
+- `0xd66b90529427cb761e0f81633861c1dca04ebe41` was drawn 3 times in disputes 216–217 on
+  2026-09-08, and it holds no stake now.
