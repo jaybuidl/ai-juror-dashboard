@@ -80,10 +80,11 @@ export async function fetchCommitCasts({
   // every log and always as zero — see `blockTimestamps`, which carries the trap in full.
   //
   // The cost is one call per commitment, and the public endpoint rate-limits per call rather
-  // than per request: 62 blocks read three times over in a second returns HTTP 429. One page
-  // load is nowhere near that, and react-query's minute of staleness keeps it that way — but
-  // the ceiling is real and arrives with roughly 200 more disputes. The fix then is the one
-  // ADR-0004 already prefers on merit: put the timestamp in the subgraph upstream.
+  // than per request: 62 blocks read three times over in a second returns HTTP 429. The
+  // ceiling arrived on 2026-09-24, when a cold load of 429 blocks in one burst was refused and
+  // every commit figure read "—"; `blockTimestamps` now paces the reads, which makes a cold
+  // load of this size take ~17s. The fix that removes the cost is the one ADR-0004 already
+  // prefers on merit: put the timestamp in the subgraph upstream.
   const timestampOf = await blockTimestamps(
     client,
     logs.map((log) => log.blockNumber),

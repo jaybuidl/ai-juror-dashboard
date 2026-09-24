@@ -79,6 +79,15 @@ export function createArbitrumClient(
   });
 }
 
+/** How many block reads go out together, and what to wait between one group and the next. */
+export type BlockReadPace = { chunk: number; pause: () => Promise<void> };
+
+/** 50 calls every 2s: the pace measured against arb1 on 2026-09-24 that never drew a 429. */
+export const BLOCK_READ_PACE: BlockReadPace = {
+  chunk: 50,
+  pause: () => new Promise((resolve) => setTimeout(resolve, 2000)),
+};
+
 /**
  * When each of a set of logs was mined, keyed by block number.
  *
@@ -90,8 +99,9 @@ export function createArbitrumClient(
  * in the console. `eth_getBlockByNumber` is the only source that has the moment.
  *
  * The cost is one call per distinct block, and the public endpoint rate-limits per RPC *call*
- * rather than per request. One page load is nowhere near the ceiling; a live test suite that
- * read per test is not (see `commit-logs.integration.test.ts`).
+ * rather than per request. A cold page load reached the ceiling on 2026-09-24 at 429 blocks,
+ * which is why the reads below are paced; a live test suite that read per test reaches it
+ * sooner (see `commit-logs.integration.test.ts`).
  *
  * Which is what `blockTimes` is for, and why it lives on the shared helper rather than in the
  * commit scan that first needed it: ticket 12 re-reads the court every five seconds while a
@@ -103,17 +113,36 @@ export async function blockTimestamps(
   client: PublicClient,
   blockNumbers: readonly bigint[],
   blockTimes?: BlockTimes,
+  pace: BlockReadPace = BLOCK_READ_PACE,
 ): Promise<Map<bigint, bigint>> {
   const distinct = [...new Set(blockNumbers)];
   const unread = distinct.filter((blockNumber) => blockTimes?.get(blockNumber) === undefined);
-  const blocks = await Promise.all(unread.map((blockNumber) => client.getBlock({ blockNumber })));
+
+  // Paced rather than all at once. The batching transport folds every call made in one tick
+  // into one request, and arb1 counts that request as its size: measured 2026-09-24, a cold
+  // scan of 429 blocks in one burst returned HTTP 429 (surfacing in a browser as a CORS error,
+  // since the refusal carries no allow-origin header), and every commit figure on the page read
+  // "—". Bursts of 150-300 pass only when the budget is full; 50 calls every 2s sustained never
+  // failed. Each chunk is cached as it lands, so a scan cut short by a 429 resumes where it
+  // stopped instead of starting over and spending the same budget again.
+  const blocks: { number: bigint; timestamp: bigint }[] = [];
+  for (let start = 0; start < unread.length; start += pace.chunk) {
+    if (start > 0) await pace.pause();
+    const chunk = await Promise.all(
+      unread
+        .slice(start, start + pace.chunk)
+        .map((blockNumber) => client.getBlock({ blockNumber })),
+    );
+    blocks.push(...chunk);
+    if (blockTimes !== undefined) {
+      for (const block of chunk) blockTimes.set(block.number, block.timestamp);
+      // One write per chunk rather than one per block: the whole map is serialised each time.
+      blockTimes.flush();
+    }
+  }
 
   if (blockTimes === undefined)
     return new Map(blocks.map((block) => [block.number, block.timestamp]));
-
-  for (const block of blocks) blockTimes.set(block.number, block.timestamp);
-  // One write per scan rather than one per block: the whole map is serialised each time.
-  blockTimes.flush();
 
   const timestampOf = new Map<bigint, bigint>();
   for (const blockNumber of distinct) {
