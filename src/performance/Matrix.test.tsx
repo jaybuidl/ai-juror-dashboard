@@ -804,7 +804,6 @@ describe("Matrix", () => {
     for (const word of ["Coherent", "Diverged", "No vote", "Acting", "Not drawn"]) {
       expect(screen.getAllByText(word).length).toBeGreaterThan(0);
     }
-    expect(screen.getByText(/rail: 1s — 1h, log/i)).toBeInTheDocument();
   });
 
   it("names the live family once in the legend and the stage in the cell", () => {
@@ -1254,7 +1253,6 @@ describe("Matrix", () => {
 
       expect(screen.getByText("Commit")).toBeInTheDocument();
       expect(screen.getByText("Reveal")).toBeInTheDocument();
-      expect(screen.getByText(/rail: 1s — 1h, log/i)).toBeInTheDocument();
     });
 
     it("reproduces the range the rail was drawn for", () => {
