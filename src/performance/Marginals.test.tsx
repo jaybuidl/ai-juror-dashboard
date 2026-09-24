@@ -404,32 +404,31 @@ describe("Marginals", () => {
    * survives is a property of this list and its flags, not of the grid around it.
    */
   describe("the compact density", () => {
-    it("keeps three of the six figures and drops three", () => {
+    it("keeps four of the six figures and drops two", () => {
       renderMarginals({}, { density: "compact" });
 
       for (const kept of [
+        "Median commit latency",
         "Median reveal latency",
         "Coherent draws, of the draws the court has ruled on",
         "Draws, and the vote IDs they hold",
       ]) {
         expect(screen.getByText(kept)).toBeInTheDocument();
       }
-      for (const dropped of [
-        "Median commit latency",
-        "Cumulative ETH earned",
-        "Net PNK gained or lost",
-      ]) {
+      for (const dropped of ["Cumulative ETH earned", "Net PNK gained or lost"]) {
         expect(screen.queryByText(dropped)).not.toBeInTheDocument();
       }
     });
 
-    it("keeps the order of the three it keeps", () => {
+    it("keeps the order of the four it keeps", () => {
       // Nothing is ranked here and nothing reorders: a compact header is the comfortable one
-      // with three lines removed, never a second block that happens to agree with it.
+      // with two lines removed, never a second block that happens to agree with it.
       renderMarginals({}, { density: "compact" });
 
-      const keys = screen.getAllByText(/^(Med rev|Coherent|Draws)$/).map((key) => key.textContent);
-      expect(keys).toEqual(["Med rev", "Coherent", "Draws"]);
+      const keys = screen
+        .getAllByText(/^(Med com|Med rev|Coherent|Draws)$/)
+        .map((key) => key.textContent);
+      expect(keys).toEqual(["Med com", "Med rev", "Coherent", "Draws"]);
     });
 
     it("draws no reason under a figure at the comfortable density either", () => {
@@ -463,7 +462,8 @@ describe("Marginals", () => {
 
       // The reason line goes and the reason does not: it moves onto the mark's accessible name,
       // where it costs a frozen header nothing. Ticket 06's own hand-off asked for this trade.
-      expect(screen.getAllByText("†")).toHaveLength(1);
+      // Two daggers: the commit and reveal medians each carry their own window marker.
+      expect(screen.getAllByText("†")).toHaveLength(2);
       expect(screen.getAllByText("‡")).toHaveLength(1);
       expect(screen.queryByText(/draws ran under a vote window of/i)).not.toBeInTheDocument();
       expect(screen.getByRole("link", { name: /median reveal is marked/i })).toHaveAccessibleName(
@@ -471,13 +471,13 @@ describe("Marginals", () => {
       );
     });
 
-    it("drops no marker with the figure it dropped", () => {
-      // The commit median carried a † of its own at the other density. It leaves with its
-      // figure, which is the one way a marker may go: the figure it qualified is not on screen.
+    it("keeps the commit median's marker with the commit median", () => {
+      // The commit median carries a † of its own, and since 2026-09-24 it survives the compact
+      // density, so its marker does too: a caveat is never among what density drops.
       renderMarginals({ changedWindows: [EARLIER] }, { density: "compact" });
 
-      expect(screen.queryByText("Median commit latency")).not.toBeInTheDocument();
-      expect(screen.queryByRole("link", { name: /median commit is marked/i })).toBeNull();
+      expect(screen.getByText("Median commit latency")).toBeInTheDocument();
+      expect(screen.getByRole("link", { name: /median commit is marked/i })).toBeInTheDocument();
     });
   });
 });

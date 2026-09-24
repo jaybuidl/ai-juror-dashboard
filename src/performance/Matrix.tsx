@@ -1097,7 +1097,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                         `MatrixDense.dc.html:62-65`, which states the reduction as a choice. */}
                     <CaptionBody>
                       {compact
-                        ? "Newest first. Reveal latency and coherence survive at this density; commit latency moves to the row, as a median over that dispute's own draws."
+                        ? "Newest first. Commit and reveal latency and coherence survive at this density; each row also carries its dispute's own median commit."
                         : "Newest first. One row per dispute, one column per agent juror, one cell per draw."}
                     </CaptionBody>
                   </CaptionCell>

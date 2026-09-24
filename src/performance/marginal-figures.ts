@@ -70,10 +70,10 @@ export type MarginalFigure = {
   /**
    * Whether this figure survives the matrix header's compact density.
    *
-   * Three of the six do, per ticket 17: the median reveal, the coherence count and the draw
-   * count. What goes is the median commit — which the compact grid moves onto the dispute row
-   * rather than losing — and the two reward sums, which are supporting context beside the
-   * measures rather than a dimension anyone is ranked on. A flag on the figure rather than a
+   * Four of the six do: the median commit, the median reveal, the coherence count and the draw
+   * count. Ticket 17 dropped the median commit too; it was restored on 2026-09-24. What goes is
+   * the two reward sums, which are supporting context beside the measures rather than a
+   * dimension anyone is ranked on. A flag on the figure rather than a
    * second list, because a second list is a second order and the order is the artboard's.
    *
    * It lives here, beside the readings, rather than in `Marginals.tsx` which is the only caller
@@ -130,6 +130,24 @@ export function marginalFiguresOf(
 
   return [
     {
+      key: "commit",
+      // First, because a commit precedes its reveal and the two medians read in that order.
+      // Kept at the compact density too (ruled 2026-09-24): the grid's dispute row carries that
+      // row's own commit, which is not this column's median, so dropping it here lost a figure.
+      dense: true,
+      label: "Med com",
+      caption: "Median commit",
+      name: "Median commit latency",
+      figure: commitMedianFigureOf(marginals.commitLatency?.median, marginals.commitments, scanned),
+      caveat: windowCaveat({
+        changes: changedWindows,
+        current,
+        measure: "commit",
+        counted: commitLatency?.seconds.length ?? 0,
+        nickname,
+      }),
+    },
+    {
       key: "reveal",
       dense: true,
       label: "Med rev",
@@ -145,27 +163,6 @@ export function marginalFiguresOf(
         current,
         measure: "reveal",
         counted: revealLatency?.seconds.length ?? 0,
-        nickname,
-      }),
-    },
-    {
-      key: "commit",
-      // The one figure the header loses at the compact density that is not lost to the page:
-      // the grid moves it onto the dispute row, over that row's own draws, per the corner cell
-      // at `MatrixDense.dc.html:64`. The reveal median stays because reveal latency is the
-      // figure the experiment is about, and dispute 151's 8-hour commit window makes the commit
-      // the least comparable measure here — the same trade ADR-0005 records being made once
-      // already.
-      dense: false,
-      label: "Med com",
-      caption: "Median commit",
-      name: "Median commit latency",
-      figure: commitMedianFigureOf(marginals.commitLatency?.median, marginals.commitments, scanned),
-      caveat: windowCaveat({
-        changes: changedWindows,
-        current,
-        measure: "commit",
-        counted: commitLatency?.seconds.length ?? 0,
         nickname,
       }),
     },

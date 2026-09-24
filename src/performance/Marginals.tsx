@@ -36,10 +36,10 @@ import type { PeriodWindows } from "./windows";
  * case-insensitive filesystem (`CLAUDE.md`, TS1149).
  *
  * Ticket 17 then gave this block a second *density*, which is a third rendering of those same
- * six readings rather than a second set of them: the compact header keeps the three figures
- * `MarginalFigure.dense` marks and drops the other three, and it drops nothing else. Which three
+ * six readings rather than a second set of them: the compact header keeps the four figures
+ * `MarginalFigure.dense` marks and drops the other two, and it drops nothing else. Which four
  * survive is decided in `marginal-figures.ts` beside the figures themselves, so the order and
- * the arithmetic stay one thing and a compact header is the comfortable header with three lines
+ * the arithmetic stay one thing and a compact header is the comfortable header with two lines
  * removed — never a second block that happens to agree with it.
  */
 
@@ -122,8 +122,8 @@ export type MarginalsProps = {
    * How tightly the matrix around this header is drawn — `densityOf(rows.length)`.
    *
    * The same flag the cell and the dispute row read, so the three cannot come to disagree about
-   * which density the reader is in. At the compact density this block keeps three of its six
-   * figures and every marker on the three it keeps: a caveat is never among what density drops.
+   * which density the reader is in. At the compact density this block keeps four of its six
+   * figures and every marker on the four it keeps: a caveat is never among what density drops.
    * What a marker means is carried by its own accessible name at both densities, so density
    * changes how many figures are shown and never how well a shown one is qualified.
    */
@@ -134,7 +134,7 @@ export function Marginals({ marginals, scanned, payouts, current, density }: Mar
   const context: MarginalContext = { scanned, payouts, current };
   const compact = density === "compact";
   /* Built at either density and filtered, rather than branched on inside `marginalFiguresOf`:
-     the agent juror view takes all six and this header takes three of them, and both are reading
+     the agent juror view takes all six and this header takes four of them, and both are reading
      one list in one order. */
   const slots = marginalFiguresOf(marginals, context).filter((slot) => !compact || slot.dense);
 

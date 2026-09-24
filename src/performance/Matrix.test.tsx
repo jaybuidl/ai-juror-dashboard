@@ -1637,11 +1637,11 @@ describe("Matrix", () => {
       // The switch itself, from the row count in the model rather than from anything a reader
       // set: there is no control for this on the page.
       renderMatrix(comfortableCourt());
-      expect(screen.getAllByText("Median commit latency")).toHaveLength(FIXTURE_ROSTER.length);
+      expect(screen.getAllByText("Cumulative ETH earned")).toHaveLength(FIXTURE_ROSTER.length);
 
       cleanup();
       renderMatrix(compactCourt());
-      expect(screen.queryByText("Median commit latency")).not.toBeInTheDocument();
+      expect(screen.queryByText("Cumulative ETH earned")).not.toBeInTheDocument();
     });
 
     it("keeps every dispute, in the same order, at both densities", () => {
@@ -1669,7 +1669,7 @@ describe("Matrix", () => {
      * anyway, on the roster that actually ships.
      *
      * Asserted through what the reduction *does* rather than by reading the flag back: the corner
-     * cell states where the commit figure went, and the column headers stop carrying one.
+     * cell states where the commit figure went, and the column headers stop carrying the reward sums.
      */
     it("compacts a short matrix on the shipped roster, which is past the column threshold", () => {
       expect(ROSTER.length).toBeGreaterThan(COMPACT_FROM_COLUMNS);
@@ -1677,8 +1677,10 @@ describe("Matrix", () => {
       renderMatrix(build({ roster: ROSTER }));
 
       expect(screen.getAllByRole("columnheader")).toHaveLength(ROSTER.length + 1);
-      expect(screen.getByText(/commit latency moves to the row/i)).toBeInTheDocument();
-      expect(screen.queryByText("Median commit latency")).not.toBeInTheDocument();
+      expect(
+        screen.getByText(/each row also carries its dispute's own median commit/i),
+      ).toBeInTheDocument();
+      expect(screen.queryByText("Cumulative ETH earned")).not.toBeInTheDocument();
     });
 
     it("keeps every column and their order", () => {
@@ -1802,21 +1804,18 @@ describe("Matrix", () => {
       expect(within(row).getByText("MED C").parentElement?.textContent).toContain("—");
     });
 
-    it("keeps three of the six figures in the column header and drops three", () => {
+    it("keeps four of the six figures in the column header and drops two", () => {
       renderMatrix(compactCourt());
 
       for (const kept of [
+        "Median commit latency",
         "Median reveal latency",
         "Coherent draws, of the draws the court has ruled on",
         "Draws, and the vote IDs they hold",
       ]) {
         expect(screen.getAllByText(kept)).toHaveLength(FIXTURE_ROSTER.length);
       }
-      for (const dropped of [
-        "Median commit latency",
-        "Cumulative ETH earned",
-        "Net PNK gained or lost",
-      ]) {
+      for (const dropped of ["Cumulative ETH earned", "Net PNK gained or lost"]) {
         expect(screen.queryByText(dropped)).not.toBeInTheDocument();
       }
     });
@@ -1979,8 +1978,10 @@ describe("Matrix", () => {
       // So a reader meets the reduction as a stated choice rather than as a figure that went
       // missing, and knows where the one that moved has moved to.
       const corner = screen.getAllByRole("columnheader")[0] as HTMLElement;
-      expect(corner.textContent).toContain("Reveal latency and coherence survive at this density");
-      expect(corner.textContent).toContain("commit latency moves to the row");
+      expect(corner.textContent).toContain(
+        "Commit and reveal latency and coherence survive at this density",
+      );
+      expect(corner.textContent).toContain("each row also carries its dispute's own median commit");
     });
 
     it("takes the second line off the row and leaves everything else on it", () => {
@@ -2057,11 +2058,15 @@ describe("Matrix", () => {
       // to disagree with it.
       renderMatrix(comfortableCourt());
       expect(screen.getByText(/newest first\. one row per dispute/i)).toBeInTheDocument();
-      expect(screen.queryByText(/commit latency moves to the row/i)).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/each row also carries its dispute's own median commit/i),
+      ).not.toBeInTheDocument();
 
       cleanup();
       renderMatrix(compactCourt());
-      expect(screen.getByText(/commit latency moves to the row/i)).toBeInTheDocument();
+      expect(
+        screen.getByText(/each row also carries its dispute's own median commit/i),
+      ).toBeInTheDocument();
     });
 
     it("sends nobody looking for a shortfall in cells that carry no commit figure", () => {
