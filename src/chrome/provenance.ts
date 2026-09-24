@@ -1,14 +1,10 @@
 /**
- * What a view says its figures rest on.
+ * Which disputes a view was read from, and when — printed by `ReadStamp` at the top of the view.
  *
- * The footer is composed per view rather than being one sentence repeated on all of them,
- * because what it names has to be what is actually on screen: a footer that described the
- * matrix under a page showing only the roster would be a caveat about something the reader
- * cannot see, which is worse than none.
- *
- * It is provenance and not an alarm. A read that failed is announced twice — where the figure
- * would have been, and once in a banner (ticket 13) — and the footer's job is the line between
- * what has been read and what has not.
+ * This was the provenance footer's model, and it carried what was measured, a list of caveats and
+ * an identity line as well. The footer was removed on 2026-09-24 by the maintainer's ruling, and
+ * everything only it said went with it rather than moving; the read range and time are all that
+ * survive. Failures are the banner's and the degraded panel's (`failures.ts`), not this.
  */
 
 /** The disputes a view's figures were read from. */
@@ -22,19 +18,10 @@ export type DisputeRange = {
 };
 
 export type Provenance = {
-  /** Which values on the view in front of the reader are the measured record. */
-  measures: string;
-  /** The disputes those values were read from, or `null` when nothing was read. */
+  /** The disputes the view's figures were read from, or `null` when nothing was read. */
   read: DisputeRange | null;
   /** When that read happened, in epoch milliseconds, or `null` if it has not landed. */
   readAt: number | null;
-  /**
-   * Anything on screen resting on less than a clean read: an ENS lookup that fell back to the
-   * roster, a source that failed, a figure that came from somewhere other than a read.
-   */
-  caveats: readonly string[];
-  /** True on a view showing an agent juror, which then has to state how they are identified. */
-  identifiesAgentJurors: boolean;
 };
 
 /**

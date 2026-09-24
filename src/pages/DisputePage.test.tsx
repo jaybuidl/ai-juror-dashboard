@@ -38,22 +38,6 @@ function read(overrides: Partial<DisputeDetailView> = {}): DisputeDetailView {
   };
 }
 
-/**
- * The page's own provenance footer, told apart from the columns'.
- *
- * Every justification column ends in a `<footer>`, which is what that element is for — and
- * HTML-AAM scopes a `<footer>` inside an `<article>` out of the `contentinfo` landmark, so a
- * browser exposes exactly one. `dom-accessibility-api` does not implement that scoping and maps
- * all of them, so the query has to do it here rather than in the markup.
- */
-function provenanceFooter(): HTMLElement {
-  const page = screen
-    .getAllByRole("contentinfo")
-    .find((footer) => footer.closest("article") === null);
-  if (page === undefined) throw new Error("the view rendered no provenance footer");
-  return page;
-}
-
 function renderDispute(overrides: Partial<DisputeViewProps> = {}) {
   return render(
     <ThemeProvider theme={theme}>
@@ -634,50 +618,20 @@ describe("an address this dashboard cannot show", () => {
     expect(screen.getByText(/has not been read yet/)).toBeInTheDocument();
   });
 
-  it("does not describe measurements on a page showing no dispute", () => {
-    // The footer's job is the provenance of what is above it. Naming three measures over a
-    // not-found page is provenance for figures the reader cannot see, which is the same
-    // mistake as a caveat about something absent.
+  it("stamps no read under a page showing no dispute", () => {
+    // A dispute range under a not-found page would be provenance for figures the reader cannot
+    // see.
     renderDispute({ pathId: "abc" });
 
-    expect(provenanceFooter()).toHaveTextContent(/Nothing on this page is a measurement/);
-    expect(provenanceFooter()).not.toHaveTextContent(/Commit latency, reveal latency/);
-  });
-
-  it("does not claim a read is in flight when none was ever started", () => {
-    // A non-numeric segment disables the query, and react-query leaves a disabled query
-    // pending for ever. A caveat keyed on that alone says "still being read" about a read
-    // nobody started, under a page saying the address names nothing — and never retracts it.
-    renderDispute({ pathId: "latency", detail: read({ isLoading: false }) });
-
-    expect(provenanceFooter()).not.toHaveTextContent(/still being read/);
+    expect(screen.queryByText(/^Read dispute/)).not.toBeInTheDocument();
   });
 });
 
-describe("the provenance footer", () => {
-  it("says what on this view is measured and what is only reproduced", () => {
-    renderDispute();
-    expect(provenanceFooter()).toHaveTextContent(/The prose is reproduced and not measured/);
-  });
-
-  it("states how agent jurors are identified, because this view shows them", () => {
+describe("the read stamp", () => {
+  it("names the one dispute on screen, and when the court was read", () => {
     renderDispute();
 
-    expect(provenanceFooter()).toHaveTextContent(/nickname/i);
-  });
-
-  it("does not repeat a failure the banner already carries", () => {
-    // One failed source gets one banner line, and the footer never carries the failed half.
-    renderDispute({
-      detail: read({
-        error: new ReadFailure("The core subgraph returned HTTP 503", {
-          source: SOURCES.core,
-          status: "HTTP 503",
-        }),
-        detail: NO_DETAIL,
-      }),
-    });
-
-    expect(provenanceFooter()).not.toHaveTextContent("HTTP 503");
+    const stamp = screen.getByText("Read dispute 156").parentElement as HTMLElement;
+    expect(stamp).toHaveTextContent(/^Read dispute 156 · 2026-08-25 05:12 UTC$/);
   });
 });

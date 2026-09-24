@@ -190,7 +190,7 @@ export function useCourtPerformance(
      * Watching a live dispute is watching *this* query: the disputes say a period is open and
      * the draws say who has acted in it. A five-second dispute list beside a minute-old draw
      * list would render a commit period unfolding above cells that had not moved — the pair
-     * ticket 15's provenance footer already had to learn to talk about.
+     * ticket 15's (since removed) provenance footer had to learn to talk about.
      *
      * Keyed on the disputes rather than on what this query itself returned, because the draws
      * carry no period: whether anything is still being decided is a fact about the court, and

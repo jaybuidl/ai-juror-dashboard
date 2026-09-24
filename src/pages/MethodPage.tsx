@@ -177,20 +177,8 @@ function Section({ id, heading, children }: { id: string; heading: string; child
   );
 }
 
-const provenance: Provenance = {
-  measures:
-    "Nothing on this page is a measurement. It is the account of how the figures elsewhere on this dashboard are arrived at.",
-  read: null,
-  readAt: null,
-  caveats: [
-    // The one thing on this page that could go stale: it states what court 34 was configured
-    // with, and the court gets reconfigured — three times so far, the last of them after this
-    // caveat first named a date. Saying which date the account is true as of is what lets a
-    // reader who finds a fourth configuration know this page missed it.
-    "The three configurations named under the window are court 34's as of 4 September 2026, read from its parameter history on that date. The matrix itself reads that history on every load; this account does not.",
-  ],
-  identifiesAgentJurors: false,
-};
+/** Prose, resting on no read. */
+const provenance: Provenance = { read: null, readAt: null };
 
 export function MethodPage() {
   useDocumentTitle("Method");
@@ -257,8 +245,8 @@ export function MethodPage() {
       {/* Ticket 23. Directly after latency, because it is what a latency is compared against
           on both plots, and it is the one read on this dashboard that is not of court 34. The
           figures themselves are not quoted here: this page reads nothing, and a median typed
-          into it would go stale the next time court 29 ruled. The footer under each plot states
-          the reading as it was taken on that load. */}
+          into it would go stale the next time court 29 ruled. The band's own label states
+          the court and its median as read on that load. */}
       <Section id="comparison" heading="The comparison band is another court's time to ruling">
         <Body>
           Both latency plots carry a violet band marking where an ordinary Kleros court sits on the
@@ -278,9 +266,8 @@ export function MethodPage() {
           Appealed disputes are left out, and so are disputes not yet ruled. Court 34's disputes are
           single-round, and an appeal adds at least one more round with its own vote and its own
           appeal period. Folding appealed disputes in would move the band to the right and flatter
-          this experiment with a gap it did not earn. The footer under each plot says which court
-          the band was read from, how many disputes it is over, when they were created, and how many
-          were left out.
+          this experiment with a gap it did not earn. The band's label names the court it was read
+          from and its median.
         </Body>
         <Body>
           A read of that court can come back short without failing. So the disputes returned are
@@ -395,7 +382,7 @@ export function MethodPage() {
           Both figures lag the rest of this page, and legitimately. A payout is written when the
           court <Term>executes</Term> a dispute, which is a later transaction than ruling it — so a
           dispute counted in the coherence figures may have paid nothing yet. That is a delay in the
-          court, not a gap in this read, and the footer says how many draws the two figures cover.
+          court, not a gap in this read.
         </Body>
       </Section>
 

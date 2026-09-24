@@ -14,7 +14,8 @@ import { stripFraction } from "./strip";
  *
  * It is decoration behind the marks and never in front of them, and it lives inside a plot that
  * is `aria-hidden` — so nothing here is the carrier of a fact. Which court it was read from,
- * over how many disputes and what period, is said in words in each page's provenance footer.
+ * over how many disputes and what period, was said in the provenance footer until the maintainer
+ * removed it on 2026-09-24; the method page describes the band in general terms.
  *
  * **Since ticket 23 it is a reading, so it has states, and none of them is a band at a
  * default.** The boundary is court 29's median time to ruling, read on every load. While that
@@ -100,9 +101,7 @@ export function StripBand({ comparison }: { comparison: Comparison }) {
       <Label $from={from}>
         Ordinary Kleros court
         <br />
-        {/* A median over single-round disputes only, because court 34's are single-round. The
-            count, the period and the exclusion are said in the footer, where a reader who cannot
-            see this label meets them. */}
+        {/* A median over single-round disputes only, because court 34's are single-round. */}
         <Quiet>
           Court {reading.court.id} · {formatElapsedSeconds(reading.medianSeconds)} median
         </Quiet>

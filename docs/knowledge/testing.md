@@ -107,9 +107,9 @@ this file is the full account.
   has to say so, through `src/test/viewport.ts`. An unguarded `window.matchMedia(…)` here would
   throw inside the render of most of the chrome, on every test in the suite.
 - **A view that renders inside the shell cannot be tested by asserting the shell.**
-  `routes.test.tsx` checks the nav and the footer on every path in `ROUTES`, and the 404 renders
-  both — so adding `/disputes/156` to that list proved nothing about whether the route matched.
-  A route test has to assert something only that view says. This was found by opening the page,
+  `routes.test.tsx` checks the nav on every path in `ROUTES` (and, until 2026-09-24, the
+  footer), and the 404 renders it too — so adding `/disputes/156` to that list proved nothing
+  about whether the route matched. A route test has to assert something only that view says. This was found by opening the page,
   not by the suite.
 - **`yarn preview` silently moves to another port when one is in use, and other worktrees are
   using them.** Three checkouts of this repo can each be serving a `dist`, so `localhost:4173`

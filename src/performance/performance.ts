@@ -100,8 +100,8 @@ export type RawCommitCast = {
  * Written when the court **executes** a dispute, which is a later and separate transaction from
  * ruling it: a dispute can be `ruled` with no shift yet, and the two figures built from these
  * are therefore always "what has been paid out so far" rather than "what every ruled draw came
- * to". That lag is stated in the provenance footer rather than being counted as a shortfall —
- * an absence with a legitimate cause is not a read that failed.
+ * to". That lag is not counted as a shortfall — an absence with a legitimate cause is not a read
+ * that failed.
  *
  * One shift per juror per dispute **per round**, so a dispute that goes to appeal produces
  * several for one agent juror. `rewardsByDraw` sums them rather than picking the current
@@ -340,7 +340,7 @@ export type MatrixRow = {
    * The † marker. It is a fact about comparability rather than about the dispute: the figures
    * in this row were measured against different windows from the rows above it, so a reader
    * scanning the column is not comparing like with like. False while the history is unread —
-   * an unknown is not a denial, and the provenance footer says which it is.
+   * an unknown is not a denial.
    */
   underEarlierWindows: boolean;
   /**
@@ -436,8 +436,8 @@ export type RewardCoverage = {
   /**
    * Draws paid wholly or partly in a fee token, whose value no ETH figure here carries.
    *
-   * `0` throughout, and the footer says so only when it is not: an agent juror that earned
-   * something this page cannot express must not read as one that earned less.
+   * `0` throughout so far. The footer line that disclosed a non-zero count was removed with the
+   * footer on 2026-09-24, deliberately and not relocated.
    */
   feeTokenDraws: number;
   /**

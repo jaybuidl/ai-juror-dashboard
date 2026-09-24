@@ -18,7 +18,7 @@ import parameterFixture from "../performance/court-34-parameters.fixture.json" w
   type: "json",
 };
 import rewardFixture from "../performance/court-34-rewards.fixture.json" with { type: "json" };
-import { COMPACT_FROM_COLUMNS, COMPACT_FROM_ROWS } from "../performance/density";
+import { COMPACT_FROM_COLUMNS } from "../performance/density";
 import {
   buildCourtPerformance,
   type RawCommitCast,
@@ -54,8 +54,7 @@ import { theme } from "../styles/theme";
  * Ticket 25 gave `densityOf` its second axis, and `COMPACT_FROM_COLUMNS` comes out at six: a
  * comfortable column is 148px against a compact 104, so a seventh agent juror takes the grid past
  * what a comfortable density fits on a desktop. Every court here would otherwise be compact
- * whatever its row count, and `roomyCourt` — whose whole job is to be the comfortable half of a
- * pair — could not exist at all.
+ * whatever its row count, and a comfortable court could not be built here at all.
  *
  * **It costs no measurement.** `court-34-draws.fixture.json` holds draws for five agent jurors,
  * every one of them inside this slice, so the latencies, coherence counts, medians and payout
@@ -168,7 +167,7 @@ export const resolvedRoster: RosterView = {
   isResolvedFromEns: true,
 };
 
-/** A fixed moment, so the footer's read time is not a moving target in a test. */
+/** A fixed moment, so the read stamp's time is not a moving target in a test. */
 export const READ_AT = Date.UTC(2026, 7, 25, 5, 12, 0);
 
 /**
@@ -257,9 +256,8 @@ export const unmeasured: CourtPerformanceView = {
  * chain answers slower than the subgraph and the matrix deliberately does not wait for it.
  *
  * `commits: null` and not `[]`: the two are different states and the page says different things
- * about them. This is the one the merge of tickets 07 and 15 newly made reachable — a provenance
- * footer built when commit latency was unread has to say something else once it is read, and
- * something else again while the reading is in flight.
+ * about them. This is the one the merge of tickets 07 and 15 newly made reachable: the page
+ * says one thing once commit latency is read and another while the reading is in flight.
  */
 const building = buildCourtPerformance({
   disputes: fixture as RawDispute[],
@@ -411,34 +409,6 @@ export const referenceShort: CourtPerformanceView = {
 };
 
 /**
- * A court paying in a registered fee token, which no fixture can hold.
- *
- * Court 34 has a WETH fee token registered and has never used it, so this is hand-built — the
- * reason `CLAUDE.md` gives for hand-building every failure shape here. What it demonstrates is
- * value an agent juror earned that the ETH figure does not carry: disclosed rather than dropped,
- * because an agent juror that reads as having earned less than it did is the one thing worse
- * than one whose figure is missing.
- */
-const inFeeToken = buildCourtPerformance({
-  disputes: fixture as RawDispute[],
-  draws: drawFixture as RawDraw[],
-  commits: commitFixture as RawCommitCast[],
-  parameters: parameterFixture as RawCourtParameters[],
-  rewards: (rewardFixture as RawRewardShift[]).map((shift, index) =>
-    index < 2 ? { ...shift, feeTokenAmount: "1000000000000000000" } : shift,
-  ),
-  roster: FIXTURE_ROSTER,
-  drawsReadAt: null,
-});
-if (!inFeeToken.success) throw new Error(`${inFeeToken.code}: ${inFeeToken.message}`);
-
-/** What the page has when two of the court's payouts were made in something other than ETH. */
-export const rewardsInFeeToken: CourtPerformanceView = {
-  ...measured,
-  performance: inFeeToken.data,
-};
-
-/**
  * A dispute the draw read could not have seen, and the moment that read landed.
  *
  * Hand-built, because no fixture here can hold one: every fixture is a single successful read,
@@ -528,8 +498,8 @@ export const staleDraws: CourtPerformanceView = {
  * nothing, which is a legitimate state lasting hours (`CLAUDE.md`), and `RewardCoverage.short` is
  * built not to cry shortfall over it — so this adds rows without adding a banner.
  *
- * Here rather than in one suite because two of them need it: `Matrix.test.tsx` checks what the
- * grid does at either density, and `MatrixPage.test.tsx` checks what the page says about it.
+ * `Matrix.test.tsx` uses it to check what the grid does at either density. `MatrixPage.test.tsx`
+ * used it too, for the footer's density-gated caveats, until the footer was removed.
  */
 const CLONE_SOURCE = "156";
 
@@ -575,36 +545,6 @@ export function padCourt(
     commits: [...commits, ...extraCommits],
   };
 }
-
-function padded(disputeCount: number, over: Partial<RawCourtData> = {}) {
-  const result = buildCourtPerformance({
-    ...padCourt(disputeCount),
-    parameters: parameterFixture as RawCourtParameters[],
-    rewards: rewardFixture as RawRewardShift[],
-    roster: FIXTURE_ROSTER,
-    drawsReadAt: null,
-    ...over,
-  });
-  if (!result.success) throw new Error(`${result.code}: ${result.message}`);
-  return result.data;
-}
-
-/** What the page has once the court has grown past the density threshold. */
-export const denseCourt: CourtPerformanceView = {
-  ...measured,
-  performance: padded(COMPACT_FROM_ROWS + 1),
-};
-
-/**
- * The same court one dispute short of it.
- *
- * Every case about the compact density is paired with one about this, because a sentence that is
- * absent for the wrong reason proves nothing — including the reason that somebody deleted it.
- */
-export const roomyCourt: CourtPerformanceView = {
-  ...measured,
-  performance: padded(COMPACT_FROM_ROWS),
-};
 
 /**
  * The court with one dispute read and no panel drawn for it yet.
@@ -663,12 +603,6 @@ export const offRosterCourt: CourtPerformanceView = {
   })(),
 };
 
-/** A compacted court whose payouts have not come back — the cold load, past the threshold. */
-export const denseUnpaidCourt: CourtPerformanceView = {
-  ...measured,
-  performance: padded(COMPACT_FROM_ROWS + 1, { rewards: null }),
-};
-
 /** What every view has when the browser reports no connection: no error, and no read either. */
 export const pausedDisputes: DisputesView = { ...disputes, isPaused: true };
 export const pausedPerformance: CourtPerformanceView = { ...measured, isPaused: true };
@@ -709,7 +643,7 @@ export const views: DashboardRoutesProps = {
  * Render the whole dashboard at one URL.
  *
  * Through the router rather than by rendering a page component directly: the shell, the nav and
- * the footer are as much a part of what a route renders as its content is, and a test that
+ * the read stamp are as much a part of what a route renders as its content is, and a test that
  * skipped them could not tell that a view had lost its chrome.
  */
 export function renderAt(path: string, overrides: Partial<DashboardRoutesProps> = {}) {

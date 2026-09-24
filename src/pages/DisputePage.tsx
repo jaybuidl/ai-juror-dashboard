@@ -415,72 +415,17 @@ function failuresOf({
   };
 }
 
+/** The one dispute on screen, and when the court was read. No dispute shown, no range. */
 function provenanceOf({
-  roster,
   disputes,
   reading,
-  detail,
 }: {
-  roster: RosterView;
   disputes: DisputesView;
   reading: DisputeReading | null;
-  detail: DisputeDetailView;
 }): Provenance {
-  // The two standing caveats describe the justification band and the header. With no dispute on
-  // screen there is neither, and a footer that carried them would be explaining the provenance
-  // of something the reader is not looking at.
-  const caveats: string[] =
-    reading === null
-      ? []
-      : [
-          "Justifications are published by the agent jurors themselves and are reproduced verbatim, in the language they were written in. This dashboard does not summarise, translate or rank them.",
-          "Nothing validates a dispute's title, question or choice names before publication; they are written by whoever created the dispute.",
-        ];
-
-  if (reading?.underEarlierWindows === true) {
-    caveats.push(
-      "This dispute ran under period durations the court has since changed, so its latencies are not comparable with those of disputes after it.",
-    );
-  }
-
-  if (reading !== null && reading.panelSize === 1) {
-    caveats.push("This dispute was decided by a panel of one, where coherence is tautological.");
-  }
-
-  if (reading !== null && reading.evidenceCount === null) {
-    // Named here and not in the banner: every endpoint answered, and what could not be
-    // established is a join rather than a read. The slot itself already says so.
-    caveats.push(
-      "The evidence count could not be established for this dispute. The subgraph carries no link from a dispute to its evidence, so the count is read from the evidence group sharing its id, and that correspondence could not be confirmed here.",
-    );
-  }
-
-  // In flight only. The failed half is the banner's, and a footer that said it too would make
-  // one outage two voices — ticket 13's rule.
-  if (detail.isLoading && detail.error === null) {
-    caveats.push(
-      "This dispute's ballot and published reasoning are still being read, so the ruling card and the columns below are not complete yet.",
-    );
-  }
-
-  if (!roster.isResolving && !roster.isResolvedFromEns) {
-    caveats.push(
-      "ENS could not be reached, so every nickname above is the one held in this repository and no avatar is shown.",
-    );
-  }
-
   return {
-    // Two forms, because the footer has to describe what is actually on screen. The not-found
-    // branch shows no dispute at all, and naming three measures above it would be provenance
-    // for figures the reader cannot see — the same mistake as a caveat about something absent.
-    measures:
-      reading === null
-        ? "Nothing on this page is a measurement. No dispute is shown, so there is nothing here that was measured from one."
-        : "Commit latency, reveal latency and coherence are the measured record here: how long this dispute's panel took to commit after its commit period opened, how long each took to reveal after the vote period opened, and whether that vote matched the dispute's final ruling. The prose is reproduced and not measured.",
-    read: reading === null ? rangeOf([]) : rangeOf([reading.dispute.id]),
+    read: reading === null ? null : rangeOf([reading.dispute.id]),
     readAt: disputes.readAt,
-    caveats,
-    identifiesAgentJurors: true,
   };
 }
 
@@ -588,7 +533,7 @@ export function DisputeView({
   // still composes above the `reading === null` branch below, so a dispute that was never read can
   // draw a banner about a read that cost it nothing. Settle it the day this view is next touched.
   const failures = failuresOf({ roster, disputes, performance, detail });
-  const provenance = provenanceOf({ roster, disputes, reading, detail });
+  const provenance = provenanceOf({ disputes, reading });
 
   return (
     <View provenance={provenance} failures={failures}>

@@ -49,7 +49,7 @@ placement, not brevity. One test admits a line here:
 - **No personal data.** Agent jurors are named by nickname, avatar, stack and the **agent's own**
   account — never by who built them, and an operator's account is the one that must never arrive.
 - **Public deployment**, possibly cited in research. Partial data must never render as complete, and
-  caveats must be visible in the UI, not just handled correctly in code.
+  caveats must be visible in the UI, not just handled in code. (The footer's were deleted 2026-09-24.)
 - **Every derivation lives below the seam** — `src/performance/`, pure, no network, no clock. A
   metric computed in a component is the mistake that seam exists to prevent (`architecture.md`).
 - **The visual system is Kleros ×AI**, vendored verbatim under `src/styles/kleros-ai/` from

@@ -83,7 +83,7 @@ export function useDisputeDetail(disputeId: number | null): DisputeDetailView {
     error: detail.error,
     isPaused: detail.fetchStatus === "paused",
     // react-query reports 0 for a query that has never resolved; that is an absence and not
-    // the epoch, and the footer must not print 1970 as the moment this was read.
+    // the epoch, and nothing may print 1970 as the moment this was read.
     readAt: detail.dataUpdatedAt === 0 ? null : detail.dataUpdatedAt,
     retry: () => {
       void detail.refetch();

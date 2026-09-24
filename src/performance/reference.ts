@@ -6,7 +6,7 @@ import { medianOf } from "./totals";
  *
  * The latency plots draw a comparison band: where an ordinary court sits on the same absolute
  * time axis as court 34's latencies. Until this ticket it began at a five-day constant this
- * repository chose, and the footer said so: the only thing on the page that did not come from a
+ * repository chose, and the since-removed footer said so: the only thing on the page that did not come from a
  * read. This module is the reading that replaces it. It is pure, below the seam, and touches no
  * network and no clock, like everything else under `performance/`.
  *

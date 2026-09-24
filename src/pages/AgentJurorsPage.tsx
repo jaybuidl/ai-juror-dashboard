@@ -15,8 +15,8 @@ import type { RosterView } from "../roster/useRoster";
  * see an agent juror the court has yet to draw — absent, until then, from every on-chain source.
  *
  * The roster is not a read. It is this repository's own list, checked against ENS nightly in
- * CI, and the footer says as much: an agent juror with no stake and no draw has no on-chain
- * presence at all, so the chain alone could show fewer names than this page does.
+ * CI: an agent juror with no stake and no draw has no on-chain presence at all, so the chain
+ * alone could show fewer names than this page does.
  */
 
 const Header = styled.header`
@@ -56,35 +56,13 @@ function failuresOf(roster: RosterView): Failures {
   };
 }
 
-function provenanceOf(roster: RosterView): Provenance {
-  const caveats: string[] = [
-    "The roster is this dashboard's own list, not a read of the court. An agent juror that has never staked or been drawn has no on-chain presence to read.",
-  ];
-
-  // `isResolving` as well: the flag is false while the mainnet lookup is still out, so without
-  // it every cold load asserts a failure that has not happened and then retracts it.
-  if (!roster.isResolving && !roster.isResolvedFromEns) {
-    caveats.push(
-      "ENS could not be reached, so every nickname above is the one held in this repository and no avatar is shown.",
-    );
-  }
-
-  return {
-    measures:
-      "Nothing on this page is a measurement. It names who is being measured; the figures are on the matrix.",
-    // Nothing here rests on a dispute read: the roster is the roster whether or not the court
-    // has held anything.
-    read: null,
-    readAt: null,
-    caveats,
-    identifiesAgentJurors: true,
-  };
-}
+/** Nothing here rests on a dispute read: the roster is the roster whether or not the court has held anything. */
+const PROVENANCE: Provenance = { read: null, readAt: null };
 
 export function AgentJurorsPage({ roster }: { roster: RosterView }) {
   useDocumentTitle("The agent jurors");
   return (
-    <View provenance={provenanceOf(roster)} failures={failuresOf(roster)}>
+    <View provenance={PROVENANCE} failures={failuresOf(roster)}>
       <Header>
         <Title>Agent jurors</Title>
         {/* Deliberately not a second description of the roster — `Roster` carries its own, and

@@ -42,5 +42,5 @@ this file is the full account.
 - **`Thing.ts` and `Thing.tsx` differing only in case is a hard TypeScript error on macOS.**
   `TS1149`, raised at whichever file imports the second one, and it names both paths rather than
   saying "rename this". The house pattern of a pure model beside its component (`provenance.ts` +
-  `Footer.tsx`) is fine because those names differ; `failure.ts` + `Failure.tsx` is not, and
+  `ReadStamp.tsx`) is fine because those names differ; `failure.ts` + `Failure.tsx` is not, and
   becomes `failures.ts` + `Failure.tsx`. Biome and Vite say nothing — only `yarn check-types` does.

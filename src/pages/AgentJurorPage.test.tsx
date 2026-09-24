@@ -1,6 +1,5 @@
 import { screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { formatElapsedSeconds } from "../performance/latency";
 import { STRIP_RANGE_LABEL } from "../performance/strip";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { ROSTER } from "../roster/agent-jurors";
@@ -9,7 +8,6 @@ import type { RosterView } from "../roster/useRoster";
 import {
   disputes,
   measured,
-  REFERENCE,
   referenceFailed,
   renderAt,
   resolvedRoster,
@@ -250,25 +248,6 @@ describe("the latency profile", () => {
     expect(within(plot).getByText(`Log scale · ${STRIP_RANGE_LABEL}`)).toBeVisible();
   });
 
-  it("states where the comparison band on it comes from, in the matrix view's own words", () => {
-    // The band is on this plot as well as the matrix's, deliberately — the two share one axis
-    // and the court's own distribution is drawn on both, so a scale of this page's own would
-    // draw one set of numbers two shapes. What comes with it is the band's provenance, said in
-    // this page's own footer from the same function the matrix view uses.
-    renderAt("/agent-jurors/Columbo");
-
-    if (REFERENCE.state !== "measured") throw new Error(`reading is ${REFERENCE.state}`);
-    const caveat = within(screen.getByRole("contentinfo")).getByText(
-      /the comparison band on the latency plot is read/i,
-    );
-
-    expect(caveat).toHaveTextContent(/court 29 \(Corte de Disputas de Consumo y Vecindad\)/);
-    expect(caveat).toHaveTextContent(formatElapsedSeconds(REFERENCE.medianSeconds));
-    expect(caveat).toHaveTextContent(`over the ${REFERENCE.count} single-round disputes`);
-    expect(caveat).toHaveTextContent(/appealed disputes are left out/i);
-    expect(caveat).not.toHaveTextContent(/illustrative/i);
-  });
-
   it("draws the band's place as not read, and names the failure in the banner once", () => {
     renderAt("/agent-jurors/Columbo", { performance: referenceFailed });
 
@@ -279,36 +258,6 @@ describe("the latency profile", () => {
         /the comparison court's disputes could not be read/i,
       ),
     ).toBeInTheDocument();
-    expect(screen.queryByText(/comparison band on the latency plot/i)).not.toBeInTheDocument();
-  });
-
-  it("does not name a band on a page whose plot is a sentence instead of a picture", () => {
-    // The other direction, and the one this repo keeps relearning: a caveat is gated on the
-    // figure being on the reader's screen, not on the reader having got this far. An agent
-    // juror drawn but with nothing revealed yet gets `AgentJurorLatency`'s empty state — words
-    // where the plot would be — and a footer naming a band there sends a reader looking for one
-    // that was never drawn.
-    const built = measured.performance;
-    if (built === null) throw new Error("no fixture");
-    const unrevealed: CourtPerformanceView = {
-      ...measured,
-      performance: {
-        ...built,
-        marginals: built.marginals.map((marginals) => ({ ...marginals, revealLatency: null })),
-      },
-    };
-
-    renderAt("/agent-jurors/Columbo", { performance: unrevealed });
-
-    expect(screen.getByText(/no draw of this agent juror's has revealed/i)).toBeVisible();
-    expect(screen.queryByText(/comparison band on the latency plot/i)).not.toBeInTheDocument();
-  });
-
-  it("names no band on a page with no plot at all", () => {
-    // baskerville has never been drawn, so there is no plot and nothing to disclose about one.
-    renderAt("/agent-jurors/Baskerville");
-
-    expect(screen.queryByText(/comparison band/i)).not.toBeInTheDocument();
   });
 });
 
@@ -504,14 +453,6 @@ describe("the agent juror the court has never drawn", () => {
       screen.queryByRole("region", { name: /against the whole court/i }),
     ).not.toBeInTheDocument();
   });
-
-  it("says nothing on the page is a measurement of it, and what is", () => {
-    renderAt("/agent-jurors/Baskerville");
-
-    expect(
-      screen.getByText(/that it has not been drawn is the measured record/i),
-    ).toBeInTheDocument();
-  });
 });
 
 describe("an address that names nothing", () => {
@@ -558,7 +499,7 @@ describe("an address that names nothing", () => {
     // sentence `failuresOf` writes names the agent juror the address failed to name, so an
     // unguarded banner tells a reader of `/agent-jurors/nope` that "nothing on this page is a
     // measurement of nope's" — a statement about something that does not exist. Found by
-    // review; the footer half of the same defect was found by opening the page.
+    // review.
     renderAt("/agent-jurors/nope", { performance: unmeasured, roster: unresolvedRoster });
 
     expect(screen.queryByText(/could not be read/i)).not.toBeInTheDocument();
@@ -570,17 +511,14 @@ describe("an address that names nothing", () => {
     ).toBeInTheDocument();
   });
 
-  it("claims nothing was measured, and does not call it an agent juror never drawn", () => {
+  it("does not call it an agent juror never drawn, and dates no read under it", () => {
     renderAt("/agent-jurors/nope");
 
     // The two empty states are not one claim. An agent juror the court has never drawn has a
     // measured record — its absence from every panel — and an address naming nobody has none.
-    // Found by opening the page: this footer read "the court has drawn it in none of the
-    // disputes read", which is a reading of the court about something it has never heard of.
-    expect(screen.getByText(/this address does not name an agent juror/i)).toBeInTheDocument();
     expect(screen.queryByText(/the court has drawn it in none of/i)).not.toBeInTheDocument();
     // And no dispute range under a page carrying no figure from one.
-    expect(screen.getByText(/nothing on this view rests on a read/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^Read \d+ disputes?/)).not.toBeInTheDocument();
   });
 });
 
@@ -621,47 +559,29 @@ describe("what the page says before, and instead of, a read", () => {
     expect(within(card).getAllByText("Not read")).toHaveLength(2);
   });
 
-  it("says the payouts failed once at the top, and not again in the footer", () => {
+  it("says the payouts failed once at the top", () => {
     renderAt("/agent-jurors/Columbo", { performance: rewardsFailed });
 
     expect(
       screen.getByText(/neither the cumulative eth nor the net pnk figure is a measurement/i),
     ).toBeVisible();
-    // One failed source gets one banner line, and the footer never carries the failed half.
-    expect(screen.queryByText(/the court's payouts are still being read/i)).not.toBeInTheDocument();
   });
 });
 
-describe("what the footer says this view rests on", () => {
-  it("states which disputes the figures were read from", () => {
+describe("what this view says it rests on", () => {
+  it("stamps which disputes the figures were read from", () => {
     renderAt("/agent-jurors/Columbo");
 
     // The disputes this agent juror was drawn in, and not the whole court's range: the figures
     // above are measured from its own twelve draws and from nothing else.
-    expect(screen.getByText(/12 disputes, 151 to 166/i)).toBeInTheDocument();
+    expect(screen.getByText("Read 12 disputes, 151–166")).toBeInTheDocument();
   });
 
-  it("states how an agent juror is identified, on a page that names one", () => {
-    renderAt("/agent-jurors/Columbo");
-
-    expect(screen.getByText(/never by the person or team\s+who built them/i)).toBeInTheDocument();
-  });
-
-  it("says what the two sums are summed over, in this column's own numbers", () => {
-    renderAt("/agent-jurors/Columbo");
-
-    expect(
-      screen.getByText(/summed over the 9 of this agent juror's 12 draws the court has executed/i),
-    ).toBeVisible();
-  });
-
-  it("carries no caveat about a latency for an agent juror that has none", () => {
+  it("stamps the whole court's range for an agent juror never drawn", () => {
+    // "Never drawn" is a claim about every dispute read, so that is the range it rests on.
     renderAt("/agent-jurors/Baskerville");
 
-    // A caveat about a median that does not exist reads as a caveat about the whole page, which
-    // is exactly what this state must not look like.
-    expect(screen.queryByText(/which the court has since changed/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/summed over/i)).not.toBeInTheDocument();
+    expect(screen.getByText("Read 16 disputes, 151–166")).toBeInTheDocument();
   });
 
   it("says ENS fell back once it has answered for nobody, and marks the name it affects", () => {
@@ -748,19 +668,6 @@ describe("one agent juror's own view on a phone", () => {
 
     const labels = screen.getAllByText(/^(Panel|Choice|Reveal|Commit)$/).map((n) => n.textContent);
     expect(new Set(labels)).toEqual(new Set(["Panel", "Choice", "Reveal", "Commit"]));
-  });
-
-  it("still says why so much of the record is the way it is", () => {
-    stubViewportWidth(PHONE_WIDTH);
-    renderAt("/agent-jurors/Columbo");
-
-    // Every sentence on this view names something both layouts have — there is no element here
-    // that the phone drops and the desktop keeps, which is why nothing in `provenanceOf` is
-    // gated on the width. This pins that the caveats survive the reduction.
-    expect(
-      screen.getByText(/summed over the 9 of this agent juror's 12 draws the court has executed/i),
-    ).toBeVisible();
-    expect(screen.getByText(/decided by a panel of one/i)).toBeVisible();
   });
 });
 

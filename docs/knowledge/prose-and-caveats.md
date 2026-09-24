@@ -8,6 +8,18 @@ They are facts about this codebase and the live court, verified against chain, s
 or a browser at the time noted. `CLAUDE.md` § Tripwires carries a one-line form of each;
 this file is the full account.
 
+- **2026-09-24: the provenance footer was removed, by the maintainer's ruling (Jay) — too much
+  prose under every view.** `Footer.tsx` is gone, and everything *only* it said was **deleted, not
+  relocated**: the read-only statement, the "what is measured" line, the identity line, the
+  in-flight notices (commitments, parameter history, payouts, comparison band), the off-roster
+  exclusion, unplaced disputes, fee-token payouts, reward lag, the comparison band's provenance,
+  the desktop sparsity note and the per-page notes (title provenance, justifications verbatim,
+  /method's as-of date). Do not bring them back as banners, inline notes or /method prose without a
+  new ruling. What survives is the read range and time, as `ReadStamp` at the top of each view
+  (`Provenance` is now `{ read, readAt }`). Caveats stay visible through the failure banner, the
+  degraded (ENS) panel, the †/§/‡ markers, the footnotes under the grid, the phone's sparsity card
+  and /method. The entries below that mention the footer are history: their rules still hold for
+  any sentence, but the footer they were learned on no longer exists.
 - **Two layouts share their model by construction and their *prose* by hand, and the prose is
   where they drift.** Ticket 16 gave the matrix a second rendering; `cell.ts`, `row-flags.ts`,
   `Legend.tsx` and `Footnotes.tsx` are shared so the states, the flag precedence and the caveats
@@ -85,8 +97,8 @@ this file is the full account.
   the same thing — its wording is generic, so it banners a page showing nothing rather than
   banners it about the wrong dispute. Worth fixing the day that view is touched; recorded here
   rather than changed inside ticket 11's branch.
-- **One failed source gets one banner line, and the provenance footer never carries the failed
-  half.** Ticket 13's rule, made concrete by the merge that first tested it. A read that fails is
+- **One failed source gets one banner line, and the provenance footer never carried the failed
+  half** (the footer is gone since 2026-09-24; the one-line rule stands). Ticket 13's rule, made concrete by the merge that first tested it. A read that fails is
   said exactly twice — in the banner at the top, and in the place where the figure would have been
   — so the footer stating it too makes one outage three voices, and a reader who meets the same
   sentence three times stops reading any of them. The half the footer keeps is the read still *in

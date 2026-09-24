@@ -359,7 +359,7 @@ export function AgentJurorDraws({
             The heading counts what was read, and a dispute whose draws were never read is not a
             dispute this agent juror was absent from — nobody asked. Said here because the count
             it qualifies is in the heading directly above it, and said in the banner above that.
-            Twice and never a third time: the footer carries no caveat for it. */}
+            Twice and never a third time. */}
         {unread > 0 &&
           ` ${unread === 1 ? "Dispute" : "Disputes"} ${listOf(unreadDisputes)} ${unread === 1 ? "is" : "are"} not counted: ${unread === 1 ? "its draws were" : "their draws were"} never read, so whether ${nickname} was drawn ${unread === 1 ? "there" : "in them"} is unknown rather than no.`}
       </Deck>

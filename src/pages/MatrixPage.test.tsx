@@ -1,7 +1,7 @@
-import { cleanup, fireEvent, screen, within } from "@testing-library/react";
+import { fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { arbitrumSource } from "../performance/arbitrum";
-import { formatElapsedSeconds, formatLatencySeconds } from "../performance/latency";
+import { formatLatencySeconds } from "../performance/latency";
 import { formatAgo, SOURCES } from "../read-failure";
 import { ROSTER } from "../roster/agent-jurors";
 import {
@@ -12,19 +12,13 @@ import {
 import {
   arbitrumFailed,
   arbitrumPending,
-  denseCourt,
-  denseUnpaidCourt,
   disputes,
   disputesWithNewcomer,
   FIXTURE_ROSTER,
   measured,
-  OFF_ROSTER_ADDRESS,
-  OFF_ROSTER_DISPUTE,
-  offRosterCourt,
   pausedDisputes,
   pausedPerformance,
   READ_AT,
-  REFERENCE,
   referenceFailed,
   referencePending,
   referenceShort,
@@ -33,10 +27,7 @@ import {
   renderAt,
   resolvingRoster,
   rewardsFailed,
-  rewardsInFeeToken,
-  rewardsPending,
   rewardsShort,
-  roomyCourt,
   staleDraws,
   unmeasured,
   unresolvedRoster,
@@ -122,8 +113,7 @@ describe("the matrix view", () => {
 
     // No caveat card. It was titled "Three measures, and what is missing from them" and every
     // claim in it was the method page's said a second time — checked claim by claim, including
-    // the appeal-period one, which /method puts better. What is asserted here is the half that
-    // was never duplicated: the footer's account of what the reward figures are summed over.
+    // the appeal-period one, which /method puts better.
     expect(
       screen.queryByText(/three measures, and what is missing from them/i),
     ).not.toBeInTheDocument();
@@ -137,13 +127,6 @@ describe("the matrix view", () => {
     expect(screen.queryByText(/it measures nothing else yet/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/have not been read at all/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/per-agent-juror summaries.*not been read/i)).not.toBeInTheDocument();
-
-    // What replaces it says what the two reward figures are *over*, which is the one thing a
-    // reader cannot see from the figures themselves: a dispute the court has ruled but not yet
-    // executed is in the coherence count and in neither of these.
-    expect(
-      screen.getByText(/summed over the 44 draws the court has executed and paid out/i),
-    ).toBeInTheDocument();
   });
 
   it("claims no measurement it has not made", () => {
@@ -159,55 +142,37 @@ describe("the matrix view", () => {
   });
 
   /**
-   * The sparsity note, which this page composes rather than the matrix.
+   * The sparsity note, which the phone's card list carries at its head.
    *
-   * It was the third footnote below the grid until it moved into the provenance footer, above
-   * the identity line. The move is the reason these live here: `Matrix` no longer renders it,
-   * and a caveat is tested where it is composed. The words themselves are unchanged and still
-   * come from the one `SparsityNote` the phone's card list reads from, which is what keeps the
-   * two renderings from forking.
+   * It was the third footnote below the grid, then a line in the provenance footer, and went with
+   * that footer on 2026-09-24 (maintainer's ruling): the desktop page no longer carries it. The
+   * phone's card is unchanged, so what the note says is pinned there.
    */
   describe("the sparsity note", () => {
-    it("says that a blank cell is the normal case", () => {
+    afterEach(() => {
+      vi.unstubAllGlobals();
+    });
+
+    it("says that a blank slot is the normal case", () => {
+      stubViewportWidth(PHONE_WIDTH);
       renderAt("/");
 
-      // Worded about the *record* rather than about the matrix since ticket 16, because the
-      // phone says the same sentence over a layout with no grid and no columns in it. What
-      // stays is the noun for the position itself: a cell here, a slot there, one figure behind
-      // both.
       expect(screen.getByText(/sparsity is the normal state of this record/i)).toBeInTheDocument();
       // Count-agnostic: how many columns are blank end to end is a fact about what was read,
       // and this fixture's answer changed the day the court drew baskerville and a seventh
       // agent juror joined. What the note must keep saying is that the blankness is the
       // record's, not the read's.
       expect(screen.getByText(/agent jurors? (is|are) blank end to end/i)).toBeInTheDocument();
-      expect(screen.getByText(/cells here are blank/i)).toBeInTheDocument();
+      expect(screen.getByText(/slots here are blank/i)).toBeInTheDocument();
     });
 
-    it("sits in the footer, above the line naming how agent jurors are identified", () => {
-      // The placement is the whole of this change and nothing else asserts it. Both are in the
-      // footer's own element, and in this order: the note says what the record as a whole is
-      // like, which is the same kind of claim as the lines around it, and the identity line
-      // stays last of the prose as it was.
+    it("is not on the desktop page, having gone with the footer", () => {
       renderAt("/");
 
-      const footer = screen.getByRole("contentinfo");
-      const note = within(footer).getByText(/sparsity is the normal state of this record/i);
-      // Anchored on the clause that states the invariant rather than on the list in front of it:
-      // the list grows whenever a view starts showing something new about an agent juror — it
-      // gained the account in ticket 26 — and this test is about placement, not about wording.
-      const identity = within(footer).getByText(/never by the person or team who built them/i);
-
-      expect(note.compareDocumentPosition(identity)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
-    });
-
-    it("is not also under the grid, where it used to be", () => {
-      // The † and ‡ footnotes stay there — they decode marks the reader can see in the grid —
-      // and this one no longer joins them. Said twice it would be the one caveat this dashboard
-      // cannot afford to lose, halved in weight.
-      renderAt("/");
-
-      expect(screen.getAllByText(/sparsity is the normal state of this record/i)).toHaveLength(1);
+      expect(
+        screen.queryByText(/sparsity is the normal state of this record/i),
+      ).not.toBeInTheDocument();
+      // The footnotes that decode a mark in the grid stay.
       expect(screen.getByText(/never as a fraction of the window it ran in/i)).toBeInTheDocument();
     });
 
@@ -215,22 +180,24 @@ describe("the matrix view", () => {
       // The note's claim — that every blank means an agent juror was not drawn — is true of the
       // rows that were read and false of the one that was not. Folding the unread row's six
       // nulls into that count would make the sentence false about six of them.
+      stubViewportWidth(PHONE_WIDTH);
       renderAt("/", { disputes: disputesWithNewcomer, performance: staleDraws });
 
       expect(screen.getByText(/not counted here at all/i, { selector: "p" })).toBeInTheDocument();
     });
 
     it("separates the two kinds of blank where the blanks are counted", () => {
-      // The sentence that was wrong about eighteen cells: the note goes on saying that a blank
+      // The sentence that was wrong about eighteen slots: the note goes on saying that a blank
       // means an agent juror was not drawn, and now says which of the blanks it is counting
       // mean something else, by dispute id and as a count.
+      stubViewportWidth(PHONE_WIDTH);
       renderAt("/", { performance: waitingCourt });
 
       const note = screen.getByText(/sparsity is the normal state of this record/i);
 
       // One panel-less dispute is one blank per agent juror, so the count follows the roster —
       // the one this court was built over, which since ticket 25 is `FIXTURE_ROSTER` rather than
-      // the shipped list: a court of seven columns is compact at any row count.
+      // the shipped list.
       expect(note).toHaveTextContent(
         new RegExp(`${FIXTURE_ROSTER.length} of those blanks are a different absence`),
       );
@@ -238,15 +205,10 @@ describe("the matrix view", () => {
       expect(note).toHaveTextContent(/the draw has not happened/);
     });
 
-    it("goes on saying it at the compact density, where the grid drops most else", () => {
-      renderAt("/", { performance: denseCourt });
-
-      expect(screen.getByText(/sparsity is the normal state of this record/i)).toBeInTheDocument();
-    });
-
-    it("is absent with no matrix on screen, having no cells left to count", () => {
-      // The dispute list replaces the grid there, and a note counting blank cells would be
-      // counting a grid that is not on the page.
+    it("is absent with no cards on screen, having no slots left to count", () => {
+      // The dispute list replaces the cards there, and a note counting blank slots would be
+      // counting cards that are not on the page.
+      stubViewportWidth(PHONE_WIDTH);
       renderAt("/", { performance: unmeasured });
 
       expect(
@@ -363,50 +325,6 @@ describe("the totals above the matrix", () => {
     expect(screen.getByText(`${median} median`)).toBeInTheDocument();
   });
 
-  it("states where the comparison band comes from, on the page and not only in the source", () => {
-    // Ticket 23 made the band a reading. Its provenance is said once, in the footer, as every
-    // other read's is. It is not said beside the strip, where a caption once said the band was
-    // illustrative.
-    renderAt("/");
-
-    const footer = screen.getByRole("contentinfo");
-    const caveat = within(footer).getByText(/the comparison band on the latency strip is read/i);
-
-    expect(caveat).toHaveTextContent(/court 29 \(Corte de Disputas de Consumo y Vecindad\)/);
-    expect(screen.queryByText(/each mark is one draw/i)).not.toBeInTheDocument();
-  });
-
-  it("names no band on a load where the strip is a sentence rather than a plot", () => {
-    // The other direction, and the gate this caveat was missing for a day. `LatencyStrip` draws
-    // its "no distribution to plot" card wherever nothing has revealed — a cold load, or a
-    // subgraph that is down — and a footer naming a band there sends a reader looking for one on
-    // the very page where nothing above came from a read at all. `!narrow` answers a question
-    // about the viewport, not about whether the thing being named is on the screen.
-    renderAt("/", { performance: unmeasured });
-
-    expect(screen.getByText(/no draw has revealed in what was read/i)).toBeVisible();
-    expect(screen.queryByText(/comparison band on the latency strip/i)).not.toBeInTheDocument();
-  });
-
-  it("says which court, over how many disputes, what period, and that appeals are left out", () => {
-    // The four things the ticket asks a reader be told, each read from the fixture's reading
-    // rather than typed out, so a recaptured court moves the test with the figure.
-    renderAt("/");
-
-    if (REFERENCE.state !== "measured") throw new Error(`reading is ${REFERENCE.state}`);
-    const caveat = within(screen.getByRole("contentinfo")).getByText(
-      /the comparison band on the latency strip is read/i,
-    );
-
-    expect(caveat).toHaveTextContent(formatElapsedSeconds(REFERENCE.medianSeconds));
-    expect(caveat).toHaveTextContent(`over the ${REFERENCE.count} single-round disputes`);
-    expect(caveat).toHaveTextContent(/created between 2024-11-14 and 2026-09-09/);
-    expect(caveat).toHaveTextContent(/appealed disputes are left out/i);
-    // And the two halves of the old sentence that the reading made false are gone.
-    expect(caveat).not.toHaveTextContent(/illustrative/i);
-    expect(screen.queryByText(/did not come from a read/i)).not.toBeInTheDocument();
-  });
-
   it("says it has nothing rather than showing zeros, when nothing was measured", () => {
     renderAt("/", { performance: unmeasured });
 
@@ -417,19 +335,14 @@ describe("the totals above the matrix", () => {
   });
 });
 
-describe("the matrix view's footer", () => {
-  it("names the range read and when it was read, without claiming it is the whole record", () => {
+describe("the matrix view's reads", () => {
+  it("dates the range read at the top of the view, and names no court", () => {
     renderAt("/");
 
-    expect(screen.getByText(/16 disputes, 151 to 166/)).toBeInTheDocument();
-    expect(screen.getByText(/2026-08-25 05:12 UTC/)).toBeInTheDocument();
-    expect(screen.getByText(/never a claim that it is the whole record/i)).toBeInTheDocument();
-  });
-
-  it("says how agent jurors are identified, on a view that shows them", () => {
-    renderAt("/");
-
-    expect(screen.getByText(/never by the person or team who built them/i)).toBeInTheDocument();
+    const stamp = screen.getByText("Read 16 disputes, 151–166").parentElement as HTMLElement;
+    expect(stamp).toHaveTextContent(/^Read 16 disputes, 151–166 · 2026-08-25 05:12 UTC$/);
+    // The hero's eyebrow names the court; the stamp does not say it a second time.
+    expect(stamp).not.toHaveTextContent(/court 34|Arbitrum/i);
   });
 
   it("discloses a fallback to the roster when ENS could not be reached", () => {
@@ -457,63 +370,17 @@ describe("the matrix view's footer", () => {
     });
 
     expect(screen.getByRole("heading", { name: /the matrix/i })).toBeInTheDocument();
-    expect(screen.getByText(/the draws could not be re-read on this load/i)).toBeInTheDocument();
     expect(screen.getByText(/this matrix may be incomplete or out of date/i)).toBeInTheDocument();
-  });
-
-  it("says a stale court once, not twice, when the dispute read is the half that failed", () => {
-    // `performance.error` chains the dispute error, so a naive pair of conditions would print
-    // both sentences for one failure.
-    renderAt("/", {
-      disputes: { ...disputes, error: new Error("Core subgraph returned HTTP 503") },
-      performance: { ...measured, error: new Error("Core subgraph returned HTTP 503") },
-    });
-
-    expect(screen.getByText(/the court could not be re-read on this load/i)).toBeInTheDocument();
-    expect(screen.queryByText(/the draws could not be re-read/i)).not.toBeInTheDocument();
   });
 
   it("does not become a third place a failed read is announced", () => {
     renderAt("/", { performance: unmeasured });
 
     // Ticket 13 fixes the announcement at two: where the figure would have been, and once in
-    // a banner. The footer states provenance — here, that the disputes below were read even
+    // a banner. The read stamp states provenance — here, that the disputes below were read even
     // though nothing was measured from them.
     expect(screen.getAllByText(/could not be built/i)).toHaveLength(1);
-    expect(screen.getByText(/16 disputes, 151 to 166/)).toBeInTheDocument();
-  });
-
-  /**
-   * What tickets 07 and 15 only connect once they are on the same branch.
-   *
-   * Ticket 15 wrote this footer against a page that measured two things and said outright that
-   * commit latency had not been read at all; ticket 07 read it. Neither branch could render the
-   * other's half, so on both of them these three states looked identical and correct.
-   */
-  it("names commit latency as measured once the commitments are in", () => {
-    renderAt("/");
-
-    expect(
-      screen.getByText(/commit latency, reveal latency and coherence are the measured record/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText(/commit latency, per-agent-juror summaries/i),
-    ).not.toBeInTheDocument();
-  });
-
-  it("does not claim a third measure while the commitments are still being read", () => {
-    // The commit read is a separate query the matrix does not wait on, so this is every cold
-    // load — not an error, and it must not be worded as one. The footer would otherwise name a
-    // measured record the reader is looking at a column of dashes for.
-    renderAt("/", { performance: arbitrumPending });
-
-    expect(
-      screen.getByText(/reveal latency and coherence are the measured record/i),
-    ).toBeInTheDocument();
-    expect(
-      screen.queryByText(/commit latency, reveal latency and coherence/i),
-    ).not.toBeInTheDocument();
-    expect(screen.getByText(/the commitments are still being read/i)).toBeInTheDocument();
+    expect(screen.getByText("Read 16 disputes, 151–166")).toBeInTheDocument();
   });
 
   it("never says commit latency has not been read at all, on any load", () => {
@@ -538,18 +405,6 @@ describe("the matrix view's footer", () => {
   });
 
   describe("the court's period durations", () => {
-    it("discloses the window change in the footer as well as on the row", () => {
-      // The tiles and the latency strip are court-wide and have no row to carry a marker on,
-      // so the footer is where a figure that counts dispute 151 admits what it counted.
-      renderAt("/");
-
-      expect(
-        screen.getByText(
-          /Dispute 151 ran under a commit window of 8h and a vote window of 8h, which the court has since changed/i,
-        ),
-      ).toBeInTheDocument();
-    });
-
     it("puts the marker on the aggregate figure, not only on the row it came from", () => {
       // `canvas/Errors.dc.html:200-208`: a dagger on the number, the reason one line below it,
       // the full account one click away. The median reveal pools draws measured against two
@@ -593,25 +448,13 @@ describe("the matrix view's footer", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("says the history is still being read while it is still being read", () => {
-      renderAt("/", { performance: arbitrumPending });
-
-      expect(
-        screen.getByText(/the court's period durations are still being read/i),
-      ).toBeInTheDocument();
-      expect(screen.queryByText(/period durations could not be read/i)).not.toBeInTheDocument();
-    });
-
     it("says the read failed once it has failed, rather than that it is still going", () => {
       // The trap `CLAUDE.md` records against `RosterView`, in its second home: `read` is false
       // in both states, and a caveat that announces "still being read" about a read that gave
       // up minutes ago is a caveat a reader learns to ignore.
       //
-      // Merging tickets 08 and 13 split the two halves rather than keeping both here. A read
-      // still in flight is provenance for what is on screen and stays in the footer; a read
-      // that failed is a failure and belongs to the banner. What has to keep holding either
-      // way is that the page never says the first about the second — so the footer goes quiet
-      // rather than going wrong, and the banner names the endpoint.
+      // A read that failed is a failure and belongs to the banner, which names the endpoint.
+      // (The in-flight half was a footer line, removed with the footer on 2026-09-24.)
       renderAt("/", { performance: arbitrumFailed });
 
       expect(screen.queryByText(/period durations are still being read/i)).not.toBeInTheDocument();
@@ -656,9 +499,8 @@ describe("the matrix view's footer", () => {
       // Found by review, and the reason the payout branch outranks the stale read rather than
       // sitting below it. Both are `SOURCES.core`, so only one line is printed — and ranked the
       // other way this page said nothing about the payouts anywhere at all: the banner was
-      // occupied, the footer's own sentence is suppressed the moment there is an error to
-      // suppress it, and both column slots fall back to the same pending dash a never-drawn
-      // column shows. "A read that fails is said exactly twice" came out as zero.
+      // occupied, and both column slots fall back to the same pending dash a never-drawn column
+      // shows. "A read that fails is said exactly twice" came out as zero.
       //
       // The stale read can afford to yield because it has two voices of its own: every affected
       // row carries a `?` flag and draws its cells as Unknown.
@@ -679,9 +521,6 @@ describe("the matrix view's footer", () => {
       renderAt("/", { performance: rewardsShort });
 
       expect(screen.getByText(/the court's payouts came back short/i)).toBeInTheDocument();
-      // And the standing "summed over N draws" sentence goes quiet: a short read has no
-      // business saying what it covers.
-      expect(screen.queryByText(/summed over the .* draws the court has executed/i)).toBeNull();
     });
 
     it("does not label the tiles partial over a read none of them depends on", () => {
@@ -704,32 +543,6 @@ describe("the matrix view's footer", () => {
       expect(screen.getAllByText(/partial/i).length).toBeGreaterThan(0);
     });
 
-    it("discloses a payout this page cannot express rather than letting it read as less", () => {
-      // Dead today — court 34 has a WETH fee token registered and has never paid in it — and
-      // written because a green suite here proves the healthy path and nothing else. An agent
-      // juror paid in a fee token has earned something no ETH figure carries, and reading as
-      // though it earned less is the failure a public page cannot afford.
-      renderAt("/", { performance: rewardsInFeeToken });
-
-      expect(
-        screen.getByText(/2 draws were paid in a fee token rather than in ETH/i),
-      ).toBeInTheDocument();
-    });
-
-    it("says the payouts are still being read only while they are", () => {
-      // The two states again, and the fourth read to need them kept apart. `rewards.read` is
-      // false while the subgraph is being asked *and* after it refused, so the footer's
-      // "still being read" has to go quiet once there is an error — the banner owns the
-      // failure, and one outage said twice is one voice too many.
-      renderAt("/", { performance: rewardsPending });
-      expect(screen.getByText(/payouts are still being read/i)).toBeInTheDocument();
-
-      cleanup();
-
-      renderAt("/", { performance: rewardsFailed });
-      expect(screen.queryByText(/payouts are still being read/i)).not.toBeInTheDocument();
-    });
-
     it("names the window history in the banner when it is the only Arbitrum read that failed", () => {
       // One source gets one line: `arbitrumFailed` carries both Arbitrum errors, because one
       // endpoint serving both reads is one outage, and a banner listing it twice reads as two
@@ -745,37 +558,9 @@ describe("the matrix view's footer", () => {
       expect(screen.queryByText(/period durations are still being read/i)).not.toBeInTheDocument();
     });
 
-    it("calls a parameter read that came back empty a short read, not an unstarted one", () => {
-      // The third state, and the one keying on `read` alone would silently swallow: the scan
-      // happened and returned no configuration for a court that has certainly had two.
-      const { performance } = arbitrumPending;
-      if (performance === null) throw new Error("no model to build the empty read from");
-
-      renderAt("/", {
-        performance: {
-          ...arbitrumPending,
-          performance: {
-            ...performance,
-            parameters: { read: true, regimes: [], current: null },
-          },
-        },
-      });
-
-      expect(
-        screen.getByText(/Arbitrum returned no parameter history for court 34/i),
-      ).toBeInTheDocument();
-    });
-
-    it("tells the same two states apart for the commitments", () => {
-      // The same defect, pre-dating this ticket by one: the commit caveat was worded for a
-      // read in flight and shown for a read that had failed.
-      const { unmount } = renderAt("/", { performance: arbitrumPending });
-      expect(screen.getByText(/the commitments are still being read/i)).toBeInTheDocument();
-      unmount();
-
+    it("names a failed commitment read in the banner", () => {
       renderAt("/", { performance: arbitrumFailed });
       expect(screen.getByText(/the commitments could not be read/i)).toBeInTheDocument();
-      expect(screen.queryByText(/commitments are still being read/i)).not.toBeInTheDocument();
     });
   });
 });
@@ -1015,10 +800,8 @@ describe("the failure banner", () => {
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
-  it("leaves the provenance footer out of it, so one failure has one voice", () => {
-    // Ticket 15's rule, which this ticket had to be careful not to break: the footer states what
-    // the figures rest on, the banner states what is missing from them, and a reader who meets
-    // the same sentence twice stops reading either.
+  it("says one failure in one voice", () => {
+    // A reader who meets the same sentence twice stops reading either.
     renderAt("/", { performance: staleDraws });
 
     expect(screen.getAllByText(/do not cite these figures/i)).toHaveLength(1);
@@ -1048,19 +831,15 @@ describe("the matrix view on a phone", () => {
     expect(screen.getByRole("link", { name: /^Dispute 163\b/ })).toBeInTheDocument();
   });
 
-  it("carries the sparsity note once, at the head of the cards rather than in the footer", () => {
+  it("carries the sparsity note once, at the head of the cards", () => {
     // Ticket 16 put it there deliberately: it prevents a misreading rather than answering a
     // question, and a reader who does not know they have been misled never scrolls to the foot
-    // of the page to find out. So the footer slot the desktop uses is gated on `!narrow`, and
-    // the count is what proves the two did not both fire.
+    // of the page to find out.
     stubViewportWidth(PHONE_WIDTH);
     renderAt("/");
 
     expect(screen.getAllByText(/sparsity is the normal state of this record/i)).toHaveLength(1);
-    expect(
-      within(screen.getByRole("contentinfo")).queryByText(/sparsity is the normal state/i),
-    ).not.toBeInTheDocument();
-    // The phone's noun, which is the one thing the two renderings differ in.
+    // The phone's noun.
     expect(screen.getByText(/slots here are blank/i)).toBeInTheDocument();
   });
 
@@ -1075,13 +854,9 @@ describe("the matrix view on a phone", () => {
     stubViewportWidth(PHONE_WIDTH);
     renderAt("/");
 
-    // The deck goes; its read-only clause survives in the footer, which states the invariant in
-    // full and is rendered at every width. It used to survive in the nav's own label instead —
-    // that label is gone, the clause is not.
+    // The deck goes, and its read-only clause with it on a phone: the footer that repeated it
+    // was removed on 2026-09-24 by the maintainer's ruling. /method states the invariant.
     expect(screen.queryByText(/it never votes, stakes, or holds a key/i)).not.toBeInTheDocument();
-    expect(
-      screen.getByText(/never votes, stakes, holds a key, or connects a wallet/i),
-    ).toBeInTheDocument();
 
     // The strip goes; its headline figure is the median reveal, which the tiles now lead with,
     // and its comparison band is drawn at every width on the agent juror view.
@@ -1116,11 +891,9 @@ describe("the matrix view on a phone", () => {
     renderAt("/");
 
     // The chain is what the eyebrow still locates the data by; the court's name is the one
-    // segment a reader can lose without losing the scope. The court's *number* left the eyebrow
-    // at both widths, so what carries it is the footer's provenance line, asserted below.
+    // segment a reader can lose without losing the scope.
     const eyebrow = screen.getByText(/^Arbitrum One$/);
     expect(eyebrow).not.toHaveTextContent("Agentic Commerce Court");
-    expect(screen.getByText(/Read from court 34 on Arbitrum One/i)).toBeInTheDocument();
   });
 
   it("keeps the headline the same sentence, never a shorter or a different one", () => {
@@ -1173,61 +946,6 @@ describe("the matrix view on a phone", () => {
     expect(screen.queryByRole("link", { name: "Disputes" })).not.toBeInTheDocument();
   });
 
-  it("does not tell a phone reader about a latency strip that is not on the page", () => {
-    stubViewportWidth(PHONE_WIDTH);
-    renderAt("/");
-
-    // The footer states what the figures above it rest on, and a provenance note about something
-    // the reader cannot see sends them looking for it, on a page that may be cited. Merging
-    // ticket 10 added three more such caveats the fold drops, and the test below covers those.
-    expect(screen.queryByText(/comparison band on the latency strip/i)).not.toBeInTheDocument();
-  });
-
-  it("states no payout provenance on a layout that shows no payout figure", () => {
-    stubViewportWidth(PHONE_WIDTH);
-    renderAt("/");
-
-    // Merging tickets 10 and 16 created this and neither branch could have caught it. Ticket 10
-    // put cumulative ETH and net PNK in the matrix's column headers and gave the footer three
-    // sentences about them; ticket 16 drops the column headers whole. All three then described
-    // figures a phone reader cannot see — one of them promising a figure that is coming, when on
-    // this layout none is.
-    expect(
-      screen.queryByText(/summed over the .* draws the court has executed/i),
-    ).not.toBeInTheDocument();
-  });
-
-  it("promises a phone reader no payout figure while the payouts are being read", () => {
-    stubViewportWidth(PHONE_WIDTH);
-    renderAt("/", { performance: rewardsPending });
-
-    // "…is shown yet" promises a figure that is coming. On a phone none is coming, because this
-    // layout has nowhere to put one — so the promise is the misleading half rather than the wait.
-    // The pending fixture is what makes this assertion load-bearing: with the default court the
-    // sentence is absent for the ordinary reason that the payouts were read.
-    expect(screen.queryByText(/payouts are still being read/i)).not.toBeInTheDocument();
-  });
-
-  it("still states payout provenance above the breakpoint", () => {
-    // The other direction, so the gate above cannot silently swallow the desktop's own sentence.
-    stubViewportWidth(1280);
-    renderAt("/");
-
-    expect(
-      screen.getByText(/summed over the 44 draws the court has executed and paid out/i),
-    ).toBeInTheDocument();
-  });
-
-  it("does not tell a phone reader that a fee-token payout is missing from a figure it lacks", () => {
-    stubViewportWidth(PHONE_WIDTH);
-    renderAt("/", { performance: rewardsInFeeToken });
-
-    // The sentence says "the ETH shown for those agent jurors", and on a phone none is shown.
-    // Dead today either way — court 34 has never paid in its registered WETH — which is exactly
-    // why it is written rather than left for the day it is not.
-    expect(screen.queryByText(/paid in a fee token rather than in ETH/i)).not.toBeInTheDocument();
-  });
-
   it("names no column header in a payout failure banner", () => {
     stubViewportWidth(PHONE_WIDTH);
     renderAt("/", { performance: rewardsFailed });
@@ -1257,99 +975,6 @@ describe("the matrix view on a phone", () => {
 });
 
 /**
- * What the page says once the court has outgrown the comfortable density.
- *
- * The same rule ticket 16 met one width down, and the reason it is tested here rather than only
- * in `Matrix.test.tsx`: past forty disputes the column header keeps three of its six figures, and
- * every sentence on this page that names one of the other three is then describing a figure the
- * reader cannot see. Both directions, because a caveat that is absent for the wrong reason tests
- * nothing — every case here renders the same court one dispute short of the threshold as well.
- */
-describe("the matrix view past the density threshold", () => {
-  afterEach(() => {
-    vi.unstubAllGlobals();
-    cleanup();
-  });
-
-  /**
-   * The one thing the compact branch can say about the two figures it drops: where they are.
-   *
-   * A merge-created sentence, and the reason it exists is that neither branch could write it.
-   * Ticket 17 dropped the reward figures from the compact header and could only say they were
-   * gone; ticket 11 built the view that prints them at every width and pointed the *phone* at
-   * it. Merged, the compact density is the phone's case a second time and takes the same
-   * answer — otherwise a reader past forty disputes is told a figure vanished and not that it
-   * moved.
-   */
-
-  it("states no payout provenance on a density that shows no payout figure", () => {
-    renderAt("/", { performance: denseCourt });
-
-    expect(
-      screen.queryByText(/summed over the .* draws the court has executed/i),
-    ).not.toBeInTheDocument();
-  });
-
-  it("still states payout provenance below the threshold", () => {
-    // The other direction. Without this the gate above would pass just as well if the sentence
-    // had been deleted outright.
-    renderAt("/", { performance: roomyCourt });
-
-    expect(
-      screen.getByText(/summed over the 44 draws the court has executed and paid out/i),
-    ).toBeInTheDocument();
-  });
-
-  it("promises no payout figure while the payouts are being read", () => {
-    renderAt("/", { performance: denseUnpaidCourt });
-
-    // "…is shown yet" promises a figure that is coming, and at this density none is coming: the
-    // header has no row for it. The same sentence, the same reason, one width up from the phone.
-    expect(screen.queryByText(/payouts are still being read/i)).not.toBeInTheDocument();
-  });
-
-  /**
-   * The one caveat in the footer that is not about a figure being marked (ticket 25).
-   *
-   * Every other line there ends "counted above, and marked wherever counted". A draw the roster
-   * has no column for is counted in nothing above — not the draw count, not the vote count, not
-   * the median reveal, not a coherence figure — so a footer that stated the provenance of those
-   * figures without it would let a short count read as a whole one, on a page that may be cited.
-   */
-  it("says in the footer that a figure above is short by the draws with no column", () => {
-    renderAt("/", { performance: offRosterCourt });
-
-    const caveat = screen.getByText(/roster does not hold, so it is in no figure above/i);
-    expect(caveat).toHaveTextContent(new RegExp(`One draw in dispute ${OFF_ROSTER_DISPUTE}`));
-    expect(caveat).toHaveTextContent(/except the panel sizes/);
-    // A count and nothing else, wherever it is said: the address is below the seam and stays there.
-    expect(screen.queryByText(new RegExp(OFF_ROSTER_ADDRESS, "i"))).not.toBeInTheDocument();
-  });
-
-  it("says nothing in the footer where every draw has a column", () => {
-    // Which is this court, and every court since ticket 24 added the agent juror that was the
-    // only example. A caveat naming an absence that has stopped being one is the same failure as
-    // an unnamed absence, in the other direction.
-    renderAt("/");
-
-    expect(screen.queryByText(/roster does not hold/i)).not.toBeInTheDocument();
-  });
-
-  it("goes on saying everything that is not about a dropped figure", () => {
-    // The gates are per figure and not per density: a caveat about the window change, the lone
-    // panel or the ENS read is as true at one density as at the other, and losing one of those
-    // to this reduction would be the reduction eating a caveat.
-    renderAt("/", { performance: denseCourt });
-
-    // The footnote beside the grid says the same fact in its own words, so both are on the page:
-    // what this is about is that the *footer* still carries them.
-    expect(screen.getAllByText(/decided by a panel of one/i).length).toBeGreaterThan(0);
-    expect(screen.getByText(/ran under a commit window of/i)).toBeInTheDocument();
-    expect(screen.getByText(/comparison band on the latency strip/i)).toBeInTheDocument();
-  });
-});
-
-/**
  * Ticket 23: the comparison band is a reading now, so it can be in flight, fail, or come back
  * short. Each of those is said, and none is drawn as a band at a default.
  */
@@ -1359,11 +984,6 @@ describe("the comparison band's read", () => {
 
     expect(screen.getByText("being read")).toBeInTheDocument();
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-    expect(
-      within(screen.getByRole("contentinfo")).getByText(
-        /the comparison band on the latency strip is still being read/i,
-      ),
-    ).toBeInTheDocument();
   });
 
   it("names a failed read once in the banner, and says so where the band would be", () => {
@@ -1375,8 +995,6 @@ describe("the comparison band's read", () => {
     ).toBeInTheDocument();
     expect(within(banner).getAllByText(SOURCES.core.name)).toHaveLength(1);
     expect(screen.getByText("not read")).toBeInTheDocument();
-    // The failed half is the banner's; the footer says nothing about the band at all.
-    expect(screen.queryByText(/comparison band on the latency strip/i)).not.toBeInTheDocument();
   });
 
   it("reports a short read as the two counts, with no error anywhere", () => {
@@ -1391,9 +1009,6 @@ describe("the comparison band's read", () => {
     renderAt("/", { performance: referenceStale });
 
     expect(screen.getByText(/comes from an earlier read/i)).toBeInTheDocument();
-    expect(
-      screen.getByText(/the comparison band on the latency strip is read/i),
-    ).toBeInTheDocument();
   });
 
   it("ranks below every other core-subgraph failure, which costs more than the band does", () => {

@@ -14,8 +14,7 @@ describe("the dispute index", () => {
 
     expect(screen.getByRole("heading", { level: 1, name: "Disputes" })).toBeInTheDocument();
 
-    // Scoped: the footer's caveats are a list too, and an unscoped query would read one of
-    // those as the oldest dispute.
+    // Scoped to the list's own region, so no other list on the page is read as a dispute.
     const rows = within(screen.getByRole("region", { name: /the disputes/i })).getAllByRole(
       "listitem",
     );
@@ -23,25 +22,12 @@ describe("the dispute index", () => {
     expect(rows[rows.length - 1]).toHaveTextContent("151");
   });
 
-  it("says nothing on it is a measurement", () => {
-    renderAt("/disputes");
-
-    expect(screen.getByText(/nothing on this page is a measurement/i)).toBeInTheDocument();
-  });
-
   it("never implies the list is the whole record", () => {
     renderAt("/disputes");
 
-    expect(screen.getByText(/never a claim that it is the whole record/i)).toBeInTheDocument();
     expect(
       screen.getByText(/no latency, coherence or draw has been measured/i),
     ).toBeInTheDocument();
-  });
-
-  it("says a title comes from whoever created the dispute", () => {
-    renderAt("/disputes");
-
-    expect(screen.getByText(/not validated by anything before publication/i)).toBeInTheDocument();
   });
 
   it("reports a shortfall in the titles read, rather than leaving rows silently untitled", () => {
@@ -52,7 +38,9 @@ describe("the dispute index", () => {
       },
     });
 
-    expect(screen.getByText(/5 of 16 titles did not come back/i)).toBeInTheDocument();
+    expect(
+      within(screen.getByRole("alert")).getByText(/5 of 16 dispute subjects could not be read/i),
+    ).toBeInTheDocument();
   });
 
   it("dates an incomplete page by the read that fell short, not the one that worked", () => {
@@ -71,6 +59,13 @@ describe("the dispute index", () => {
 
     expect(within(banner).getByText(formatAgo(titlesReadAt, Date.now()))).toBeInTheDocument();
     expect(within(banner).queryByText(formatAgo(READ_AT, Date.now()))).not.toBeInTheDocument();
+  });
+
+  it("stamps the range and moment of the dispute read at the top", () => {
+    renderAt("/disputes");
+
+    const stamp = screen.getByText("Read 16 disputes, 151–166").parentElement as HTMLElement;
+    expect(stamp).toHaveTextContent(/2026-08-25 05:12 UTC$/);
   });
 
   it("dates a whole page by its own read, with no template shortfall to fold in", () => {

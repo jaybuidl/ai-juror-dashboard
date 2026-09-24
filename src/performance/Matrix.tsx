@@ -1021,10 +1021,9 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
             </LegendGroup>
             {/* `MatrixDense.dc.html:117`, and it earns its place at this density and not at the
                 other: a reader who has scrolled through hundreds of rows of mostly-empty grid is
-                the one who starts reading the blanks as a fault. The counts themselves are the
-                sparsity note's below — this says the one thing volume tempts a reader to assume
-                away, and it says it from the same `totals.sparsity` the note quotes so the two
-                can never disagree about one court. */}
+                the one who starts reading the blanks as a fault. This says the one thing volume
+                tempts a reader to assume away, from the same `totals.sparsity` the phone's
+                sparsity note quotes, so the two can never disagree about one court. */}
             {compact && (
               <VolumeNote>
                 {sparsity.emptyColumns > 0 &&
@@ -1289,13 +1288,9 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                 about the grid, and `CLAUDE.md` requires them visible in the UI rather than
                 handled correctly in code.
 
-                The sparsity note used to be the third here and is now in the provenance footer,
-                above the identity line — `MatrixPage` passes it and `Footer` places it. These
-                two decode a mark the reader can see in the grid, and that one says what the
-                record as a whole is like, which is what the footer's other lines say too. The
-                phone is unchanged: it still carries the note as a card at the head of its list,
-                where ticket 16 put it, and both renderings still take their words from the one
-                `SparsityNote`. */}
+                The sparsity note used to be the third here, then moved to the provenance
+                footer, and went with that footer when it was removed (maintainer's ruling,
+                2026-09-24). The phone still carries it as a card at the head of its list. */}
             <WindowFootnote performance={performance} />
             <OffRosterFootnote performance={performance} />
             <LonePanelFootnote performance={performance} />

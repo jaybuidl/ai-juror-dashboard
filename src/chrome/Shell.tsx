@@ -7,11 +7,11 @@ import { Nav } from "./Nav";
  * The shell every view sits inside: the ground it is lit on, the nav, and the view itself.
  *
  * A view reached from a pasted link has to be recognisably part of this dashboard rather than
- * a fragment of one, which is what this file is for — one nav, one read-only statement, one
- * set of destinations, whichever route the visitor arrived at.
+ * a fragment of one, which is what this file is for — one nav, one set of destinations,
+ * whichever route the visitor arrived at.
  *
- * The footer is not here. It says what the figures *on this view* rest on, so it is composed
- * per view and rendered by `View`, one layer down.
+ * The read stamp is not here. It says which disputes *this view* was read from, so it is
+ * composed per view and rendered by `View`, one layer down.
  *
  * Built against the ground and nav of `canvas/Main.dc.html:34-50`.
  */

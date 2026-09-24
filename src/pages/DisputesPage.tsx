@@ -1,7 +1,6 @@
 import styled from "styled-components";
 import { type Failures, olderOf, present } from "../chrome/failures";
-import type { Provenance } from "../chrome/provenance";
-import { rangeOf } from "../chrome/provenance";
+import { type Provenance, rangeOf } from "../chrome/provenance";
 import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import { DisputeList } from "../disputes/DisputeList";
@@ -16,8 +15,7 @@ import { failureOf, SOURCES } from "../read-failure";
  * on ticket 09's per-dispute view will point back to.
  *
  * Nothing here is measured. The list is the record of what the court holds — id, title,
- * category, period and ruling — and the footer says so, because a page of disputes sitting
- * inside a dashboard about latency invites the assumption that something on it is a latency.
+ * category, period and ruling.
  */
 
 const Header = styled.header`
@@ -75,30 +73,9 @@ function failuresOf(disputes: DisputesView): Failures {
 }
 
 function provenanceOf(disputes: DisputesView): Provenance {
-  const caveats: string[] = [];
-
-  if (disputes.error !== null) {
-    caveats.push("The court could not be re-read on this load, so this list may be out of date.");
-  }
-
-  const titles = disputes.titles;
-  if (titles !== undefined && !titles.isLoading && titles.resolved < titles.expected) {
-    caveats.push(
-      `${titles.expected - titles.resolved} of ${titles.expected} titles did not come back from the template subgraph. A dispute with no title here is identified by its ID.`,
-    );
-  }
-
-  caveats.push(
-    "Titles and categories are written by whoever created the dispute and are not validated by anything before publication.",
-  );
-
   return {
-    measures:
-      "Nothing on this page is a measurement. Each row is what the court's own record says about one dispute: its ID, what it is about, the period it is in and how it was ruled.",
     read: rangeOf(disputes.disputes.map((dispute) => dispute.id)),
     readAt: disputes.readAt,
-    caveats,
-    identifiesAgentJurors: false,
   };
 }
 
@@ -108,7 +85,7 @@ export function DisputesPage({ disputes }: { disputes: DisputesView }) {
     <View provenance={provenanceOf(disputes)} failures={failuresOf(disputes)}>
       {/* The title, and nothing under it: `DisputeList` carries its own heading and lede, and a
           deck here would say the same sentence twice on a page that may be cited. What this
-          route adds beyond the component is the URL and the footer's provenance. */}
+          route adds beyond the component is the URL and the read stamp. */}
       <Header>
         <Title>Disputes</Title>
       </Header>

@@ -121,9 +121,8 @@ const PERSISTED_QUERIES: readonly string[] = [
   //
   // It is also a read that wants persisting, for the reason `courtParameters` does. These two
   // figures are sums, so the state before they land is not a dash on a median but every column
-  // header reading "—" under a footer saying the payouts are still being read. Without this,
-  // every return visit renders that and then retracts it a moment later — a caveat that comes
-  // and goes teaches a reader to ignore caveats.
+  // header reading "—". Without this, every return visit renders that and then retracts it a
+  // moment later.
   "courtRewards",
   // Ticket 23's comparison court, admitted on the same two questions, answered rather than
   // assumed. The value is `RawReference`: the court's name and count, and the same `RawDispute`
@@ -197,8 +196,8 @@ export function rederive(data: unknown): unknown {
  * How long a restored cache may be shown before it is discarded rather than displayed.
  *
  * A day, and it is not a staleness policy — every query here refetches on mount, and the live
- * ones every five seconds. It is the backstop for a tab reopened after a week: the provenance
- * footer prints when the court was read, so old data is *labelled* rather than hidden, but past
+ * ones every five seconds. It is the backstop for a tab reopened after a week: the read stamp
+ * prints when the court was read, so old data is *labelled* rather than hidden, but past
  * some point restoring it buys nothing and a cold read is the honest answer.
  */
 export const PERSISTED_MAX_AGE_MS = 24 * 60 * 60 * 1000;

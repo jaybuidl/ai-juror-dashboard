@@ -23,8 +23,8 @@ measures — median reveal, median commit, coherence as a count and how many tim
 and, beneath them, what that column has been paid: cumulative ETH and net PNK, summed over every
 dispute the court has executed. Those two are context beside the measures and not a dimension
 anyone is ranked on; nothing here orders by them, and a net loss carries its sign as a character
-in the value rather than only as a colour. Every view carries the same nav, the same read-only
-statement and a footer stating the provenance of what is above it. Each page names its own gaps
+in the value rather than only as a colour. Every view carries the same nav and, where it rests on
+a read, one line at the top naming the disputes read and when. Each page names its own gaps
 outright, because a public page whose figures may be cited must never let "not built" look like
 "no results".
 
@@ -267,7 +267,7 @@ inside one layout route so no view can lose the chrome. The SPA fallback in `net
 makes a pasted link resolve in production — which also means the app is the only thing that can
 tell a visitor a URL is wrong, hence the 404 view. Tests render through
 [`src/test/court.tsx`](src/test/court.tsx)'s `renderAt(path)`, over a `MemoryRouter`, so the nav
-and footer are exercised as part of whatever the route renders.
+and read stamp are exercised as part of whatever the route renders.
 
 **Lint runs at end of turn.** `.claude/settings.json` registers a Stop hook,
 [`.claude/hooks/lint-check.sh`](.claude/hooks/lint-check.sh), that runs `yarn lint` when an

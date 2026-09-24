@@ -122,19 +122,9 @@ describe("the method page", () => {
     ).toBeInTheDocument();
   });
 
-  it("dates the account, because the court could be reconfigured again", () => {
-    // The one sentence on this page that can go stale. It is prose so that a reader arriving
-    // from the matrix's footnote is answered on a cold load; saying what date it is true as of
-    // is what stops that convenience becoming a quiet falsehood.
+  it("stamps no read, carrying no figure of its own", () => {
     renderAt("/method");
 
-    expect(screen.getByText(/as of 4 September 2026/i)).toBeInTheDocument();
-  });
-
-  it("carries no figure of its own, and says so", () => {
-    renderAt("/method");
-
-    expect(screen.getByText(/nothing on this page is a measurement/i)).toBeInTheDocument();
-    expect(screen.getByText(/nothing on this view rests on a read/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^Read (dispute \d+|\d+ disputes)/)).not.toBeInTheDocument();
   });
 });

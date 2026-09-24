@@ -382,7 +382,7 @@ element a reader will now look for and not find:
   token inks. That list is the record of what was measured when the token was raised, and the
   raise stands on the other twenty-nine; it is deliberately not edited.
 
-**The invariant is not weakened.** It was never carried by the nav alone: the footer opens with it
-in full on every view including `/nowhere`, and `/method` states it again. `routes.test.tsx` used
-to assert both the nav label and the footer; the footer test is what the every-view guarantee
-rests on now, and it is the stronger of the two.
+**The invariant is not weakened.** It was never carried by the nav alone: the provenance footer
+opened with it in full on every view, and `/method` states it. The footer, and that every-view
+statement and its test, were removed on 2026-09-24 by the maintainer's ruling; the invariant is now
+stated by the matrix view's hero deck (desktop) and by `/method`.

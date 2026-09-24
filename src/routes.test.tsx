@@ -11,10 +11,9 @@ import { PHONE_WIDTH, stubViewportWidth } from "./test/viewport";
 /**
  * The shell, and the routes it wraps.
  *
- * These are the tests ticket 15 asks for by name — the invariant text in the nav and the
- * footer, and an unknown path rendering the 404 rather than the matrix — plus the ones that
- * would otherwise only be caught by clicking: a destination that goes nowhere, a link to the
- * page you are already on, and a view that lost its chrome.
+ * These are the tests ticket 15 asks for by name — an unknown path rendering the 404 rather than
+ * the matrix — plus the ones that would otherwise only be caught by clicking: a destination that
+ * goes nowhere, a link to the page you are already on, and a view that lost its chrome.
  */
 
 /**
@@ -163,21 +162,6 @@ describe("a route change", () => {
 });
 
 describe("the shell", () => {
-  // The nav used to state the invariant too, and this file asserted it on every view. The
-  // maintainer removed that label; the test below is what the guarantee rests on now, and it is
-  // the stronger of the two — the footer says it in full, and on `/nowhere` as well.
-  it("states the read-only invariant in full in the footer, on every view", () => {
-    for (const path of [...ROUTES, "/nowhere"]) {
-      const { unmount } = renderAt(path);
-
-      expect(
-        screen.getByText(/never votes, stakes, holds a key, or connects a wallet/i),
-        `footer at ${path}`,
-      ).toBeInTheDocument();
-      unmount();
-    }
-  });
-
   it("offers every destination as a real link, in the canvas's order", () => {
     renderAt("/method");
 
@@ -229,8 +213,7 @@ describe("the shell", () => {
 
   it("resolves a dispute's own URL to that dispute, and not to the 404", () => {
     // Asserted against something only this view says. The chrome tests above run over the same
-    // path and would pass with the 404 behind them — it renders the same nav and the same
-    // footer — so they proved the route table matched *something*, and not what. The route
+    // path and would pass with the 404 behind them — it renders the same nav — so they proved the route table matched *something*, and not what. The route
     // genuinely did 404 in the browser while every one of them was green.
     renderAt("/disputes/156");
 
@@ -242,8 +225,7 @@ describe("the shell", () => {
 
   it("resolves an agent juror's own URL to that agent juror, and not to the 404", () => {
     // Asserted against something only that view says, for the reason the dispute route above is:
-    // the chrome tests run over this path too and the 404 renders the same nav and footer, so
-    // they prove the route table matched something rather than what.
+    // the chrome tests run over this path too and the 404 renders the same nav, so they prove the route table matched something rather than what.
     renderAt("/agent-jurors/Blaise");
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Blaise");
@@ -295,7 +277,8 @@ describe("the shell", () => {
     renderAt("/", { performance: unmeasured });
 
     expect(screen.getByRole("navigation", { name: /dashboard/i })).toBeInTheDocument();
-    expect(screen.getByText(/never votes, stakes, holds a key/i)).toBeInTheDocument();
+    // The read stamp, which `View` renders: a page that lost its frame would lose this too.
+    expect(screen.getByText(/^Read \d+ disputes, \d+–\d+$/)).toBeInTheDocument();
   });
 });
 

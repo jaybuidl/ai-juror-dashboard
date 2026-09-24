@@ -27,9 +27,8 @@ import type { PeriodWindows } from "./windows";
  * — the fork `CLAUDE.md` records the matrix and the card list being lifted apart to prevent. Of
  * the remaining two, a bare wider axis leaves the right third of the plot empty with nothing to
  * say why, and the band is what that emptiness *means*: it is the distance this page exists to
- * measure. It is read here exactly as it is on the matrix page, from the same `Comparison`, and
- * its provenance is stated in the same place: this view's footer, gated on this plot being on
- * the screen at all.
+ * measure. It is read here exactly as it is on the matrix page, from the same `Comparison`. The
+ * footer sentence stating its provenance was removed with the footer on 2026-09-24.
  *
  * **What is plotted is reveal latency, and the reason on the artboard is false.**
  * `Juror.dc.html:108` gives it as "commit latency is not comparable across dispute 151, which ran

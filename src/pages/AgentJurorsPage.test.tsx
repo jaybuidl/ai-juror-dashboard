@@ -128,16 +128,9 @@ describe("the agent-juror index", () => {
     }
   });
 
-  it("says the roster is this dashboard's own list and not a read", () => {
+  it("stamps no read, because the roster is not one", () => {
     renderAt("/agent-jurors");
 
-    expect(screen.getByText(/not a read of the court/i)).toBeInTheDocument();
-    expect(screen.getByText(/nothing on this page is a measurement/i)).toBeInTheDocument();
-  });
-
-  it("states how agent jurors are identified", () => {
-    renderAt("/agent-jurors");
-
-    expect(screen.getByText(/never by the person or team who built them/i)).toBeInTheDocument();
+    expect(screen.queryByText(/^Read (dispute \d+|\d+ disputes)/)).not.toBeInTheDocument();
   });
 });

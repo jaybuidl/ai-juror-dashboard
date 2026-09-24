@@ -202,9 +202,7 @@ function drawnCellsOf(row: HTMLElement): HTMLElement[] {
 /**
  * The same court, grown to a given number of disputes.
  *
- * `padCourt` is shared with `MatrixPage.test.tsx`, which checks what the page *says* about a
- * compacted grid while this checks what the grid does — two suites reading one padded court, for
- * the same reason both layouts read one model.
+ * `padCourt` lives in the shared test fixtures, beside the captured court it grows.
  */
 function padTo(disputeCount: number, over: Partial<RawCourtData> = {}): CourtPerformance {
   return build({ ...padCourt(disputeCount), ...over });
@@ -790,11 +788,9 @@ describe("Matrix", () => {
     expect(within(row).queryByText("No vote")).not.toBeInTheDocument();
   });
 
-  it("leaves the sparsity note to the page, which now puts it in the footer", () => {
-    // It was the third footnote under the grid until the note moved into the provenance
-    // footer, above the identity line. What it says is unchanged and is asserted where it is
-    // now composed, in `MatrixPage.test.tsx`; what this pins is that the matrix does not also
-    // carry it, because the one thing two renderings of one caveat must never be is two.
+  it("does not carry the sparsity note", () => {
+    // It was the third footnote under the grid, then a provenance footer line, and went with
+    // that footer on 2026-09-24 (maintainer's ruling). Only the phone's card list carries it now.
     renderMatrix();
 
     expect(
@@ -2038,8 +2034,8 @@ describe("Matrix", () => {
       renderMatrix(compactCourt());
 
       // The sentence a reader scrolling hundreds of rows needs and one reading sixteen does not.
-      // The counts themselves are the sparsity note's, in the footer — this says the one thing
-      // volume tempts a reader to assume away, from the same `totals.sparsity` the note quotes.
+      // This says the one thing volume tempts a reader to assume away, from the same
+      // `totals.sparsity` the phone's sparsity note quotes.
       const volume = screen.getByText(/sparsity does not resolve with volume/i);
       expect(volume).toHaveTextContent(/still blank across all \d+ disputes/);
     });

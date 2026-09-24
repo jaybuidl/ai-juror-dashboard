@@ -67,14 +67,8 @@ const Back = styled(Link)`
   }
 `;
 
-const provenance: Provenance = {
-  measures:
-    "No figure was read for this page, because there is no page here. Nothing is missing from the dashboard's record.",
-  read: null,
-  readAt: null,
-  caveats: [],
-  identifiesAgentJurors: false,
-};
+/** There is no page here, so nothing rests on a read. */
+const provenance: Provenance = { read: null, readAt: null };
 
 export function NotFoundPage() {
   useDocumentTitle("Not found");

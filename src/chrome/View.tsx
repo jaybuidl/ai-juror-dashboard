@@ -2,22 +2,22 @@ import type { ReactNode } from "react";
 import styled from "styled-components";
 import { COMFORTABLE_GRID_MIN_PX, narrow } from "../styles/breakpoints";
 import { DegradedPanel, FailureBanner } from "./Failure";
-import { Footer } from "./Footer";
 import { type Failures, NO_FAILURES } from "./failures";
 import type { Provenance } from "./provenance";
+import { ReadStamp } from "./ReadStamp";
 
 /** How wide a view may be. See the note on `measure` below. */
 export type Measure = "wide" | "prose" | "grid";
 
 /**
- * One view: what could not be read, its content, and the footer saying what that content rests on.
+ * One view: what could not be read, which disputes it was read from, and its content.
  *
- * Every route renders through this, which is what makes "every view ends with the same
- * provenance footer" structural rather than a habit — a view that forgot would have no frame
- * and no measure either, and would look wrong immediately. Ticket 13's banner is mounted the
- * same way and for the same reason: "once in a banner at the top of the page" is a claim about
- * every view, so a page that failed to render one has to be impossible rather than merely
- * unusual. It draws nothing when nothing is wrong, so mounting it costs a healthy page nothing.
+ * Every route renders through this, which is what makes ticket 13's banner structural rather than
+ * a habit: "once in a banner at the top of the page" is a claim about every view, so a page that
+ * failed to render one has to be impossible rather than merely unusual. It draws nothing when
+ * nothing is wrong, so mounting it costs a healthy page nothing. The read stamp is mounted the
+ * same way. The provenance footer that used to close every view was removed on 2026-09-24 by the
+ * maintainer's ruling; the read stamp is all that survives of it.
  *
  * `failures` defaults to none, which is what the method page and the 404 pass — neither carries
  * a figure, and the 404 in particular must never look like a failure state: Netlify answers
@@ -41,7 +41,8 @@ const Frame = styled.div<{ $measure: Measure }>`
   flex-direction: column;
   width: 100%;
   margin: 0 auto;
-  padding: ${({ theme }) => `${theme.space11} ${theme.gutter} 0`};
+  /* The bottom padding was the removed footer's; without it the last section met the edge. */
+  padding: ${({ theme }) => `${theme.space11} ${theme.gutter} ${theme.space10}`};
   max-width: ${({ theme, $measure }) => {
     if ($measure === "prose") return theme.containerNarrow;
     /* border-box is global, so this includes the gutters rather than adding to them — the
@@ -83,18 +84,11 @@ export function View({
   provenance,
   failures = NO_FAILURES,
   measure = "wide",
-  footerNote,
   children,
 }: {
   provenance: Provenance;
   failures?: Failures;
   measure?: Measure;
-  /**
-   * One caveat a view may put in the footer rather than in its own body, above the identity
-   * line. It is a node and not a string because the only thing passing one is a component
-   * shared with another layout — see `Footer`'s note on where this sits and why.
-   */
-  footerNote?: ReactNode;
   children: ReactNode;
 }) {
   return (
@@ -115,9 +109,9 @@ export function View({
             {read.what}
           </DegradedPanel>
         ))}
+        <ReadStamp provenance={provenance} />
         {children}
       </Main>
-      <Footer provenance={provenance} note={footerNote} />
     </Frame>
   );
 }

@@ -3,10 +3,9 @@ import type { FailedRead, Source } from "../read-failure";
 /**
  * What a view says could not be read, and how loudly.
  *
- * Composed per view exactly as `Provenance` is, and for the same reason: what a banner names has
- * to be what is actually on the screen behind it. The two are deliberately different channels —
- * the footer states what the figures rest on, this states what is missing from them — and
- * ticket 15's test pinning that the footer is not a second alarm is what keeps them apart.
+ * Composed per view, because what a banner names has to be what is actually on the screen
+ * behind it. (The provenance footer that once stated what the figures rest on, beside this, was
+ * removed on 2026-09-24 by the maintainer's ruling; only its read stamp survives.)
  *
  * The rule this encodes is `Errors.dc.html`'s and ticket 13's: a failure that changes a number is
  * loud and blocking; a failure that changes only a label is quiet and local. There is exactly one

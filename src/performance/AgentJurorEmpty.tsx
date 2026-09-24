@@ -171,8 +171,8 @@ export function AgentJurorEmpty({
             {sparsity.undrawnDisputes.length > 0 &&
               ` ${sparsity.undrawnDisputes.length === 1 ? "Dispute" : "Disputes"} ${listOf(sparsity.undrawnDisputes)} ${sparsity.undrawnDisputes.length === 1 ? "was read but has" : "were read but have"} no panel yet, so ${sparsity.undrawnDisputes.length === 1 ? "it is" : "they are"} not counted above: the court has drawn nobody there.`}
             {/* The claim above is over what was read, and a dispute nobody asked about is not a
-                dispute this agent juror was passed over in. Said here rather than left to the
-                footer, because the sentence it qualifies is the one directly above it. */}
+                dispute this agent juror was passed over in. Said here, because the sentence it
+                qualifies is the one directly above it. */}
             {unreadDisputes.length > 0 &&
               ` ${unreadDisputes.length === 1 ? "One further dispute is" : `A further ${unreadDisputes.length} disputes are`} not counted: ${unreadDisputes.length === 1 ? "its draws were" : "their draws were"} never read, so whether ${nickname} was drawn there is unknown rather than no.`}
           </EmptyBody>

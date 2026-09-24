@@ -1,7 +1,7 @@
 import { Link, useParams } from "react-router";
 import styled from "styled-components";
 import { Breadcrumb } from "../chrome/Breadcrumb";
-import { comparisonCaveatOf, comparisonFailureOf } from "../chrome/comparison";
+import { comparisonFailureOf } from "../chrome/comparison";
 import { Notice } from "../chrome/Failure";
 import { type Failures, olderOf, present } from "../chrome/failures";
 import { type Provenance, rangeOf } from "../chrome/provenance";
@@ -15,8 +15,6 @@ import { AgentJurorLatency } from "../performance/AgentJurorLatency";
 import { AgentJurorSummary } from "../performance/AgentJurorSummary";
 import { type AgentJurorReading, buildAgentJurorReading } from "../performance/agent-juror-detail";
 import { arbitrumSource } from "../performance/arbitrum";
-import { formatWindowSeconds } from "../performance/latency";
-import type { CourtPerformance } from "../performance/performance";
 import { comparisonOf } from "../performance/reference";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type FailedRead, failureOf, SOURCES } from "../read-failure";
@@ -411,212 +409,34 @@ function failuresOf(
   };
 }
 
-/** What this view says its figures rest on. Composed here, printed by `View`. */
+/**
+ * The disputes this view was read from, and when — all `View`'s read stamp prints.
+ *
+ * The disputes this agent juror was drawn in, where there are any. Where there are none the claim
+ * on the page is "never drawn", which is a statement about the *whole* court that was read — so
+ * the range is the court's, because that is what the claim rests on.
+ */
 function provenanceOf({
-  nickname,
-  roster,
   disputes,
-  performance,
   reading,
 }: {
-  nickname: string;
-  roster: RosterView;
   disputes: DisputesView;
-  performance: CourtPerformanceView;
   reading: AgentJurorReading | null;
 }): Provenance {
-  const caveats: string[] = [];
-  const measured = performance.performance;
   const drawn = reading !== null && reading.draws.length > 0;
-
-  if (disputes.error !== null) {
-    caveats.push(
-      "The court could not be re-read on this load, so what is above may be out of date.",
-    );
-  } else if (measured !== null && performance.error !== null) {
-    caveats.push(
-      "The draws could not be re-read on this load, so the disputes listed above are the ones an earlier read found this agent juror in, and a dispute newer than that read is absent rather than one it was not drawn in.",
-    );
-  }
-
-  const titles = disputes.titles;
-  if (titles !== undefined && !titles.isLoading && titles.resolved < titles.expected) {
-    caveats.push(
-      `${titles.expected - titles.resolved} of ${titles.expected} dispute titles did not come back from the template subgraph, so those disputes are identified by their ID alone.`,
-    );
-  }
-
-  // `isResolving` as well as `isResolvedFromEns`: the flag is false while the mainnet lookup is
-  // still out, so a footer keyed on the second alone asserts a failure that has not happened for
-  // the length of every cold load and then retracts it.
-  if (!roster.isResolving && !roster.isResolvedFromEns) {
-    caveats.push(
-      "ENS could not be reached, so the nickname above is the one held in this repository and no avatar is shown.",
-    );
-  }
-
-  // Everything below qualifies something measured from this agent juror's own draws — every
-  // entry but the first a figure, and the first the one piece of decoration drawn beside them —
-  // so none of it is sayable about an agent juror that has none: a caveat about a median that
-  // does not exist reads as a caveat about the whole page. `canvas/JurorEmpty.dc.html` is the
-  // state, and its own card carries the only sentence it needs — a dash means no draws to
-  // measure.
-  if (drawn && reading !== null) {
-    const { marginals } = reading;
-
-    // Where the comparison band comes from, said in the one place this page says such things.
-    // The same words as the matrix view's, from the same function, because it is the same band
-    // on a plot sharing the same axis. Two pages disagreeing about what it stands for is the
-    // prose fork `CLAUDE.md` records over and over. Until ticket 23 the sentence called the band
-    // illustrative, which it no longer is.
-    //
-    // Gated on the plot being on the screen and not merely on the agent juror having draws:
-    // `AgentJurorLatency` shows a sentence instead of a picture where none of those draws has
-    // revealed, and a footer naming a band nobody can see sends a reader looking for it.
-    if (marginals.revealLatency !== null) {
-      const caveat = comparisonCaveatOf(
-        comparisonOf(performance.reference, performance.referenceError),
-        "latency plot",
-      );
-      if (caveat !== null) caveats.push(caveat);
-    }
-
-    const lone = marginals.coherence.lonePanelDisputes;
-    if (lone.length > 0) {
-      caveats.push(
-        `${lone.length === 1 ? "Dispute" : "Disputes"} ${lone.join(", ")} ${lone.length === 1 ? "was" : "were"} decided by a panel of one, where coherence is tautological. Counted above, and marked wherever counted.`,
-      );
-    }
-
-    // This column's own window changes and not the court's. A marker on a median is a claim
-    // about the draws behind that median, and this agent juror may never have been drawn under
-    // the earlier configuration at all — `agentJurorMarginalsOf` slices them for exactly this.
-    for (const change of marginals.changedWindows) {
-      caveats.push(
-        `${change.disputes.length === 1 ? "Dispute" : "Disputes"} ${change.disputes.join(", ")} ran under a commit window of ${formatWindowSeconds(change.windows.commitSeconds)} and a vote window of ${formatWindowSeconds(change.windows.voteSeconds)}, which the court has since changed. Counted above, and marked wherever counted.`,
-      );
-    }
-
-    // The disputes the marker's *absence* would otherwise pass off as a match, narrowed to the
-    // ones this agent juror was actually drawn in — a selection of which disclosure applies,
-    // not a second count. Gated on `current`, because while the history is unread every dispute
-    // is unplaced and the caveat further down already says so in the right words.
-    const unplaced = reading.draws
-      .filter(({ row }) => row.windows === null)
-      .map(({ row }) => row.dispute.id);
-    if (measured !== null && measured.parameters.current !== null && unplaced.length > 0) {
-      caveats.push(
-        `The parameter history read on this load does not reach back far enough to place ${unplaced.length === 1 ? "dispute" : "disputes"} ${unplaced.join(", ")}, so ${unplaced.length === 1 ? "its figures are" : "their figures are"} unmarked for want of anything to compare against rather than for having matched the court's current windows.`,
-      );
-    }
-
-    // What the two sums are *over*, which is the one thing a reader cannot see from the figures.
-    // A shift is written when the court **executes** a dispute, a later transaction than ruling
-    // it, so a dispute counted in the coherence figure may legitimately contribute nothing to
-    // these two. A lag, not a shortfall — stated in the affirmative for that reason, and gated
-    // on `short` because a read that came back short has no business saying what it covers.
-    const rewards = marginals.rewards;
-    if (measured?.rewards.read === true && !measured.rewards.short) {
-      const paid = rewards?.paidDraws ?? 0;
-      caveats.push(
-        `Cumulative ETH and net PNK are summed over the ${paid} of this agent juror's ${marginals.draws} draws the court has executed and paid out. A dispute it has ruled but not yet executed is counted in the coherence figure and in neither reward figure, so those two lag the rest of this page rather than disagreeing with it.`,
-      );
-    }
-
-    // Said only when it is true. Court 34 has a WETH fee token registered and has never paid in
-    // it; if it ever does, this agent juror will have earned something no ETH figure here
-    // carries, and reading as though it earned less is the failure this page cannot afford.
-    const feeTokenDraws = rewards?.feeTokenDraws ?? 0;
-    if (feeTokenDraws > 0) {
-      caveats.push(
-        `${feeTokenDraws} of this agent juror's ${feeTokenDraws === 1 ? "draws was" : "draws were"} paid in a fee token rather than in ETH, and no figure above carries that value. The ETH shown for it is therefore less than what it was paid.`,
-      );
-    }
-
-    // The in-flight half only. The failed half is the banner's, and saying it twice would make
-    // one outage two voices — ticket 13's rule.
-    if (measured !== null && !measured.rewards.read && performance.rewardsError === null) {
-      caveats.push(
-        "The court's payouts are still being read, so no cumulative ETH or PNK figure is shown yet.",
-      );
-    }
-
-    if (measured !== null && !measured.commitCoverage.read && performance.commitError === null) {
-      caveats.push(
-        "The commitments are still being read from Arbitrum, which is a separate and slower source than the subgraph, so no commit latency is shown yet.",
-      );
-    }
-
-    if (measured !== null && measured.parameters.current === null) {
-      if (!measured.parameters.read) {
-        if (performance.parametersError === null) {
-          caveats.push(
-            "The court's period durations are still being read from its own parameter history on Arbitrum, so nothing above is yet marked as having run under earlier ones.",
-          );
-        }
-      } else {
-        caveats.push(
-          "Arbitrum returned no parameter history for court 34, which cannot be right for a court that has held disputes — so this read came back short. Nothing above is marked as having run under earlier period durations, and that is an unread state rather than a finding.",
-        );
-      }
-    }
-  }
-
   return {
-    measures: measuresOf(nickname, measured, drawn),
-    // The disputes this agent juror was drawn in, where there are any. Where there are none the
-    // claim on the page is "never drawn", which is a statement about the *whole* court that was
-    // read — so the range is the court's, because that is what the claim rests on.
     read: drawn
       ? rangeOf(reading?.draws.map(({ row }) => row.dispute.id) ?? [])
       : rangeOf(disputes.disputes.map((dispute) => dispute.id)),
     readAt: disputes.readAt,
-    caveats,
-    identifiesAgentJurors: true,
   };
 }
 
 /**
- * What on this page is the measured record.
- *
- * An agent juror the court has not drawn *has* one — its absence from every panel, read from
- * the court's own draws, which is the whole record it has in this experiment until the day it
- * comes up. That is not the same claim as `NAMES_NOTHING` below, and telling the two apart is
- * what this view exists to get right one level down as well: a blank is a fact about the court,
- * and an absence is not.
+ * An address that names no agent juror rests on no read: a dispute range under it would be
+ * provenance for a figure the reader cannot see.
  */
-function measuresOf(nickname: string, measured: CourtPerformance | null, drawn: boolean): string {
-  if (!drawn) {
-    return `Nothing on this page is a measurement of ${nickname}: the court has drawn it in none of the disputes read, so there is nothing it has done to measure. That it has not been drawn is the measured record, read from the court's own draws.`;
-  }
-
-  return measured?.commitCoverage.read
-    ? `Commit latency, reveal latency and coherence are the measured record here: how long ${nickname} took to commit after each commit period opened, how long it took to reveal after each vote period opened, and whether that vote matched the dispute's final ruling. Each latency is measured from its own period. Cumulative ETH and net PNK are what the court has paid out for those draws, and are context beside the measures rather than a dimension anything is ranked on.`
-    : `Reveal latency and coherence are the measured record here: how long ${nickname} took to reveal after each vote period opened, and whether that vote matched the dispute's final ruling. Cumulative ETH and net PNK are what the court has paid out for those draws, and are context beside the measures rather than a dimension anything is ranked on.`;
-}
-
-/**
- * What the footer says over an address that names no agent juror.
- *
- * Its own constant rather than a branch of `provenanceOf`, because that function's every input
- * is about a read and this page rests on none: there is no agent juror for the court to have
- * failed to draw, so a dispute range under it would be provenance for a figure the reader cannot
- * see, and the sentence written for the never-drawn case above would report a reading of the
- * court about something the court has never heard of. Found by opening the page; nothing else
- * could have found it, because every test asserted what the page shows and this was a sentence
- * about what it does not.
- *
- * `identifiesAgentJurors` stays true: the body names the roster and links to it, and the line is
- * a standing statement about how this dashboard identifies them rather than about a figure.
- */
-const NAMES_NOTHING: Provenance = {
-  measures:
-    "Nothing on this page is a measurement. This address does not name an agent juror, so there is nothing here that was measured from one.",
-  read: null,
-  readAt: null,
-  caveats: [],
-  identifiesAgentJurors: true,
-};
+const NAMES_NOTHING: Provenance = { read: null, readAt: null };
 
 export type AgentJurorPageProps = {
   roster: RosterView;
@@ -686,7 +506,7 @@ export function AgentJurorView({
   // reader is not looking at — and worse than merely redundant here, because every sentence
   // `failuresOf` writes names the agent juror the address failed to name: `/agent-jurors/nope`
   // would be told "the draws could not be read, so nothing on this page is a measurement of
-  // nope's". That is the footer's own defect one layer up, and it is why `NotFoundPage` passes
+  // nope's". That is a banner about nothing on screen, and it is why `NotFoundPage` passes
   // no failures either. Ticket 13 tiers a failure by whether it costs a figure; here none does.
   if (entry === undefined) {
     return (
@@ -712,13 +532,7 @@ export function AgentJurorView({
   const reading = measured === null ? null : buildAgentJurorReading(measured, agentJuror.nickname);
 
   const failures = failuresOf(agentJuror.nickname, { roster, disputes, performance });
-  const provenance = provenanceOf({
-    nickname: agentJuror.nickname,
-    roster,
-    disputes,
-    performance,
-    reading,
-  });
+  const provenance = provenanceOf({ disputes, reading });
 
   // `isResolving` as well as `isResolvedFromEns`: the second is false while the mainnet lookup
   // is still out *and* after it fails, so a mark keyed on it alone claims a failure for the

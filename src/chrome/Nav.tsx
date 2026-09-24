@@ -22,8 +22,8 @@ import { Lockup } from "./Lockup";
  * **The bar carries no read-only label**, and the invariant is not weakened by that. There was
  * one — a pill wide, the bare words folded — and the maintainer removed both, on the judgement
  * that the chrome was stating the invariant a third time. Where a reader meets it now is the
- * footer, which opens with it in full on every view, and the method page, which states it
- * again. Nothing here should be written as though this nav were that place.
+ * hero's deck on the matrix view and the method page (the footer that also opened with it was
+ * removed on 2026-09-24). Nothing here should be written as though this nav were that place.
  *
  * **Folded, the bar is still one line.** Ticket 15 left the narrow nav stacked over three rows,
  * which was legible and not final; ticket 16 does what the artboard shows. The lockup becomes
