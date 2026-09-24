@@ -2,6 +2,7 @@ import { useEffect, useRef } from "react";
 import { Outlet, useLocation, useNavigationType } from "react-router";
 import styled from "styled-components";
 import { Nav } from "./Nav";
+import { SiteFooter } from "./SiteFooter";
 
 /**
  * The shell every view sits inside: the ground it is lit on, the nav, and the view itself.
@@ -9,9 +10,6 @@ import { Nav } from "./Nav";
  * A view reached from a pasted link has to be recognisably part of this dashboard rather than
  * a fragment of one, which is what this file is for — one nav, one set of destinations,
  * whichever route the visitor arrived at.
- *
- * The read stamp is not here. It says which disputes *this view* was read from, so it is
- * composed per view and rendered by `View`, one layer down.
  *
  * Built against the ground and nav of `canvas/Main.dc.html:34-50`.
  */
@@ -211,6 +209,7 @@ export function Shell() {
       <Content>
         <Nav />
         <Outlet />
+        <SiteFooter />
       </Content>
     </Ground>
   );
