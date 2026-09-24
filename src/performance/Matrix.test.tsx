@@ -2027,7 +2027,8 @@ describe("Matrix", () => {
       renderMatrix(compactCourt());
       expect(screen.queryByText("Commit")).not.toBeInTheDocument();
       expect(screen.getByText("Reveal")).toBeInTheDocument();
-      expect(screen.getByText("Rail: 1s — 1h, log")).toBeInTheDocument();
+      // The scale key was removed on 2026-09-24, on the maintainer's call.
+      expect(screen.queryByText(/^Rail:/)).not.toBeInTheDocument();
     });
 
     it("says that volume does not resolve sparsity, which sixteen rows never tempted anyone to think", () => {

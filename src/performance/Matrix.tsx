@@ -1017,7 +1017,6 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                   </Rail>
                 </LegendItem>
               )}
-              <LegendItem>Rail: 1s — 1h, log</LegendItem>
             </LegendGroup>
             {/* `MatrixDense.dc.html:117`, and it earns its place at this density and not at the
                 other: a reader who has scrolled through hundreds of rows of mostly-empty grid is
