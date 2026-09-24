@@ -1,6 +1,5 @@
 import type { ReactNode } from "react";
 import styled from "styled-components";
-import type { Provenance } from "../chrome/provenance";
 import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import { COURT_ID } from "../disputes/court-subgraph";
@@ -31,10 +30,12 @@ import { REFERENCE_COURT_ID } from "../performance/reference";
  * **That guard has fired once, and rewriting this section was ticket 19.** Court 34 is a live
  * demo instrument and its periods get retimed to suit a demo, so expect it again. Two things
  * to hold on to when it does. The prose here counts *configurations*, which is not the count
- * of changes that moved a figure — the third moved the evidence period alone and moved
- * nothing a reader can see. And the section has to keep saying so: a reader who knows the
- * court was reconfigured on 26 August and meets an unmarked dispute 152 is owed the reason,
- * and it is not one the marker can give them.
+ * of changes that moved a latency — the third moved the evidence period alone and moved no
+ * latency. And the section has to keep saying so: a reader who knows the court was reconfigured
+ * on 26 August and meets an unmarked dispute 152 is owed the reason, and it is not one the
+ * marker can give them. **It does move one figure since 2026-09-24**: the headline median time
+ * to appeal runs from a dispute's creation, so the evidence window is inside it and its † counts
+ * the disputes created before 26 August too. The section says both halves.
  */
 
 const Header = styled.header`
@@ -177,13 +178,10 @@ function Section({ id, heading, children }: { id: string; heading: string; child
   );
 }
 
-/** Prose, resting on no read. */
-const provenance: Provenance = { read: null, readAt: null };
-
 export function MethodPage() {
   useDocumentTitle("Method");
   return (
-    <View provenance={provenance} measure="prose">
+    <View measure="prose">
       <Header>
         <Title>Method</Title>
         <Deck>
@@ -237,8 +235,19 @@ export function MethodPage() {
           counted and stated above the matrix rather than shown as commitments that never happened.
         </Body>
         <Body>
-          Latency is never shown as a fraction of a period's window — not in a cell, not in a total,
-          not anywhere. See the window, below.
+          <Term>Time to appeal</Term> is the figure at the top of the matrix page, and it is not a
+          latency: it is measured per dispute rather than per draw, and from the dispute's creation
+          rather than from a period. It is the seconds from the moment a dispute was created to the
+          moment its first round's appeal period opened — the point at which every vote in that
+          round was in and the parties could see the result. It spans the evidence, commit and vote
+          periods, so it includes the time the court spent drawing a panel as well as the time the
+          panel took to act. Only the first round counts, whatever rounds follow. A dispute that has
+          not reached its appeal period yet has no time to appeal; it is not plotted, and the plot
+          says how many such disputes there are.
+        </Body>
+        <Body>
+          Neither measure is ever shown as a fraction of a period's window — not in a cell, not in a
+          total, not anywhere. See the window, below.
         </Body>
       </Section>
 
@@ -249,11 +258,13 @@ export function MethodPage() {
           the court and its median as read on that load. */}
       <Section id="comparison" heading="The comparison band is another court's time to ruling">
         <Body>
-          Both latency plots carry a violet band marking where an ordinary Kleros court sits on the
-          same time axis. It is read, not drawn by hand. Its boundary is the median{" "}
-          <Term>time to ruling</Term> of court {REFERENCE_COURT_ID} on the same core subgraph, over
-          every single-round dispute that court has ruled: the seconds from a dispute's creation to
-          the moment its execution period opened, when the ruling became final.
+          Both time plots — the court's time to appeal on the matrix page and each agent juror's
+          reveal latency on its own page — carry a violet band marking where an ordinary Kleros
+          court sits on the same time axis. It is read, not drawn by hand. Its boundary is the
+          median <Term>time to ruling</Term> of court {REFERENCE_COURT_ID} on the same core
+          subgraph, over every single-round dispute that court has ruled: the seconds from a
+          dispute's creation to the moment its execution period opened, when the ruling became
+          final.
         </Body>
         <Body>
           Court {REFERENCE_COURT_ID} is the reference because it has ruled more disputes than any
@@ -266,8 +277,13 @@ export function MethodPage() {
           Appealed disputes are left out, and so are disputes not yet ruled. Court 34's disputes are
           single-round, and an appeal adds at least one more round with its own vote and its own
           appeal period. Folding appealed disputes in would move the band to the right and flatter
-          this experiment with a gap it did not earn. The band's label names the court it was read
-          from and its median.
+          this experiment with a gap it did not earn. The band is labelled only as other Kleros
+          courts; this section is where the court and the reading are named.
+        </Body>
+        <Body>
+          On the matrix page the marks and the band are not the same quantity: each mark is a time
+          to appeal, which stops where the appeal period opens, and the band is a time to ruling,
+          which runs on through the appeal period to the ruling.
         </Body>
         <Body>
           A read of that court can come back short without failing. So the disputes returned are
@@ -327,18 +343,27 @@ export function MethodPage() {
         <Body>
           Dispute 151 is the only dispute that ran under the first configuration: the change was
           mined 48 minutes before dispute 152 was created. So it is the one row of the matrix
-          carrying a <Term>†</Term>, and the marker travels with every figure it touches rather than
-          sitting on the row alone — an aggregate that counts that dispute is marked too.
+          carrying a <Term>†</Term>, and the marker travels with every latency it touches rather
+          than sitting on the row alone — an aggregate latency that counts that dispute is marked
+          too.
         </Body>
 
         <Body>
-          Only the first of the court's two reconfigurations reaches anything on this dashboard, and
-          the second is worth a sentence for what it does not do. Every latency here is measured
-          from the commit period or the vote period, and 26 August left both of them exactly where
-          they were. So dispute 152 ran under a configuration the court has since replaced and still
-          carries no marker: the windows it was measured against are the windows the court holds
-          now. Nothing on this dashboard is measured from the evidence period at all — where a
-          configured window would otherwise stand beside it, the dispute view gives the count of
+          The second reconfiguration reaches no latency, and is worth a sentence for what it does
+          not do. Every latency here is measured from the commit period or the vote period, and 26
+          August left both of them exactly where they were. So dispute 152 ran under a configuration
+          the court has since replaced and its row carries no marker: the windows its latencies were
+          measured against are the windows the court holds now.
+        </Body>
+
+        <Body>
+          The median time to appeal is the exception, because it is measured from a dispute's
+          creation and so spans the evidence period too. A dispute created before 26 August sat
+          through 45 minutes of evidence where one created today sits through 10, so its time to
+          appeal is not the same measurement. The <Term>†</Term> on that figure counts every dispute
+          behind it that ran under an evidence, commit or vote window the court has since changed —
+          which is more disputes than carry the marker on their rows. Where a configured window
+          would otherwise stand beside the evidence period, the dispute view gives the count of
           evidence submissions instead.
         </Body>
 

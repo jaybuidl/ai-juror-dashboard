@@ -1,9 +1,8 @@
-import { Link } from "react-router";
 import styled from "styled-components";
 import { narrow } from "../styles/breakpoints";
 import type { AgentJurorReading } from "./agent-juror-detail";
 import type { Figure } from "./cell";
-import { type MarginalFigure, marginalFiguresOf } from "./marginal-figures";
+import { marginalFiguresOf } from "./marginal-figures";
 import type { CourtPerformance } from "./performance";
 
 /**
@@ -12,14 +11,11 @@ import type { CourtPerformance } from "./performance";
  * The same six the matrix's column header prints, read by the same `marginalFiguresOf` — three
  * medians and a count across the top, the two sums and the draw count beneath a hairline. This
  * decides how they are laid out and reads none of them: the arithmetic is in `totals.ts` and the
- * gates, absences and markers are in `marginal-figures.ts`.
- *
- * The markers ride the figures they qualify and their reasons are listed under the card, which is
- * `Errors.dc.html:201-217`'s anatomy: the mark on the number, the reason a line below it, the
- * whole account one click away.
+ * gates and absences are in `marginal-figures.ts`. The caveat marks that rode these figures, and
+ * the reasons listed under the card, were removed on 2026-09-24 (maintainer's ruling).
  *
  * Beside the model rather than inside the page, exactly as `DisputePanel` sits beside
- * `DisputePage`: a view composes, and a block with six figures and three markers in it is a
+ * `DisputePage`: a view composes, and a block with six figures in it is a
  * component. It renders at every width — this card is the one place below the breakpoint where
  * cumulative ETH and net PNK are legible at all, since the matrix's card layout has no column
  * headers to carry them.
@@ -103,48 +99,6 @@ export const CountValue = styled(MetricValue)`
   font-feature-settings: ${({ theme }) => theme.featureMono};
 `;
 
-/* Amber, and the same amber the matrix's column header and the stat tiles' mark carry: one
-   caveat is one colour, or a reader meets what looks like a second kind of qualification. */
-const Mark = styled(Link)`
-  margin-left: ${({ theme }) => theme.space2};
-  font: ${({ theme }) => theme.typeMonoSm};
-  color: ${({ theme }) => theme.stateWork};
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-
-  &:focus-visible {
-    /* The house ring, not an underline. Underlining is a fine hover affordance and a poor focus
-       one when the whole link is a single dagger: a 7px glyph gaining a 7px rule under it is not
-       a discernible indicator, and it is the only thing marking where the keyboard is. */
-    outline: 2px solid ${({ theme }) => theme.focusRing};
-    outline-offset: 3px;
-    text-decoration: underline;
-  }
-`;
-
-const Reasons = styled.div`
-  display: flex;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.space3};
-`;
-
-const Reason = styled.p`
-  display: flex;
-  gap: ${({ theme }) => theme.space3};
-  font: ${({ theme }) => theme.typeBodySm};
-  font-feature-settings: ${({ theme }) => theme.featureNumeric};
-  color: ${({ theme }) => theme.textMeta};
-  text-wrap: pretty;
-`;
-
-const ReasonMark = styled.span`
-  flex: none;
-  color: ${({ theme }) => theme.stateWork};
-`;
-
 export const CardNote = styled.p`
   font: ${({ theme }) => theme.typeBodySm};
   font-feature-settings: ${({ theme }) => theme.featureNumeric};
@@ -163,11 +117,9 @@ export function AgentJurorSummary({
   const figures = marginalFiguresOf(reading.marginals, {
     scanned: performance.commitCoverage.read,
     payouts: performance.rewards,
-    current: performance.parameters.current,
   });
   const metrics = figures.slice(0, 3);
   const counts = figures.slice(3);
-  const marked = figures.filter((figure) => figure.caveat !== undefined);
   const note = coherenceNote(reading);
 
   return (
@@ -178,7 +130,6 @@ export function AgentJurorSummary({
             <FigureKey>{figure.caption}</FigureKey>
             <MetricValue $tone={figure.figure.tone} $loss={figure.loss}>
               {figure.figure.text}
-              <FigureMark figure={figure} />
             </MetricValue>
           </Item>
         ))}
@@ -189,38 +140,13 @@ export function AgentJurorSummary({
             <FigureKey>{figure.caption}</FigureKey>
             <CountValue $tone={figure.figure.tone} $loss={figure.loss}>
               {figure.figure.text}
-              <FigureMark figure={figure} />
             </CountValue>
           </Item>
         ))}
       </Counts>
 
-      {marked.length > 0 && (
-        <Reasons>
-          {marked.map((figure) => (
-            <Reason key={figure.key}>
-              <ReasonMark aria-hidden="true">{figure.caveat?.mark}</ReasonMark>
-              <span>
-                {figure.caption}: {figure.caveat?.reason}
-              </span>
-            </Reason>
-          ))}
-        </Reasons>
-      )}
-
       {note !== null && <CardNote>{note}</CardNote>}
     </Card>
-  );
-}
-
-/** The mark on the number, or nothing. The key beside it is where the figure is named. */
-export function FigureMark({ figure }: { figure: MarginalFigure }) {
-  if (figure.caveat === undefined) return null;
-
-  return (
-    <Mark to={figure.caveat.href} aria-label={figure.caveat.about}>
-      <span aria-hidden="true">{figure.caveat.mark}</span>
-    </Mark>
   );
 }
 
@@ -229,8 +155,8 @@ export function FigureMark({ figure }: { figure: MarginalFigure }) {
  *
  * The artboard's is the affirmative one — "every panel this agent sat on had 2 or more members"
  * — and it is a claim, so it is made only where it is true and only where there is a coherence
- * figure for it to be about. Where a lone panel *is* behind the count, the ‡ reason above the
- * card already says how many, and repeating it here would make one caveat two voices.
+ * figure for it to be about. Where a lone panel *is* behind the count, it says nothing: the claim
+ * would be false, and the lone-panel caveat itself lives on /method since 2026-09-24.
  */
 function coherenceNote(reading: AgentJurorReading): string | null {
   const nickname = reading.agentJuror.nickname;

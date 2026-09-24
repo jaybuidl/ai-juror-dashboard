@@ -1,6 +1,5 @@
 import { Link, useLocation } from "react-router";
 import styled from "styled-components";
-import type { Provenance } from "../chrome/provenance";
 import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 
@@ -67,15 +66,12 @@ const Back = styled(Link)`
   }
 `;
 
-/** There is no page here, so nothing rests on a read. */
-const provenance: Provenance = { read: null, readAt: null };
-
 export function NotFoundPage() {
   useDocumentTitle("Not found");
   const { pathname } = useLocation();
 
   return (
-    <View provenance={provenance}>
+    <View>
       <Header>
         <Code>Page not found</Code>
         <Title>There is nothing at this address.</Title>

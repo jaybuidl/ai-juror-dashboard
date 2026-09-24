@@ -1,10 +1,10 @@
 import styled from "styled-components";
-import { formatElapsedSeconds } from "./latency";
 import type { Comparison } from "./reference";
 import { stripFraction } from "./strip";
 
 /**
- * The comparison band: where an ordinary Kleros court sits on either latency plot.
+ * The comparison band: where an ordinary Kleros court sits on either plot — the court's time to
+ * appeal on the matrix page, and one agent juror's reveal latency on its own view.
  *
  * One component rather than a pair of copies because both plots draw it and both label it, and
  * this repo has learned twice over that two renderings of one thing fork in the *prose* long
@@ -81,11 +81,18 @@ function absenceOf(comparison: Exclude<Comparison, { state: "measured" }>): stri
   return "not read";
 }
 
-export function StripBand({ comparison }: { comparison: Comparison }) {
+export function StripBand({
+  comparison,
+  min,
+}: {
+  comparison: Comparison;
+  /** The axis origin in seconds, as `stripFraction` takes it. */
+  min?: number;
+}) {
   if (comparison.state !== "measured") {
     return (
       <Label $from={1}>
-        Ordinary Kleros court
+        Other Kleros courts
         <br />
         <Quiet>{absenceOf(comparison)}</Quiet>
       </Label>
@@ -93,18 +100,14 @@ export function StripBand({ comparison }: { comparison: Comparison }) {
   }
 
   const { reading } = comparison;
-  const from = stripFraction(reading.medianSeconds);
+  const from = stripFraction(reading.medianSeconds, min);
 
   return (
     <>
       <Band $from={from} />
       <Label $from={from}>
-        Ordinary Kleros court
-        <br />
-        {/* A median over single-round disputes only, because court 34's are single-round. */}
-        <Quiet>
-          Court {reading.court.id} · {formatElapsedSeconds(reading.medianSeconds)} median
-        </Quiet>
+        {/* One line, ruled 2026-09-24: the court and its median are on /method#comparison. */}
+        Other Kleros courts
       </Label>
     </>
   );

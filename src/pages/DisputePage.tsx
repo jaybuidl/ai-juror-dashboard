@@ -3,7 +3,6 @@ import styled from "styled-components";
 import { Breadcrumb } from "../chrome/Breadcrumb";
 import { Notice } from "../chrome/Failure";
 import { type Failures, olderOf, present } from "../chrome/failures";
-import { type Provenance, rangeOf } from "../chrome/provenance";
 import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import { COURT_ID } from "../disputes/court-subgraph";
@@ -415,20 +414,6 @@ function failuresOf({
   };
 }
 
-/** The one dispute on screen, and when the court was read. No dispute shown, no range. */
-function provenanceOf({
-  disputes,
-  reading,
-}: {
-  disputes: DisputesView;
-  reading: DisputeReading | null;
-}): Provenance {
-  return {
-    read: reading === null ? null : rangeOf([reading.dispute.id]),
-    readAt: disputes.readAt,
-  };
-}
-
 export type DisputePageProps = {
   roster: RosterView;
   disputes: DisputesView;
@@ -533,10 +518,9 @@ export function DisputeView({
   // still composes above the `reading === null` branch below, so a dispute that was never read can
   // draw a banner about a read that cost it nothing. Settle it the day this view is next touched.
   const failures = failuresOf({ roster, disputes, performance, detail });
-  const provenance = provenanceOf({ disputes, reading });
 
   return (
-    <View provenance={provenance} failures={failures}>
+    <View failures={failures}>
       <Breadcrumb to="/disputes" parent="Disputes" current={raw ?? "Unknown"} />
       {reading === null ? (
         <Missing>

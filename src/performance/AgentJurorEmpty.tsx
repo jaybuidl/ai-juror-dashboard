@@ -149,7 +149,6 @@ export function AgentJurorEmpty({
   const figures = marginalFiguresOf(reading.marginals, {
     scanned: performance.commitCoverage.read,
     payouts: performance.rewards,
-    current: performance.parameters.current,
   });
 
   return (
@@ -206,9 +205,9 @@ export function AgentJurorEmpty({
 
         <CardNote>
           A dash means “no draws to measure”. It never means zero, and it never means the query
-          failed — that state is loud, and looks nothing like this. The draw and vote counts above
-          are real zeros, because being drawn no times is something the court did rather than
-          something this page could not read.
+          failed — that state is loud, and looks nothing like this. The draw count above is a real
+          zero, because being drawn no times is something the court did rather than something this
+          page could not read.
         </CardNote>
       </Empty>
 

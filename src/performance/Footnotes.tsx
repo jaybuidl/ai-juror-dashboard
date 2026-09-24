@@ -1,78 +1,13 @@
-import { Link } from "react-router";
 import styled from "styled-components";
-import { VisuallyHidden } from "../styles/hidden";
-import { formatWindowSeconds } from "./latency";
 import type { CourtPerformance } from "./performance";
 
 /**
- * The caveats that hang off the record itself, in the one place both layouts read them from.
+ * The sparsity note the phone's card list carries at its head, and `listOf`.
  *
- * Lifted out of `Matrix.tsx` by ticket 16, which put the same disputes on a phone as one card
- * each. Every one of these is a fact about the court rather than about the grid — which disputes
- * ran under superseded windows, which held a draw the roster has no column for, which were decided
- * by a panel of one, how much of the record is empty and why — so all of them travel with the
- * record and none is the matrix's property. Two copies would be two wordings of one caveat, and a
- * page that may be cited would then say slightly different things depending on the width it was
- * read at. Counted as a *set* rather than as a number here on purpose: it was three until ticket
- * 25 and the sentence that said so would have gone quietly false.
- *
- * `CLAUDE.md` requires caveats to be visible in the UI rather than merely handled correctly in
- * code, which is the whole reason the phone gets these rather than a link to them.
+ * This file held the caveat footnotes under the grid and the card list — the window (†), the
+ * off-roster draws (§) and the lone panels (‡) — until the maintainer's ruling of 2026-09-24
+ * removed them from the UI along with the marks that pointed at them; /method keeps the prose.
  */
-
-/*
- * How they sit beside each other, declared here rather than on each of them.
- *
- * The flex basis belongs to the arrangement and not to the items: `SparsityNote` is rendered
- * on its own on the phone, inside a *column* flex container, and an item carrying
- * flex: 1 1 380px there takes 380px of height and grows to fill whatever is left. It rendered
- * as a short paragraph in a card three hundred pixels taller than itself, which no test in
- * jsdom could see and one look in a browser did.
- */
-export const Footnotes = styled.div`
-  display: flex;
-  flex-wrap: wrap;
-  gap: ${({ theme }) => theme.space9};
-  align-items: flex-start;
-
-  > * {
-    flex: 1 1 380px;
-  }
-`;
-
-const Footnote = styled.p`
-  display: flex;
-  gap: ${({ theme }) => theme.space4};
-  font: ${({ theme }) => theme.typeBodySm};
-  /* It names dispute ids and two configured durations, and the shorthand above resets the
-     tabular figures base.css puts on the body. */
-  font-feature-settings: ${({ theme }) => theme.featureNumeric};
-  color: ${({ theme }) => theme.textBody};
-
-  /* Underlined, and permanently rather than on hover. This is a link inside a block of body
-     prose, which is the one shape where colour alone is not allowed to carry the fact that a
-     link is there: the accent against this paragraph's ink is 1.22:1 where WCAG 1.4.1 wants 3:1,
-     so a reader who does not separate those two hues has nothing telling them the sentence ends
-     in a link. Every other link in this repo is standalone — a dagger, an ID, a nav item — and
-     those legitimately underline on hover only; the rule is about text blocks, and this is one.
-
-     The default is the trap rather than this file: the vendored base.css sets text-decoration of
-     none on every anchor, so a link dropped into prose anywhere is colour-only until someone says
-     otherwise, and that file cannot be edited. The offset matches Justification.tsx, which
-     had already done this for the links inside an agent's own justification prose; this and
-     AgentJurorPage.tsx's MissingBody are the other two prose containers. Ticket 28. */
-  a {
-    color: ${({ theme }) => theme.accent};
-    text-decoration: underline;
-    text-underline-offset: 2px;
-  }
-`;
-
-const FootnoteMark = styled.span`
-  flex: none;
-  font: ${({ theme }) => theme.typeMonoSm};
-  color: ${({ theme }) => theme.stateWork};
-`;
 
 const SparsityCard = styled.div`
   padding: ${({ theme }) => `${theme.space6} ${theme.space7}`};
@@ -93,7 +28,7 @@ const SparsityBody = styled.p`
   margin-top: ${({ theme }) => theme.space4};
   font: ${({ theme }) => theme.typeBodySm};
   /* It counts cells, disputes and columns, and the shorthand above resets the tabular figures
-     base.css puts on the body — the same correction every footnote beside it carries. */
+     base.css puts on the body. */
   font-feature-settings: ${({ theme }) => theme.featureNumeric};
   color: ${({ theme }) => theme.textBody};
 `;
@@ -102,160 +37,6 @@ const SparsityBody = styled.p`
 export function listOf(ids: readonly number[]): string {
   if (ids.length <= 1) return ids.join("");
   return `${ids.slice(0, -1).join(", ")} and ${ids[ids.length - 1]}`;
-}
-
-/**
- * The window footnote, in whichever of its three states the page is in.
- *
- * It is one footnote and not three, and it is always on the page, because the sentence it has
- * to carry in every state is the same one: nothing here is a fraction of a window. What
- * changes is how much it can say about which rows ran under what — a fact about the court that
- * has to be read from the chain before it can be stated.
- *
- * Where the history is missing it says so as a fact about the read, and it distinguishes only
- * what it can see: a scan that came back with no configuration at all is not the same as one
- * that has not answered. Which of *those* two happened — still in flight, or refused — is not
- * this footnote's business: a refusal is the banner's, and a footnote that guessed would announce
- * a failure on every cold load, the trap `CLAUDE.md` records against `RosterView`.
- */
-export function WindowFootnote({ performance }: { performance: CourtPerformance }) {
-  const { current, read } = performance.parameters;
-  const { changedWindows: changes, unplacedDisputes: unplaced } = performance.totals;
-
-  return (
-    <Footnote>
-      {/* The dagger is drawn and the note is named. The mark is hidden because "†" is announced
-          as "dagger" where it is announced at all, but hiding it alone left a reader who cannot
-          see the glyph with a paragraph and no handle on it — while the figures upstairs carry
-          links reading "Why 007's median reveal is marked". This is the other end of that. */}
-      <FootnoteMark aria-hidden="true">†</FootnoteMark>
-      <VisuallyHidden>Note on the window change. </VisuallyHidden>
-      <span>
-        {current === null ? (
-          <>
-            Court 34's period durations changed partway through this experiment, and its parameter
-            history is not in hand on this load —{" "}
-            {read
-              ? "that read came back carrying no configuration at all"
-              : "it is still being read, or could not be"}
-            . So nothing above is marked as having run under the earlier ones, and that is an unread
-            state rather than a finding.
-          </>
-        ) : changes.length === 0 && unplaced.length === 0 ? (
-          <>
-            Every dispute here ran under the period durations the court holds now: a commit window
-            of {formatWindowSeconds(current.commitSeconds)} and a vote window of{" "}
-            {formatWindowSeconds(current.voteSeconds)}.
-          </>
-        ) : changes.length === 0 ? (
-          // The claim above is the one that must never be made carelessly. A dispute the
-          // history could not place is not a dispute that ran under the current windows: a scan
-          // that dropped the court's oldest configuration leaves exactly this state, and saying
-          // "every dispute ran under 45m and 30m" over it would state the opposite of the truth
-          // with nothing on the page to contradict it.
-          <>
-            No dispute here is marked as having run under earlier period durations, but the
-            parameter history read on this load does not reach back far enough to place{" "}
-            {unplaced.length === 1 ? "dispute" : "disputes"} {listOf(unplaced)} — so that is not the
-            same as saying they ran under the {formatWindowSeconds(current.commitSeconds)} and{" "}
-            {formatWindowSeconds(current.voteSeconds)} windows the court holds now.
-          </>
-        ) : (
-          <>
-            {changes.map((change) => (
-              <span key={`${change.windows.commitSeconds}-${change.windows.voteSeconds}`}>
-                {change.disputes.length === 1 ? "Dispute" : "Disputes"} {listOf(change.disputes)}{" "}
-                ran with a commit window of {formatWindowSeconds(change.windows.commitSeconds)} and
-                a vote window of {formatWindowSeconds(change.windows.voteSeconds)}, against{" "}
-                {formatWindowSeconds(current.commitSeconds)} and{" "}
-                {formatWindowSeconds(current.voteSeconds)} configured now.{" "}
-              </span>
-            ))}
-            {unplaced.length > 0 && (
-              <>
-                {unplaced.length === 1 ? "Dispute" : "Disputes"} {listOf(unplaced)} the history read
-                on this load cannot place at all, so {unplaced.length === 1 ? "it is" : "they are"}{" "}
-                unmarked for want of anything to compare against rather than for having matched.{" "}
-              </>
-            )}
-          </>
-        )}{" "}
-        Latency is held and shown as an absolute duration everywhere on this page, and never as a
-        fraction of the window it ran in.{" "}
-        <Link to="/method#window">What that means for these figures</Link>.
-      </span>
-    </Footnote>
-  );
-}
-
-/**
- * The lone-panel footnote, where the court decided something with one agent juror.
- *
- * Renders nothing where no dispute has one, which is not the same as saying so: a footnote
- * naming a caveat that does not apply reads as a caveat about the whole page.
- */
-export function LonePanelFootnote({ performance }: { performance: CourtPerformance }) {
-  const lonePanels = performance.totals.lonePanelDisputes;
-  if (lonePanels.length === 0) return null;
-
-  return (
-    <Footnote>
-      <FootnoteMark aria-hidden="true">‡</FootnoteMark>
-      <VisuallyHidden>Note on lone panels. </VisuallyHidden>
-      <span>
-        {lonePanels.length === 1 ? "Dispute" : "Disputes"} {listOf(lonePanels)}{" "}
-        {lonePanels.length === 1 ? "was" : "were"} decided by a panel of one. A lone agent juror is
-        automatically the majority, so coherence there is tautological and carries no information.
-        It is counted in the record and marked wherever it is counted.
-      </span>
-    </Footnote>
-  );
-}
-
-/**
- * The draws the grid has no column for, where the court drew somebody the roster does not hold.
- *
- * Renders nothing where every draw is on the roster, exactly as the lone-panel note does and for
- * the same reason: a footnote naming a caveat that does not apply reads as a caveat about the
- * whole page. **That is the state ticket 24 put this court in** — the seventh agent juror joined
- * the roster and the count went to zero — and it is why this exists rather than in spite of it.
- * The next build to go live is drawn before anyone here knows its address, and until this the
- * only detection was a person noticing four vote IDs that no cell, no column and no coverage
- * counter could see.
- *
- * A count and a list of dispute ids, and nothing else. Naming the addresses would be a fact about
- * whoever the court drew, which this dashboard does not hold and must not print (`CLAUDE.md`);
- * the count is what a reader can act on, and the ids are where to look.
- */
-export function OffRosterFootnote({ performance }: { performance: CourtPerformance }) {
-  const { draws, disputes } = performance.totals.offRoster;
-  if (draws === 0) return null;
-
-  return (
-    <Footnote>
-      <FootnoteMark aria-hidden="true">§</FootnoteMark>
-      <VisuallyHidden>Note on draws outside the roster. </VisuallyHidden>
-      <span>
-        {/* Every verb and every noun here follows the count, which is the singular case as often
-            as not: one agent juror going live before the roster knows it is the whole reason this
-            footnote exists, so "one draw … belong to a juror" is the sentence a reader is most
-            likely to meet. `LonePanelFootnote` and `WindowFootnote` condition theirs the same way.
-
-            "A juror" only in the singular. Above one the count is over draws and the jurors behind
-            them are not counted at all — this dashboard knows how many draws have no column and
-            deliberately does not say how many addresses that is, which would be a fact about who
-            the court drew. */}
-        {draws === 1 ? "One draw in" : `${draws} draws in`}{" "}
-        {disputes.length === 1 ? "dispute" : "disputes"} {listOf(disputes)}{" "}
-        {draws === 1 ? "belongs to a juror" : "belong to jurors"} this dashboard's roster does not
-        hold, so {draws === 1 ? "it has" : "they have"} no column here and{" "}
-        {draws === 1 ? "is" : "are"} in none of the figures above except the{" "}
-        {disputes.length === 1 ? "panel size" : "panel sizes"}. That is a gap in the roster rather
-        than in the court: an agent juror can be staked and drawn before this dashboard knows it
-        exists. <Link to="/agent-jurors">Who the roster holds</Link>.
-      </span>
-    </Footnote>
-  );
 }
 
 /**

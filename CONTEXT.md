@@ -107,6 +107,15 @@ _Avoid_: commit speed, commit time (ambiguous — could be the timestamp)
 The same measure for `castVote`, from the moment the vote period opened.
 _Avoid_: reveal speed, vote latency
 
+**Time to appeal**:
+Seconds from a dispute's creation to the moment its **first** round's appeal period opened — when
+that round's votes were all in. Per dispute, never per draw, and round 0 only whatever rounds
+follow. It spans the evidence, commit and vote periods, so it is not a latency: it is measured from
+creation rather than from a period, and a change to the evidence window changes it. The headline
+figure on the matrix page since 2026-09-24, replacing the median reveal. A dispute not yet at its
+appeal period has none, and is counted rather than dropped.
+_Avoid_: time to decision, time to vote (the ruling comes after the appeal period)
+
 **Time to ruling**:
 Seconds from a dispute's creation to the moment its execution period opened, when its ruling
 became final. Measured in another court, never in court 34: it is what the comparison band is
@@ -114,9 +123,10 @@ read from (ticket 23), over single-round disputes only.
 _Avoid_: dispute duration, resolution time (both blur whether appeals are in)
 
 **Comparison band**:
-The violet region on both latency plots marking where an ordinary Kleros court sits: it begins at
-court 29's median time to ruling. A reading, not an illustration, since ticket 23, with its court,
-count, period and exclusions stated in the footer. Never a denominator (ADR-0005).
+The violet region on both strip plots (the matrix page's time to appeal, an agent juror's reveal
+latency) marking where an ordinary Kleros court sits: it begins at court 29's median time to
+ruling, and stays a time to ruling on both. A reading, not an illustration, since ticket 23;
+`/method#comparison` describes it. Never a denominator (ADR-0005).
 _Avoid_: benchmark, baseline (both suggest a latency is scored against it)
 
 **Participation**:

@@ -89,18 +89,17 @@ describe("a route change", () => {
   });
 
   it("moves focus to the section a hash names, not just the scroll", () => {
-    // The links carrying a hash are the ones a careful reader follows: /method#window from the
-    // stat tiles and the matrix's footnote, /method#caveats from a lone-panel mark,
-    // /method#partial from the failure banner. Each changes the route and unmounts the link that
-    // was activated, so an early return before the focus move drops the reader on <body> —
-    // exactly the defect the plain-route case was changed to fix.
-    renderAt("/");
-    const footnote = screen.getByRole("link", { name: /what that means for these figures/i });
+    // The links carrying a hash are the ones a careful reader follows: /method#partial from the
+    // failure banner, /method#caveats from a draw's lone-panel mark. Each changes the route and
+    // unmounts the link that was activated, so an early return before the focus move drops the
+    // reader on <body> — exactly the defect the plain-route case was changed to fix.
+    renderAt("/", { performance: unmeasured });
+    const explain = screen.getByRole("link", { name: /what this means/i });
 
-    fireEvent.click(footnote);
+    fireEvent.click(explain);
 
-    const section = document.getElementById("window");
-    expect(section, "the method page has no #window section").not.toBeNull();
+    const section = document.getElementById("partial");
+    expect(section, "the method page has no #partial section").not.toBeNull();
     expect(document.activeElement).toBe(section);
     expect(section).toHaveAttribute("tabindex", "-1");
   });
@@ -277,8 +276,8 @@ describe("the shell", () => {
     renderAt("/", { performance: unmeasured });
 
     expect(screen.getByRole("navigation", { name: /dashboard/i })).toBeInTheDocument();
-    // The read stamp, which `View` renders: a page that lost its frame would lose this too.
-    expect(screen.getByText(/^Read \d+ disputes, \d+–\d+$/)).toBeInTheDocument();
+    // The failure banner, which `View` renders: a page that lost its frame would lose this too.
+    expect(screen.getByRole("link", { name: /what this means/i })).toBeInTheDocument();
   });
 });
 

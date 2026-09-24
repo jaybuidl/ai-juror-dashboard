@@ -73,3 +73,11 @@ this file is the full account.
   **No band at a default**: in flight, failed, short, or nothing to measure, the plot draws no
   band and says which. A short read is compared against the court's own `numberDisputes` and
   reported as the two counts, because a median over part of a court is not that court's.
+- **The headline is time to appeal, not median reveal** (maintainer's ruling, 2026-09-24). Seconds
+  from a dispute's creation to its **round 0** `appealOpenedAt`, one value per dispute, over the
+  disputes that have reached it; the rest are `TimeToAppeal.notYetAtAppeal` and counted on the
+  strip. It spans the evidence period, so the 2026-08-26 evidence-only change — which marks no
+  latency — does qualify it: the tile's † is `markedAppealWindows` (evidence, commit and vote)
+  and counts disputes, not draws. The strip's violet band is still court 29's **time to ruling**,
+  a longer quantity; it was deliberately not re-read as a time to appeal, and `/method#comparison`
+  says the two differ.

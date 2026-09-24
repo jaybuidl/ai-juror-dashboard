@@ -9,14 +9,15 @@
  * The band itself is read from another court (`reference.ts`); this module only places it.
  *
  * The axis is logarithmic for the same reason it is on the rail: the record spans three orders
- * of magnitude, and on a linear axis three quarters of these draws would be one blob at zero.
+ * of magnitude, and on a linear axis most of these marks would be one blob at zero.
  *
  * Nothing here converts a latency into a fraction of a *window* — ADR-0005. The axis is
  * absolute time, and the band is drawn against absolute time too.
  *
- * **One scale, two plots.** `LatencyStrip` draws the court's distribution and
- * `AgentJurorLatency` draws one agent juror's against it, and both read the axis from here so
- * that the court's own marks land in the same places on both pages. Everything a plot needs to
+ * **One scale, two plots.** `TimeToAppealStrip` draws the court's time to appeal, one mark per
+ * dispute, and `AgentJurorLatency` draws one agent juror's reveal latencies against the court's,
+ * and both read the axis from here so that a duration lands in the same place on both pages and
+ * the comparison band begins at the same x on each. Everything a plot needs to
  * say about the axis in words is here too, for the reason ticket 22 found: the agent juror view
  * printed its range as a copied string and would have gone on printing "1s to 1d" over an axis
  * that runs to a month.
@@ -78,25 +79,44 @@ export const STRIP_TICKS: readonly { seconds: number; label: string }[] = [
 export const STRIP_RANGE_LABEL = `${STRIP_TICKS[0]?.label} to ${AXIS_MAX_TICK.label}`;
 
 /**
- * A latency's position along the axis, as a fraction from 0 to 1.
+ * Where the time-to-appeal axis starts: ten minutes (ruled 2026-09-24).
  *
- * Anything under a second sits at the origin rather than off the axis: `log10(0)` is `-Infinity`
- * and a zero-second reveal is a real reading, not an error. Anything past the maximum is clamped
- * to the far end, where the reader can still see there is a mark.
+ * No dispute can reach its appeal period in seconds, since the evidence, commit and vote periods
+ * all come first, so an axis from one second spent half its width on times nothing can take.
+ * The agent juror latency plot keeps the one-second origin: a reveal can take seconds.
  */
-export function stripFraction(seconds: number): number {
-  const clamped = Math.min(STRIP_MAX_SECONDS, Math.max(1, seconds));
-  return Math.log10(clamped) / Math.log10(STRIP_MAX_SECONDS);
+export const APPEAL_AXIS_MIN_SECONDS: number = 10 * MINUTE;
+
+/** The ticks of the time-to-appeal axis: the shared ones from its origin onwards. */
+export const APPEAL_TICKS: readonly { seconds: number; label: string }[] = STRIP_TICKS.filter(
+  (tick) => tick.seconds >= APPEAL_AXIS_MIN_SECONDS,
+);
+
+/**
+ * A duration's position along the axis, as a fraction from 0 to 1.
+ *
+ * `min` is the axis origin in seconds: one second for latencies, `APPEAL_AXIS_MIN_SECONDS` for
+ * time to appeal. Anything under it sits at the origin rather than off the axis: `log10(0)` is
+ * `-Infinity` and a zero-second reveal is a real reading, not an error. Anything past the
+ * maximum is clamped to the far end, where the reader can still see there is a mark.
+ */
+export function stripFraction(seconds: number, min = SECOND): number {
+  const clamped = Math.min(STRIP_MAX_SECONDS, Math.max(min, seconds));
+  return Math.log10(clamped / min) / Math.log10(STRIP_MAX_SECONDS / min);
 }
 
 /**
  * The distribution as marks, with collisions stacked rather than overprinted.
  *
- * Two draws that took the same number of seconds land on the same x, and drawn flat one hides
- * the other — so the count of marks would stop matching the count of draws the heading claims.
- * Stacking is what the canvas does (`Main.dc.html:333-337`) and it keeps every draw visible.
+ * Two values of the same number of seconds — two draws, or two disputes — land on the same x,
+ * and drawn flat one hides the other, so the count of marks would stop matching the count the
+ * heading claims. Stacking is what the canvas does (`Main.dc.html:333-337`) and it keeps every
+ * mark visible.
  */
-export function stripMarks(seconds: readonly number[]): readonly {
+export function stripMarks(
+  seconds: readonly number[],
+  min = SECOND,
+): readonly {
   seconds: number;
   x: number;
   stack: number;
@@ -106,6 +126,6 @@ export function stripMarks(seconds: readonly number[]): readonly {
   return seconds.map((value) => {
     const stack = seen.get(value) ?? 0;
     seen.set(value, stack + 1);
-    return { seconds: value, x: stripFraction(value), stack };
+    return { seconds: value, x: stripFraction(value, min), stack };
   });
 }

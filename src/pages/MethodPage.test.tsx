@@ -79,26 +79,55 @@ describe("the method page", () => {
     expect(section).toHaveTextContent(/Evidence 10m · commit 45m · vote 30m · appeal 36h/);
   });
 
-  it("says the third change moved the evidence period and reached no figure", () => {
+  it("says the third change moved the evidence period and reached no latency", () => {
     // Ticket 19. The court was reconfigured on 26 August and dispute 152 is older than that
     // change and unmarked, which is a contradiction to anyone who has not been told that the
-    // marker is about the commit and vote windows alone. This is where they are told.
+    // row marker is about the commit and vote windows alone. This is where they are told.
     renderAt("/method");
 
     const section = screen.getByRole("region", { name: /the window/i });
 
     expect(section).toHaveTextContent(/moved the evidence period alone, from 45 minutes to 10/i);
-    // Which change is which. The one that reaches a figure is the court's *first*
-    // reconfiguration and its *second* configuration, and a sentence naming the wrong ordinal
-    // reads as though the marked dispute were the wrong one.
+    expect(section).toHaveTextContent(/The second reconfiguration reaches no latency/i);
     expect(section).toHaveTextContent(
-      /Only the first of the court's two reconfigurations reaches anything on this dashboard/i,
+      /dispute 152 ran under a configuration the court has since replaced and its row carries no marker/i,
     );
-    expect(section).toHaveTextContent(
-      /dispute 152 ran under a configuration the court has since replaced and still carries no marker/i,
+  });
+
+  it("says the evidence change does reach the median time to appeal, and why", () => {
+    // 2026-09-24: the headline became a time to appeal, measured from a dispute's creation. The
+    // sentence "nothing on this dashboard is measured from the evidence period at all" stood
+    // here until then and would have been false beside the tile's own †.
+    renderAt("/method");
+
+    const section = screen.getByRole("region", { name: /the window/i });
+
+    expect(section).not.toHaveTextContent(
+      /nothing on this dashboard is measured from the evidence/i,
     );
+    expect(section).toHaveTextContent(/median time to appeal is the exception/i);
     expect(section).toHaveTextContent(
-      /nothing on this dashboard is measured from the evidence period at all/i,
+      /45 minutes of evidence where one created today sits through 10/i,
+    );
+  });
+
+  it("defines time to appeal where latency is defined, per dispute and round 0 only", () => {
+    renderAt("/method");
+
+    const section = screen.getByRole("region", { name: /latency is seconds/i });
+
+    expect(section).toHaveTextContent(/time to appeal/i);
+    expect(section).toHaveTextContent(/measured per dispute rather than per draw/i);
+    expect(section).toHaveTextContent(/only the first round counts/i);
+  });
+
+  it("says the band on the matrix page is not the quantity its marks are", () => {
+    renderAt("/method");
+
+    const section = screen.getByRole("region", { name: /the comparison band/i });
+
+    expect(section).toHaveTextContent(
+      /each mark is a time to appeal, which stops where the appeal period opens, and the band is a time to ruling/i,
     );
   });
 

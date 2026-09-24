@@ -15,7 +15,7 @@ import styled from "styled-components";
  * reader can lose without losing the scope. The court's *number* is no longer in the eyebrow at
  * either width — the maintainer took it out. The provenance footer that named "court 34" and
  * repeated the deck's read-only clause on every view was removed on 2026-09-24 by the
- * maintainer's ruling; all that survives of it is `ReadStamp`, which reuses this eyebrow's style.
+ * maintainer's ruling, as was the read stamp that survived it.
  *
  * The headline is the same sentence at a smaller size, never a shortened or a different one.
  * A hero that said something else on a phone would be a second claim about this court.

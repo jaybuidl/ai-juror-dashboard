@@ -3,8 +3,6 @@ import { comparisonFailureOf } from "../chrome/comparison";
 import { Notice } from "../chrome/Failure";
 import { affects, type Failures, olderOf, present } from "../chrome/failures";
 import { Hero } from "../chrome/Hero";
-import type { Provenance } from "../chrome/provenance";
-import { rangeOf } from "../chrome/provenance";
 import { StatTiles } from "../chrome/StatTiles";
 import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
@@ -13,9 +11,9 @@ import type { DisputesView } from "../disputes/useDisputes";
 import { arbitrumSource } from "../performance/arbitrum";
 import { CourtAnnouncer } from "../performance/CourtAnnouncer";
 import { DisputeCards } from "../performance/DisputeCards";
-import { LatencyStrip } from "../performance/LatencyStrip";
 import { Matrix } from "../performance/Matrix";
 import { comparisonOf } from "../performance/reference";
+import { TimeToAppealStrip } from "../performance/TimeToAppealStrip";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type FailedRead, failureOf, SOURCES } from "../read-failure";
 import { ensFallbackOf } from "../roster/ens-fallback";
@@ -26,8 +24,9 @@ import { narrow, useIsNarrow } from "../styles/breakpoints";
  * The landing view: the hero, what the court amounts to, and the matrix itself.
  *
  * Built against `canvas/Main.dc.html`, which lays out exactly this order — nav, hero and
- * tiles, the latency strip, then the grid. The roster does not appear on that artboard and no
- * longer appears here either: the agent jurors are the matrix's column headers, and they have an index
+ * tiles, the strip, then the grid. The artboard's strip plots reveal latency; this one plots
+ * time to appeal in the same form, by the maintainer's ruling of 2026-09-24. The roster does not
+ * appear on that artboard and no longer appears here either: the agent jurors are the matrix's column headers, and they have an index
  * of their own at `/agent-jurors` for a reader who wants them without the grid.
  *
  * This view derives nothing. Every figure above the matrix comes from `performance.totals`,
@@ -90,13 +89,13 @@ export type MatrixPageProps = {
  * which was the right grain while every core-subgraph failure cost the figures above the matrix —
  * and ticket 10 added the first that does not: the payouts feed two rows of each column header
  * and nothing else, so a failed payout read leaves the dispute count, the draw count and the
- * median reveal entirely whole. Labelling them "Partial" anyway is ticket 13's own first-cut
+ * median time to appeal entirely whole. Labelling them "Partial" anyway is ticket 13's own first-cut
  * mistake at a finer grain, and `CLAUDE.md` is blunt about the cost: a caveat a reader checks and
  * finds baseless is one that teaches them to stop checking.
  */
 type CoreFailure = {
   read: FailedRead;
-  /** Whether this failure is one the stat tiles and the latency strip are short because of. */
+  /** Whether this failure is one the stat tiles and the strip are short because of. */
   costsTiles: boolean;
 };
 
@@ -348,14 +347,6 @@ function failuresOf(
   };
 }
 
-/** The disputes this view was read from, and when — all `View`'s read stamp prints. */
-function provenanceOf({ disputes }: MatrixPageProps): Provenance {
-  return {
-    read: rangeOf(disputes.disputes.map((dispute) => dispute.id)),
-    readAt: disputes.readAt,
-  };
-}
-
 export function MatrixPage(props: MatrixPageProps) {
   // null: the matrix is what this dashboard is, not a section of it.
   useDocumentTitle(null);
@@ -369,7 +360,7 @@ export function MatrixPage(props: MatrixPageProps) {
   // to afford them, and still there in a page a reader saves or prints.
   const isNarrow = useIsNarrow();
   // Asked of the core subgraph specifically, because that is the only source the tiles and the
-  // strip read: disputes, draws, votes and reveal latency all come from it, and none of them
+  // strip read: disputes, draws, votes and time to appeal all come from it, and none of them
   // touches the template subgraph or Arbitrum. Labelling them partial over a missing title would
   // be a caveat that is simply false — and a reader who checks one and finds it baseless stops
   // checking the ones that are not.
@@ -389,28 +380,23 @@ export function MatrixPage(props: MatrixPageProps) {
     // roster rather than a column count written down here, which is what stops this comment from
     // going stale the next time one joins. Unconditional because below the narrow breakpoint the
     // grid is not rendered at all and a max-width above the viewport costs the card list nothing.
-    <View provenance={provenanceOf(props)} failures={failures} measure="grid">
+    <View failures={failures} measure="grid">
       {/* First in the view and empty almost always. It says what moved between two reads of a
           court that re-reads itself every five seconds, so a reader who cannot see a cell change
           is told that one did. It never contains a figure — see the component. */}
       <CourtAnnouncer performance={measured ?? null} readAt={props.performance.readAt} />
       <Hero narrow={isNarrow} />
-      <StatTiles
-        totals={measured?.totals ?? null}
-        current={measured?.parameters.current ?? null}
-        partial={partial}
-        narrow={isNarrow}
-      />
+      <StatTiles totals={measured?.totals ?? null} partial={partial} narrow={isNarrow} />
       {/* Absent below the breakpoint, and no measured figure leaves the page with it: the
-          strip's headline figure is the median reveal, which the tiles now lead with. Its
+          strip's headline figure is the median time to appeal, which the tiles lead with. Its
           comparison band is a reading of another court since ticket 23, and the agent juror view
           draws the same band at every width, so the phone loses it here and not everywhere.
 
           The provenance footer that once said what the band rests on was removed with all its
           footer-only caveats (maintainer's ruling, 2026-09-24); /method describes the band. */}
       {!isNarrow && (
-        <LatencyStrip
-          latency={measured?.totals.revealLatency ?? null}
+        <TimeToAppealStrip
+          timeToAppeal={measured?.totals.timeToAppeal ?? null}
           comparison={comparisonOf(performance.reference, performance.referenceError)}
           partial={partial}
         />
@@ -443,8 +429,8 @@ export function MatrixPage(props: MatrixPageProps) {
           case, which that page puts better than this card did: a majority read off a dispute with
           every vote in and no ruling would be a prediction.
 
-          What could not move there stayed on this page rather than being dropped: the window,
-          off-roster and lone-panel accounts are the †, § and ‡ footnotes below the grid.
+          The window, off-roster and lone-panel accounts that stayed on this page as footnotes
+          below the grid were removed on 2026-09-24 (maintainer's ruling); /method keeps them.
 
           This branch is not that card and does not go with it. A page that measured nothing must
           say so where the measurements would have been — a reader who is shown an empty matrix and
@@ -481,9 +467,6 @@ export function MatrixPage(props: MatrixPageProps) {
               Nothing here should be taken as the full record.
             </Notice>
           )}
-          {/* The window footnote moved inside the matrix with ticket 08, where the artboard
-              puts it and where the ‡ footnote already was: it is now read from the court's own
-              parameter history rather than written from what was true when ticket 15 landed. */}
           {isNarrow ? (
             <DisputeCards performance={measured} roster={roster} slotsFor={disputes.slotsFor} />
           ) : (

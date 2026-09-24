@@ -1,21 +1,30 @@
 import styled from "styled-components";
 import { narrow } from "../styles/breakpoints";
-import { formatLatencySeconds } from "./latency";
+import { formatElapsedSeconds, formatMinutes } from "./latency";
 import type { Comparison } from "./reference";
 import { StripBand } from "./StripBand";
-import { STRIP_TICKS, stripFraction, stripMarks } from "./strip";
-import type { LatencySummary } from "./totals";
+import { APPEAL_AXIS_MIN_SECONDS, APPEAL_TICKS, stripFraction, stripMarks } from "./strip";
+import type { TimeToAppeal } from "./totals";
 
 /**
- * The reveal-latency distribution, built against `canvas/Main.dc.html:79-109`.
+ * The time-to-appeal distribution, in the form `canvas/Main.dc.html:79-109` draws for a latency.
  *
- * One mark per draw on a logarithmic axis, a median line carrying its own value, and the
+ * One mark per dispute on a logarithmic axis, a median line carrying its own value, and the
  * fastest, median and slowest as three absolute durations. All of it is read from
- * `totals.revealLatency` — the same per-draw seconds the matrix cells print — so this is a
- * second view of one set of numbers and never a separately derived figure.
+ * `totals.timeToAppeal` — the same array the headline tile's median is read from — so the tile
+ * and this plot are two views of one set of numbers and never two derivations.
  *
- * The heading says how many draws are plotted, because a distribution with no count can be
- * read as covering more of the record than it does.
+ * It plotted reveal latency, one mark per draw, until the maintainer's ruling of 2026-09-24: a
+ * median reveal is not a meaningful headline, and how long the court takes to bring a dispute to
+ * its first appeal period is. Reveal latency stays in the matrix and on the agent juror view.
+ *
+ * **The comparison band is not the same quantity as the marks.** It is court 29's median *time
+ * to ruling*, which runs on to the execution period; a time to appeal stops where the appeal
+ * period opens, so it falls short of the ruling by that whole period. /method#comparison says so.
+ *
+ * The heading says how many disputes are plotted, and the head says how many are not yet at
+ * appeal, because a distribution with no count can be read as covering more of the record than
+ * it does.
  */
 
 const Card = styled.section`
@@ -140,61 +149,66 @@ function markBottom(stack: number): string {
   return `${31 + stack * 10}px`;
 }
 
-export function LatencyStrip({
-  latency,
+export function TimeToAppealStrip({
+  timeToAppeal,
   comparison,
   partial = false,
 }: {
-  latency: LatencySummary | null;
+  timeToAppeal: TimeToAppeal | null;
   /** Where the comparison band begins, or why it is not drawn. See `reference.ts`. */
   comparison: Comparison;
   /**
    * True when a read behind this distribution failed.
    *
-   * A distribution is the aggregate most easily misread as complete: it draws every draw it has
-   * as a mark, so a court read short looks exactly like a smaller court. The heading says so
+   * A distribution is the aggregate most easily misread as complete: it draws every dispute it
+   * has as a mark, so a court read short looks exactly like a smaller court. The heading says so
    * rather than leaving the marks to speak for a record that is missing some.
    */
   partial?: boolean;
 }) {
-  if (latency === null) {
+  const summary = timeToAppeal?.summary ?? null;
+  const waiting = timeToAppeal?.notYetAtAppeal.length ?? 0;
+
+  if (summary === null) {
     // An empty plot with an axis and no marks reads as a court where nothing happened.
     return (
       <Card aria-labelledby="strip-heading">
         <Head>
-          <Heading id="strip-heading">Reveal latency</Heading>
+          <Heading id="strip-heading">Time to appeal</Heading>
         </Head>
         <Nothing>
-          No draw has revealed in what was read, so there is no distribution to plot. That is the
-          state of the read, not a measurement of zero.
+          No dispute in what was read has reached its appeal period, so there is no distribution to
+          plot. That is the state of the read, not a measurement of zero.
         </Nothing>
       </Card>
     );
   }
 
-  const marks = stripMarks(latency.seconds);
-  const median = stripFraction(latency.median);
+  const marks = stripMarks(summary.seconds, APPEAL_AXIS_MIN_SECONDS);
+  const median = stripFraction(summary.median, APPEAL_AXIS_MIN_SECONDS);
 
   return (
     <Card aria-labelledby="strip-heading">
       <Head>
         <Heading id="strip-heading">
-          Reveal latency · {latency.seconds.length}{" "}
-          {latency.seconds.length === 1 ? "draw" : "draws"}
+          Time to appeal · {summary.seconds.length}{" "}
+          {summary.seconds.length === 1 ? "dispute" : "disputes"}
           {partial && " · partial"}
         </Heading>
-        <Scale>Log scale</Scale>
+        {/* The disputes left out, counted: a live dispute still in its evidence, commit or vote
+            period has no time to appeal yet, and is not a mark. */}
+        <Scale>{waiting > 0 && `${waiting} not yet at appeal · `}Log scale</Scale>
       </Head>
 
       {/* The plot is decoration over a figure that is printed in full below it: every value
           here is in the summary, and the marks carry no information the durations do not. */}
       <Plot aria-hidden="true">
-        <StripBand comparison={comparison} />
+        <StripBand comparison={comparison} min={APPEAL_AXIS_MIN_SECONDS} />
         <Axis />
 
         {marks.map((mark) => (
           <Mark
-            // Two draws can share a latency, so the value alone is not a key; the stack
+            // Two disputes can share a duration, so the value alone is not a key; the stack
             // index makes the pair unique without keying on array position.
             key={`${mark.seconds}-${mark.stack}`}
             style={{ left: `${mark.x * 100}%`, bottom: markBottom(mark.stack) }}
@@ -203,11 +217,14 @@ export function LatencyStrip({
 
         <Median style={{ left: `${median * 100}%` }} />
         <MedianValue style={{ left: `calc(${median * 100}% + 8px)` }}>
-          {formatLatencySeconds(latency.median)} median
+          {formatMinutes(summary.median)} median
         </MedianValue>
 
-        {STRIP_TICKS.map((tick) => (
-          <Tick key={tick.label} style={{ left: `${stripFraction(tick.seconds) * 100}%` }}>
+        {APPEAL_TICKS.map((tick) => (
+          <Tick
+            key={tick.label}
+            style={{ left: `${stripFraction(tick.seconds, APPEAL_AXIS_MIN_SECONDS) * 100}%` }}
+          >
             {tick.label}
           </Tick>
         ))}
@@ -216,15 +233,15 @@ export function LatencyStrip({
       <Summary>
         <div>
           <SummaryKey>Fastest</SummaryKey>
-          <SummaryValue>{formatLatencySeconds(latency.fastest)}</SummaryValue>
+          <SummaryValue>{formatElapsedSeconds(summary.fastest)}</SummaryValue>
         </div>
         <div>
           <SummaryKey>Median</SummaryKey>
-          <SummaryValue>{formatLatencySeconds(latency.median)}</SummaryValue>
+          <SummaryValue>{formatMinutes(summary.median)}</SummaryValue>
         </div>
         <div>
           <SummaryKey>Slowest</SummaryKey>
-          <SummaryValue>{formatLatencySeconds(latency.slowest)}</SummaryValue>
+          <SummaryValue>{formatElapsedSeconds(summary.slowest)}</SummaryValue>
         </div>
       </Summary>
     </Card>

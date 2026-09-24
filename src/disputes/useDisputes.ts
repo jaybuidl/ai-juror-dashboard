@@ -28,7 +28,8 @@ export type DisputesView = DisputeListView & {
   /**
    * When the disputes on screen were read, in epoch milliseconds, or `null` before any land.
    *
-   * The read stamp prints it. It comes from react-query rather than from a clock read
+   * The failure banner dates the last complete read from it (the read stamp that printed it was
+   * removed on 2026-09-24). It comes from react-query rather than from a clock read
    * during render, so it is the moment of the *read* and not the moment of the render — those
    * differ by however long a tab has been left open, which is exactly the gap a citing reader
    * needs to see.
@@ -142,7 +143,7 @@ export function useDisputes(): DisputesView {
     disputes: rows,
     isLoading: disputes.isPending,
     // react-query reports 0 for a query that has never resolved; that is not the epoch, it is
-    // an absence, and the read stamp must not print 1970 as the moment the court was read.
+    // an absence, and nothing may print 1970 as the moment the court was read.
     readAt: disputes.dataUpdatedAt === 0 ? null : disputes.dataUpdatedAt,
     // Both queries, because either can be the paused one and the visitor is offline for both.
     isPaused: disputes.fetchStatus === "paused" || templates.fetchStatus === "paused",

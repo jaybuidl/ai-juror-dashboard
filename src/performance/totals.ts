@@ -4,8 +4,8 @@ import type { Draw, MatrixRow } from "./performance";
 import type { PeriodWindows } from "./windows";
 
 /**
- * The aggregates: what the stat tiles, the latency strip and the matrix's column headers are
- * figures of.
+ * The aggregates: what the stat tiles, the time-to-appeal strip and the matrix's column headers
+ * are figures of.
  *
  * These live below the seam, computed once by `buildCourtPerformance`, for the same reason every
  * other derivation does: a tile that reduced the rows while rendering would be a second
@@ -34,6 +34,46 @@ export type LatencySummary = {
   /** The lower of the two middle values on an even count — see `medianOf`. */
   median: number;
   slowest: number;
+};
+
+/**
+ * One dispute's time to appeal, and the windows it ran under.
+ *
+ * The windows ride along because every one of the evidence, commit and vote periods lies inside
+ * this duration, so a dispute that ran under since-changed windows was answering a different
+ * question from one that did not — and the tile's † has to be able to say how many did.
+ */
+export type DisputeTimeToAppeal = {
+  dispute: number;
+  seconds: number;
+  /** `MatrixRow.windows`: `null` while the parameter history is unread or cannot place it. */
+  windows: PeriodWindows | null;
+};
+
+/**
+ * Time to appeal (`CONTEXT.md`): seconds from a dispute's creation to the moment its first
+ * round's appeal period opened.
+ *
+ * **Round 0 only**, whatever rounds follow. An appeal opens another round with periods of its
+ * own, and a later round's appeal period would measure the appeal as well as the court — so the
+ * figure stays "how long to a first round's votes" for every dispute alike.
+ *
+ * Read from the dispute's own record (`createdAt` and the round's timeline) and not from its
+ * draws, so like `finalised` it is not filtered on `MatrixRow.read`: a dispute whose draws were
+ * never read still has a creation time and a timeline.
+ */
+export type TimeToAppeal = {
+  /** The distribution, or `null` when no dispute read has reached its appeal period yet. */
+  summary: LatencySummary | null;
+  /** One entry per dispute in `summary.seconds`, ascending by dispute id. */
+  disputes: readonly DisputeTimeToAppeal[];
+  /**
+   * Disputes read whose first round has not reached its appeal period, by id — the live ones
+   * still in evidence, commit or vote. Counted rather than dropped: a distribution that quietly
+   * left them out would read as covering every dispute read, and the slowest of them may yet be
+   * slower than anything plotted.
+   */
+  notYetAtAppeal: readonly number[];
 };
 
 export type CourtTotals = {
@@ -66,6 +106,14 @@ export type CourtTotals = {
    * `null` rather than zeros: a `0` here would be a claim about the court that nobody measured.
    */
   revealLatency: LatencySummary | null;
+  /**
+   * Time to appeal across every dispute whose first round has reached its appeal period, and
+   * the disputes that have not. The headline tile and the strip under it are figures of this.
+   *
+   * Per **dispute**, not per draw: it is a fact about how long the court took to put a round's
+   * votes in front of the parties, and a dispute with five draws is still one such duration.
+   */
+  timeToAppeal: TimeToAppeal;
   /**
    * Disputes decided by a panel of one, by id.
    *
@@ -497,10 +545,9 @@ function unplacedDisputesOf(rows: readonly MatrixRow[]): number[] {
 /**
  * Which superseded windows actually qualify one median, and how many draws they cost it.
  *
- * The filter every `†` on this page has to pass, in one place because there are now three
- * figures wearing one: the court-wide median reveal tile, and each column's two medians. Two
- * implementations of "does this change qualify this figure" is two chances for the tile above
- * the grid and the header inside it to mark different things over the same court.
+ * The filter the agent juror view's latency caption `†` passes. The same filter once marked the
+ * column medians, the court-wide tile and the row flag; those marks were removed on 2026-09-24
+ * (maintainer's ruling).
  *
  * **A change only marks the median the window it names governs.** A reveal is measured from the
  * vote period and a commit from the commit period, so a group whose vote window matches what the
@@ -511,7 +558,6 @@ function unplacedDisputesOf(rows: readonly MatrixRow[]): number[] {
  * since changed" against a court whose vote window is 30m. **The court has since reconfigured
  * without touching either** — 2026-08-26, the evidence period alone — which is the same lesson
  * arriving from the other side: a change can be real and reach no figure here at all.
- * `windowFlagLabel` in `Matrix.tsx` makes the same comparison on the row for the same reason.
  *
  * An unread parameter history is `current === null`, and everything qualifies: nothing is known
  * to compare against, and the view says the history is unread in its own words.
@@ -530,6 +576,43 @@ export function markedWindows(
   );
 
   return { changes: marked, draws: marked.reduce((total, change) => total + change[counted], 0) };
+}
+
+/**
+ * Time to appeal over the rows read. See `TimeToAppeal`.
+ *
+ * A dispute counts once its round 0 has an observed appeal-period opening — the index is read
+ * off the round, not the array position, for the reason `toRound` gives. Everything else is
+ * `notYetAtAppeal`, including a dispute with no round at all, which has not reached it either.
+ */
+export function timeToAppealOf(rows: readonly MatrixRow[]): TimeToAppeal {
+  const disputes: DisputeTimeToAppeal[] = [];
+  const notYetAtAppeal: number[] = [];
+
+  for (const row of rows) {
+    const first = row.dispute.rounds.find((round) => round.index === 0);
+    const opened = first?.appealOpenedAt ?? null;
+    if (opened === null) {
+      notYetAtAppeal.push(row.dispute.id);
+      continue;
+    }
+    disputes.push({
+      dispute: row.dispute.id,
+      seconds: opened - row.dispute.createdAt,
+      windows: row.windows,
+    });
+  }
+
+  // Ascending, because rows arrive newest first and a list of ids reads forwards — the same
+  // reason every other list of ids in this file is sorted.
+  disputes.sort((a, b) => a.dispute - b.dispute);
+  notYetAtAppeal.sort((a, b) => a - b);
+
+  return {
+    summary: summaryOf(disputes.map((entry) => entry.seconds)),
+    disputes,
+    notYetAtAppeal,
+  };
 }
 
 /** Everything the rows amount to, in one pass. */
@@ -563,6 +646,7 @@ export function courtTotalsOf(
     agentJurorsDrawn: drawn.size,
     agentJurors: agentJurors.length,
     revealLatency: summaryOf(seconds),
+    timeToAppeal: timeToAppealOf(rows),
     // A panel of one is a fact about a dispute that *was* read, so an unread row is not counted
     // among them — its panel size is 0 because nobody asked, not because the court drew one
     // juror. Filtering on `read` first is what keeps a gap out of a coherence caveat.

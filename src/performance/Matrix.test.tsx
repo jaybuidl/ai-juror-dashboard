@@ -17,13 +17,7 @@ import {
 } from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
 import { theme } from "../styles/theme";
-import {
-  FIXTURE_ROSTER,
-  OFF_ROSTER_ADDRESS,
-  OFF_ROSTER_DISPUTE,
-  offRosterDraw,
-  padCourt,
-} from "../test/court";
+import { FIXTURE_ROSTER, OFF_ROSTER_ADDRESS, offRosterDraw, padCourt } from "../test/court";
 import { stubViewportWidth } from "../test/viewport";
 import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
@@ -90,20 +84,6 @@ function build(raw: Partial<RawCourtData> = {}): CourtPerformance {
 }
 
 /**
- * One hand-built configuration, carrying the reward parameters the captured court holds.
- *
- * Every history built by hand below is about a *window*, and the four reward parameters are
- * identical across its entries — so none of these is quietly a court that changed two things at
- * once. Spread off the fixture rather than restated, so they stay identical the day court 34
- * changes a fee and the fixture is recaptured.
- */
-function rawRegime(at: string, timesPerPeriod: readonly string[]): RawCourtParameters {
-  const [first] = parameterFixture as RawCourtParameters[];
-  if (first === undefined) throw new Error("The captured parameter history is empty");
-  return { ...first, at, timesPerPeriod };
-}
-
-/**
  * A fixed present, so the live rows' elapsed figures are not a moving target.
  *
  * Dispute 166 entered its appeal period at 1787604932, which this puts 3m 12s in the past —
@@ -118,8 +98,7 @@ function harness(
   now: number = NOW,
   rosterView: RosterView = roster,
 ) {
-  // Inside a router since ticket 08: the window footnote links to the method page's account of
-  // the court's period regimes, which is a part of the matrix and not of the page around it.
+  // Inside a router: the row headers and the column identities are links.
   return (
     <ThemeProvider theme={theme}>
       <MemoryRouter>
@@ -150,28 +129,6 @@ function grid() {
   const [, body] = screen.getAllByRole("rowgroup");
   if (body === undefined) throw new Error("The matrix has a body");
   return within(body);
-}
-
-/**
- * One dispute, for the cases the captured court cannot produce.
- *
- * The court's oldest dispute is the one its 2026-08-20 reconfiguration marks, so no read of it
- * can hold a dispute that is both older than 151 and placeable against the parameter history.
- * That combination has to be built.
- */
-function rawDispute(overrides: Partial<RawDispute>, timeline: readonly string[]): RawDispute {
-  return {
-    id: "163",
-    disputeID: "163",
-    period: "execution",
-    ruled: true,
-    currentRuling: "2",
-    createdAt: "1787340123",
-    lastPeriodChange: "1787409015",
-    currentRoundIndex: "0",
-    ...overrides,
-    rounds: [{ id: `${overrides.disputeID ?? "163"}-0`, timeline }],
-  };
 }
 
 /** The row of the matrix for one dispute, found the way a reader finds it. */
@@ -209,32 +166,12 @@ function padTo(disputeCount: number, over: Partial<RawCourtData> = {}): CourtPer
 }
 
 /**
- * The court with a draw the roster has no column for — the state ticket 25 built the flag for.
- *
- * Built by *adding* a draw rather than by shortening the roster, so it isolates the one thing
- * under test: every latency, coherence count and median stays exactly what the other cases here
- * assert, and one dispute gains a panel member with nowhere to sit. That is the shape court 34 was
- * actually in — Grokleros was staked and drawn for weeks before the roster knew it existed, and no
- * cell, column or coverage counter could see it.
- *
- * The draw comes from `test/court.tsx` rather than being written here, so this suite, the card
- * suite and the page suite build one shape between them; it was three shapes for a day.
- * `OFF_ROSTER_DISPUTE` is 157 and not 151 for a reason that matters to every case below — 151 ran
- * under the superseded windows and already wears the dagger, and `rowFlagOf` returns exactly one
- * flag, so a case about what this mark *says* needs a row wearing nothing else. The case that is
- * about the ranking asks for 151 on purpose.
+ * The court with a draw the roster has no column for — built by *adding* a draw rather than by
+ * shortening the roster, so every other figure stays what the other cases here assert. The draw
+ * comes from `test/court.tsx`, so this suite, the card suite and the page suite build one shape.
  */
-function offRosterCourt({
-  dispute,
-  disputeCount,
-}: {
-  dispute?: number;
-  disputeCount?: number;
-} = {}): CourtPerformance {
-  const base: Partial<RawCourtData> = disputeCount === undefined ? {} : padCourt(disputeCount);
-  const draws = base.draws ?? (drawFixture as RawDraw[]);
-
-  return build({ ...base, draws: [...draws, offRosterDraw(dispute)] });
+function offRosterCourt(): CourtPerformance {
+  return build({ draws: [...(drawFixture as RawDraw[]), offRosterDraw()] });
 }
 
 /** A court just below the crossing point, and one just above it. */
@@ -539,19 +476,6 @@ describe("Matrix", () => {
     expect(drawnCellsOf(row)).toHaveLength(5);
   });
 
-  it("flags a dispute decided by a panel of one, and explains why it matters", () => {
-    renderMatrix();
-    const row = rowFor(155);
-    if (row === null) throw new Error("no row for dispute 155");
-
-    // The flag is the sole carrier now, and it was always the better of the two: it says what
-    // being a majority of one means, where `Panel 1` beside it only said how many there were.
-    expect(within(row).queryByText("Panel 1")).not.toBeInTheDocument();
-    expect(drawnCellsOf(row)).toHaveLength(1);
-    expect(within(row).getByText("Lone panel")).toBeInTheDocument();
-    expect(screen.getByText(/coherence there is tautological/i)).toBeInTheDocument();
-  });
-
   it("gives a row at most one flag", () => {
     renderMatrix();
 
@@ -560,216 +484,6 @@ describe("Matrix", () => {
         within(header).queryAllByText(/lone panel|8h window|live/i).length,
       ).toBeLessThanOrEqual(1);
     }
-  });
-
-  describe("the window marker", () => {
-    it("marks the dispute that ran under a window the court has since changed", () => {
-      renderMatrix();
-      const row = rowFor(151);
-      if (row === null) throw new Error("no row for dispute 151");
-
-      // Named from what the court was configured with, not typed in: `† 8h window`, as the
-      // artboard draws it.
-      expect(within(row).getByText("8h window")).toBeInTheDocument();
-    });
-
-    it("marks that row and no other", () => {
-      renderMatrix();
-
-      const marked = screen
-        .getAllByRole("rowheader")
-        .filter((header) => within(header).queryByText(/window$/i) !== null);
-
-      expect(marked).toHaveLength(1);
-      expect(marked[0]?.textContent).toMatch(/^151[^\d]/);
-    });
-
-    it("takes precedence over the lone panel, because it is the one that breaks comparison", () => {
-      // Dispute 151 has a panel of two, so this is asserted where it can actually be seen:
-      // a row that is both marked and lone shows the window. Hand-built, because the court has
-      // never produced one.
-      const both = build({
-        disputes: [
-          {
-            id: "151",
-            disputeID: "151",
-            period: "execution",
-            ruled: true,
-            currentRuling: "1",
-            createdAt: "1787144365",
-            lastPeriodChange: "1787257250",
-            currentRoundIndex: "0",
-            rounds: [
-              { id: "151-0", timeline: ["1787188106", "1787191796", "1787192415", "1787257250"] },
-            ],
-          },
-        ],
-        draws: [
-          {
-            id: "151-0-0",
-            juror: { id: ROSTER[0]?.address.toLowerCase() as string },
-            dispute: { disputeID: "151" },
-            round: { id: "151-0" },
-            vote: {
-              commited: true,
-              voted: true,
-              choice: "1",
-              justification: { timestamp: "1787191900", choice: "1" },
-            },
-          },
-        ],
-      });
-      renderMatrix(both);
-      const row = rowFor(151);
-      if (row === null) throw new Error("no row for dispute 151");
-
-      // One drawn cell is what makes this row lone, and it is asserted so the precedence claim
-      // below cannot pass vacuously against a fixture that stopped producing one.
-      expect(drawnCellsOf(row)).toHaveLength(1);
-      expect(within(row).getByText("8h window")).toBeInTheDocument();
-      expect(within(row).queryByText("Lone panel")).not.toBeInTheDocument();
-    });
-
-    it("sets the superseded windows beside the current ones as absolute durations", () => {
-      renderMatrix();
-
-      const footnote = screen.getByText(/ran with a commit window of/i).closest("p");
-
-      expect(footnote).toHaveTextContent(
-        /Dispute 151 ran with a commit window of 8h and a vote window of 8h, against 45m and 30m configured now/i,
-      );
-      // ADR-0005, in the one place a reader would otherwise reach for a ratio.
-      expect(footnote).toHaveTextContent(/never as a fraction of the window it ran in/i);
-      expect(screen.queryByText(/%/)).not.toBeInTheDocument();
-    });
-
-    it("links the footnote at the account of the change", () => {
-      renderMatrix();
-
-      expect(
-        screen.getByRole("link", { name: /what that means for these figures/i }),
-      ).toHaveAttribute("href", "/method#window");
-    });
-
-    it("marks that link as a link without relying on its colour", () => {
-      // WCAG 1.4.1, and the one shape on this page it applies to: a link inside a block of body
-      // prose. The accent against this paragraph's ink is 1.22:1 where the rule wants 3:1, so
-      // the underline is the whole of what tells a reader who does not separate those two hues
-      // that the sentence ends in a link. Permanent, not on hover — a hover cue does not exist
-      // for a reader who never hovers, and does not exist at all on a touch screen.
-      //
-      // Pinned because the default is the trap: the vendored base.css sets text-decoration none
-      // on every anchor, so deleting this one declaration silently returns the page to the
-      // violation axe caught in ticket 28 rather than to something that looks wrong.
-      renderMatrix();
-
-      const link = screen.getByRole("link", { name: /what that means for these figures/i });
-
-      // **The offset is the assertion that discriminates; the underline below cannot.** Two
-      // jsdom facts stack up against testing this the obvious way. It does not expand the
-      // `text-decoration` shorthand, so the `textDecorationLine` longhand reads "none" even with
-      // the underline applied. And its UA stylesheet underlines anchors anyway, while the
-      // vendored `base.css` that sets `text-decoration: none` on every `a` is not in this
-      // cascade at all — so an assertion on the underline passes whether or not this component
-      // declares one. It was written that way first and proved nothing.
-      //
-      // `text-underline-offset` has no UA default to hide behind: it reads "2px" from this
-      // component's rule and "auto" without it. So it stands in for the declaration, and the
-      // underline it travels with is confirmed in a browser instead — which is where the
-      // cascade this is really about actually exists.
-      expect(getComputedStyle(link).textUnderlineOffset).toBe("2px");
-      expect(getComputedStyle(link).textDecoration).toContain("underline");
-    });
-
-    it("marks nothing and claims nothing while the parameter history is out", () => {
-      // Every cold load. It must not read as "no dispute ran under different rules", which is
-      // a claim about the court, so it says the history has not been read instead.
-      renderMatrix(build({ parameters: null }));
-
-      expect(screen.queryByText(/8h window/)).not.toBeInTheDocument();
-      expect(screen.getByText(/is still being read, or could not be/i)).toBeInTheDocument();
-      expect(screen.getByText(/an unread state rather than a finding/i)).toBeInTheDocument();
-      expect(
-        screen.getByRole("link", { name: /what that means for these figures/i }),
-      ).toBeInTheDocument();
-    });
-
-    it("says a read that came back empty came back empty, not that it never happened", () => {
-      // `[]` is `read: true` with no configuration in it — a court that has plainly been
-      // configured returning none of them is a scan that came back short, and the two states
-      // are told apart here rather than collapsed into one sentence.
-      renderMatrix(build({ parameters: [] }));
-
-      expect(
-        screen.getByText(/that read came back carrying no configuration at all/i),
-      ).toBeInTheDocument();
-      expect(screen.queryByText(/is still being read, or could not be/i)).not.toBeInTheDocument();
-    });
-
-    it("says so plainly when every dispute read ran under the current windows", () => {
-      // One configuration, in force since before the court's first dispute — so every row is
-      // placed and none is marked. The footnote still carries the rule, because the rule is not
-      // conditional on anything having changed.
-      const current = build({
-        parameters: [rawRegime("1786444490", ["2700", "2700", "1800", "129600"])],
-      });
-      renderMatrix(current);
-
-      expect(
-        screen.getByText(/every dispute here ran under the period durations/i),
-      ).toHaveTextContent(/commit window of 45m and a vote window of 30m/i);
-      expect(screen.queryByText(/8h window/)).not.toBeInTheDocument();
-    });
-
-    it("never calls a dispute it could not place a dispute that matched", () => {
-      // The failure a short scan produces, and the one this footnote must never absorb: a
-      // provider capping `eth_getLogs` drops the court's oldest configuration, dispute 151
-      // resolves to no window at all, and so nothing is marked. Saying "every dispute here ran
-      // under the durations the court holds now" over that states the opposite of the truth,
-      // with no error anywhere — the invariant that partial data must never render as complete.
-      const short = build({
-        parameters: [rawRegime("1787230320", ["2700", "2700", "1800", "129600"])],
-      });
-      renderMatrix(short);
-
-      expect(
-        screen.queryByText(/every dispute here ran under the period durations/i),
-      ).not.toBeInTheDocument();
-      expect(screen.getByText(/does not reach back far enough to place/i)).toHaveTextContent(/151/);
-      expect(screen.queryByText(/8h window/)).not.toBeInTheDocument();
-    });
-
-    it("names the disputes it could not place even while it is marking others", () => {
-      // Both at once: one dispute marked against a superseded configuration, another older than
-      // anything the history reaches. The second must not be folded into the first's absence.
-      // Hand-built, because the captured court's oldest dispute is the marked one — there is no
-      // read of court 34 in which a dispute is both older than 151 and placeable.
-      const partial = build({
-        disputes: [
-          rawDispute({ id: "100", disputeID: "100", createdAt: "1000" }, [
-            "1100",
-            "1200",
-            "1300",
-            "1400",
-          ]),
-          rawDispute({ id: "151", disputeID: "151", createdAt: "1787144365" }, [
-            "1787188106",
-            "1787191796",
-            "1787192415",
-            "1787257250",
-          ]),
-        ],
-        draws: [],
-        parameters: [
-          rawRegime("1787144000", ["43200", "28800", "28800", "129600"]),
-          rawRegime("1787230320", ["2700", "2700", "1800", "129600"]),
-        ],
-      });
-      renderMatrix(partial);
-
-      expect(screen.getByText(/ran with a commit window of/i)).toHaveTextContent(/151/);
-      expect(screen.getByText(/cannot place at all/i)).toHaveTextContent(/100/);
-    });
   });
 
   it("draws a cell for an agent juror that was not drawn as nothing at all", () => {
@@ -897,10 +611,9 @@ describe("Matrix", () => {
     it("puts each agent juror's summary inside that agent juror's own column", () => {
       renderMatrix();
 
-      // 007's own draws, not the court's: ten draws holding thirteen vote IDs, a median reveal
-      // of 48s against the court's 85s, and coherence over the eight of them the court has
-      // ruled on.
-      expect(header("007").getByText("10 · 13v")).toBeInTheDocument();
+      // 007's own draws, not the court's: ten draws, a median reveal of 48s against the court's
+      // 85s, and coherence over the eight of them the court has ruled on.
+      expect(header("007").getByText("10")).toBeInTheDocument();
       expect(header("007").getByText("48s")).toBeInTheDocument();
       expect(header("007").getByText("7/8")).toBeInTheDocument();
     });
@@ -925,7 +638,7 @@ describe("Matrix", () => {
       // not been paid nothing, it has not been in a position to be paid at all, and `0.0000`
       // would state the first.
       expect(header("Baskerville").getAllByText("—")).toHaveLength(5);
-      expect(header("Baskerville").getByText("0 · 0v")).toBeInTheDocument();
+      expect(header("Baskerville").getByText("0")).toBeInTheDocument();
     });
 
     it("shows what each drawn column has been paid, at the precision the artboard sets", () => {
@@ -959,29 +672,6 @@ describe("Matrix", () => {
       expect(header("007").queryByText("0.0026")).not.toBeInTheDocument();
       // Every column falls back to the same dash the never-drawn one shows.
       expect(header("007").getAllByText("—").length).toBeGreaterThanOrEqual(2);
-    });
-
-    it("marks the column drawn in dispute 151, and leaves the others unmarked", () => {
-      renderMatrix();
-
-      // Dispute 151 ran under 8-hour commit and vote windows; columbo and daemonhill are the
-      // two agent jurors the court drew for it. A column that was not there is comparable with
-      // the court as it stands and says nothing.
-      expect(header("Columbo").getAllByText("†")).toHaveLength(2);
-      expect(header("007").queryByText("†")).not.toBeInTheDocument();
-    });
-
-    it("marks the coherence of the column that sat on the panel of one", () => {
-      renderMatrix();
-
-      // Dispute 155 was decided by columbo alone, where being the majority took no agreement.
-      // The reason is read off the mark's accessible name: it is drawn under the figure at
-      // neither density now, and the six columns share one baseline because of it.
-      expect(header("Columbo").getByText("‡")).toBeInTheDocument();
-      expect(
-        header("Columbo").getByRole("link", { name: /coherence count is marked/i }),
-      ).toHaveAccessibleName(/of \d+ draws sat on a panel of one/i);
-      expect(header("Blaise").queryByText("‡")).not.toBeInTheDocument();
     });
 
     it("leaves every commit median a dash until the log scan has come back", () => {
@@ -1133,59 +823,18 @@ describe("Matrix", () => {
       expect(plain.boxShadow).toBe("");
     });
 
-    it("rails a row in the colour of its flag, and tints it only if it is live", () => {
-      // The artboard keeps these two apart: `bg` is mint exactly when the dispute is live,
-      // `mark` is the colour of whichever flag the row wears. A finalised lone panel therefore
-      // has a rail and no tint, which is the case that shows the two are not the same question.
+    it("rails only a flagged row, and tints it only if it is live", () => {
+      // A finalised lone panel wore a rail for its flag until the lone-panel flag was removed on
+      // 2026-09-24 (maintainer's ruling); it now reads as a plain row.
       renderMatrix();
       const lone = rowFor(155);
       const plain = rowFor(163);
       const live = rowFor(166);
       if (lone === null || plain === null || live === null) throw new Error("missing a row");
 
-      expect(getComputedStyle(lone).boxShadow).not.toBe("");
+      expect(getComputedStyle(lone).boxShadow).toBe(getComputedStyle(plain).boxShadow);
       expect(getComputedStyle(lone).backgroundColor).toBe(getComputedStyle(plain).backgroundColor);
-      // And the live row's rail is a different colour from the lone panel's.
-      expect(getComputedStyle(live).boxShadow).not.toBe(getComputedStyle(lone).boxShadow);
-    });
-
-    it("keeps the flag for a lone panel above the flag for a live dispute", () => {
-      // Both apply to dispute 900 here. The precedence is the point of `ROW_FLAGS`, and the
-      // lone panel is the one that changes how a figure should be read.
-      const both = build({
-        disputes: [
-          {
-            id: "900",
-            disputeID: "900",
-            period: "vote",
-            ruled: false,
-            currentRuling: "0",
-            createdAt: "100",
-            lastPeriodChange: "200",
-            currentRoundIndex: "0",
-            rounds: [{ id: "900-0", timeline: ["100", "200", "0", "0"] }],
-          },
-        ],
-        draws: [
-          {
-            id: "900-0-0",
-            juror: { id: ROSTER[3]?.address.toLowerCase() ?? "" },
-            dispute: { disputeID: "900" },
-            round: { id: "900-0" },
-            vote: { commited: true, voted: false, choice: null, justification: null },
-          },
-        ],
-        commits: [],
-      });
-      renderMatrix(both);
-      const row = rowFor(900);
-      if (row === null) throw new Error("no row for dispute 900");
-
-      expect(within(row).getByText("Lone panel")).toBeInTheDocument();
-      expect(within(row).queryByText(/live ·/i)).not.toBeInTheDocument();
-      // The row still carries the live treatment: the flag slot holds one pill, and the rail
-      // and tint are not the flag.
-      expect(getComputedStyle(row).boxShadow).not.toBe("");
+      expect(getComputedStyle(live).boxShadow).not.toBe(getComputedStyle(plain).boxShadow);
     });
 
     it("drops the live treatment as soon as the dispute is ruled, without a reload", () => {
@@ -1246,13 +895,6 @@ describe("Matrix", () => {
       // tree; the words are what a screen reader gets, once per drawn cell.
       expect(within(row).getAllByText("Reveal latency")).toHaveLength(5);
       expect(within(row).getAllByText("Commit latency")).toHaveLength(5);
-    });
-
-    it("keys the commit rail in the legend, now that the cells carry one", () => {
-      renderMatrix();
-
-      expect(screen.getByText("Commit")).toBeInTheDocument();
-      expect(screen.getByText("Reveal")).toBeInTheDocument();
     });
 
     it("reproduces the range the rail was drawn for", () => {
@@ -1521,40 +1163,10 @@ describe("Matrix", () => {
   });
 
   /**
-   * The draws with no column, which is the one quantity this grid could not state (ticket 25).
-   *
-   * The roster is the column set, so a draw belonging to an address outside it falls out of every
-   * figure on the page except the panel size — silently, because a roster miss has no cell to be
-   * missing from. Grokleros was in that state for weeks and a person noticing was the whole of the
-   * detection.
+   * The draws with no column (ticket 25). Their flag and footnote were removed on 2026-09-24
+   * (maintainer's ruling); what still has to hold is that the address never reaches the page.
    */
   describe("a draw the roster has no column for", () => {
-    it("marks the row and says how many, at the comfortable density", () => {
-      renderMatrix(offRosterCourt());
-
-      const row = rowOrThrow(OFF_ROSTER_DISPUTE);
-      expect(within(row).getByText("1 off-roster draw")).toBeInTheDocument();
-    });
-
-    it("abbreviates to the count and the word that makes it mean something", () => {
-      // The noun is the qualifier and the only thing the compact row gives up, per the rule every
-      // flag in `row-flags.ts` follows: the flag still says which flag it is.
-      renderMatrix(offRosterCourt({ disputeCount: COMPACT_FROM_ROWS + 1 }));
-
-      const row = rowOrThrow(OFF_ROSTER_DISPUTE);
-      expect(within(row).getByText("1 off-roster")).toBeInTheDocument();
-    });
-
-    it("decodes the mark below the grid, where the other two are decoded", () => {
-      renderMatrix(offRosterCourt());
-
-      const note = screen.getByText(/roster does not hold/i);
-      expect(note).toHaveTextContent(new RegExp(`One draw in dispute ${OFF_ROSTER_DISPUTE}`));
-      expect(note).toHaveTextContent(/no column here/);
-      // The whole point of the caveat: it is a gap in the roster and not a smaller court.
-      expect(note).toHaveTextContent(/staked and drawn before this dashboard knows it exists/);
-    });
-
     it("names no address and no identity, only a count", () => {
       // `CLAUDE.md`'s no-personal-data invariant, at the one field able to breach it: the address
       // is in hand here and must not reach the page. A count is the whole of the claim.
@@ -1562,60 +1174,6 @@ describe("Matrix", () => {
 
       expect(screen.queryByText(new RegExp(OFF_ROSTER_ADDRESS, "i"))).not.toBeInTheDocument();
       expect(screen.queryByText(/0x1111/i)).not.toBeInTheDocument();
-    });
-
-    it("agrees its verbs and its nouns with the count, in both directions", () => {
-      // The singular is the case that matters most — one agent juror going live before the roster
-      // knows it is the whole reason this flag exists — and it is the one a plural-only fixture
-      // reads straight past. "One draw … belong to a juror" shipped for an hour of ticket 25.
-      renderMatrix(offRosterCourt());
-      expect(screen.getByText(/roster does not hold/i)).toHaveTextContent(
-        new RegExp(`One draw in dispute ${OFF_ROSTER_DISPUTE} belongs to a juror .* panel size\\.`),
-      );
-
-      cleanup();
-
-      // And the plural, which is also the case where "a juror" stops being true: the count is over
-      // draws, and more than one draw may be more than one address. How many is deliberately not
-      // said — that would be a fact about who the court drew.
-      renderMatrix(
-        build({
-          draws: [
-            ...(drawFixture as RawDraw[]),
-            offRosterDraw(OFF_ROSTER_DISPUTE),
-            offRosterDraw(158),
-          ],
-        }),
-      );
-      expect(screen.getByText(/roster does not hold/i)).toHaveTextContent(
-        /2 draws in disputes 157 and 158 belong to jurors .* panel sizes\./,
-      );
-    });
-
-    it("says nothing at all where every draw is on the roster", () => {
-      // The case with no live example, and the one that matters most: ticket 24 put this court
-      // into exactly this state by adding the seventh agent juror, so the flag has no subject
-      // today. A footnote naming a caveat that does not apply reads as a caveat about the page.
-      renderMatrix();
-
-      expect(screen.queryByText(/roster does not hold/i)).not.toBeInTheDocument();
-      expect(screen.queryByText(/off-roster/i)).not.toBeInTheDocument();
-    });
-
-    it("ranks below the changed window and above the lone panel", () => {
-      // Dispute 151 ran under the superseded windows *and* now holds an off-roster draw, so it is
-      // the row that settles the order. `rowFlagOf` returns exactly one flag, which is why the
-      // ranking is the whole of the decision.
-      renderMatrix(offRosterCourt({ dispute: 151 }));
-
-      const row = rowOrThrow(151);
-      expect(within(row).getByText("8h window")).toBeInTheDocument();
-      expect(within(row).queryByText(/off-roster/)).not.toBeInTheDocument();
-      // And the footnote still counts it, because the count is a fact about the court rather than
-      // about which pill won the row's one slot.
-      expect(screen.getByText(/roster does not hold/i)).toHaveTextContent(
-        /One draw in dispute 151/,
-      );
     });
   });
 
@@ -1662,8 +1220,8 @@ describe("Matrix", () => {
      * consulted. This court is thirteen disputes — a third of the row threshold — and it compacts
      * anyway, on the roster that actually ships.
      *
-     * Asserted through what the reduction *does* rather than by reading the flag back: the corner
-     * cell states where the commit figure went, and the column headers stop carrying the reward sums.
+     * Asserted through what the reduction *does* rather than by reading the flag back: the rows
+     * carry their dispute's own median commit, and the column headers stop carrying the reward sums.
      */
     it("compacts a short matrix on the shipped roster, which is past the column threshold", () => {
       expect(ROSTER.length).toBeGreaterThan(COMPACT_FROM_COLUMNS);
@@ -1671,9 +1229,7 @@ describe("Matrix", () => {
       renderMatrix(build({ roster: ROSTER }));
 
       expect(screen.getAllByRole("columnheader")).toHaveLength(ROSTER.length + 1);
-      expect(
-        screen.getByText(/each row also carries its dispute's own median commit/i),
-      ).toBeInTheDocument();
+      expect(screen.getAllByText("MED C").length).toBeGreaterThan(0);
       expect(screen.queryByText("Cumulative ETH earned")).not.toBeInTheDocument();
     });
 
@@ -1805,46 +1361,12 @@ describe("Matrix", () => {
         "Median commit latency",
         "Median reveal latency",
         "Coherent draws, of the draws the court has ruled on",
-        "Draws, and the vote IDs they hold",
+        "Times the court drew this agent juror",
       ]) {
         expect(screen.getAllByText(kept)).toHaveLength(FIXTURE_ROSTER.length);
       }
       for (const dropped of ["Cumulative ETH earned", "Net PNK gained or lost"]) {
         expect(screen.queryByText(dropped)).not.toBeInTheDocument();
-      }
-    });
-
-    it("keeps every marker on the figures it keeps, and the full account one click away", () => {
-      // A caveat is never among what density drops. The mark stays on the number, it stays a
-      // link to the account at /method, and the two footnotes below the grid state both facts
-      // in full at either density.
-      renderMatrix(compactCourt());
-
-      expect(screen.getAllByText("†").length).toBeGreaterThan(0);
-      expect(screen.getAllByText("‡").length).toBeGreaterThan(0);
-      expect(
-        screen.getAllByRole("link", { name: /why .* median reveal is marked/i })[0],
-      ).toHaveAttribute("href", "/method#window");
-      expect(screen.getByText(/ran with a commit window of/i)).toBeInTheDocument();
-      expect(screen.getByText(/was decided by a panel of one/i)).toBeInTheDocument();
-    });
-
-    it("draws no reason line at either density, and carries it on the marker at both", () => {
-      // Ticket 06's hand-off, taken at the compact density by ticket 17 and at the comfortable
-      // one once this block was measured on the live court: five near-duplicate paragraphs and
-      // 350px of column header, and — because a paragraph's height varies with its own wrapping
-      // — the six columns' figures on three different baselines, which is the one comparison a
-      // block of marginals exists to allow. What a sighted reader loses is the fourth telling of
-      // a caveat already on the figure, in the footnote below the grid and at /method; what a
-      // reader hearing the page gets is the same sentence, on the mark itself, at both.
-      for (const court of [comfortableCourt(), compactCourt()]) {
-        renderMatrix(court);
-        expect(screen.queryByText(/draws ran under a vote window of/i)).not.toBeInTheDocument();
-        expect(
-          screen.getAllByRole("link", { name: /why .*median reveal is marked: .*draws ran under/i })
-            .length,
-        ).toBeGreaterThan(0);
-        cleanup();
       }
     });
 
@@ -1966,18 +1488,6 @@ describe("Matrix", () => {
       }
     });
 
-    it("says in the corner cell what the density did", () => {
-      renderMatrix(compactCourt());
-
-      // So a reader meets the reduction as a stated choice rather than as a figure that went
-      // missing, and knows where the one that moved has moved to.
-      const corner = screen.getAllByRole("columnheader")[0] as HTMLElement;
-      expect(corner.textContent).toContain(
-        "Commit and reveal latency and coherence survive at this density",
-      );
-      expect(corner.textContent).toContain("each row also carries its dispute's own median commit");
-    });
-
     it("takes the second line off the row and leaves everything else on it", () => {
       const slots = () => ({ title: "An escrow dispute", category: "Escrow" });
 
@@ -1997,71 +1507,14 @@ describe("Matrix", () => {
       expect(within(compact).getByRole("link", { name: "156" })).toBeInTheDocument();
     });
 
-    it("keeps every flag and the precedence between them, abbreviated", () => {
-      renderMatrix(comfortableCourt());
-      expect(within(rowOrThrow(151)).getByText(/8h window/)).toBeInTheDocument();
-      expect(within(rowOrThrow(155)).getByText("Lone panel")).toBeInTheDocument();
-
-      cleanup();
+    it("keeps the live flag, abbreviated", () => {
       renderMatrix(compactCourt());
 
-      // Dispute 151 still wears the window flag over its lone-panel neighbour: the precedence is
-      // `row-flags.ts`'s and density does not touch it. What density touches is the qualifier
-      // after the flag, which the dense artboard drops (`MatrixDense.dc.html:213`) — every row
-      // still says *which* flag it wears, and 175px of live pill stops eating the title.
-      expect(within(rowOrThrow(151)).getByText("8h")).toBeInTheDocument();
-      expect(within(rowOrThrow(155)).getByText("Lone")).toBeInTheDocument();
+      // What density touches is the qualifier after the flag, which the dense artboard drops
+      // (`MatrixDense.dc.html:213`): the row still says it is live, and 175px of live pill stops
+      // eating the title.
       expect(within(rowOrThrow(166)).getByText("Live")).toBeInTheDocument();
       expect(screen.queryByText(/Live · appeal/i)).not.toBeInTheDocument();
-    });
-
-    it("keys only the rails the compact cell actually carries", () => {
-      // Ticket 07's instruction against this legend group: a page that keys a commit rail no
-      // cell wears is decoding a mark the reader cannot find.
-      renderMatrix(comfortableCourt());
-      expect(screen.getByText("Commit")).toBeInTheDocument();
-
-      cleanup();
-      renderMatrix(compactCourt());
-      expect(screen.queryByText("Commit")).not.toBeInTheDocument();
-      expect(screen.getByText("Reveal")).toBeInTheDocument();
-      // The scale key was removed on 2026-09-24, on the maintainer's call.
-      expect(screen.queryByText(/^Rail:/)).not.toBeInTheDocument();
-    });
-
-    it("says that volume does not resolve sparsity, which sixteen rows never tempted anyone to think", () => {
-      renderMatrix(compactCourt());
-
-      // The sentence a reader scrolling hundreds of rows needs and one reading sixteen does not.
-      // This says the one thing volume tempts a reader to assume away, from the same
-      // `totals.sparsity` the phone's sparsity note quotes.
-      const volume = screen.getByText(/sparsity does not resolve with volume/i);
-      expect(volume).toHaveTextContent(/still blank across all \d+ disputes/);
-    });
-
-    it("leaves the volume note off the comfortable density", () => {
-      renderMatrix(comfortableCourt());
-
-      expect(screen.queryByText(/sparsity does not resolve with volume/i)).not.toBeInTheDocument();
-    });
-
-    it("says where the commit figure went, in the corner cell that is left to say it", () => {
-      // This used to assert the lede and the corner cell agreed, after review found the lede
-      // promising a commit figure in a cell that no longer had one. There is no lede now — it
-      // described a cell to a reader looking at a hundred and sixty-eight of them, under a
-      // legend keying every state — so the corner is the only voice and there is nothing left
-      // to disagree with it.
-      renderMatrix(comfortableCourt());
-      expect(screen.getByText(/newest first\. one row per dispute/i)).toBeInTheDocument();
-      expect(
-        screen.queryByText(/each row also carries its dispute's own median commit/i),
-      ).not.toBeInTheDocument();
-
-      cleanup();
-      renderMatrix(compactCourt());
-      expect(
-        screen.getByText(/each row also carries its dispute's own median commit/i),
-      ).toBeInTheDocument();
     });
 
     it("sends nobody looking for a shortfall in cells that carry no commit figure", () => {

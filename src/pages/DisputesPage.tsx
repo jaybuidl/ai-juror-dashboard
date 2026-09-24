@@ -1,6 +1,5 @@
 import styled from "styled-components";
 import { type Failures, olderOf, present } from "../chrome/failures";
-import { type Provenance, rangeOf } from "../chrome/provenance";
 import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import { DisputeList } from "../disputes/DisputeList";
@@ -72,20 +71,13 @@ function failuresOf(disputes: DisputesView): Failures {
   };
 }
 
-function provenanceOf(disputes: DisputesView): Provenance {
-  return {
-    read: rangeOf(disputes.disputes.map((dispute) => dispute.id)),
-    readAt: disputes.readAt,
-  };
-}
-
 export function DisputesPage({ disputes }: { disputes: DisputesView }) {
   useDocumentTitle("The disputes");
   return (
-    <View provenance={provenanceOf(disputes)} failures={failuresOf(disputes)}>
+    <View failures={failuresOf(disputes)}>
       {/* The title, and nothing under it: `DisputeList` carries its own heading and lede, and a
           deck here would say the same sentence twice on a page that may be cited. What this
-          route adds beyond the component is the URL and the read stamp. */}
+          route adds beyond the component is the URL. */}
       <Header>
         <Title>Disputes</Title>
       </Header>

@@ -1,8 +1,6 @@
-import { Link } from "react-router";
 import styled from "styled-components";
-import { formatLatencySeconds, formatWindowSeconds } from "../performance/latency";
-import { type CourtTotals, markedWindows, type WindowChange } from "../performance/totals";
-import type { PeriodWindows } from "../performance/windows";
+import { formatMinutes } from "../performance/latency";
+import type { CourtTotals } from "../performance/totals";
 import { narrow } from "../styles/breakpoints";
 
 /**
@@ -18,29 +16,6 @@ import { narrow } from "../styles/breakpoints";
  * The drawn tile reads against the roster's own length so that an agent juror the court has not
  * drawn is legible here and not only as an empty column in the matrix.
  */
-
-/**
- * A caveat a figure carries.
- *
- * Ticket 06 sets the terms for the marginals and this follows them: the mark sits on the
- * figure, the reason sits under it in words, and the full account is one click away. Ticket 08
- * is the first caveat to actually use it — the median reveal pools draws measured against two
- * different vote windows, and `canvas/Errors.dc.html:200-208` puts the dagger on exactly that
- * kind of number rather than only on the row it came from.
- *
- * The three counting tiles take none. A dispute's window changes what a duration means and
- * changes nothing about how many disputes there were.
- */
-export type TileCaveat = {
-  /** The marker, matching the one the matrix footnote uses for the same caveat. */
-  mark: string;
-  /** What the mark is about — the lead-in to its accessible name. */
-  about: string;
-  /** Why the figure is qualified, in one line. */
-  reason: string;
-  /** Where the full account is. */
-  href: string;
-};
 
 const Row = styled.div`
   display: flex;
@@ -88,37 +63,6 @@ const Label = styled.div`
   color: ${({ theme }) => theme.textMeta};
 `;
 
-const Mark = styled.sup`
-  font: ${({ theme }) => theme.typeMonoSm};
-  color: ${({ theme }) => theme.stateWork};
-`;
-
-/* The caveat's whole voice now, where it used to be decoration beside a paragraph that carried
-   it. The reason no longer sits under the figure: four tiles sit in a row and only this one is
-   ever marked, so a paragraph beneath it gave the row no common baseline and put a block of
-   prose at the top of the page, above the first figure anyone came to read. Losing the marker
-   was never on the table — it is the same dagger the matrix footnote below uses for the same
-   fact, and the footnote states it in full. What changed is that the mark had been
-   aria-hidden, so deleting the paragraph alone would have deleted the caveat outright for a
-   reader who is hearing this page. It carries the reason itself now, as the marginals' marks
-   have since ticket 17. */
-const CaveatLink = styled(Link)`
-  color: ${({ theme }) => theme.stateWork};
-  text-decoration: none;
-
-  &:hover {
-    text-decoration: underline;
-  }
-
-  &:focus-visible {
-    /* The house ring rather than an underline: a 7px dagger gaining a 7px rule under it is not
-       a discernible indicator, and it is the only thing marking where the keyboard is. */
-    outline: 2px solid ${({ theme }) => theme.focusRing};
-    outline-offset: 3px;
-    text-decoration: underline;
-  }
-`;
-
 /**
  * What an aggregate says about itself when a read that feeds it failed.
  *
@@ -145,25 +89,14 @@ function StatTile({
   figure,
   label,
   accent,
-  caveat,
 }: {
   figure: React.ReactNode;
   label: React.ReactNode;
   accent?: boolean;
-  caveat?: TileCaveat;
 }) {
   return (
     <Tile>
-      <Figure $accent={accent}>
-        {figure}
-        {caveat && (
-          <Mark>
-            <CaveatLink to={caveat.href} aria-label={`${caveat.about}: ${caveat.reason}`}>
-              <span aria-hidden="true">{caveat.mark}</span>
-            </CaveatLink>
-          </Mark>
-        )}
-      </Figure>
+      <Figure $accent={accent}>{figure}</Figure>
       <Label>{label}</Label>
     </Tile>
   );
@@ -171,24 +104,14 @@ function StatTile({
 
 export function StatTiles({
   totals,
-  current = null,
   partial = false,
   narrow: isNarrow = false,
 }: {
   totals: CourtTotals | null;
-  /**
-   * The windows the court is configured with today, against which a superseded one is named.
-   *
-   * Here for one figure — the median reveal's `†` — and required by it: a marker is placed by
-   * comparing what a group ran under against what the court holds now, and without this the tile
-   * can only mark on group membership. `null` while the parameter history is unread, which marks
-   * everything, which is correct: nothing is known to compare against.
-   */
-  current?: PeriodWindows | null;
   /** True when a read behind these figures failed. See `Partial`. */
   partial?: boolean;
   /**
-   * Below the breakpoint: three tiles, not four, and the median reveal leads.
+   * Below the breakpoint: three tiles, not four, and the median time to appeal leads.
    *
    * `Mobile.dc.html:47-51` is the authority, and the canvas wins. A phone reader gets one
    * glance, so the page's headline measure goes first, in the accent ink the desktop gives it,
@@ -213,8 +136,7 @@ export function StatTiles({
     );
   }
 
-  const latency = totals.revealLatency;
-  const changed = totals.changedWindows;
+  const summary = totals.timeToAppeal.summary;
 
   // One definition of each tile, ordered rather than rewritten, so the phone and the desktop
   // cannot come to print different figures under one label. Every one of them is read off the
@@ -223,24 +145,13 @@ export function StatTiles({
     <StatTile
       key="median"
       accent
-      figure={latency === null ? "—" : formatLatencySeconds(latency.median)}
+      figure={summary === null ? "—" : formatMinutes(summary.median)}
       label={
-        latency === null
-          ? "Median reveal · no draw has revealed"
-          : `Median reveal · ${latency.seconds.length} draws`
-      }
-      caveat={medianCaveatOf(latency, changed, current)}
-    />
-  );
-  const draws = (
-    <StatTile
-      key="draws"
-      figure={totals.draws}
-      label={
-        isNarrow ? "Draws" : `Draws · ${totals.votes} vote ${totals.votes === 1 ? "ID" : "IDs"}`
+        summary === null ? "Median to appeal · no dispute has reached appeal" : "Median to appeal"
       }
     />
   );
+  const draws = <StatTile key="draws" figure={totals.draws} label="Draws" />;
   const disputes = <StatTile key="disputes" figure={totals.disputes} label="Disputes read" />;
   const drawn = (
     <StatTile
@@ -266,53 +177,6 @@ export function StatTiles({
       )}
     </Row>
   );
-}
-
-/**
- * Why the median reveal is qualified, when it is.
- *
- * The median pools every reveal in the read, and court 34 changed its vote window partway
- * through — so some of those draws were racing a window ten times longer than the others'. The
- * figure is still a true median of what happened; what the marker says is that the draws behind
- * it were not all answering the same question.
- *
- * Counted from `revealedDraws` rather than from the number of disputes, because it is the draws
- * that are in the distribution. Absent when none of them is, which includes every load before
- * the parameter history comes back.
- */
-function medianCaveatOf(
-  latency: CourtTotals["revealLatency"],
-  changed: readonly WindowChange[],
-  current: PeriodWindows | null,
-): TileCaveat | undefined {
-  if (latency === null) return undefined;
-
-  // Through `markedWindows`, which is what the matrix's column headers mark on, so the tile and
-  // the column headers a few hundred pixels below it cannot mark different things about one court.
-  // Ticket 08 marked on group membership alone, which is right for a court that changed both
-  // windows at once and wrong for the next one that moves only its commit window: every group
-  // would then qualify this reveal median and the reason would name the vote window in force.
-  const marked = markedWindows(changed, current, "reveal");
-  if (marked.draws === 0) return undefined;
-
-  const draws = marked.draws;
-  const only = marked.changes.length === 1 ? marked.changes[0] : undefined;
-
-  return {
-    // The same mark the row flag and the footnote under the matrix use for the same fact. A
-    // second glyph for one caveat would read as a second caveat.
-    mark: "†",
-    // Named for the court, because every column header a few hundred pixels below carries the
-    // same caveat about its own draws and words it "Why <nickname>'s median reveal is marked".
-    // One name shared across this link and all of theirs is a reader hearing the page unable to
-    // tell the pooled figure from a column's.
-    about: "Why the court's median reveal is marked",
-    reason:
-      only === undefined
-        ? `${draws} of ${latency.seconds.length} draws ran under vote windows the court has since changed.`
-        : `${draws} of ${latency.seconds.length} draws ran under a vote window of ${formatWindowSeconds(only.windows.voteSeconds)}, which the court has since changed.`,
-    href: "/method#window",
-  };
 }
 
 /** Which half of the shortfall to name: the rows that are known missing, or the read at large. */

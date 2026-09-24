@@ -15,7 +15,7 @@ import type { MatrixRow } from "./performance";
  * one cell per agent juror and a card one slot per agent juror, each either a draw or a blank,
  * so `Panel 4` was a count of
  * something the reader is looking at — and on dispute 155 it was said twice over, as `Panel 1`
- * beside the `‡ Lone panel` flag that means the same thing more explicitly. Checked against the
+ * beside a `‡ Lone panel` flag (removed 2026-09-24, maintainer's ruling). Checked against the
  * live court before it went: all 31 rows it then held had a panel size equal to their own
  * drawn-cell count.
  *
@@ -55,8 +55,7 @@ export function panelPillOf(row: MatrixRow): PanelPill | null {
   // draw has not happened rather than that these agent jurors were not selected.
   if (row.panelSize === 0) return { text: "No panel yet" };
 
-  // A panel the reader can see. Nothing: the cells are the count, and a panel of one already
-  // carries the ‡ flag, which says what being a majority of one means rather than merely how
-  // many there were. Both callers drop an absent slot's separator with it.
+  // A panel the reader can see. Nothing: the cells are the count. Both callers drop an absent
+  // slot's separator with it.
   return null;
 }

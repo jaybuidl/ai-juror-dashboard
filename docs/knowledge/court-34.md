@@ -12,7 +12,9 @@ that as *that* reconfiguration.
 most of its effort on. Three configurations is what `/method` and the live tripwire state. *One*
 superseded set of **measured** windows is what the marker, `changedWindows` and every "the court
 has been reconfigured once" comment are about — because the 2026-08-26 change moved the evidence
-period alone, and no figure here is measured from it. A sentence counting one of these is almost
+period alone, and no latency here is measured from it. (One figure *is*, since 2026-09-24: the
+headline median time to appeal runs from creation, so its † — `markedAppealWindows`, not
+`markedWindows` — counts every dispute created before 26 August. The row marker still does not.) A sentence counting one of these is almost
 never improved by being made to count the other, and a global replace across the repo gets it
 wrong in both directions.
 

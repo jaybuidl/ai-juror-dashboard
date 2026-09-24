@@ -196,9 +196,9 @@ export function rederive(data: unknown): unknown {
  * How long a restored cache may be shown before it is discarded rather than displayed.
  *
  * A day, and it is not a staleness policy — every query here refetches on mount, and the live
- * ones every five seconds. It is the backstop for a tab reopened after a week: the read stamp
- * prints when the court was read, so old data is *labelled* rather than hidden, but past
- * some point restoring it buys nothing and a cold read is the honest answer.
+ * ones every five seconds. It is the backstop for a tab reopened after a week: past some point
+ * restoring it buys nothing and a cold read is the honest answer. (The read stamp that labelled
+ * restored data with its read time was removed on 2026-09-24.)
  */
 export const PERSISTED_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 

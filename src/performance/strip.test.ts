@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import referenceFixture from "./court-29-reference.fixture.json" with { type: "json" };
 import { type RawReference, referenceReadingOf } from "./reference";
 import {
+  APPEAL_AXIS_MIN_SECONDS,
+  APPEAL_TICKS,
   STRIP_MAX_SECONDS,
   STRIP_RANGE_LABEL,
   STRIP_TICKS,
@@ -14,7 +16,7 @@ const HOUR = 60 * MINUTE;
 const DAY = 24 * HOUR;
 
 /**
- * The scale behind both latency plots, and where the comparison band lands on it.
+ * The scale behind both strip plots, and where the comparison band lands on it.
  *
  * Ticket 22 moved the band from an hour to five days and widened the axis to a month to hold it.
  * Ticket 23 replaced the five days with a reading: court 29's median time to ruling. So the
@@ -137,5 +139,28 @@ describe("stripMarks", () => {
 
   it("draws one mark per draw, so the count matches what the heading claims", () => {
     expect(stripMarks([7, 85, 85, 552]).length).toBe(4);
+  });
+});
+
+describe("the time-to-appeal axis", () => {
+  it("starts at ten minutes and ends where the shared axis does", () => {
+    expect(APPEAL_AXIS_MIN_SECONDS).toBe(10 * MINUTE);
+    expect(stripFraction(APPEAL_AXIS_MIN_SECONDS, APPEAL_AXIS_MIN_SECONDS)).toBe(0);
+    expect(stripFraction(STRIP_MAX_SECONDS, APPEAL_AXIS_MIN_SECONDS)).toBe(1);
+  });
+
+  it("puts anything under ten minutes at the origin rather than off the axis", () => {
+    expect(stripFraction(30, APPEAL_AXIS_MIN_SECONDS)).toBe(0);
+  });
+
+  it("labels only the ticks from its origin onwards", () => {
+    expect(APPEAL_TICKS[0]?.label).toBe("10m");
+    expect(APPEAL_TICKS.at(-1)?.seconds).toBe(STRIP_MAX_SECONDS);
+    expect(APPEAL_TICKS.every((tick) => tick.seconds >= APPEAL_AXIS_MIN_SECONDS)).toBe(true);
+  });
+
+  it("places marks on the same axis it labels", () => {
+    const [mark] = stripMarks([HOUR], APPEAL_AXIS_MIN_SECONDS);
+    expect(mark?.x).toBe(stripFraction(HOUR, APPEAL_AXIS_MIN_SECONDS));
   });
 });

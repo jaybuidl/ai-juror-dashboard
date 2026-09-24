@@ -69,6 +69,17 @@ export function formatElapsedSeconds(seconds: number): string {
 }
 
 /**
+ * A median time to appeal in whole minutes: `"60m"`, `"95m"`, `"800m"`.
+ *
+ * Minutes and never hours, on the maintainer's call (2026-09-24): "1h 00m" read as a round
+ * figure somebody chose, and minutes keep the headline on the scale court 34 actually runs at.
+ * Rounded to the nearest minute, since seconds are noise at this magnitude.
+ */
+export function formatMinutes(seconds: number): string {
+  return `${Math.round(seconds / 60)}m`;
+}
+
+/**
  * A configured window in words: `"45m"`, `"8h"`, `"1h 30m"`.
  *
  * Coarser than a latency on purpose, and a separate function rather than a mode of one. A

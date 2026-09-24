@@ -16,8 +16,14 @@ import {
   type RawDraw,
   type RawRewardShift,
 } from "./performance";
-import { agentJurorMarginalsOf, courtTotalsOf, markedWindows, rowCommitLatencyOf } from "./totals";
-import type { RawCourtParameters } from "./windows";
+import {
+  agentJurorMarginalsOf,
+  courtTotalsOf,
+  markedWindows,
+  rowCommitLatencyOf,
+  timeToAppealOf,
+} from "./totals";
+import type { PeriodWindows, RawCourtParameters } from "./windows";
 
 /**
  * The same captured court every other test in this folder reads, and the same reason: the
@@ -418,7 +424,7 @@ function row(id: number, measured: { commitSeconds: number; voteSeconds: number 
     // Ruled, so `courtTotalsOf`'s finalised count has a ruling to read. It was `{ id }` alone
     // until the caption's count moved onto the totals, and a dispute with no ruling at all is
     // a shape the seam cannot produce.
-    dispute: { id, ruling: { state: "ruled", choice: 1 } } as never,
+    dispute: { id, ruling: { state: "ruled", choice: 1 }, createdAt: 0, rounds: [] } as never,
     panelSize: 2,
     offRosterDraws: 0,
     cells: [],
@@ -433,7 +439,12 @@ function row(id: number, measured: { commitSeconds: number; voteSeconds: number 
 /** The median as `courtTotalsOf` computes it, reached through the only door it has. */
 function medianOfSeconds(seconds: readonly number[]): number | undefined {
   const rows = seconds.map((value, index) => ({
-    dispute: { id: index, ruling: { state: "ruled", choice: 1 } } as never,
+    dispute: {
+      id: index,
+      ruling: { state: "ruled", choice: 1 },
+      createdAt: 0,
+      rounds: [],
+    } as never,
     panelSize: 2,
     offRosterDraws: 0,
     // No window resolved and nothing marked: the median must be the same figure whether or not
@@ -828,6 +839,98 @@ describe("markedWindows", () => {
   });
 });
 
+describe("timeToAppealOf", () => {
+  /** A dispute with no draws, only the record time to appeal is read from. */
+  function disputeRow(
+    id: number,
+    createdAt: number,
+    rounds: readonly { index: number; appealOpenedAt: number | null }[],
+    windows: PeriodWindows | null = null,
+  ): MatrixRow {
+    return {
+      dispute: {
+        id,
+        period: "appeal",
+        ruling: { state: "pending" },
+        createdAt,
+        lastPeriodChange: createdAt,
+        templateId: null,
+        rounds: rounds.map((round) => ({
+          index: round.index,
+          commitOpenedAt: createdAt + 1,
+          voteOpenedAt: createdAt + 2,
+          appealOpenedAt: round.appealOpenedAt,
+          executionOpenedAt: null,
+        })),
+      },
+      panelSize: 0,
+      offRosterDraws: 0,
+      cells: ROSTER.map(() => null),
+      windows,
+      underEarlierWindows: false,
+      read: true,
+    };
+  }
+
+  it("is one value per dispute, from creation to the first round's appeal period", () => {
+    const appeal = timeToAppealOf([
+      disputeRow(3, 1000, [{ index: 0, appealOpenedAt: 1300 }]),
+      disputeRow(1, 1000, [{ index: 0, appealOpenedAt: 1100 }]),
+      disputeRow(2, 1000, [{ index: 0, appealOpenedAt: 1200 }]),
+      disputeRow(4, 1000, [{ index: 0, appealOpenedAt: 1400 }]),
+    ]);
+
+    expect(appeal.summary?.seconds).toEqual([100, 200, 300, 400]);
+    // The lower middle, as every median here: 200 and not an invented 250.
+    expect(appeal.summary?.median).toBe(200);
+    expect(appeal.summary?.fastest).toBe(100);
+    expect(appeal.summary?.slowest).toBe(400);
+    expect(appeal.disputes.map((entry) => entry.dispute)).toEqual([1, 2, 3, 4]);
+  });
+
+  it("counts a dispute not yet at appeal rather than plotting or dropping it", () => {
+    const appeal = timeToAppealOf([
+      disputeRow(2, 1000, [{ index: 0, appealOpenedAt: null }]),
+      disputeRow(1, 1000, [{ index: 0, appealOpenedAt: 1600 }]),
+      // No round at all: a dispute whose timeline the subgraph has not written.
+      disputeRow(3, 1000, []),
+    ]);
+
+    expect(appeal.summary?.seconds).toEqual([600]);
+    expect(appeal.notYetAtAppeal).toEqual([2, 3]);
+  });
+
+  it("reads round 0 only, even where an appeal round follows", () => {
+    // The second round's appeal period opened much later, after the appeal itself. Reading the
+    // latest round would fold the time the parties took to appeal into the court's figure.
+    const appeal = timeToAppealOf([
+      disputeRow(1, 1000, [
+        { index: 1, appealOpenedAt: 90_000 },
+        { index: 0, appealOpenedAt: 5000 },
+      ]),
+    ]);
+
+    expect(appeal.summary?.seconds).toEqual([4000]);
+  });
+
+  it("has nothing to report, not a zero, when no dispute has reached appeal", () => {
+    const appeal = timeToAppealOf([disputeRow(1, 1000, [{ index: 0, appealOpenedAt: null }])]);
+
+    expect(appeal.summary).toBeNull();
+    expect(appeal.notYetAtAppeal).toEqual([1]);
+  });
+
+  it("is the figure the court's totals carry, over every dispute in the captured court", () => {
+    const totals = courtTotalsOf(built.rows, ROSTER);
+
+    // All sixteen captured disputes had reached appeal: 164–166 were sitting in it.
+    expect(totals.timeToAppeal.summary?.seconds).toHaveLength(built.rows.length);
+    expect(totals.timeToAppeal.notYetAtAppeal).toEqual([]);
+    // Dispute 166: created 1787598714, appeal opened 1787604932.
+    expect(totals.timeToAppeal.disputes.find((entry) => entry.dispute === 166)?.seconds).toBe(6218);
+  });
+});
+
 /** The windows court 34 ran under before the 2026-08-20 change, as `windows.ts` resolves them. */
 const EARLIER = { commitSeconds: 28_800, voteSeconds: 28_800 };
 
@@ -866,6 +969,9 @@ function column({
       id,
       period: ruled ? "execution" : "appeal",
       ruling: ruled ? { state: "ruled", choice: 1 } : { state: "pending" },
+      // No timeline: these rows are about draws, and a time to appeal is not asked of them.
+      createdAt: 0,
+      rounds: [],
     } as never,
     panelSize,
     offRosterDraws: 0,

@@ -1,4 +1,4 @@
-import { render, screen, within } from "@testing-library/react";
+import { render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { ThemeProvider } from "styled-components";
 import { describe, expect, it } from "vitest";
@@ -7,40 +7,17 @@ import { theme } from "../styles/theme";
 import type { Density } from "./density";
 import { Marginals } from "./Marginals";
 import type { RewardCoverage } from "./performance";
-import type { AgentJurorMarginals, LatencySummary, WindowChange } from "./totals";
-import type { PeriodWindows } from "./windows";
+import type { AgentJurorMarginals, LatencySummary } from "./totals";
 
 /**
  * One agent juror's column header, on its own.
  *
  * Rendered apart from the matrix because the states worth checking are ones the captured court
- * cannot produce: a court that has superseded two sets of *measured* windows, a commit scan that
- * came back empty over commitments the subgraph records, and a column whose only lone panel is
- * still being decided. `Matrix.test.tsx` checks that the block reaches the column headers at
- * all, over the real court.
- *
- * "Superseded two sets of measured windows" is not "reconfigured twice", and the difference is
- * the point rather than pedantry: court 34 *has* been reconfigured twice, and its second
- * reconfiguration moved the evidence period alone, so the real court still supersedes exactly
- * one set of windows anything here is measured against. This file's two-group case remains one
- * the chain has never produced.
+ * cannot produce: a commit scan that came back empty over commitments the subgraph records, and a
+ * payout read that came back short. `Matrix.test.tsx` checks that the block reaches the column
+ * headers at all, over the real court. The caveat marks these figures carried were removed on
+ * 2026-09-24 (maintainer's ruling), and their tests with them.
  */
-
-/** What court 34 holds now: 10m evidence, 45m commit, 30m vote — the 2026-08-26 configuration. */
-const CURRENT: PeriodWindows = {
-  evidenceSeconds: 600,
-  commitSeconds: 2700,
-  voteSeconds: 1800,
-  appealSeconds: 129_600,
-};
-
-/** What it held two configurations ago, and the group dispute 151 falls into: 8h commit, 8h vote. */
-const EARLIER: WindowChange = {
-  disputes: [151],
-  windows: { commitSeconds: 28_800, voteSeconds: 28_800 },
-  revealedDraws: 1,
-  committedDraws: 1,
-};
 
 function summary(seconds: number[]): LatencySummary {
   const ascending = [...seconds].sort((a, b) => a - b);
@@ -93,7 +70,6 @@ function renderMarginals(
           marginals={marginalsOf(over)}
           scanned={scanned}
           payouts={payouts}
-          current={CURRENT}
           density={density}
         />
       </MemoryRouter>
@@ -109,8 +85,8 @@ describe("Marginals", () => {
     expect(screen.getByText("4m 19s")).toBeInTheDocument();
     // A count and never a rate: "75%" hides that one draw moves it twenty-five points.
     expect(screen.getByText("3/4")).toBeInTheDocument();
-    // The draw and the vote ID are two things, and this court's counts differ.
-    expect(screen.getByText("4 · 5v")).toBeInTheDocument();
+    // The draw count alone: the vote-ID count beside it was removed on 2026-09-24.
+    expect(screen.getByText("4")).toBeInTheDocument();
   });
 
   it("names each figure in full for a reader who cannot see the column", () => {
@@ -148,7 +124,7 @@ describe("Marginals", () => {
   it("shows its draw count as a real zero, because zero draws is a measurement", () => {
     renderMarginals({ draws: 0, votes: 0, revealLatency: null, commitLatency: null });
 
-    expect(screen.getByText("0 · 0v")).toBeInTheDocument();
+    expect(screen.getByText("0")).toBeInTheDocument();
   });
 
   it("reads a commit median that has not been scanned for as a step not reached", () => {
@@ -262,141 +238,6 @@ describe("Marginals", () => {
 
       expect(screen.queryByText("Not read")).not.toBeInTheDocument();
     });
-
-    it("does not mark either figure with the window dagger", () => {
-      // A measured fact rather than an omission. The † is about the commit and vote windows,
-      // and a reward depends on neither: both of court 34's reconfigurations carried `minStake`,
-      // `alpha` and `feeForJuror` unchanged and moved only `timesPerPeriod`. Marking these
-      // would be a caveat a reader can see is misplaced, which is one they stop reading.
-      //
-      // "Carried them unchanged" is compared on every run now rather than re-read by hand —
-      // `rewardParameterChanges`, ticket 21. The day it stops being true, these two figures are
-      // the ones that need saying something about, and this test is where that starts.
-      renderMarginals({ changedWindows: [EARLIER] });
-
-      // Two daggers: the reveal median and the commit median, and neither reward figure. The
-      // reason each carries is read off its accessible name rather than off the page: it is the
-      // mark's own name at both densities now, and drawn under the figure at neither.
-      expect(screen.getAllByText("†")).toHaveLength(2);
-      for (const name of [/median reveal is marked/i, /median commit is marked/i]) {
-        expect(screen.getByRole("link", { name })).toHaveAccessibleName(
-          /ran under a .* window of 8h/i,
-        );
-      }
-      expect(screen.queryByRole("link", { name: /eth|pnk/i })).not.toBeInTheDocument();
-    });
-  });
-
-  describe("the markers", () => {
-    it("marks the coherence count where a draw behind it sat on a panel of one", () => {
-      renderMarginals({
-        coherence: { coherent: 4, resolved: 4, lonePanelDisputes: [155] },
-      });
-
-      // The reason names how many of the counted draws are affected, not merely that some are.
-      expect(screen.getByRole("link", { name: /coherence count is marked/i })).toHaveAccessibleName(
-        /1 of 4 draws sat on a panel of one, where coherence is tautological/i,
-      );
-      expect(screen.getByRole("link", { name: /coherence count is marked/i })).toHaveAttribute(
-        "href",
-        "/method#caveats",
-      );
-    });
-
-    it("leaves the coherence count unmarked where no panel of one is behind it", () => {
-      renderMarginals();
-
-      // The marker, not the prose: the reason lives on an accessible name now, so a
-      // queryByText here would pass whether or not a marker was wrongly added.
-      expect(screen.queryByRole("link", { name: /coherence count is marked/i })).toBeNull();
-      expect(screen.queryByText(/panel of one/i)).not.toBeInTheDocument();
-    });
-
-    it("marks both latency medians where the court changed both windows", () => {
-      // Court 34 changed its commit window and its vote window at the same moment, so a column
-      // drawn in dispute 151 has both of its medians measured against a window the court no
-      // longer holds. Marking only one would have the page comparing and declining to compare.
-      renderMarginals({ changedWindows: [EARLIER] });
-
-      expect(screen.getByRole("link", { name: /median reveal is marked/i })).toHaveAccessibleName(
-        /1 of 4 draws ran under a vote window of 8h, which the court has since/i,
-      );
-      expect(screen.getByRole("link", { name: /median commit is marked/i })).toHaveAccessibleName(
-        /1 of 4 draws ran under a commit window of 8h, which the court has since/i,
-      );
-    });
-
-    it("points each latency marker at the court's own account of the change", () => {
-      renderMarginals({ changedWindows: [EARLIER] });
-
-      for (const name of [/median reveal is marked/i, /median commit is marked/i]) {
-        expect(screen.getByRole("link", { name })).toHaveAttribute("href", "/method#window");
-      }
-    });
-
-    it("marks only the median the changed window actually governs", () => {
-      // A court that changed its commit window and left its vote window alone. Marking the
-      // reveal median would name a duration identical to the one in force — a marker that reads
-      // as placed in error, which is the failure `windowFlagLabel` guards against on the row.
-      renderMarginals({
-        changedWindows: [
-          {
-            disputes: [151],
-            windows: { commitSeconds: 28_800, voteSeconds: CURRENT.voteSeconds },
-            revealedDraws: 1,
-            committedDraws: 1,
-          },
-        ],
-      });
-
-      expect(screen.getByRole("link", { name: /median commit is marked/i })).toHaveAccessibleName(
-        /ran under a commit window of 8h/i,
-      );
-      expect(screen.queryByRole("link", { name: /median reveal is marked/i })).toBeNull();
-    });
-
-    it("marks nothing where the column contributed no draw to the changed window", () => {
-      // The marker is a claim about the draws behind *this* number. A column never drawn in
-      // dispute 151 is comparable with the court as it stands.
-      renderMarginals({
-        changedWindows: [{ ...EARLIER, revealedDraws: 0, committedDraws: 0 }],
-      });
-
-      expect(screen.queryByText(/which the court has since changed/i)).not.toBeInTheDocument();
-    });
-
-    it("marks nothing where there is no median for a marker to ride", () => {
-      renderMarginals({ revealLatency: null, commitLatency: null, changedWindows: [EARLIER] });
-
-      expect(screen.queryByText(/which the court has since changed/i)).not.toBeInTheDocument();
-    });
-
-    it("says which agent juror each marker belongs to, since every column carries the same words", () => {
-      const nickname = ROSTER[0]?.nickname ?? "";
-      renderMarginals({ changedWindows: [EARLIER] });
-
-      const link = screen.getByRole("link", { name: /median reveal is marked/i });
-      expect(link).toHaveAccessibleName(new RegExp(nickname, "i"));
-    });
-
-    it("carries each marker beside the figure it qualifies and no other", () => {
-      renderMarginals({
-        coherence: { coherent: 4, resolved: 4, lonePanelDisputes: [155] },
-        changedWindows: [EARLIER],
-      });
-
-      // The same two glyphs the row flags and the footnotes under the matrix use, because one
-      // caveat drawn two ways reads as two caveats. † rides both latencies, ‡ rides coherence
-      // alone — a lone panel says nothing about how quickly an agent juror acted.
-      expect(screen.getAllByText("†")).toHaveLength(2);
-      expect(screen.getAllByText("‡")).toHaveLength(1);
-      expect(within(screen.getByText("48s")).getByText("†")).toBeInTheDocument();
-      expect(within(screen.getByText("4/4")).getByText("‡")).toBeInTheDocument();
-      expect(within(screen.getByText("4/4")).queryByText("†")).toBeNull();
-      // The draw count takes neither: a window changes what a duration means and changes
-      // nothing about how many times the court drew this agent juror.
-      expect(within(screen.getByText("4 · 5v")).queryByText("†")).toBeNull();
-    });
   });
 
   /**
@@ -411,7 +252,7 @@ describe("Marginals", () => {
         "Median commit latency",
         "Median reveal latency",
         "Coherent draws, of the draws the court has ruled on",
-        "Draws, and the vote IDs they hold",
+        "Times the court drew this agent juror",
       ]) {
         expect(screen.getByText(kept)).toBeInTheDocument();
       }
@@ -429,55 +270,6 @@ describe("Marginals", () => {
         .getAllByText(/^(Med com|Med rev|Coherent|Draws)$/)
         .map((key) => key.textContent);
       expect(keys).toEqual(["Med com", "Med rev", "Coherent", "Draws"]);
-    });
-
-    it("draws no reason under a figure at the comfortable density either", () => {
-      // The change ticket 17 made at the compact density, applied at this one. The reason line
-      // was built from `canvas/Errors.dc.html:201-217`, which draws the dagger pattern on a
-      // standalone 400px card; the artboard for this block, `canvas/Main.dc.html:136-152`, is
-      // six bare key-value lines. Inside a 145px column it measured 350px of header on the live
-      // court and — because a paragraph's height varies with its wrapping — put the six columns
-      // on three different baselines. The reason keeps three voices: this mark's accessible
-      // name, the footnote below the grid, and /method.
-      renderMarginals({
-        coherence: { coherent: 4, resolved: 4, lonePanelDisputes: [155] },
-        changedWindows: [EARLIER],
-      });
-
-      expect(screen.queryByText(/draws ran under a vote window of/i)).not.toBeInTheDocument();
-      expect(screen.queryByText(/sat on a panel of one/i)).not.toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /median reveal is marked/i })).toHaveAccessibleName(
-        /draws ran under a vote window of/i,
-      );
-    });
-
-    it("keeps the marker on a figure it keeps, and says why on the marker itself", () => {
-      renderMarginals(
-        {
-          coherence: { coherent: 4, resolved: 4, lonePanelDisputes: [155] },
-          changedWindows: [EARLIER],
-        },
-        { density: "compact" },
-      );
-
-      // The reason line goes and the reason does not: it moves onto the mark's accessible name,
-      // where it costs a frozen header nothing. Ticket 06's own hand-off asked for this trade.
-      // Two daggers: the commit and reveal medians each carry their own window marker.
-      expect(screen.getAllByText("†")).toHaveLength(2);
-      expect(screen.getAllByText("‡")).toHaveLength(1);
-      expect(screen.queryByText(/draws ran under a vote window of/i)).not.toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /median reveal is marked/i })).toHaveAccessibleName(
-        /draws ran under a vote window of/i,
-      );
-    });
-
-    it("keeps the commit median's marker with the commit median", () => {
-      // The commit median carries a † of its own, and since 2026-09-24 it survives the compact
-      // density, so its marker does too: a caveat is never among what density drops.
-      renderMarginals({ changedWindows: [EARLIER] }, { density: "compact" });
-
-      expect(screen.getByText("Median commit latency")).toBeInTheDocument();
-      expect(screen.getByRole("link", { name: /median commit is marked/i })).toBeInTheDocument();
     });
   });
 });

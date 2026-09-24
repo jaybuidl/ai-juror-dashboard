@@ -17,13 +17,7 @@ import {
   UNREAD_FIGURE,
   UNREAD_PRESENTATION,
 } from "./cell";
-import {
-  Footnotes,
-  LonePanelFootnote,
-  OffRosterFootnote,
-  SparsityNote,
-  WindowFootnote,
-} from "./Footnotes";
+import { SparsityNote } from "./Footnotes";
 import { Legend, StateLegend } from "./Legend";
 import { panelPillOf } from "./panel";
 import type { CourtPerformance, Draw, MatrixRow } from "./performance";
@@ -54,7 +48,7 @@ import { type RowFlagContext, rowFlagOf } from "./row-flags";
  *
  * Everything rendered here comes from `buildCourtPerformance`, exactly as the matrix does. The
  * two layouts share their vocabulary through `cell.ts`, their flag precedence through
- * `row-flags.ts`, and every caveat through `Legend.tsx` and `Footnotes.tsx`, so a reader cannot
+ * `row-flags.ts`, and their legend and sparsity note through `Legend.tsx` and `Footnotes.tsx`, so a reader cannot
  * be told different things about one court by holding a different device.
  */
 
@@ -459,8 +453,8 @@ export function DisputeCards({
   slotsFor,
   now = Date.now(),
 }: DisputeCardsProps) {
-  const { agentJurors, rows, totals, commitCoverage, parameters } = performance;
-  const flagContext: RowFlagContext = { current: parameters.current, now };
+  const { agentJurors, rows, totals, commitCoverage } = performance;
+  const flagContext: RowFlagContext = { now };
   const unread = commitCoverage.expected - commitCoverage.resolved;
   const identityOf = new Map(
     roster.entries.map(({ agentJuror, identity }) => [agentJuror.address, identity]),
@@ -554,12 +548,6 @@ export function DisputeCards({
               />
             ))}
           </Cards>
-
-          <Footnotes>
-            <WindowFootnote performance={performance} />
-            <OffRosterFootnote performance={performance} />
-            <LonePanelFootnote performance={performance} />
-          </Footnotes>
         </>
       )}
     </Section>

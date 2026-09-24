@@ -1,6 +1,5 @@
 import styled from "styled-components";
 import type { Failures } from "../chrome/failures";
-import type { Provenance } from "../chrome/provenance";
 import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import { ensFallbackOf } from "../roster/ens-fallback";
@@ -56,13 +55,10 @@ function failuresOf(roster: RosterView): Failures {
   };
 }
 
-/** Nothing here rests on a dispute read: the roster is the roster whether or not the court has held anything. */
-const PROVENANCE: Provenance = { read: null, readAt: null };
-
 export function AgentJurorsPage({ roster }: { roster: RosterView }) {
   useDocumentTitle("The agent jurors");
   return (
-    <View provenance={PROVENANCE} failures={failuresOf(roster)}>
+    <View failures={failuresOf(roster)}>
       <Header>
         <Title>Agent jurors</Title>
         {/* Deliberately not a second description of the roster — `Roster` carries its own, and

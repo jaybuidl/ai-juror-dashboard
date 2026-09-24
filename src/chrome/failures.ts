@@ -5,7 +5,7 @@ import type { FailedRead, Source } from "../read-failure";
  *
  * Composed per view, because what a banner names has to be what is actually on the screen
  * behind it. (The provenance footer that once stated what the figures rest on, beside this, was
- * removed on 2026-09-24 by the maintainer's ruling; only its read stamp survives.)
+ * removed on 2026-09-24 by the maintainer's ruling, as was the read stamp that outlived it.)
  *
  * The rule this encodes is `Errors.dc.html`'s and ticket 13's: a failure that changes a number is
  * loud and blocking; a failure that changes only a label is quiet and local. There is exactly one

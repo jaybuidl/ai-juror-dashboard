@@ -11,10 +11,11 @@ import type { PeriodWindows } from "./windows";
  * One agent juror's reveal latencies against the court's, built against
  * `canvas/Juror.dc.html:86-110`.
  *
- * A separate component from `LatencyStrip` and reading the same axis from `strip.ts`, which is
- * the split that matters: the scale is shared so the two plots can be compared across pages,
+ * A separate component from `TimeToAppealStrip` and reading the same axis from `strip.ts`, which
+ * is the split that matters: the scale is shared so the two plots can be compared across pages,
  * and the anatomy differs because this one carries two series and a court median rather than one
- * series and its own. Merging them would put a second, optional series and a second median
+ * series and its own. The two plot different measures since 2026-09-24 — that strip is the
+ * court's time to appeal, one mark per dispute — and still share the axis and the band. Merging them would put a second, optional series and a second median
  * through a component the matrix page relies on; keeping the *scale* separate would let one page
  * quietly place 85 seconds somewhere the other page does not.
  *
@@ -22,9 +23,9 @@ import type { PeriodWindows } from "./windows";
  * Ticket 22 moved the band to five days and had to widen the shared axis to a month to hold it,
  * which moves every mark on this page too. The three ways out were a scale of this plot's own, a
  * wider axis with nothing on it past an hour, or the band. A scale of its own is the one that
- * had to go: the background series here *is* the court's distribution, the same seconds
- * `LatencyStrip` plots, so a second scale would draw one set of numbers two shapes on two pages
- * — the fork `CLAUDE.md` records the matrix and the card list being lifted apart to prevent. Of
+ * had to go: the background series here *is* the court's reveal distribution, which the matrix
+ * page's strip plotted until 2026-09-24 and the matrix cells still print, so a second scale would
+ * draw one set of numbers two shapes on two pages — the fork `CLAUDE.md` records the matrix and the card list being lifted apart to prevent. Of
  * the remaining two, a bare wider axis leaves the right third of the plot empty with nothing to
  * say why, and the band is what that emptiness *means*: it is the distance this page exists to
  * measure. It is read here exactly as it is on the matrix page, from the same `Comparison`. The

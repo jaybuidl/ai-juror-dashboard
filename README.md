@@ -15,7 +15,7 @@ application shell, the deployment pipeline, the Kleros ×AI visual system, and s
 one piece of chrome: the matrix at `/` — one row per dispute, headed by what that dispute is
 actually about, one column per agent juror, each cell carrying that draw's commit latency, its
 reveal latency and whether it voted with the dispute's final ruling — plus the court's totals and
-latency distribution above it, a dispute index at `/disputes`, one dispute read whole at
+its time-to-appeal distribution above it, a dispute index at `/disputes`, one dispute read whole at
 `/disputes/:id`, every agent juror at `/agent-jurors`, one of them on its own at
 `/agent-jurors/:nickname`, how everything is measured at `/method`, and a 404 view
 behind them. Every column header carries that agent juror's own summary of the same three
@@ -70,7 +70,7 @@ one figure — the latency of the most recent thing that draw did — and an age
 drawn keeps its position and collapses to a single dot, so absence still reads as absence. The card is the tap
 target and opens that dispute's own page, where both latencies and the published reasoning are. The
 chrome folds with it: the lockup keeps the official wordmark and drops its diamond, the four
-destinations go behind one menu, three stat tiles replace four with the median reveal leading, and
+destinations go behind one menu, three stat tiles replace four with the median time to appeal leading, and
 the read-only statement stays in the bar. Every caveat a desktop reader meets, a phone reader meets
 too — the legend and the note that sparsity is normal are rendered inline above the first card
 rather than behind a control, because a reader who does not know a blank means "not drawn" will not

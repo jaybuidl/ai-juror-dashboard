@@ -61,13 +61,6 @@ describe("the dispute index", () => {
     expect(within(banner).queryByText(formatAgo(READ_AT, Date.now()))).not.toBeInTheDocument();
   });
 
-  it("stamps the range and moment of the dispute read at the top", () => {
-    renderAt("/disputes");
-
-    const stamp = screen.getByText("Read 16 disputes, 151–166").parentElement as HTMLElement;
-    expect(stamp).toHaveTextContent(/2026-08-25 05:12 UTC$/);
-  });
-
   it("dates a whole page by its own read, with no template shortfall to fold in", () => {
     // The other direction, and the one that is easy to break while fixing the first: with every
     // title in hand the template read is not a second condition on completeness, and reporting

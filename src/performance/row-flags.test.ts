@@ -3,7 +3,6 @@ import type { Dispute } from "../disputes/disputes";
 import { ROSTER } from "../roster/agent-jurors";
 import type { MatrixRow } from "./performance";
 import { ROW_FLAGS, rowFlagOf } from "./row-flags";
-import type { PeriodWindows } from "./windows";
 
 /**
  * The precedence, checked rather than looked at.
@@ -12,22 +11,6 @@ import type { PeriodWindows } from "./windows";
  * the reason it moved is exactly what this file pins: a phone card and a matrix row must mark
  * one dispute the same way. A test that rendered a matrix could only prove it for the matrix.
  */
-
-/** What the court holds now: the 2026-08-26 configuration, evidence 10m. */
-const CURRENT: PeriodWindows = {
-  evidenceSeconds: 600,
-  commitSeconds: 2700,
-  voteSeconds: 1800,
-  appealSeconds: 129_600,
-};
-
-/** The windows dispute 151 ran under: 8h commit, 8h vote. */
-const EARLIER: PeriodWindows = {
-  evidenceSeconds: 43_200,
-  commitSeconds: 28_800,
-  voteSeconds: 28_800,
-  appealSeconds: 129_600,
-};
 
 const NOW = 1_787_604_932_000;
 
@@ -56,124 +39,36 @@ function row(over: Partial<MatrixRow> = {}): MatrixRow {
     // and every case in this file that is about some other flag would meet the new one first.
     offRosterDraws: 0,
     cells: ROSTER.map(() => null),
-    windows: CURRENT,
+    windows: null,
     underEarlierWindows: false,
     read: true,
     ...over,
   };
 }
 
-const context = { current: CURRENT, now: NOW };
+const context = { now: NOW };
 
 describe("rowFlagOf", () => {
-  it("flags nothing on a finalised dispute with a full panel and current windows", () => {
+  it("flags nothing on a finalised dispute with a full panel", () => {
     expect(rowFlagOf(row(), context)).toBeUndefined();
   });
 
+  it("no longer flags a changed window, an off-roster draw or a lone panel", () => {
+    // Removed from the UI on 2026-09-24 (maintainer's ruling); /method keeps the prose.
+    expect(rowFlagOf(row({ underEarlierWindows: true }), context)).toBeUndefined();
+    expect(rowFlagOf(row({ offRosterDraws: 2 }), context)).toBeUndefined();
+    expect(rowFlagOf(row({ panelSize: 1 }), context)).toBeUndefined();
+  });
+
   it("puts an unread row above every other flag", () => {
-    // A row nobody asked about has nothing true to flag, and the window flag below reads the
-    // *dispute*, which was read — so without this entry a row about to be drawn as entirely
-    // unknown would wear "8h window" over six positions reading "not read".
-    const flag = rowFlagOf(
-      row({ read: false, underEarlierWindows: true, windows: EARLIER, panelSize: 1 }),
-      context,
-    );
+    const unread = row({
+      read: false,
+      dispute: dispute({ period: "commit", ruling: { state: "pending" } }),
+    });
+    const flag = rowFlagOf(unread, context);
 
     expect(flag?.key).toBe("not-read");
-    expect(flag?.label(row({ read: false }), context)).toBe("Not read");
-  });
-
-  it("puts a changed window above a lone panel", () => {
-    // The window is what makes a dispute's figures incomparable with the ones around it; a lone
-    // panel only makes one of them uninformative, and carries its own amber on the panel pill.
-    const flag = rowFlagOf(
-      row({ underEarlierWindows: true, windows: EARLIER, panelSize: 1 }),
-      context,
-    );
-
-    expect(flag?.key).toBe("window");
-  });
-
-  it("names the window that actually differs", () => {
-    const marked = row({ underEarlierWindows: true, windows: EARLIER });
-
-    // Court 34 changed both, so the commit window is named. A court that changed only its vote
-    // window would otherwise be labelled with a duration identical to the one it holds now.
-    expect(rowFlagOf(marked, context)?.label(marked, context)).toBe("8h window");
-
-    const voteOnly = row({
-      underEarlierWindows: true,
-      windows: { ...EARLIER, commitSeconds: CURRENT.commitSeconds },
-    });
-    expect(rowFlagOf(voteOnly, context)?.label(voteOnly, context)).toBe("8h vote window");
-  });
-
-  describe("the off-roster flag, which ranks third", () => {
-    it("sits below a changed window", () => {
-      // A mis-dated latency is worse than an unattributed panel member: the window makes every
-      // figure on the row incomparable with the rows around it, where this says one is short.
-      const both = row({ underEarlierWindows: true, windows: EARLIER, offRosterDraws: 2 });
-
-      expect(rowFlagOf(both, context)?.key).toBe("window");
-    });
-
-    it("sits above a lone panel and above live", () => {
-      // Both of those describe the court's own shape. This one says something is missing from
-      // what the grid shows, and a reader needs that before being told the panel was one.
-      const lone = row({ offRosterDraws: 1, panelSize: 1 });
-      const live = row({
-        offRosterDraws: 1,
-        dispute: dispute({ period: "commit", ruling: { state: "pending" } }),
-      });
-
-      expect(rowFlagOf(lone, context)?.key).toBe("off-roster");
-      expect(rowFlagOf(live, context)?.key).toBe("off-roster");
-    });
-
-    it("stays below an unread row, which has nothing true to flag at all", () => {
-      const unread = row({ read: false, offRosterDraws: 3 });
-
-      expect(rowFlagOf(unread, context)?.key).toBe("not-read");
-    });
-
-    it("says the count and, at the compact density, gives up only the noun", () => {
-      const one = row({ offRosterDraws: 1 });
-      const several = row({ offRosterDraws: 4 });
-
-      expect(rowFlagOf(one, context)?.label(one, context)).toBe("1 off-roster draw");
-      expect(rowFlagOf(one, context)?.shortLabel(one, context)).toBe("1 off-roster");
-      expect(rowFlagOf(several, context)?.label(several, context)).toBe("4 off-roster draws");
-      expect(rowFlagOf(several, context)?.shortLabel(several, context)).toBe("4 off-roster");
-    });
-
-    it("cannot fork: the short form is a prefix of the long one at every count", () => {
-      // Both forms are composed from one reduction rather than one being cut out of the other,
-      // which is the rule `markedWindow` established — an abbreviation built by trimming a
-      // finished string is free to name something the long form does not.
-      for (const count of [1, 2, 9, 17]) {
-        const marked = row({ offRosterDraws: count });
-        const flag = rowFlagOf(marked, context);
-
-        expect(flag?.label(marked, context).startsWith(flag.shortLabel(marked, context))).toBe(
-          true,
-        );
-        expect(flag?.shortLabel(marked, context)).toContain(String(count));
-      }
-    });
-
-    it("does not fire where every draw has a column, which is this court today", () => {
-      expect(rowFlagOf(row({ offRosterDraws: 0 }), context)).toBeUndefined();
-    });
-  });
-
-  it("puts a lone panel above live", () => {
-    const flag = rowFlagOf(
-      row({ panelSize: 1, dispute: dispute({ period: "vote", ruling: { state: "pending" } }) }),
-      context,
-    );
-
-    expect(flag?.key).toBe("lone-panel");
-    expect(flag?.tone).toBe("work");
+    expect(flag?.label(unread, context)).toBe("Not read");
   });
 
   it("names the open period and how long it has been open on a live dispute", () => {
@@ -194,12 +89,8 @@ describe("rowFlagOf", () => {
      * the live pill's 175px were coming out of the title.
      */
     it("keeps saying which flag it is, without the qualifier after it", () => {
-      const marked = row({ underEarlierWindows: true, windows: EARLIER });
-      const lone = row({ panelSize: 1 });
       const live = row({ dispute: dispute({ period: "commit", ruling: { state: "pending" } }) });
 
-      expect(rowFlagOf(marked, context)?.shortLabel(marked, context)).toBe("8h");
-      expect(rowFlagOf(lone, context)?.shortLabel(lone, context)).toBe("Lone");
       expect(rowFlagOf(live, context)?.shortLabel(live, context)).toBe("Live");
     });
 
@@ -209,39 +100,6 @@ describe("rowFlagOf", () => {
       const unread = row({ read: false });
 
       expect(rowFlagOf(unread, context)?.shortLabel(unread, context)).toBe("Not read");
-    });
-
-    it("abbreviates whichever window the marker is actually about", () => {
-      // The same comparison the full label makes: a court that changed only its vote window
-      // would otherwise be marked with a duration identical to the one it holds now.
-      const voteOnly = row({
-        underEarlierWindows: true,
-        windows: { ...EARLIER, commitSeconds: CURRENT.commitSeconds },
-      });
-
-      expect(rowFlagOf(voteOnly, context)?.label(voteOnly, context)).toBe("8h vote window");
-      expect(rowFlagOf(voteOnly, context)?.shortLabel(voteOnly, context)).toBe("8h");
-    });
-
-    it("never abbreviates a duration into one the court never had", () => {
-      // `formatWindowSeconds` returns two words whenever the minutes do not divide by 60, so an
-      // abbreviation cut at the first space would turn a 90-minute window into "1h" — on the
-      // marker whose whole job is to name the window that differs. Court 34's 8h, 45m and 30m
-      // are all one token, which is what hid this until review.
-      const ninety = row({
-        underEarlierWindows: true,
-        windows: { ...EARLIER, commitSeconds: 5400 },
-      });
-
-      expect(rowFlagOf(ninety, context)?.label(ninety, context)).toBe("1h 30m window");
-      expect(rowFlagOf(ninety, context)?.shortLabel(ninety, context)).toBe("1h 30m");
-    });
-
-    it("says a row the history cannot place is from an earlier window, either way", () => {
-      const unplaced = row({ underEarlierWindows: true, windows: null });
-
-      expect(rowFlagOf(unplaced, context)?.label(unplaced, context)).toBe("Earlier window");
-      expect(rowFlagOf(unplaced, context)?.shortLabel(unplaced, context)).toBe("Earlier");
     });
 
     it("gives every flag both labels, so neither density can meet one that has none", () => {

@@ -96,8 +96,7 @@ if (drawnOutsideFixtureRoster.length > 0) {
 /**
  * An address the roster will never hold, and the dispute a fixture hangs it on.
  *
- * 157 rather than 151, which already wears the dagger: `rowFlagOf` returns one flag, and a case
- * about the off-roster mark needs a row wearing nothing else. The address is deliberately
+ * 157 rather than 151, the court's oldest dispute. The address is deliberately
  * meaningless — what a page may say about it is a count, and these fixtures exist partly to prove
  * that a page says nothing more.
  */
@@ -167,7 +166,7 @@ export const resolvedRoster: RosterView = {
   isResolvedFromEns: true,
 };
 
-/** A fixed moment, so the read stamp's time is not a moving target in a test. */
+/** A fixed moment, so a read's time is not a moving target in a test. */
 export const READ_AT = Date.UTC(2026, 7, 25, 5, 12, 0);
 
 /**
@@ -643,7 +642,7 @@ export const views: DashboardRoutesProps = {
  * Render the whole dashboard at one URL.
  *
  * Through the router rather than by rendering a page component directly: the shell, the nav and
- * the read stamp are as much a part of what a route renders as its content is, and a test that
+ * the failure banner are as much a part of what a route renders as its content is, and a test that
  * skipped them could not tell that a view had lost its chrome.
  */
 export function renderAt(path: string, overrides: Partial<DashboardRoutesProps> = {}) {

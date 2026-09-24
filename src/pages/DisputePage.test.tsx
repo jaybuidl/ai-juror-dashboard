@@ -626,12 +626,3 @@ describe("an address this dashboard cannot show", () => {
     expect(screen.queryByText(/^Read dispute/)).not.toBeInTheDocument();
   });
 });
-
-describe("the read stamp", () => {
-  it("names the one dispute on screen, and when the court was read", () => {
-    renderDispute();
-
-    const stamp = screen.getByText("Read dispute 156").parentElement as HTMLElement;
-    expect(stamp).toHaveTextContent(/^Read dispute 156 · 2026-08-25 05:12 UTC$/);
-  });
-});

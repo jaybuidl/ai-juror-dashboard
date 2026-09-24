@@ -4,7 +4,6 @@ import { Breadcrumb } from "../chrome/Breadcrumb";
 import { comparisonFailureOf } from "../chrome/comparison";
 import { Notice } from "../chrome/Failure";
 import { type Failures, olderOf, present } from "../chrome/failures";
-import { type Provenance, rangeOf } from "../chrome/provenance";
 import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import type { Dispute } from "../disputes/disputes";
@@ -13,7 +12,7 @@ import { AgentJurorDraws } from "../performance/AgentJurorDraws";
 import { AgentJurorEmpty } from "../performance/AgentJurorEmpty";
 import { AgentJurorLatency } from "../performance/AgentJurorLatency";
 import { AgentJurorSummary } from "../performance/AgentJurorSummary";
-import { type AgentJurorReading, buildAgentJurorReading } from "../performance/agent-juror-detail";
+import { buildAgentJurorReading } from "../performance/agent-juror-detail";
 import { arbitrumSource } from "../performance/arbitrum";
 import { comparisonOf } from "../performance/reference";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
@@ -409,35 +408,6 @@ function failuresOf(
   };
 }
 
-/**
- * The disputes this view was read from, and when — all `View`'s read stamp prints.
- *
- * The disputes this agent juror was drawn in, where there are any. Where there are none the claim
- * on the page is "never drawn", which is a statement about the *whole* court that was read — so
- * the range is the court's, because that is what the claim rests on.
- */
-function provenanceOf({
-  disputes,
-  reading,
-}: {
-  disputes: DisputesView;
-  reading: AgentJurorReading | null;
-}): Provenance {
-  const drawn = reading !== null && reading.draws.length > 0;
-  return {
-    read: drawn
-      ? rangeOf(reading?.draws.map(({ row }) => row.dispute.id) ?? [])
-      : rangeOf(disputes.disputes.map((dispute) => dispute.id)),
-    readAt: disputes.readAt,
-  };
-}
-
-/**
- * An address that names no agent juror rests on no read: a dispute range under it would be
- * provenance for a figure the reader cannot see.
- */
-const NAMES_NOTHING: Provenance = { read: null, readAt: null };
-
 export type AgentJurorPageProps = {
   roster: RosterView;
   disputes: DisputesView;
@@ -510,7 +480,7 @@ export function AgentJurorView({
   // no failures either. Ticket 13 tiers a failure by whether it costs a figure; here none does.
   if (entry === undefined) {
     return (
-      <View provenance={NAMES_NOTHING}>
+      <View>
         <Breadcrumb to="/agent-jurors" parent="Agent jurors" current={pathNickname ?? "Unknown"} />
         <Missing>
           <MissingTitle>That is not an agent juror</MissingTitle>
@@ -532,7 +502,6 @@ export function AgentJurorView({
   const reading = measured === null ? null : buildAgentJurorReading(measured, agentJuror.nickname);
 
   const failures = failuresOf(agentJuror.nickname, { roster, disputes, performance });
-  const provenance = provenanceOf({ disputes, reading });
 
   // `isResolving` as well as `isResolvedFromEns`: the second is false while the mainnet lookup
   // is still out *and* after it fails, so a mark keyed on it alone claims a failure for the
@@ -542,7 +511,7 @@ export function AgentJurorView({
   const ensName = ensNameOf(agentJuror);
 
   return (
-    <View provenance={provenance} failures={failures}>
+    <View failures={failures}>
       {/* The roster nickname and never the one ENS resolves: the trail names what the route is
           keyed on, and a `name` record is rewritable from a wallet. The roster's spelling even
           on a lowercase link — `entryNamedBy` folded the case, and this shows what the page
@@ -675,7 +644,7 @@ export function AgentJurorView({
             scanned={measured.commitCoverage.read}
             // The clock reaches a flag here and never the seam, which reads none: `MatrixRow` is
             // built by a pure function, and `now` is threaded from the view for exactly that.
-            flagContext={{ current: measured.parameters.current, now }}
+            flagContext={{ now }}
             titleFor={(dispute: Dispute) => disputes.templateFor?.(dispute)?.title ?? null}
             unreadDisputes={measured.totals.unreadDisputes}
           />

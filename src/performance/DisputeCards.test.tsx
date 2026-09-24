@@ -9,7 +9,7 @@ import { ROSTER } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
 import { theme } from "../styles/theme";
-import { OFF_ROSTER_DISPUTE, offRosterDraw } from "../test/court";
+import { offRosterDraw } from "../test/court";
 import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
@@ -64,12 +64,8 @@ function build(raw: Partial<RawCourtData> = {}): CourtPerformance {
 }
 
 /**
- * The same court `Matrix.test.tsx` builds for the off-roster flag, on the layout that has no grid.
- *
- * `row-flags.ts` is shared for exactly this: a badge is a string that names a row, so it reaches
- * the card as surely as the row, and this repo's history is five sentences that were true on the
- * desktop and false on the phone. The draw itself comes from `test/court.tsx`, so the two suites
- * and the page suite build one shape rather than three.
+ * The same off-roster court `Matrix.test.tsx` builds, on the layout that has no grid. The draw
+ * itself comes from `test/court.tsx`, so the two suites and the page suite build one shape.
  */
 function offRosterCourt(): CourtPerformance {
   return build({ draws: [...(drawFixture as RawDraw[]), offRosterDraw()] });
@@ -475,35 +471,12 @@ describe("DisputeCards", () => {
     expect(within(card(166)).getByText("Pending")).toBeInTheDocument();
   });
 
-  it("carries at most one flag pill, with the precedence a matrix row uses", () => {
-    renderCards();
-
-    // Dispute 151 is both marked for its windows and still the oldest; the window flag outranks
-    // everything below it. 155 is the lone panel. Neither card wears two.
-    expect(within(card(151)).getByText(/8h window/)).toBeInTheDocument();
-    expect(within(card(155)).getByText(/Lone panel/)).toBeInTheDocument();
-    expect(within(card(155)).queryByText(/window/)).not.toBeInTheDocument();
-  });
-
-  it("carries the off-roster flag and its note, which no artboard draws for a phone", () => {
-    // The badge and the footnote both, because they are two halves of one caveat and the phone is
-    // where a caveat is most easily lost: `Footnotes.tsx` is shared for that reason.
+  it("names no address for a draw outside the roster", () => {
+    // The off-roster flag and note were removed on 2026-09-24 (maintainer's ruling). The address
+    // is in hand below the seam and must still not reach a page.
     renderCards(offRosterCourt());
 
-    expect(within(card(OFF_ROSTER_DISPUTE)).getByText(/1 off-roster draw/)).toBeInTheDocument();
-
-    const note = screen.getByText(/roster does not hold/i);
-    expect(note).toHaveTextContent(new RegExp(`One draw in dispute ${OFF_ROSTER_DISPUTE}`));
-    // A count and nothing else. The address is in hand below the seam and must not reach a page.
     expect(screen.queryByText(/0x1111/i)).not.toBeInTheDocument();
-  });
-
-  it("says nothing about draws outside the roster where there are none", () => {
-    // The state the court is in today, ticket 24 having added the agent juror that was in it.
-    renderCards();
-
-    expect(screen.queryByText(/roster does not hold/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/off-roster/i)).not.toBeInTheDocument();
   });
 
   it("puts the legend and the sparsity note where a phone reader will meet them", () => {
@@ -523,16 +496,6 @@ describe("DisputeCards", () => {
     // merely handled correctly in code.
     expect(screen.queryByRole("group")).not.toBeInTheDocument();
     expect(screen.queryByRole("button")).not.toBeInTheDocument();
-  });
-
-  it("reaches every caveat the desktop reader reaches", () => {
-    renderCards();
-
-    // The window caveat and the lone-panel caveat travel with the record rather than with the
-    // grid — they are facts about the court, and a phone reader is as likely to cite them.
-    expect(screen.getByText(/ran with a commit window of 8h/)).toBeInTheDocument();
-    expect(screen.getByText(/decided by a panel of one/)).toBeInTheDocument();
-    expect(screen.getByText(/never as a fraction of the window/)).toBeInTheDocument();
   });
 
   it("counts what it says off the model rather than out of the markup", () => {

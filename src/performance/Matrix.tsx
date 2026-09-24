@@ -27,8 +27,7 @@ import {
   UNREAD_PRESENTATION,
 } from "./cell";
 import { CELL_HEIGHT_PX, COMPACT_CELL_HEIGHT_PX, type Density, densityOf } from "./density";
-import { Footnotes, LonePanelFootnote, OffRosterFootnote, WindowFootnote } from "./Footnotes";
-import { Dot, Legend, LegendGroup, LegendItem, StateLegend } from "./Legend";
+import { Dot, Legend, StateLegend } from "./Legend";
 import { railFraction } from "./latency";
 import { Marginals } from "./Marginals";
 import { panelPillOf } from "./panel";
@@ -218,16 +217,9 @@ const CaptionCount = styled.div`
   color: ${({ theme }) => theme.textHeading};
 `;
 
-const CaptionBody = styled.div`
-  margin-top: ${({ theme }) => theme.space4};
-  font: ${({ theme }) => theme.typeBodySm};
-  color: ${({ theme }) => theme.textMeta};
-`;
-
-/* Top-aligned since the marginals landed underneath the identity, and it has to be: a column
-   carrying a marker's reason line is taller than the ones beside it, and bottom alignment would
-   push that column's nickname and avatar down while the rest stayed put — a row of identity
-   blocks at two different heights, from one footnote. */
+/* Top-aligned since the marginals landed underneath the identity: a column taller than the ones
+   beside it would otherwise push its nickname and avatar down while the rest stayed put — a row
+   of identity blocks at two different heights. */
 const AgentColumn = styled.th<{ $compact: boolean; $grid: GridMetrics }>`
   width: ${({ $grid }) => $grid.column};
   box-sizing: border-box;
@@ -622,17 +614,6 @@ const CommitRailFill = styled(RailFill)`
   background-color: ${({ theme }) => theme.accentQuiet};
 `;
 
-/* The one sentence the dense artboard adds to the legend row, at its right-hand end. */
-const VolumeNote = styled.p`
-  margin-left: auto;
-  max-width: 46ch;
-  font: ${({ theme }) => theme.typeBodySm};
-  /* It counts columns and disputes, so the shorthand's reset has to be undone here too. */
-  font-feature-settings: ${({ theme }) => theme.featureNumeric};
-  color: ${({ theme }) => theme.textMeta};
-  text-wrap: pretty;
-`;
-
 /* The row's own measure, at the end of the one line a compact row has. Nothing about it is new
    ink: the key and the value are the cell's, at the grain of a dispute.
 
@@ -900,8 +881,8 @@ function RowCommit({ row, scanned }: { row: MatrixRow; scanned: boolean }) {
 }
 
 export function Matrix({ performance, roster, slotsFor, now = Date.now() }: MatrixProps) {
-  const { agentJurors, rows, totals, marginals, commitCoverage, parameters, rewards } = performance;
-  const flagContext: RowFlagContext = { current: parameters.current, now };
+  const { agentJurors, rows, totals, marginals, commitCoverage, rewards } = performance;
+  const flagContext: RowFlagContext = { now };
   // One flag, read by the cell, the dispute row and the column header alike. It switches on the
   // shape of the model — how many disputes it holds and how many agent jurors it has columns for
   // — so the matrix crosses into the compact density on its own as the court grows and as the
@@ -950,8 +931,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
         <VisuallyHidden>The matrix</VisuallyHidden>
       </Heading>
       {/* No lede. It described a cell to a reader looking at a hundred and sixty-eight of them,
-          under a legend keying every state and above a corner cell that already says how the
-          grid is arranged and, at the compact density, where the commit figure went. What each
+          under a legend keying every state. What each
           measure means, that no duration is a fraction of its window, and why coherence waits
           for a ruling are on the method page. */}
 
@@ -995,42 +975,10 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
           )}
 
           <Legend>
-            {/* The states themselves are shared with the phone's card list — they are
-                ADR-0006's vocabulary rather than the grid's. The rails below are not: they
-                annotate a cell, and a card has neither. */}
+            {/* The states are shared with the phone's card list — they are ADR-0006's vocabulary
+                rather than the grid's. The rail keys that followed them were removed on
+                2026-09-24 (maintainer's ruling). */}
             <StateLegend unknown={unreadRows > 0} />
-            {/* The rails, keyed to what the cells actually carry at this density. The compact
-                cell has one rail and no key beside it, so keying a `C` rail here would decode a
-                mark no cell wears — ticket 07 left that instruction against this very group. */}
-            <LegendGroup>
-              <LegendItem>
-                {!compact && <span aria-hidden="true">R</span>}Reveal
-                <Rail aria-hidden="true" $compact={compact}>
-                  <RailFill style={{ width: "62%" }} />
-                </Rail>
-              </LegendItem>
-              {!compact && (
-                <LegendItem>
-                  <span aria-hidden="true">C</span>Commit
-                  <Rail aria-hidden="true">
-                    <CommitRailFill style={{ width: "71%" }} />
-                  </Rail>
-                </LegendItem>
-              )}
-            </LegendGroup>
-            {/* `MatrixDense.dc.html:117`, and it earns its place at this density and not at the
-                other: a reader who has scrolled through hundreds of rows of mostly-empty grid is
-                the one who starts reading the blanks as a fault. This says the one thing volume
-                tempts a reader to assume away, from the same `totals.sparsity` the phone's
-                sparsity note quotes, so the two can never disagree about one court. */}
-            {compact && (
-              <VolumeNote>
-                {sparsity.emptyColumns > 0 &&
-                  `${sparsity.emptyColumns === 1 ? "One agent juror is" : `${sparsity.emptyColumns} agent jurors are`} still blank across all ${sparsity.disputes} disputes read here. `}
-                Sparsity does not resolve with volume — a longer matrix is a taller sparse matrix,
-                not a fuller one.
-              </VolumeNote>
-            )}
           </Legend>
 
           {/* Focusable and named *when it scrolls*, and only then. The comfortable grid is wider
@@ -1089,15 +1037,6 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                     <CaptionCount>
                       {totals.finalised} finalised · {totals.live} live
                     </CaptionCount>
-                    {/* What the density did, said where a reader meets the grid rather than left
-                        to be noticed. A figure that is simply gone is a figure a reader who knew
-                        it was there will go looking for; this is the corner cell of
-                        `MatrixDense.dc.html:62-65`, which states the reduction as a choice. */}
-                    <CaptionBody>
-                      {compact
-                        ? "Newest first. Commit and reveal latency and coherence survive at this density; each row also carries its dispute's own median commit."
-                        : "Newest first. One row per dispute, one column per agent juror, one cell per draw."}
-                    </CaptionBody>
                   </CaptionCell>
                   {agentJurors.map((agentJuror, column) => {
                     const identity = identityOf.get(agentJuror.address);
@@ -1164,7 +1103,6 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                             marginals={marginal}
                             scanned={commitCoverage.read}
                             payouts={rewards}
-                            current={parameters.current}
                             density={density}
                           />
                         )}
@@ -1196,8 +1134,8 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                             //
                             // Only where there is no panel to see. The size itself is gone from
                             // this row and from the phone's card alike: six cells are the count,
-                            // and on dispute 155 the pill said `Panel 1` beside a ‡ Lone panel
-                            // flag that said it better. What survives is what the cells cannot
+                            // and on dispute 155 the pill said `Panel 1` beside a Lone panel
+                            // flag (since removed, 2026-09-24). What survives is what the cells cannot
                             // say about themselves — a dispute read with no panel drawn yet, and
                             // one whose draws were never read. `panelPillOf` holds both, shared
                             // with the card, and an absent slot takes its separator with it.
@@ -1272,28 +1210,6 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
               </tbody>
             </Table>
           </TableScroll>
-
-          <Footnotes>
-            {/* † before § before ‡, as the artboard orders the two it draws and as `ROW_FLAGS`
-                ranks all three: dispute 151 carries both of the marks the artboard knows, and the
-                window is the one that makes its figures incomparable rather than merely
-                uninformative. The section mark sits between them because it says a figure on the
-                row is short, where the other two describe the court's own shape — and because it
-                is the third footnote mark, so the order a reader meets them in is the order the
-                marks come in.
-
-                Both are shared with the phone's card list, which is what the artboard for it
-                does not answer and ticket 16 had to: they are caveats about the court, not
-                about the grid, and `CLAUDE.md` requires them visible in the UI rather than
-                handled correctly in code.
-
-                The sparsity note used to be the third here, then moved to the provenance
-                footer, and went with that footer when it was removed (maintainer's ruling,
-                2026-09-24). The phone still carries it as a card at the head of its list. */}
-            <WindowFootnote performance={performance} />
-            <OffRosterFootnote performance={performance} />
-            <LonePanelFootnote performance={performance} />
-          </Footnotes>
         </>
       )}
     </Section>

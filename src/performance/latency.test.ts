@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import {
   formatElapsedSeconds,
   formatLatencySeconds,
+  formatMinutes,
   formatWindowSeconds,
   railFraction,
 } from "./latency";
@@ -118,5 +119,13 @@ describe("formatWindowSeconds", () => {
   it("falls back to seconds below a minute, because a window can be configured that short", () => {
     expect(formatWindowSeconds(30)).toBe("30s");
     expect(formatWindowSeconds(0)).toBe("0s");
+  });
+});
+
+describe("formatMinutes", () => {
+  it("writes a median time to appeal in whole minutes, never hours", () => {
+    expect(formatMinutes(3623)).toBe("60m");
+    expect(formatMinutes(48_000)).toBe("800m");
+    expect(formatMinutes(1128)).toBe("19m");
   });
 });

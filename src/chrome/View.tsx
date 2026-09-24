@@ -3,21 +3,19 @@ import styled from "styled-components";
 import { COMFORTABLE_GRID_MIN_PX, narrow } from "../styles/breakpoints";
 import { DegradedPanel, FailureBanner } from "./Failure";
 import { type Failures, NO_FAILURES } from "./failures";
-import type { Provenance } from "./provenance";
-import { ReadStamp } from "./ReadStamp";
 
 /** How wide a view may be. See the note on `measure` below. */
 export type Measure = "wide" | "prose" | "grid";
 
 /**
- * One view: what could not be read, which disputes it was read from, and its content.
+ * One view: what could not be read, and its content.
  *
  * Every route renders through this, which is what makes ticket 13's banner structural rather than
  * a habit: "once in a banner at the top of the page" is a claim about every view, so a page that
  * failed to render one has to be impossible rather than merely unusual. It draws nothing when
- * nothing is wrong, so mounting it costs a healthy page nothing. The read stamp is mounted the
- * same way. The provenance footer that used to close every view was removed on 2026-09-24 by the
- * maintainer's ruling; the read stamp is all that survives of it.
+ * nothing is wrong, so mounting it costs a healthy page nothing. The provenance footer that used to
+ * close every view, and the read stamp that survived it, were removed on 2026-09-24 by the
+ * maintainer's ruling.
  *
  * `failures` defaults to none, which is what the method page and the 404 pass — neither carries
  * a figure, and the 404 in particular must never look like a failure state: Netlify answers
@@ -81,12 +79,10 @@ const Main = styled.main`
 `;
 
 export function View({
-  provenance,
   failures = NO_FAILURES,
   measure = "wide",
   children,
 }: {
-  provenance: Provenance;
   failures?: Failures;
   measure?: Measure;
   children: ReactNode;
@@ -109,7 +105,6 @@ export function View({
             {read.what}
           </DegradedPanel>
         ))}
-        <ReadStamp provenance={provenance} />
         {children}
       </Main>
     </Frame>

@@ -6,7 +6,6 @@ import { ROSTER } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
 import {
-  disputes,
   measured,
   referenceFailed,
   renderAt,
@@ -126,18 +125,9 @@ describe("one agent juror's own view", () => {
     expect(within(card).getByText("117s")).toBeInTheDocument();
     expect(within(card).getByText("8m 52s")).toBeInTheDocument();
     expect(within(card).getByText("9/9")).toBeInTheDocument();
-    expect(within(card).getByText("12 · 15v")).toBeInTheDocument();
+    expect(within(card).getByText("12")).toBeInTheDocument();
     expect(within(card).getByText("0.0035")).toBeInTheDocument();
     expect(within(card).getByText("+171.42")).toBeInTheDocument();
-  });
-
-  it("puts the vote count beside the draw count, because one draw may hold several", () => {
-    renderAt("/agent-jurors/Columbo");
-
-    // 61 votes were 44 draws across the first thirteen disputes: the fee is paid per vote ID and
-    // the unit here is the draw, so a page printing one of them alone is missing the other.
-    expect(screen.getByText("12 · 15v")).toBeInTheDocument();
-    expect(screen.getByText(/^Draws · votes$/)).toBeInTheDocument();
   });
 
   it("carries the sign of a net PNK loss in the value itself, not only in its colour", () => {
@@ -148,46 +138,13 @@ describe("one agent juror's own view", () => {
     expect(screen.getByText("-93.50")).toBeInTheDocument();
   });
 
-  it("marks each median with the window that governs it, and says how many draws", () => {
-    renderAt("/agent-jurors/Columbo");
-    const card = screen.getByRole("region", { name: /what columbo has done/i });
-
-    expect(
-      within(card).getByRole("link", { name: /why columbo's median reveal is marked/i }),
-    ).toHaveAttribute("href", "/method#window");
-    expect(
-      within(card).getByRole("link", { name: /why columbo's median commit is marked/i }),
-    ).toBeInTheDocument();
-    // The marker's own line quotes the denominator the figure was taken over.
-    expect(within(card).getByText(/1 of 12 draws ran under a vote window of 8h/)).toBeVisible();
-    expect(within(card).getByText(/1 of 12 draws ran under a commit window of 8h/)).toBeVisible();
-  });
-
-  it("says on the aggregate coherence figure that a panel of one is behind it", () => {
-    renderAt("/agent-jurors/Columbo");
-    const card = screen.getByRole("region", { name: /what columbo has done/i });
-
-    // A count that includes a tautological draw must not read as if it did not.
-    expect(
-      within(card).getByRole("link", { name: /why columbo's coherence count is marked/i }),
-    ).toHaveAttribute("href", "/method#caveats");
-    expect(
-      within(card).getByText(/1 of 9 draws sat on a panel of one, where coherence is tautological/),
-    ).toBeVisible();
-  });
-
   it("says the opposite in as many words where no panel of one is behind the count", () => {
     renderAt("/agent-jurors/Blaise");
 
-    // The artboard's own sentence, and a claim — so it is made only where it is true. Where a
-    // lone panel *is* behind the figure the ‡ line above says so, and this stays silent rather
-    // than becoming a second voice for one caveat.
+    // The artboard's own sentence, and a claim — so it is made only where it is true.
     expect(
       screen.getByText(/every panel blaise sat on held two or more agent jurors/i),
     ).toBeVisible();
-    expect(
-      screen.queryByRole("link", { name: /why blaise's coherence count is marked/i }),
-    ).not.toBeInTheDocument();
   });
 });
 
@@ -407,10 +364,11 @@ describe("the agent juror the court has never drawn", () => {
     ).toBeVisible();
   });
 
-  it("keeps the draw and vote counts as real zeros, because zero draws is a measurement", () => {
+  it("keeps the draw count as a real zero, because zero draws is a measurement", () => {
     renderAt("/agent-jurors/Baskerville");
 
-    expect(screen.getByText("0 · 0v")).toBeInTheDocument();
+    // The key and its value share one item: "Draws" over a real "0".
+    expect(screen.getByText(/^Draws$/).parentElement).toHaveTextContent(/^Draws0$/);
   });
 
   it("names what will appear on its first draw", () => {
@@ -511,14 +469,12 @@ describe("an address that names nothing", () => {
     ).toBeInTheDocument();
   });
 
-  it("does not call it an agent juror never drawn, and dates no read under it", () => {
+  it("does not call it an agent juror never drawn", () => {
     renderAt("/agent-jurors/nope");
 
     // The two empty states are not one claim. An agent juror the court has never drawn has a
     // measured record — its absence from every panel — and an address naming nobody has none.
     expect(screen.queryByText(/the court has drawn it in none of/i)).not.toBeInTheDocument();
-    // And no dispute range under a page carrying no figure from one.
-    expect(screen.queryByText(/^Read \d+ disputes?/)).not.toBeInTheDocument();
   });
 });
 
@@ -569,21 +525,6 @@ describe("what the page says before, and instead of, a read", () => {
 });
 
 describe("what this view says it rests on", () => {
-  it("stamps which disputes the figures were read from", () => {
-    renderAt("/agent-jurors/Columbo");
-
-    // The disputes this agent juror was drawn in, and not the whole court's range: the figures
-    // above are measured from its own twelve draws and from nothing else.
-    expect(screen.getByText("Read 12 disputes, 151–166")).toBeInTheDocument();
-  });
-
-  it("stamps the whole court's range for an agent juror never drawn", () => {
-    // "Never drawn" is a claim about every dispute read, so that is the range it rests on.
-    renderAt("/agent-jurors/Baskerville");
-
-    expect(screen.getByText("Read 16 disputes, 151–166")).toBeInTheDocument();
-  });
-
   it("says ENS fell back once it has answered for nobody, and marks the name it affects", () => {
     renderAt("/agent-jurors/Columbo", { roster: unresolvedRoster });
 
@@ -672,12 +613,6 @@ describe("one agent juror's own view on a phone", () => {
 });
 
 describe("the whole court's own reads, seen from here", () => {
-  it("dates the page by the read behind it, so a citing reader has a moment", () => {
-    renderAt("/agent-jurors/Columbo", { disputes });
-
-    expect(screen.getByText(/2026-08-25 05:12 UTC/)).toBeInTheDocument();
-  });
-
   it("keeps the matrix's own figures untouched: this view derives none of them", () => {
     // The court median the plot compares against is `totals.revealLatency`, computed by the seam
     // over every row — the same number the matrix's own strip plots. A second reduction here

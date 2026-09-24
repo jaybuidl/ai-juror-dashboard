@@ -1,7 +1,7 @@
 import { fireEvent, screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { arbitrumSource } from "../performance/arbitrum";
-import { formatLatencySeconds } from "../performance/latency";
+import { formatMinutes } from "../performance/latency";
 import { formatAgo, SOURCES } from "../read-failure";
 import { ROSTER } from "../roster/agent-jurors";
 import {
@@ -36,7 +36,7 @@ import {
 import { PHONE_WIDTH, stubViewportWidth } from "../test/viewport";
 
 /**
- * The landing view: the hero, the totals, the strip and the matrix.
+ * The landing view: the hero, the totals, the time-to-appeal strip and the matrix.
  *
  * Most of this suite came from `Dashboard.test.tsx`, which ticket 15 replaced. What moved with
  * the roster to `/agent-jurors` is tested there; what is left here is what the matrix view
@@ -134,11 +134,7 @@ describe("the matrix view", () => {
     // survive is the half that still is true: everything it has not read, said outright.
     renderAt("/");
 
-    // ADR-0005, in the footnote under the grid rather than in a caveat card above it. The card
-    // said it a third time, after /method and after this note; what a reader meets three times
-    // they stop reading once.
     expect(screen.queryByText(/nothing measured yet/i)).not.toBeInTheDocument();
-    expect(screen.getByText(/never as a fraction of the window it ran in/i)).toBeInTheDocument();
   });
 
   /**
@@ -172,8 +168,6 @@ describe("the matrix view", () => {
       expect(
         screen.queryByText(/sparsity is the normal state of this record/i),
       ).not.toBeInTheDocument();
-      // The footnotes that decode a mark in the grid stay.
-      expect(screen.getByText(/never as a fraction of the window it ran in/i)).toBeInTheDocument();
     });
 
     it("keeps a dispute whose draws were never read out of the count", () => {
@@ -291,7 +285,8 @@ describe("the totals above the matrix", () => {
 
     expect(screen.getByText(String(totals.disputes))).toBeInTheDocument();
     expect(screen.getByText(String(totals.draws))).toBeInTheDocument();
-    expect(screen.getByText(`Draws · ${totals.votes} vote IDs`)).toBeInTheDocument();
+    // The vote-ID count left the label on 2026-09-24, on the maintainer's call.
+    expect(screen.queryByText(`Draws · ${totals.votes} vote IDs`)).not.toBeInTheDocument();
   });
 
   it("reads the drawn count against the whole roster, so a never-drawn agent juror is legible", () => {
@@ -301,23 +296,25 @@ describe("the totals above the matrix", () => {
     expect(screen.getByText(`/${FIXTURE_ROSTER.length}`)).toBeInTheDocument();
   });
 
-  it("plots one mark per revealed draw and says how many that is", () => {
+  it("plots one mark per dispute at appeal and says how many that is", () => {
     renderAt("/");
 
-    const latency = measured.performance?.totals.revealLatency;
-    if (latency == null) throw new Error("The captured court has revealed draws");
+    const latency = measured.performance?.totals.timeToAppeal.summary;
+    if (latency == null) throw new Error("The captured court has disputes at appeal");
 
     expect(
-      screen.getByRole("heading", { name: `Reveal latency · ${latency.seconds.length} draws` }),
+      screen.getByRole("heading", { name: `Time to appeal · ${latency.seconds.length} disputes` }),
     ).toBeInTheDocument();
+    // Not a draw count: the headline stopped being the median reveal on 2026-09-24.
+    expect(screen.queryByRole("heading", { name: /reveal latency ·/i })).not.toBeInTheDocument();
   });
 
   it("quotes the median as one figure, wherever it appears", () => {
     renderAt("/");
 
-    const latency = measured.performance?.totals.revealLatency;
-    if (latency == null) throw new Error("The captured court has revealed draws");
-    const median = formatLatencySeconds(latency.median);
+    const latency = measured.performance?.totals.timeToAppeal.summary;
+    if (latency == null) throw new Error("The captured court has disputes at appeal");
+    const median = formatMinutes(latency.median);
 
     // The tile, the median line on the strip and the summary are three readings of one
     // number — read from the model here too, because a literal would only pin the fixture.
@@ -329,22 +326,13 @@ describe("the totals above the matrix", () => {
     renderAt("/", { performance: unmeasured });
 
     expect(screen.getByText(/nothing has been measured on this load/i)).toBeInTheDocument();
-    expect(screen.queryByRole("heading", { name: /reveal latency ·/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: /time to appeal ·/i })).not.toBeInTheDocument();
     // A `0` here would be a claim about the court that nobody measured.
     expect(screen.queryByText("0")).not.toBeInTheDocument();
   });
 });
 
 describe("the matrix view's reads", () => {
-  it("dates the range read at the top of the view, and names no court", () => {
-    renderAt("/");
-
-    const stamp = screen.getByText("Read 16 disputes, 151–166").parentElement as HTMLElement;
-    expect(stamp).toHaveTextContent(/^Read 16 disputes, 151–166 · 2026-08-25 05:12 UTC$/);
-    // The hero's eyebrow names the court; the stamp does not say it a second time.
-    expect(stamp).not.toHaveTextContent(/court 34|Arbitrum/i);
-  });
-
   it("discloses a fallback to the roster when ENS could not be reached", () => {
     renderAt("/", { roster: unresolvedRoster });
 
@@ -377,10 +365,8 @@ describe("the matrix view's reads", () => {
     renderAt("/", { performance: unmeasured });
 
     // Ticket 13 fixes the announcement at two: where the figure would have been, and once in
-    // a banner. The read stamp states provenance — here, that the disputes below were read even
-    // though nothing was measured from them.
+    // a banner.
     expect(screen.getAllByText(/could not be built/i)).toHaveLength(1);
-    expect(screen.getByText("Read 16 disputes, 151–166")).toBeInTheDocument();
   });
 
   it("never says commit latency has not been read at all, on any load", () => {
@@ -396,50 +382,7 @@ describe("the matrix view's reads", () => {
     }
   });
 
-  it("links the window footnote at the section that answers it", () => {
-    renderAt("/");
-
-    expect(
-      screen.getByRole("link", { name: /what that means for these figures/i }),
-    ).toHaveAttribute("href", "/method#window");
-  });
-
   describe("the court's period durations", () => {
-    it("puts the marker on the aggregate figure, not only on the row it came from", () => {
-      // `canvas/Errors.dc.html:200-208`: a dagger on the number, the reason one line below it,
-      // the full account one click away. The median reveal pools draws measured against two
-      // different vote windows, so it is the one tile of the four that takes one.
-      renderAt("/");
-
-      // Above the matrix specifically. The matrix's own column headers carry the same sentence
-      // over each column's draws since ticket 06, and this is the court-wide one — pooled over
-      // every reveal in the read, which is what makes it the tile's figure and not a column's.
-      // On the mark rather than under the figure: four tiles stand in a row and only this one is
-      // ever marked, so a paragraph beneath it left the row without a common baseline and put
-      // prose above the first figure anyone came for.
-      const mark = screen.getByRole("link", { name: /the court's median reveal is marked/i });
-
-      expect(mark).toHaveAccessibleName(/2 of \d+ draws ran under a vote window of 8h/i);
-      expect(mark).toHaveAttribute("href", "/method#window");
-    });
-
-    it("leaves the counting tiles unmarked, because a window changes no count", () => {
-      renderAt("/");
-
-      // One dagger above the matrix and no more: a window changes what a duration means and
-      // changes nothing about how many disputes or draws there were.
-      expect(
-        screen.getAllByRole("link", { name: /the court's median reveal is marked/i }),
-      ).toHaveLength(1);
-      expect(screen.queryByRole("link", { name: /disputes read is marked/i })).toBeNull();
-    });
-
-    it("marks no figure at all while the history is unread", () => {
-      renderAt("/", { performance: arbitrumPending });
-
-      expect(screen.queryByText(/ran under a vote window/i)).not.toBeInTheDocument();
-    });
-
     it("no longer claims the period durations are unread, now that they are read", () => {
       renderAt("/");
 
@@ -733,7 +676,7 @@ describe("the failure banner", () => {
     expect(screen.getByText(/^Partial\./)).toBeInTheDocument();
     expect(screen.getByText(/never as zero/i)).toBeInTheDocument();
     expect(
-      screen.getByRole("heading", { name: /reveal latency · .* · partial/i }),
+      screen.getByRole("heading", { name: /time to appeal · .* · partial/i }),
     ).toBeInTheDocument();
   });
 
@@ -858,30 +801,29 @@ describe("the matrix view on a phone", () => {
     // was removed on 2026-09-24 by the maintainer's ruling. /method states the invariant.
     expect(screen.queryByText(/it never votes, stakes, or holds a key/i)).not.toBeInTheDocument();
 
-    // The strip goes; its headline figure is the median reveal, which the tiles now lead with,
-    // and its comparison band is drawn at every width on the agent juror view.
-    expect(screen.queryByText(/median reveal, fastest and slowest/i)).not.toBeInTheDocument();
+    // The strip goes; its headline figure is the median time to appeal, which the tiles lead
+    // with, and its comparison band is drawn at every width on the agent juror view.
+    expect(screen.queryByRole("heading", { name: /time to appeal ·/i })).not.toBeInTheDocument();
 
-    // `getAllByText`: the same duration is also one card's slot figure, which is the point —
-    // the figure did not leave the page with the strip, it moved into the tile that leads it.
-    const median = formatLatencySeconds(measured.performance?.totals.revealLatency?.median ?? 0);
+    // The figure did not leave the page with the strip: it is the tile that leads it.
+    const median = formatMinutes(measured.performance?.totals.timeToAppeal.summary?.median ?? 0);
     expect(screen.getAllByText(median).length).toBeGreaterThan(0);
-    expect(screen.getByText(/^Median reveal/)).toBeInTheDocument();
+    expect(screen.getByText(/^Median to appeal/)).toBeInTheDocument();
   });
 
-  it("shows three tiles, with the median reveal leading and the drawn count gone", () => {
+  it("shows three tiles, with the median time to appeal leading and the drawn count gone", () => {
     stubViewportWidth(PHONE_WIDTH);
     renderAt("/");
 
     const labels = screen
-      .getAllByText(/^(Disputes read|Draws.*|Agent jurors drawn|Median reveal.*)$/)
+      .getAllByText(/^(Disputes read|Draws.*|Agent jurors drawn|Median to appeal.*)$/)
       .map((node) => node.textContent);
 
-    // `Mobile.dc.html:47-51`: median reveal, draws, disputes. The roster's drawn count is a fact
+    // `Mobile.dc.html:47-51`: the headline median, draws, disputes. The roster's drawn count is a fact
     // about the roster rather than about the record, and `/agent-jurors` carries it in more
     // detail than a tile can.
     expect(labels).toHaveLength(3);
-    expect(labels[0]).toMatch(/^Median reveal/);
+    expect(labels[0]).toMatch(/^Median to appeal/);
     expect(labels[1]).toBe("Draws");
     expect(labels[2]).toBe("Disputes read");
   });
@@ -1021,7 +963,7 @@ describe("the comparison band's read", () => {
   it("does not label the tiles partial over a read none of them depends on", () => {
     renderAt("/", { performance: referenceFailed });
 
-    const heading = screen.getByRole("heading", { name: /reveal latency ·/i });
+    const heading = screen.getByRole("heading", { name: /time to appeal ·/i });
     expect(heading).not.toHaveTextContent(/partial/i);
   });
 });

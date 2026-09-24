@@ -1,17 +1,11 @@
 import { commitMedianFigureOf, type Figure, UNREAD_FIGURE } from "./cell";
-import { formatLatencySeconds, formatWindowSeconds } from "./latency";
+import { formatLatencySeconds } from "./latency";
 import type { RewardCoverage } from "./performance";
 import { formatEthWei, formatPnkWei } from "./rewards";
-import {
-  type AgentJurorMarginals,
-  type AgentJurorRewards,
-  markedWindows,
-  type WindowChange,
-} from "./totals";
-import type { PeriodWindows } from "./windows";
+import type { AgentJurorMarginals, AgentJurorRewards } from "./totals";
 
 /**
- * How one agent juror's six figures are *read* — the gates, the absences and the markers.
+ * How one agent juror's six figures are *read* — the gates and the absences.
  *
  * Lifted out of `Marginals.tsx` by ticket 11, which gave the same six figures a second
  * rendering: the matrix's column header prints them stacked in 148px, and the agent juror's own
@@ -35,17 +29,6 @@ import type { PeriodWindows } from "./windows";
  * TS1149).
  */
 
-/** A caveat riding one figure: the mark, why, and where the whole of it is written down. */
-export type MarginalCaveat = {
-  /** The same glyph the matrix's row flag and its footnote use for the same fact. */
-  mark: string;
-  /** One line, beside or below the number, saying how many of the counted draws are affected. */
-  reason: string;
-  href: string;
-  /** The mark is a link, and one per column needs telling apart from the rest by ear. */
-  about: string;
-};
-
 /**
  * One figure, and the three names it answers to.
  *
@@ -64,7 +47,6 @@ export type MarginalFigure = {
   /** The same key spelled out, for a reader who is hearing the figure rather than scanning it. */
   name: string;
   figure: Figure;
-  caveat?: MarginalCaveat;
   /** Whether this figure is a net loss, which takes amber on top of its own sign character. */
   loss?: boolean;
   /**
@@ -105,8 +87,6 @@ export type MarginalContext = {
    * catches only the first.
    */
   payouts: RewardCoverage;
-  /** The windows the court is configured with today, against which an earlier one is named. */
-  current: PeriodWindows | null;
 };
 
 /**
@@ -123,10 +103,9 @@ export type MarginalContext = {
  */
 export function marginalFiguresOf(
   marginals: AgentJurorMarginals,
-  { scanned, payouts, current }: MarginalContext,
+  { scanned, payouts }: MarginalContext,
 ): MarginalFigure[] {
-  const { nickname } = marginals.agentJuror;
-  const { revealLatency, commitLatency, coherence, changedWindows } = marginals;
+  const { revealLatency, coherence } = marginals;
 
   return [
     {
@@ -139,13 +118,6 @@ export function marginalFiguresOf(
       caption: "Median commit",
       name: "Median commit latency",
       figure: commitMedianFigureOf(marginals.commitLatency?.median, marginals.commitments, scanned),
-      caveat: windowCaveat({
-        changes: changedWindows,
-        current,
-        measure: "commit",
-        counted: commitLatency?.seconds.length ?? 0,
-        nickname,
-      }),
     },
     {
       key: "reveal",
@@ -154,17 +126,6 @@ export function marginalFiguresOf(
       caption: "Median reveal",
       name: "Median reveal latency",
       figure: latencyFigure(revealLatency?.median),
-      // Marked on the same terms the court-wide median reveal tile is marked on, and it has to
-      // be: a column median left unqualified beneath a qualified court median would have the
-      // page declining to compare and comparing at once — which is the defect the canvas's own
-      // readme records against `Juror.dc.html:73`.
-      caveat: windowCaveat({
-        changes: changedWindows,
-        current,
-        measure: "reveal",
-        counted: revealLatency?.seconds.length ?? 0,
-        nickname,
-      }),
     },
     {
       key: "coherence",
@@ -178,18 +139,17 @@ export function marginalFiguresOf(
         coherence.resolved === 0
           ? { text: "—", tone: "pending" }
           : { text: `${coherence.coherent}/${coherence.resolved}`, tone: "value" },
-      caveat: lonePanelCaveat(coherence, nickname),
     },
     {
       key: "draws",
       dense: true,
       label: "Draws",
-      caption: "Draws · votes",
-      name: "Draws, and the vote IDs they hold",
+      caption: "Draws",
+      name: "Times the court drew this agent juror",
       // The one figure that reads as a real zero: never having been drawn is a measurement of
-      // the court's random selection, not an absence of one. The vote count sits beside it
-      // because the two differ — 61 votes were 44 draws across the first thirteen disputes.
-      figure: { text: `${marginals.draws} · ${marginals.votes}v`, tone: "value" },
+      // the court's random selection, not an absence of one. The vote-ID count that sat beside
+      // it was removed on 2026-09-24 (maintainer's ruling).
+      figure: { text: `${marginals.draws}`, tone: "value" },
     },
     {
       key: "eth",
@@ -261,73 +221,4 @@ function latencyFigure(median: number | undefined): Figure {
   return median === undefined
     ? { text: "—", tone: "pending" }
     : { text: formatLatencySeconds(median), tone: "value" };
-}
-
-/**
- * The dagger, and which of the two windows it is actually about.
- *
- * Court 34 changed its commit window and its vote window at the same moment, so both medians
- * carry a marker today. A court that changed only one of them would put the marker on only the
- * median that window governs — which is why this compares against what the court holds now
- * rather than marking anything in a group. `windowFlagLabel` in `row-flags.ts` makes the same
- * comparison for the same reason: a marker naming a duration identical to the current one reads
- * as a marker placed in error.
- *
- * `counted` is the size of the distribution the median was taken over, so the reason names how
- * many of *the counted draws* are affected rather than only that some are. Absent when none of
- * them is, which includes every load before the parameter history comes back.
- */
-function windowCaveat({
-  changes,
-  current,
-  measure,
-  counted,
-  nickname,
-}: {
-  changes: readonly WindowChange[];
-  current: PeriodWindows | null;
-  measure: "reveal" | "commit";
-  counted: number;
-  nickname: string;
-}): MarginalCaveat | undefined {
-  const period = measure === "reveal" ? "vote" : "commit";
-  const seconds = measure === "reveal" ? "voteSeconds" : "commitSeconds";
-
-  const marked = markedWindows(changes, current, measure);
-  const draws = marked.draws;
-  if (draws === 0 || counted === 0) return undefined;
-
-  const only = marked.changes.length === 1 ? marked.changes[0] : undefined;
-
-  return {
-    mark: "†",
-    reason:
-      only === undefined
-        ? `${draws} of ${counted} draws ran under ${period} windows the court has since changed.`
-        : `${draws} of ${counted} draws ran under a ${period} window of ${formatWindowSeconds(only.windows[seconds])}, which the court has since changed.`,
-    href: "/method#window",
-    about: `Why ${nickname}'s median ${measure} is marked`,
-  };
-}
-
-/**
- * The double dagger: a draw on a panel of one, where being the majority took no agreement.
- *
- * It rides the coherence count and nothing else. A lone panel says nothing about how quickly the
- * agent juror acted, so marking a latency with it would be a caveat about the wrong figure — and
- * a caveat a reader can see is misplaced is one they stop reading.
- */
-function lonePanelCaveat(
-  coherence: AgentJurorMarginals["coherence"],
-  nickname: string,
-): MarginalCaveat | undefined {
-  const lone = coherence.lonePanelDisputes.length;
-  if (lone === 0) return undefined;
-
-  return {
-    mark: "‡",
-    reason: `${lone} of ${coherence.resolved} draws sat on a panel of one, where coherence is tautological.`,
-    href: "/method#caveats",
-    about: `Why ${nickname}'s coherence count is marked`,
-  };
 }

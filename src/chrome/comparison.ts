@@ -33,8 +33,8 @@ export function comparisonFailureOf(
       error,
       SOURCES.core,
       reading?.state === "measured"
-        ? "The comparison court's disputes could not be re-read, so the comparison band on the latency plots comes from an earlier read."
-        : "The comparison court's disputes could not be read, so no comparison band is drawn on the latency plots.",
+        ? "The comparison court's disputes could not be re-read, so the comparison band on both plots comes from an earlier read."
+        : "The comparison court's disputes could not be read, so no comparison band is drawn on either plot.",
     );
   }
 
@@ -42,7 +42,7 @@ export function comparisonFailureOf(
     return {
       source: SOURCES.core,
       status: "Short read",
-      what: `The disputes of ${referenceCourtName(reading.court)} came back short, ${reading.returned} of the ${reading.expected} it holds, so no comparison band is drawn on the latency plots: a median over part of a court is not that court's.`,
+      what: `The disputes of ${referenceCourtName(reading.court)} came back short, ${reading.returned} of the ${reading.expected} it holds, so no comparison band is drawn on either plot: a median over part of a court is not that court's.`,
     };
   }
 

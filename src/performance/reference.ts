@@ -4,8 +4,9 @@ import { medianOf } from "./totals";
 /**
  * What an ordinary Kleros court takes to rule, read rather than asserted (ticket 23).
  *
- * The latency plots draw a comparison band: where an ordinary court sits on the same absolute
- * time axis as court 34's latencies. Until this ticket it began at a five-day constant this
+ * Both plots draw a comparison band: where an ordinary court sits on the same absolute time axis
+ * as court 34's times to appeal (the matrix page) and one agent juror's reveal latencies (its own
+ * view). The band is a time to ruling in either case and is never relabelled as either of them. Until this ticket it began at a five-day constant this
  * repository chose, and the since-removed footer said so: the only thing on the page that did not come from a
  * read. This module is the reading that replaces it. It is pure, below the seam, and touches no
  * network and no clock, like everything else under `performance/`.
