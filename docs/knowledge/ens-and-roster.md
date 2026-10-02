@@ -171,6 +171,24 @@ inside, and `ens.test.ts` pins that one bad label costs only its own identity.
 the label, which is a single word, so either the display name loses its spaces or the ENS label
 gets its own field. `agent-jurors.test.ts` fails a spaced nickname that claims a subname.
 
+**2026-10-02: stack recorded, subname chosen.** Jonesy's stack is now `Hermes` (Hermes Agent, with
+DeepSeek-flash deciding and kleros-juror-cli voting, on an unattended watcher-and-scheduler loop),
+and its subname is `jonesy.agents.kleroslabs.eth`, **chosen but not yet registered**. The entry
+took the second branch above: the display name keeps its spaces and the label has its own field,
+`ensLabel: "jonesy"`. `ensSubname: "pending"` marks the gap:
+
+- `ensNameOf` builds the name, and the agent juror's page draws it as
+  "jonesy.agents.kleroslabs.eth · not yet registered".
+- `resolvableEnsNameOf` returns `null` for it. Resolution, the `resolvedRoster` test fixture and
+  the live ENS integration test use that, so mainnet is asked nothing and the avatar stays
+  initials.
+- **Once the subname is registered** with its address and avatar records, drop `ensSubname:
+  "pending"`. The integration test then checks forward resolution to `0x1360…DBda` without further
+  change. Dropping it before the records exist turns that live test red.
+
+The bullets above on `ensSubname: false` and `stack: null` describe the entry as it was on
+2026-09-24; both mechanisms remain for the next entry that needs them.
+
 **Measured in a browser on 2026-09-24.** The matrix header draws the nickname on one line with an
 ellipsis. "Jonesy The First" needs 119px and gets 93px at 1440 wide and 88px at 1024, so it shows as
 "Jonesy Th…". Every other nickname fits: Daemonhill is the widest, at 83px. The full name is in the

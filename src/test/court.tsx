@@ -30,7 +30,7 @@ import { type RawReference, referenceReadingOf } from "../performance/reference"
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import type { RawCourtParameters } from "../performance/windows";
 import { ReadFailure, SOURCES } from "../read-failure";
-import { ensNameOf, ROSTER } from "../roster/agent-jurors";
+import { ROSTER, resolvableEnsNameOf } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
 import { DashboardRoutes, type DashboardRoutesProps } from "../routes";
@@ -148,7 +148,7 @@ export const resolvingRoster: RosterView = {
  */
 export const resolvedRoster: RosterView = {
   entries: ROSTER.map((agentJuror) => {
-    const ensName = ensNameOf(agentJuror);
+    const ensName = resolvableEnsNameOf(agentJuror);
     return {
       agentJuror,
       identity:

@@ -51,10 +51,19 @@ export type AgentJuror = {
   stack: Stack | null;
   /**
    * `false` where the agent juror has no subname under `agents.kleroslabs.eth`, so `ensNameOf`
-   * builds none and nothing is resolved. Absent means it has one, as every entry did until an
-   * operator joined the court without one.
+   * builds none and nothing is resolved. `"pending"` where the subname is chosen but not yet
+   * registered: the name is shown, marked as not yet registered, and mainnet is asked nothing
+   * until the marker is dropped. Absent means it has one and it resolves, as every entry did
+   * until an operator joined the court without one.
    */
-  ensSubname?: false;
+  ensSubname?: false | "pending";
+  /**
+   * The subname's label, where the nickname cannot be one — see `ensNameOf`.
+   *
+   * Absent wherever the nickname is a single word, which is every entry but one. ENSIP-15
+   * disallows a space in a label, so a display name with one carries its label here.
+   */
+  ensLabel?: string;
   /**
    * The account the agent juror posts from on X, `@` included and capitalised as it writes it.
    *
@@ -95,8 +104,8 @@ export type AgentJuror = {
  *
  * Addresses were verified two ways: each forward-resolves from its ENS subname on mainnet,
  * and every one of them appears as a drawn juror in court 34 in the core subgraph. An entry
- * marked `ensSubname: false` has only the second: its address is checked against the court's
- * stakes and draws, and nothing on mainnet vouches for it.
+ * marked `ensSubname: false` or `"pending"` has only the second: its address is checked against
+ * the court's stakes and draws, and nothing on mainnet vouches for it yet.
  *
  * Deliberately absent: who operates each agent juror. That mapping exists elsewhere and
  * must not arrive here — agent jurors are identified by nickname and stack, never by the
@@ -172,19 +181,24 @@ export const ROSTER: readonly AgentJuror[] = [
     handle: "@Grokleros",
   },
   {
-    // Staked and drawn in court 34 from 2026-09-18, and tracked from 2026-09-24. No subname
-    // and no reverse record, and its stack has not been recorded: both show on the page as
-    // what they are rather than as a guess.
+    // Staked and drawn in court 34 from 2026-09-18, and tracked from 2026-09-24. Its stack was
+    // recorded on 2026-10-02, with its subname: chosen then, not yet registered, so the page
+    // says so rather than sending a reader to an ENS app to find nothing.
     nickname: "Jonesy The First",
     pathSegment: "Jonesy",
     address: "0x136041c8f81a6c6BA2a45E43D898c9d219E6DBda",
-    stack: null,
-    ensSubname: false,
+    stack: { label: "Hermes" },
+    ensLabel: "jonesy",
+    ensSubname: "pending",
+    description:
+      "Hermes Agent with DeepSeek-flash deciding and kleros-juror-cli voting. An unattended watcher and scheduler loop runs it 24/7: drawn, it reads the evidence, votes and writes its own justification.",
   },
 ];
 
 /**
- * The full ENS name to resolve records from, lowercased, or `null` where there is no subname.
+ * The full ENS name, lowercased, or `null` where there is no subname. Built from `ensLabel`
+ * where the entry has one and from the nickname otherwise. Includes a pending subname — see
+ * `resolvableEnsNameOf` for the name mainnet can be asked about.
  *
  * The nickname above carries a capital for display and an ENS label does not have one. Case is
  * folded on resolution either way, but this string is also drawn on the agent juror's own page
@@ -195,7 +209,18 @@ export const ROSTER: readonly AgentJuror[] = [
  */
 export function ensNameOf(agentJuror: AgentJuror): string | null {
   if (agentJuror.ensSubname === false) return null;
-  return `${agentJuror.nickname.toLowerCase()}.${AGENT_JUROR_ENS_PARENT}`;
+  return `${(agentJuror.ensLabel ?? agentJuror.nickname).toLowerCase()}.${AGENT_JUROR_ENS_PARENT}`;
+}
+
+/**
+ * The ENS name mainnet can vouch for, or `null` where there is none yet.
+ *
+ * `ensNameOf` minus a pending subname: one chosen and not yet registered has no records to
+ * resolve and no address to forward-resolve to, so nothing that reads mainnet should ask it.
+ */
+export function resolvableEnsNameOf(agentJuror: AgentJuror): string | null {
+  if (agentJuror.ensSubname === "pending") return null;
+  return ensNameOf(agentJuror);
 }
 
 /**
