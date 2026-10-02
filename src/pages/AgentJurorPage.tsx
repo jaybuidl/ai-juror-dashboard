@@ -156,6 +156,13 @@ const Fact = styled.span<{ $accent?: boolean }>`
   white-space: nowrap;
 `;
 
+/* A subname chosen but not yet registered says so in the pill, so a reader is not sent to an
+   ENS app to find nothing. Allowed to wrap: the qualifier makes it the one pill too long for a
+   phone's line. */
+const PendingFact = styled(Fact)`
+  white-space: normal;
+`;
+
 /* Where the nickname came from, on the element it affects. The degraded panel above says ENS is
    unreachable once; this says which name is the consequence, so a reader looking at the heading
    does not have to carry the panel in their head. */
@@ -543,9 +550,15 @@ export function AgentJurorView({
                     <StackIcon stack={agentJuror.stack} />
                     {stackLabelOf(agentJuror)}
                   </Fact>
-                  {/* Left out, not guessed, where there is no subname: a name nobody registered
-                      would send a reader to an ENS app to find nothing. */}
-                  {ensName !== null && <Fact>{ensName}</Fact>}
+                  {/* Left out, not guessed, where there is no subname, and marked where the
+                      subname is chosen but not yet registered: an unmarked name nobody
+                      registered would send a reader to an ENS app to find nothing. */}
+                  {ensName !== null &&
+                    (agentJuror.ensSubname === "pending" ? (
+                      <PendingFact>{ensName} · not yet registered</PendingFact>
+                    ) : (
+                      <Fact>{ensName}</Fact>
+                    ))}
                   {/* The short form is drawn; the whole address is said. It was reachable only
                       through a `title` tooltip, so the one identifier that distinguishes this
                       agent juror from any other was available to a mouse and to nothing else.

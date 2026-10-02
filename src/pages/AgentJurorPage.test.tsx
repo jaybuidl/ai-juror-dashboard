@@ -93,6 +93,15 @@ describe("one agent juror's own view", () => {
     );
   });
 
+  it("shows a subname chosen but not yet registered, and says it is not registered", () => {
+    renderAt("/agent-jurors/Jonesy");
+
+    expect(screen.getByText("Hermes")).toBeInTheDocument();
+    expect(
+      screen.getByText("jonesy.agents.kleroslabs.eth · not yet registered"),
+    ).toBeInTheDocument();
+  });
+
   it("carries the one-line description where the roster has one", () => {
     renderAt("/agent-jurors/Columbo");
 

@@ -1,6 +1,11 @@
 import { screen } from "@testing-library/react";
 import { describe, expect, it } from "vitest";
-import { agentJurorPathOf, ensNameOf, ROSTER, stackLabelOf } from "../roster/agent-jurors";
+import {
+  agentJurorPathOf,
+  ROSTER,
+  resolvableEnsNameOf,
+  stackLabelOf,
+} from "../roster/agent-jurors";
 import { renderAt, resolvingRoster, unresolvedRoster } from "../test/court";
 
 /**
@@ -53,10 +58,10 @@ describe("the agent-juror index", () => {
     // correct and screen readers are not told the same thing twice.
     const avatars = screen.getAllByRole("presentation");
 
-    // One per agent juror with a subname: one without has no avatar to resolve, and draws its
+    // One per agent juror with a registered subname: one without has no avatar to resolve, and draws its
     // initials whether ENS answered or not.
     expect(avatars).toHaveLength(
-      ROSTER.filter((agentJuror) => ensNameOf(agentJuror) !== null).length,
+      ROSTER.filter((agentJuror) => resolvableEnsNameOf(agentJuror) !== null).length,
     );
     expect(avatars[0]).toHaveAttribute("src", expect.stringContaining("euc.li"));
   });

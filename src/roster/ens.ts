@@ -1,7 +1,7 @@
 import { type Address, createPublicClient, http, type PublicClient } from "viem";
 import { mainnet } from "viem/chains";
 import { normalize } from "viem/ens";
-import { type AgentJuror, ensNameOf } from "./agent-jurors";
+import { type AgentJuror, resolvableEnsNameOf } from "./agent-jurors";
 
 /**
  * Keyless, CORS-open (`access-control-allow-origin: *`) and reachable from a browser.
@@ -71,8 +71,8 @@ export async function resolveAgentJurorIdentity(
   client: PublicClient,
   agentJuror: AgentJuror,
 ): Promise<AgentJurorIdentity> {
-  const ensName = ensNameOf(agentJuror);
-  // No subname, so nothing to ask: the roster's own identity is the whole answer, and it is not
+  const ensName = resolvableEnsNameOf(agentJuror);
+  // No subname, or one not yet registered, so nothing to ask: the roster's own identity is the whole answer, and it is not
   // a failure — `resolvedFromEns` is false here exactly as it is for a subname with no records.
   if (ensName === null) return rosterIdentity(agentJuror);
 

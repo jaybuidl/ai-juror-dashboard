@@ -1,13 +1,16 @@
 import { normalize } from "viem/ens";
 import { describe, expect, it } from "vitest";
-import { ensNameOf, ROSTER } from "./agent-jurors";
+import { ROSTER, resolvableEnsNameOf } from "./agent-jurors";
 import { createMainnetClient, resolveAgentJurorIdentities } from "./ens";
 
 const client = createMainnetClient();
 
-/** The entries mainnet can vouch for. One with no subname has nothing there to check. */
+/**
+ * The entries mainnet can vouch for. One with no subname, or one not yet registered, has
+ * nothing there to check: drop its `"pending"` once registered and this checks it too.
+ */
 const withSubnames = ROSTER.flatMap((agentJuror) => {
-  const ensName = ensNameOf(agentJuror);
+  const ensName = resolvableEnsNameOf(agentJuror);
   return ensName === null ? [] : [{ agentJuror, ensName }];
 });
 
