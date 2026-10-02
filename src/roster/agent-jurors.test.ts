@@ -36,7 +36,7 @@ describe("the roster", () => {
       "Aletheia",
       "Baskerville",
       "Grokleros",
-      "Jonesy The First",
+      "Jonesy",
     ]);
   });
 
@@ -89,9 +89,7 @@ describe("the roster", () => {
     for (const agentJuror of ROSTER) {
       const ensName = ensNameOf(agentJuror);
       if (ensName === null) continue;
-      expect(ensName).toBe(
-        `${(agentJuror.ensLabel ?? agentJuror.nickname).toLowerCase()}.${AGENT_JUROR_ENS_PARENT}`,
-      );
+      expect(ensName).toBe(`${agentJuror.nickname.toLowerCase()}.${AGENT_JUROR_ENS_PARENT}`);
       expect(ensName).toBe(ensName.toLowerCase());
     }
   });
@@ -103,7 +101,7 @@ describe("the roster", () => {
   });
 
   it("names a pending subname from its own label, and keeps it from mainnet until registered", () => {
-    const jonesy = ROSTER.find((agentJuror) => agentJuror.pathSegment === "Jonesy");
+    const jonesy = ROSTER.find((agentJuror) => agentJuror.nickname === "Jonesy");
     expect(jonesy).toBeDefined();
     if (jonesy === undefined) return;
 
@@ -114,12 +112,12 @@ describe("the roster", () => {
     );
   });
 
-  it("keeps every subname's label a single word", () => {
-    // ENSIP-15 disallows a space in a label, so a spaced nickname with a subname must carry its
-    // label in `ensLabel`, or it would build a name `normalize` rejects.
+  it("keeps every nickname with a subname a single word, because that nickname is the label", () => {
+    // `ensSubname: false` is the only way a nickname may carry a space: ENSIP-15 disallows one
+    // in a label, so a spaced nickname with a subname would build a name `normalize` rejects.
     for (const agentJuror of ROSTER) {
       if (ensNameOf(agentJuror) === null) continue;
-      expect(agentJuror.ensLabel ?? agentJuror.nickname, agentJuror.nickname).not.toMatch(/\s/);
+      expect(agentJuror.nickname, agentJuror.nickname).not.toMatch(/\s/);
     }
   });
 

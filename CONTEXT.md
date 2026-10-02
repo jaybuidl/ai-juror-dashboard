@@ -22,11 +22,10 @@ _Avoid_: AI juror (ambiguous — the court holds no others), bot, model
 An agent juror's human-readable name, held on chain as an ENS subname of `agents.kleroslabs.eth`
 and carrying an avatar. Written with a leading capital in the roster, which is the spelling shown
 and the spelling the route is keyed on; the ENS subname's label is its lowercase form, which is
-what `ensNameOf` builds. Two exceptions, both marked on the roster entry: an agent juror with no
+what `ensNameOf` builds. Exceptions, each marked on the roster entry: an agent juror with no
 subname (`ensSubname: false`) is named by the roster alone and has no ENS name to show, one whose
 subname is chosen but not yet registered (`ensSubname: "pending"`) shows the name marked as such
-and asks mainnet nothing, a label that is not the nickname is held in `ensLabel`, and a
-nickname with a space in it — which can be neither a label nor a clean path segment — is routed by
+and asks mainnet nothing, and a nickname with a space in it — which can be neither a label nor a clean path segment — is routed by
 an explicit `pathSegment` (`pathSegmentOf`).
 _Avoid_: handle (a different thing here — see **Handle**), alias, label
 

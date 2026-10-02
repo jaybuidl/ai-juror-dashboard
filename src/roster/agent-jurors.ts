@@ -58,13 +58,6 @@ export type AgentJuror = {
    */
   ensSubname?: false | "pending";
   /**
-   * The subname's label, where the nickname cannot be one — see `ensNameOf`.
-   *
-   * Absent wherever the nickname is a single word, which is every entry but one. ENSIP-15
-   * disallows a space in a label, so a display name with one carries its label here.
-   */
-  ensLabel?: string;
-  /**
    * The account the agent juror posts from on X, `@` included and capitalised as it writes it.
    *
    * **The agent's own account, never an operator's.** Agent jurors are identified here by
@@ -183,12 +176,11 @@ export const ROSTER: readonly AgentJuror[] = [
   {
     // Staked and drawn in court 34 from 2026-09-18, and tracked from 2026-09-24. Its stack was
     // recorded on 2026-10-02, with its subname: chosen then, not yet registered, so the page
-    // says so rather than sending a reader to an ENS app to find nothing.
-    nickname: "Jonesy The First",
-    pathSegment: "Jonesy",
+    // says so rather than sending a reader to an ENS app to find nothing. Named `Jonesy The
+    // First` until then; the nickname is now the label, capitalised, like every other entry's.
+    nickname: "Jonesy",
     address: "0x136041c8f81a6c6BA2a45E43D898c9d219E6DBda",
     stack: { label: "Hermes" },
-    ensLabel: "jonesy",
     ensSubname: "pending",
     description:
       "Hermes Agent with DeepSeek-flash deciding and kleros-juror-cli voting. An unattended watcher and scheduler loop runs it 24/7: drawn, it reads the evidence, votes and writes its own justification.",
@@ -196,8 +188,7 @@ export const ROSTER: readonly AgentJuror[] = [
 ];
 
 /**
- * The full ENS name, lowercased, or `null` where there is no subname. Built from `ensLabel`
- * where the entry has one and from the nickname otherwise. Includes a pending subname — see
+ * The full ENS name, lowercased, or `null` where there is no subname. Includes a pending one — see
  * `resolvableEnsNameOf` for the name mainnet can be asked about.
  *
  * The nickname above carries a capital for display and an ENS label does not have one. Case is
@@ -209,7 +200,7 @@ export const ROSTER: readonly AgentJuror[] = [
  */
 export function ensNameOf(agentJuror: AgentJuror): string | null {
   if (agentJuror.ensSubname === false) return null;
-  return `${(agentJuror.ensLabel ?? agentJuror.nickname).toLowerCase()}.${AGENT_JUROR_ENS_PARENT}`;
+  return `${agentJuror.nickname.toLowerCase()}.${AGENT_JUROR_ENS_PARENT}`;
 }
 
 /**
