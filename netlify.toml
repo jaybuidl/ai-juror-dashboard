@@ -108,9 +108,10 @@
 # is a console violation on every load. That is precisely the failure this policy is meant
 # to make loud, so the host is listed rather than left to degrade quietly.
 #
-# All six records are plain https URLs on euc.li today. That is a property of the records,
-# not a guarantee: one re-pointed at an ipfs:// URI or an eip155 NFT would have viem fetch
-# a gateway (ipfs.io) or token metadata first, and would need that host added here too.
+# Every roster entry's avatar record is a plain https URL on euc.li (checked 2026-10-05).
+# That is a property of the records, not a guarantee: one re-pointed at an ipfs:// URI or an
+# eip155 NFT would have viem fetch a gateway (ipfs.io) or token metadata first, and would need
+# that host added here too.
 #
 # There is no frame-src clause: the dashboard embeds nothing, and default-src 'none'
 # already denies it. frame-ancestors 'none' plus X-Frame-Options means Netlify's

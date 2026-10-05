@@ -171,6 +171,31 @@ inside, and `ens.test.ts` pins that one bad label costs only its own identity.
 the label, which is a single word, so either the display name loses its spaces or the ENS label
 gets its own field. `agent-jurors.test.ts` fails a spaced nickname that claims a subname.
 
+**2026-10-02: stack recorded, subname chosen.** Jonesy's stack is now `Hermes` (Hermes Agent, with
+DeepSeek-flash deciding and kleros-juror-cli voting, on an unattended watcher-and-scheduler loop),
+and its subname is `jonesy.agents.kleroslabs.eth`, **chosen but not yet registered**. The entry
+took the first branch above: the nickname is now `Jonesy`, the label capitalised like every other
+entry's, so `pathSegment` went with the spaces. `/agent-jurors/Jonesy` is the route it was before.
+`ensSubname: "pending"` marks the gap:
+
+- `ensNameOf` builds the name, and the agent juror's page draws it as
+  "jonesy.agents.kleroslabs.eth · not yet registered".
+- `resolvableEnsNameOf` returns `null` for it. Resolution, the `resolvedRoster` test fixture and
+  the live ENS integration test use that, so mainnet is asked nothing and the avatar stays
+  initials.
+- **Once the subname is registered** with its address and avatar records, drop `ensSubname:
+  "pending"`. The integration test then checks forward resolution to `0x1360…DBda` without further
+  change. Dropping it before the records exist turns that live test red.
+
+**2026-10-05: subname registered.** `jonesy.agents.kleroslabs.eth` forward-resolves to
+`0x1360…DBda` and carries an avatar on `euc.li`, so `ensSubname: "pending"` was dropped and the
+live integration test now checks it. The avatar record went in first and the address record a
+day later; between the two, dropping the marker would have turned that test red.
+
+The bullets above on `ensSubname: false`, `pathSegment` and `stack: null`, and on `"pending"`,
+describe the entry as it was. All four mechanisms remain for the next entry that needs them, and
+no entry uses one today. The header measurement below is of the old name: "Jonesy" fits.
+
 **Measured in a browser on 2026-09-24.** The matrix header draws the nickname on one line with an
 ellipsis. "Jonesy The First" needs 119px and gets 93px at 1440 wide and 88px at 1024, so it shows as
 "Jonesy Th…". Every other nickname fits: Daemonhill is the widest, at 83px. The full name is in the

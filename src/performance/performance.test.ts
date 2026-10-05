@@ -166,7 +166,7 @@ describe("buildCourtPerformance", () => {
     // votes, and a full-height rose column near the left outshouts a grid whose subject is
     // latency. `baskerville` follows it because that is where it was appended while the court
     // had not drawn it — the court has since drawn it 14 times, and a column does not move for
-    // that. `grokleros` and then `Jonesy The First` are appended right of both under the same
+    // that. `grokleros` and then `Jonesy` are appended right of both under the same
     // rule. See `ROSTER`.
     expect(performance.agentJurors.map((agentJuror) => agentJuror.nickname)).toEqual([
       "007",
@@ -176,7 +176,7 @@ describe("buildCourtPerformance", () => {
       "Aletheia",
       "Baskerville",
       "Grokleros",
-      "Jonesy The First",
+      "Jonesy",
     ]);
     for (const row of performance.rows) {
       expect(row.cells).toHaveLength(ROSTER.length);

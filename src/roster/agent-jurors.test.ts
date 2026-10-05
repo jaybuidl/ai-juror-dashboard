@@ -6,6 +6,7 @@ import {
   handleUrlOf,
   pathSegmentOf,
   ROSTER,
+  resolvableEnsNameOf,
   stackLabelOf,
   UNKNOWN_STACK_LABEL,
 } from "./agent-jurors";
@@ -35,7 +36,7 @@ describe("the roster", () => {
       "Aletheia",
       "Baskerville",
       "Grokleros",
-      "Jonesy The First",
+      "Jonesy",
     ]);
   });
 
@@ -95,8 +96,23 @@ describe("the roster", () => {
 
   it("builds no ENS name for an agent juror without a subname, rather than guessing one", () => {
     expect(
-      ensNameOf({ nickname: "Jonesy The First", address: "0x0", stack: null, ensSubname: false }),
+      ensNameOf({ nickname: "No Subname", address: "0x0", stack: null, ensSubname: false }),
     ).toBeNull();
+  });
+
+  it("names a pending subname, and keeps it from mainnet until registered", () => {
+    const pending = {
+      nickname: "Jonesy",
+      address: "0x0",
+      stack: null,
+      ensSubname: "pending",
+    } as const;
+
+    expect(ensNameOf(pending)).toBe("jonesy.agents.kleroslabs.eth");
+    expect(resolvableEnsNameOf(pending)).toBeNull();
+    expect(resolvableEnsNameOf({ nickname: "Blaise", address: "0x0", stack: null })).toBe(
+      "blaise.agents.kleroslabs.eth",
+    );
   });
 
   it("keeps every nickname with a subname a single word, because that nickname is the label", () => {
