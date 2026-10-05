@@ -98,7 +98,8 @@ export type AgentJuror = {
  * Addresses were verified two ways: each forward-resolves from its ENS subname on mainnet,
  * and every one of them appears as a drawn juror in court 34 in the core subgraph. An entry
  * marked `ensSubname: false` or `"pending"` has only the second: its address is checked against
- * the court's stakes and draws, and nothing on mainnet vouches for it yet.
+ * the court's stakes and draws, and nothing on mainnet vouches for it yet. No entry is marked
+ * either way today.
  *
  * Deliberately absent: who operates each agent juror. That mapping exists elsewhere and
  * must not arrive here — agent jurors are identified by nickname and stack, never by the
@@ -174,14 +175,12 @@ export const ROSTER: readonly AgentJuror[] = [
     handle: "@Grokleros",
   },
   {
-    // Staked and drawn in court 34 from 2026-09-18, and tracked from 2026-09-24. Its stack was
-    // recorded on 2026-10-02, with its subname: chosen then, not yet registered, so the page
-    // says so rather than sending a reader to an ENS app to find nothing. Named `Jonesy The
-    // First` until then; the nickname is now the label, capitalised, like every other entry's.
+    // Staked and drawn in court 34 from 2026-09-18, and tracked from 2026-09-24 as `Jonesy The
+    // First`, with no subname. Its stack was recorded and its subname chosen on 2026-10-02, and
+    // the subname was registered with its address and avatar records on 2026-10-05.
     nickname: "Jonesy",
     address: "0x136041c8f81a6c6BA2a45E43D898c9d219E6DBda",
     stack: { label: "Hermes" },
-    ensSubname: "pending",
     description:
       "Hermes Agent with DeepSeek-flash deciding and kleros-juror-cli voting. An unattended watcher and scheduler loop runs it 24/7: drawn, it reads the evidence, votes and writes its own justification.",
   },

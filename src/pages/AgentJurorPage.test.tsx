@@ -94,12 +94,28 @@ describe("one agent juror's own view", () => {
   });
 
   it("shows a subname chosen but not yet registered, and says it is not registered", () => {
-    renderAt("/agent-jurors/Jonesy");
+    // No roster entry is pending today, so this marks one: Jonesy was, from 2026-10-02 to 05.
+    const pendingRoster: RosterView = {
+      ...resolvedRoster,
+      entries: resolvedRoster.entries.map((entry) =>
+        entry.agentJuror.nickname === "Jonesy"
+          ? { ...entry, agentJuror: { ...entry.agentJuror, ensSubname: "pending" } }
+          : entry,
+      ),
+    };
+    renderAt("/agent-jurors/Jonesy", { roster: pendingRoster });
 
-    expect(screen.getByText("Hermes")).toBeInTheDocument();
     expect(
       screen.getByText("jonesy.agents.kleroslabs.eth · not yet registered"),
     ).toBeInTheDocument();
+  });
+
+  it("shows a registered subname plainly", () => {
+    renderAt("/agent-jurors/Jonesy");
+
+    expect(screen.getByText("Hermes")).toBeInTheDocument();
+    expect(screen.getByText("jonesy.agents.kleroslabs.eth")).toBeInTheDocument();
+    expect(screen.queryByText(/not yet registered/)).toBeNull();
   });
 
   it("carries the one-line description where the roster has one", () => {

@@ -100,13 +100,16 @@ describe("the roster", () => {
     ).toBeNull();
   });
 
-  it("names a pending subname from its own label, and keeps it from mainnet until registered", () => {
-    const jonesy = ROSTER.find((agentJuror) => agentJuror.nickname === "Jonesy");
-    expect(jonesy).toBeDefined();
-    if (jonesy === undefined) return;
+  it("names a pending subname, and keeps it from mainnet until registered", () => {
+    const pending = {
+      nickname: "Jonesy",
+      address: "0x0",
+      stack: null,
+      ensSubname: "pending",
+    } as const;
 
-    expect(ensNameOf(jonesy)).toBe("jonesy.agents.kleroslabs.eth");
-    expect(resolvableEnsNameOf(jonesy)).toBeNull();
+    expect(ensNameOf(pending)).toBe("jonesy.agents.kleroslabs.eth");
+    expect(resolvableEnsNameOf(pending)).toBeNull();
     expect(resolvableEnsNameOf({ nickname: "Blaise", address: "0x0", stack: null })).toBe(
       "blaise.agents.kleroslabs.eth",
     );
