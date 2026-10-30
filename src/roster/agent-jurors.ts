@@ -216,7 +216,7 @@ export const ROSTER: readonly AgentJuror[] = [
     ensSubname: false,
   },
   {
-    // Drawn five times in disputes 290-295 and never voted, then unstaked; added 2026-10-30 so
+    // Drawn in disputes 290, 291, 294 and 295 and never voted, then unstaked; added 2026-10-30 so
     // those missed votes are counted rather than dropped. Named, like the entry above, by its
     // address prefix: no ENS name points at it and no stack is recorded.
     nickname: "0x518f",
