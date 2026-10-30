@@ -10,7 +10,7 @@ this file is the full account.
 
 - **ENS reverse records are mostly unset.** Three of the roster's addresses had one on 2026-08-25,
   because setting it requires each operator to act from the agent's own wallet — and an entry added
-  since arrives without one. Resolve *forward* from the roster's subname; `getEnsName(address)`
+  since arrives without one. Resolve *forward* from the roster's ENS name; `getEnsName(address)`
   leaves most of the roster anonymous.
 - **`getEnsAvatar` is a `connect-src` fetch, not just an image load.** viem sends a `HEAD` to the
   avatar URL before it ever reaches an `<img>`. Blocked, it fails *silently* — viem catches it and
@@ -153,7 +153,7 @@ placeholder value:
   nothing, and the agent juror's page leaves the ENS-name pill out rather than showing a name
   nobody registered. Its avatar is initials whether ENS answered or not, so the "From roster"
   caveat is **not** raised for it: `isResolvedFromEns` is roster-wide and the other entries carry
-  it. The live ENS integration test checks only entries with a subname, because mainnet has
+  it. The live ENS integration test checks only entries with an ENS name, because mainnet has
   nothing to vouch for here. The address was checked against court-34 stakes and draws instead.
 - **`pathSegment: "Jonesy"`.** A space cannot be an ENS label (ENSIP-15, so `normalize` throws), and
   in a path it becomes `%20`. The nickname stays the display string everywhere; the route is
@@ -202,14 +202,14 @@ ellipsis. "Jonesy The First" needs 119px and gets 93px at 1440 wide and 88px at 
 accessible name, on the index and on the agent juror's own page. "Stack unknown" wraps to two lines
 in the header, where every recorded stack fits on one. With an eighth column the compact grid's
 floor is 1272px, which puts its breakpoint at 1368px. A 1280px window now scrolls the table inside
-its own box and loses the pinned header, where seven columns fit.
+its own box and loses the pinned header, where seven columns fit. (Superseded at nine columns —
+see the Intendant section.)
 
 ## Intendant: the first agent juror with an ENS name of its own
 
 *2026-10-30.*
 
-`Intendant` is the first agent juror built outside the Kleros team, and the first to arrive with
-an ENS name of its own — `intendant.eth` — rather than a subname of `agents.kleroslabs.eth`. The
+`Intendant` is the first agent juror to arrive with an ENS name of its own — `intendant.eth` — rather than a subname of `agents.kleroslabs.eth`. The
 roster's `ensName` field exists for it: where set, `ensNameOf` returns it as written and builds no
 subname, and everything downstream (resolution, the page's name pill, the fixtures, the live ENS
 suite) goes through that helper unchanged.
@@ -217,8 +217,9 @@ suite) goes through that helper unchanged.
 - **Verified before it was added.** `intendant.eth` forward-resolved on mainnet to
   `0xC05e…f539`, the address reverse-resolved to `intendant.eth`, and the `avatar` record was an
   `https://euc.li/intendant.eth` image (a logo, no person). No other text record was set, so the
-  roster nickname is what renders. In the core subgraph it had 12 draws across 11 disputes, all in
-  court 34 (first 310, on 2026-10-22), all ruled. `kleros juror info` (agentkit 0.3.0) agreed;
+  roster nickname is what renders. In the core subgraph it held 12 vote slots across 11 disputes
+  (two in 322), all in court 34 (first 310, on 2026-10-22), all ruled. The dashboard counts a draw
+  per dispute (ADR-0002), so its page reads 11 draws and 10 of 11 coherent: 325 diverged. `kleros juror info` (agentkit 0.3.0) agreed;
   it takes only a hex `--address`, not an ENS name, and its `coherenceScore` of "50" against 11 of
   12 coherent votes is its own formula — never quote it.
 - **The name's registrant is another account than the one that votes.** That is normal for an own
@@ -226,6 +227,11 @@ suite) goes through that helper unchanged.
   the voting address and the name, never the registrant.
 - **Stack unknown.** Nobody has recorded it, so `stack: null` renders "Stack unknown". Record it
   when its builder says, as Jonesy's was.
+- **Nine columns: the 1440 desktop scrolls the matrix.** Measured in a browser on 2026-10-30: the
+  compact floor is 1376px and its breakpoint 1472px, so at 1280 and 1440 the table scrolls inside
+  its own box and loses the pinned header; no page-level scroll at any width, and the phone cards
+  are unaffected. This is the outcome ticket 25 measured and accepted for nine. "Intendant" fits
+  its header (73px; Daemonhill is still widest, at 83px); "Stack unknown" wraps to two lines.
 - **The live suite now depends on a name this project does not control.** If the registrant drops
   the avatar or address record, or lets the name lapse (it expires 2027-09-22), the ENS integration
   test goes red. Read the records before treating that as a bug here.

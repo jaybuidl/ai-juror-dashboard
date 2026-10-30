@@ -30,7 +30,7 @@ export const UNKNOWN_STACK_LABEL = "Stack unknown";
 
 export type AgentJuror = {
   /**
-   * The subname's own label, capitalised for display — see `ensNameOf` for the full ENS name.
+   * The ENS name's own label, capitalised for display — see `ensNameOf` for the full ENS name.
    *
    * The capital costs nothing anywhere this is not a display string: ENS labels normalise to
    * lowercase, and draws join on the address. What it does touch is the route, which is this
