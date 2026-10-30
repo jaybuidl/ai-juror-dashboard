@@ -1,8 +1,9 @@
 import type { Address } from "viem";
 
 /**
- * The parent name every agent juror's nickname hangs off. Nicknames are ENS subnames of
- * it, one label deep: `blaise` is `blaise.agents.kleroslabs.eth`.
+ * The parent name an agent juror's nickname hangs off by default. Nicknames are ENS subnames of
+ * it, one label deep: `blaise` is `blaise.agents.kleroslabs.eth`. An agent juror that arrives
+ * with a name of its own keeps that one instead — see `ensName`.
  */
 export const AGENT_JUROR_ENS_PARENT = "agents.kleroslabs.eth";
 
@@ -41,7 +42,7 @@ export type AgentJuror = {
    * The route key, where the nickname cannot be one — see `pathSegmentOf`.
    *
    * Absent for every entry whose nickname is a single URL-safe word, which is every entry whose
-   * nickname is also its ENS label. Present only where the nickname is a display name with a
+   * nickname is also its ENS label, under the agents parent or in a name of its own. Present only where the nickname is a display name with a
    * space in it, which a path segment would carry as `%20`.
    */
   pathSegment?: string;
@@ -57,6 +58,16 @@ export type AgentJuror = {
    * until an operator joined the court without one.
    */
   ensSubname?: false | "pending";
+  /**
+   * An ENS name of the agent juror's own, outside `agents.kleroslabs.eth`, lowercase as drawn —
+   * `intendant.eth`. Where present it is the name: `ensNameOf` returns it as written and builds
+   * no subname. It is checked like a subname — it must forward-resolve to `address` and carry an
+   * avatar, or the live ENS suite goes red — so it is set only once both records exist.
+   *
+   * Who registered the name is not this field's business. The registrant can be another account
+   * than the one that votes, and that account is never recorded here: see the note on `ROSTER`.
+   */
+  ensName?: string;
   /**
    * The account the agent juror posts from on X, `@` included and capitalised as it writes it.
    *
@@ -99,7 +110,8 @@ export type AgentJuror = {
  * and every one of them appears as a drawn juror in court 34 in the core subgraph. An entry
  * marked `ensSubname: false` or `"pending"` has only the second: its address is checked against
  * the court's stakes and draws, and nothing on mainnet vouches for it yet. No entry is marked
- * either way today.
+ * either way today. An entry with an `ensName` of its own is verified the same two ways, from
+ * that name rather than a subname.
  *
  * Deliberately absent: who operates each agent juror. That mapping exists elsewhere and
  * must not arrive here — agent jurors are identified by nickname and stack, never by the
@@ -184,11 +196,22 @@ export const ROSTER: readonly AgentJuror[] = [
     description:
       "Hermes Agent with DeepSeek-flash deciding and kleros-juror-cli voting. An unattended watcher and scheduler loop runs it 24/7: drawn, it reads the evidence, votes and writes its own justification.",
   },
+  {
+    // The first agent juror to arrive with an ENS name of its own rather than a subname. Staked
+    // in court 34 and first drawn in dispute 310 on 2026-10-22; added 2026-10-30, when
+    // `intendant.eth` forward- and reverse-resolved to this address and carried an avatar.
+    // Nothing has recorded its stack.
+    nickname: "Intendant",
+    address: "0xC05e109F24CbE59301272fe8e7a908F67A1af539",
+    stack: null,
+    ensName: "intendant.eth",
+  },
 ];
 
 /**
- * The full ENS name, lowercased, or `null` where there is no subname. Includes a pending one — see
- * `resolvableEnsNameOf` for the name mainnet can be asked about.
+ * The full ENS name, lowercased, or `null` where there is none: the entry's own `ensName` where it
+ * has one, and otherwise its subname. Includes a pending one — see `resolvableEnsNameOf` for the
+ * name mainnet can be asked about.
  *
  * The nickname above carries a capital for display and an ENS label does not have one. Case is
  * folded on resolution either way, but this string is also drawn on the agent juror's own page
@@ -198,6 +221,7 @@ export const ROSTER: readonly AgentJuror[] = [
  * registered would send a reader to an ENS app to find nothing.
  */
 export function ensNameOf(agentJuror: AgentJuror): string | null {
+  if (agentJuror.ensName !== undefined) return agentJuror.ensName;
   if (agentJuror.ensSubname === false) return null;
   return `${agentJuror.nickname.toLowerCase()}.${AGENT_JUROR_ENS_PARENT}`;
 }

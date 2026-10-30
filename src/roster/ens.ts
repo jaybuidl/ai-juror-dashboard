@@ -42,7 +42,7 @@ export type AgentJurorIdentity = {
   address: Address;
   nickname: string;
   avatarUrl: string | null;
-  /** False when mainnet could not be reached, or the agent juror has no subname to read. */
+  /** False when mainnet could not be reached, or the agent juror has no ENS name to read. */
   resolvedFromEns: boolean;
 };
 
@@ -57,11 +57,12 @@ export function rosterIdentity(agentJuror: AgentJuror): AgentJurorIdentity {
 }
 
 /**
- * Resolve one agent juror's nickname and avatar from its ENS subname.
+ * Resolve one agent juror's nickname and avatar from its ENS name — a subname of the agents parent,
+ * or a name of its own.
  *
  * Forward resolution, deliberately: only a couple of the roster's addresses have a reverse
- * record set, so `getEnsName` would leave most of them anonymous. The roster holds the subname
- * and this reads records off it.
+ * record set, so `getEnsName` would leave most of them anonymous. The roster holds the name and
+ * this reads records off it.
  *
  * ENS is the one source this dashboard is allowed to lose quietly (ticket 13): a mainnet
  * outage costs an avatar, not a measurement, so a failure here degrades to the roster

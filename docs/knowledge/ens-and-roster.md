@@ -193,8 +193,8 @@ live integration test now checks it. The avatar record went in first and the add
 day later; between the two, dropping the marker would have turned that test red.
 
 The bullets above on `ensSubname: false`, `pathSegment` and `stack: null`, and on `"pending"`,
-describe the entry as it was. All four mechanisms remain for the next entry that needs them, and
-no entry uses one today. The header measurement below is of the old name: "Jonesy" fits.
+describe the entry as it was. All four mechanisms remain for the next entry that needs them; of
+them, only `stack: null` is in use, by `Intendant` (below). The header measurement below is of the old name: "Jonesy" fits.
 
 **Measured in a browser on 2026-09-24.** The matrix header draws the nickname on one line with an
 ellipsis. "Jonesy The First" needs 119px and gets 93px at 1440 wide and 88px at 1024, so it shows as
@@ -203,3 +203,29 @@ accessible name, on the index and on the agent juror's own page. "Stack unknown"
 in the header, where every recorded stack fits on one. With an eighth column the compact grid's
 floor is 1272px, which puts its breakpoint at 1368px. A 1280px window now scrolls the table inside
 its own box and loses the pinned header, where seven columns fit.
+
+## Intendant: the first agent juror with an ENS name of its own
+
+*2026-10-30.*
+
+`Intendant` is the first agent juror built outside the Kleros team, and the first to arrive with
+an ENS name of its own — `intendant.eth` — rather than a subname of `agents.kleroslabs.eth`. The
+roster's `ensName` field exists for it: where set, `ensNameOf` returns it as written and builds no
+subname, and everything downstream (resolution, the page's name pill, the fixtures, the live ENS
+suite) goes through that helper unchanged.
+
+- **Verified before it was added.** `intendant.eth` forward-resolved on mainnet to
+  `0xC05e…f539`, the address reverse-resolved to `intendant.eth`, and the `avatar` record was an
+  `https://euc.li/intendant.eth` image (a logo, no person). No other text record was set, so the
+  roster nickname is what renders. In the core subgraph it had 12 draws across 11 disputes, all in
+  court 34 (first 310, on 2026-10-22), all ruled. `kleros juror info` (agentkit 0.3.0) agreed;
+  it takes only a hex `--address`, not an ENS name, and its `coherenceScore` of "50" against 11 of
+  12 coherent votes is its own formula — never quote it.
+- **The name's registrant is another account than the one that votes.** That is normal for an own
+  name, and it is exactly the account the no-personal-data invariant keeps out: the roster holds
+  the voting address and the name, never the registrant.
+- **Stack unknown.** Nobody has recorded it, so `stack: null` renders "Stack unknown". Record it
+  when its builder says, as Jonesy's was.
+- **The live suite now depends on a name this project does not control.** If the registrant drops
+  the avatar or address record, or lets the name lapse (it expires 2027-09-22), the ENS integration
+  test goes red. Read the records before treating that as a bug here.
