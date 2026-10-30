@@ -194,7 +194,8 @@ day later; between the two, dropping the marker would have turned that test red.
 
 The bullets above on `ensSubname: false`, `pathSegment` and `stack: null`, and on `"pending"`,
 describe the entry as it was. All four mechanisms remain for the next entry that needs them; of
-them, only `stack: null` is in use, by `Intendant` (below). The header measurement below is of the old name: "Jonesy" fits.
+them, `stack: null` is in use by `Intendant`, `0xd66b` and `0x518f`, and `ensSubname: false` by
+the last two (below). The header measurement below is of the old name: "Jonesy" fits.
 
 **Measured in a browser on 2026-09-24.** The matrix header draws the nickname on one line with an
 ellipsis. "Jonesy The First" needs 119px and gets 93px at 1440 wide and 88px at 1024, so it shows as
@@ -235,3 +236,26 @@ suite) goes through that helper unchanged.
 - **The live suite now depends on a name this project does not control.** If the registrant drops
   the avatar or address record, or lets the name lapse (it expires 2027-09-22), the ENS integration
   test goes red. Read the records before treating that as a bug here.
+
+## 0xd66b and 0x518f: drawn, off the roster, and named by their addresses
+
+*2026-10-30.*
+
+Verifying Intendant turned up two more accounts drawn in court 34 and missing from `ROSTER`, the
+trap the note on `ROSTER` describes: their draws had no column and fell out of every figure. Both
+were added the same day, at the right-hand end, with `stack: null` and `ensSubname: false` — no
+ENS name resolves to either (reverse record, forward index and the agents parent all checked).
+With no name to borrow, each is nicknamed by its own address prefix. The address is the agent's
+voting account, so naming it is not the operator's identity; who built either is, as ever, kept
+out of this repo.
+
+- **`0xd66b`** (`0xd66b…Ebe41`): drawn in 216 (two vote slots), 217, 315 and 320; voted only in
+  315 and 320. Still staked, 11,839 PNK, when added.
+- **`0x518f`** (`0x518f…3A41`): drawn in 290, 291 (two vote slots), 294 and 295, voted in none,
+  and unstaked by the time it was added. Its column is all missed votes, and that is the record.
+- **Both avatars are initials, and the initials are the same.** The fallback draws the first two
+  characters of the nickname, so both read "0x". The nickname beside each tells them apart; a
+  fallback that skips a hex prefix would be the fix if that proves not enough.
+- **Eleven columns.** The compact floor is 440 + 11 × 104 = 1584px and its breakpoint 1680px, so
+  every ordinary desktop scrolls the matrix in its own box. Ticket 25 measured nine, not eleven.
+

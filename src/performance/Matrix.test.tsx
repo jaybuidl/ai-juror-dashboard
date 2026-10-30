@@ -1086,18 +1086,18 @@ describe("Matrix", () => {
       // asked. Saying "never drawn" there is an unread state rendering as a fact about the
       // court, over the single observation this dashboard was built to catch.
       //
-      // Four columns are in that state in this fixture rather than one. That used to be
+      // Six columns are in that state in this fixture rather than one. That used to be
       // baskerville alone and the test was written as though it always would be; the court drew
-      // baskerville and three more agent jurors joined, and the count is a property of the capture
+      // baskerville and five more agent jurors joined, and the count is a property of the capture
       // either way.
       //
-      // Over the **shipped** roster rather than the fixture's, which is what makes the count four:
+      // Over the **shipped** roster rather than the fixture's, which is what makes the count six:
       // `FIXTURE_ROSTER` is short by exactly the agent jurors appended from ticket 24 onward, and this claim
       // is the one that has to hold about the roster a reader actually meets. The grid is compact
       // there — the shipped roster is past `COMPACT_FROM_COLUMNS` — and the stack label carries the
       // words at both densities, which is why the assertion reads the same either way.
       renderMatrix(build({ roster: ROSTER }));
-      expect(screen.getAllByText("Never drawn")).toHaveLength(4);
+      expect(screen.getAllByText("Never drawn")).toHaveLength(6);
 
       cleanup();
       renderDrifted();

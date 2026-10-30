@@ -109,8 +109,8 @@ export type AgentJuror = {
  * Addresses were verified two ways: each forward-resolves from its ENS subname on mainnet,
  * and every one of them appears as a drawn juror in court 34 in the core subgraph. An entry
  * marked `ensSubname: false` or `"pending"` has only the second: its address is checked against
- * the court's stakes and draws, and nothing on mainnet vouches for it yet. No entry is marked
- * either way today. An entry with an `ensName` of its own is verified the same two ways, from
+ * the court's stakes and draws, and nothing on mainnet vouches for it yet. `0xd66b` and `0x518f`
+ * are marked `false`; none is pending. An entry with an `ensName` of its own is verified the same two ways, from
  * that name rather than a subname.
  *
  * Deliberately absent: who operates each agent juror. That mapping exists elsewhere and
@@ -205,6 +205,24 @@ export const ROSTER: readonly AgentJuror[] = [
     address: "0xC05e109F24CbE59301272fe8e7a908F67A1af539",
     stack: null,
     ensName: "intendant.eth",
+  },
+  {
+    // Drawn in court 34 since dispute 216 and off the roster until 2026-10-30, so its draws fell
+    // out of every figure. No ENS name points at it and no stack is recorded, so it is named by
+    // its address prefix and drawn with initials. Still staked when added.
+    nickname: "0xd66b",
+    address: "0xd66b90529427CB761e0F81633861C1DCA04Ebe41",
+    stack: null,
+    ensSubname: false,
+  },
+  {
+    // Drawn five times in disputes 290-295 and never voted, then unstaked; added 2026-10-30 so
+    // those missed votes are counted rather than dropped. Named, like the entry above, by its
+    // address prefix: no ENS name points at it and no stack is recorded.
+    nickname: "0x518f",
+    address: "0x518f83f3ED5fD0f5FD46704CE139E1196B9C3A41",
+    stack: null,
+    ensSubname: false,
   },
 ];
 

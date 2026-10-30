@@ -38,6 +38,8 @@ describe("the roster", () => {
       "Grokleros",
       "Jonesy",
       "Intendant",
+      "0xd66b",
+      "0x518f",
     ]);
   });
 
