@@ -13,8 +13,10 @@ import { narrow } from "../styles/breakpoints";
  *
  * Draws and vote IDs are two numbers because they are two things: the draw is the unit, and one
  * draw may hold several vote IDs (61 votes were 44 draws across the first thirteen disputes).
- * The drawn tile reads against the roster's own length so that an agent juror the court has not
- * drawn is legible here and not only as an empty column in the matrix.
+ * The roster tile is the roster's own length and nothing else (2026-11-02, maintainer's ruling).
+ * It used to read the drawn count against it — "11/11" — so an agent juror the court had never
+ * drawn showed here; every one has been drawn, the fraction read as noise, and a never-drawn
+ * agent juror is still legible as an empty column in the matrix and on its own page.
  */
 
 const Row = styled.div`
@@ -46,11 +48,6 @@ const Figure = styled.div<{ $accent?: boolean }>`
     font: ${({ theme }) => theme.typeMetricSm};
     font-feature-settings: ${({ theme }) => theme.featureMono};
   }
-`;
-
-/** The "/6" of "5/6": the same figure, in the ink of something not yet reached. */
-const Against = styled.span`
-  color: ${({ theme }) => theme.textPending};
 `;
 
 const Label = styled.div`
@@ -118,7 +115,7 @@ export function StatTiles({
    * and the size of the record follows it — draws before disputes, because the draw is the unit
    * (`CONTEXT.md`).
    *
-   * The tile that gives way is the count of the roster that has been drawn. It is a fact about
+   * The tile that gives way is the roster's size. It is a fact about
    * the roster rather than about the record, and `/agent-jurors` carries it in more detail than
    * a tile can. The draws tile also drops the vote count from its label: the draw is the unit
    * either way, and the vote count is context the desktop has the width for.
@@ -153,22 +150,11 @@ export function StatTiles({
   );
   const draws = <StatTile key="draws" figure={totals.draws} label="Draws" />;
   const disputes = <StatTile key="disputes" figure={totals.disputes} label="Disputes read" />;
-  const drawn = (
-    <StatTile
-      key="drawn"
-      figure={
-        <>
-          {totals.agentJurorsDrawn}
-          <Against>/{totals.agentJurors}</Against>
-        </>
-      }
-      label="Agent jurors drawn"
-    />
-  );
+  const roster = <StatTile key="roster" figure={totals.agentJurors} label="Agent jurors" />;
 
   return (
     <Row>
-      {isNarrow ? [median, draws, disputes] : [disputes, draws, drawn, median]}
+      {isNarrow ? [median, draws, disputes] : [disputes, draws, roster, median]}
       {(partial || totals.unreadDisputes.length > 0) && (
         <Partial role="status">
           Partial. {figuresMissing(totals)} These are counts of what was read, and what was not read

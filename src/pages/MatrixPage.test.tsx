@@ -107,7 +107,11 @@ describe("the matrix view", () => {
     // also stated is on /method, which says it in full.
     renderAt("/");
 
-    expect(screen.getByText(/vote in one Kleros court\.$/)).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        "Independent AI agent jurors, each built on a different stack by different builders.",
+      ),
+    ).toBeInTheDocument();
     expect(screen.queryByText(/this page measures two things/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/it never votes, stakes, or holds a key/i)).not.toBeInTheDocument();
   });
@@ -293,11 +297,16 @@ describe("the totals above the matrix", () => {
     expect(screen.queryByText(`Draws · ${totals.votes} vote IDs`)).not.toBeInTheDocument();
   });
 
-  it("reads the drawn count against the whole roster, so a never-drawn agent juror is legible", () => {
+  it("counts the roster, and no longer reads a drawn count against it", () => {
+    // The fixture court drew five of its roster; the tile says only how many agent jurors there
+    // are (2026-11-02, maintainer's ruling). Read off the roster, never a literal.
     renderAt("/");
+    // The nav's link carries the same words; the tile's label is the only div that does.
+    const tile = screen.getByText("Agent jurors", { selector: "div" }).parentElement;
+    if (tile === null) throw new Error("The roster tile has a figure beside its label");
 
-    expect(screen.getByText("5")).toBeInTheDocument();
-    expect(screen.getByText(`/${FIXTURE_ROSTER.length}`)).toBeInTheDocument();
+    expect(within(tile).getByText(String(FIXTURE_ROSTER.length))).toBeInTheDocument();
+    expect(within(tile).queryByText(`/${FIXTURE_ROSTER.length}`)).not.toBeInTheDocument();
   });
 
   it("plots one mark per dispute at appeal and says how many that is", () => {
@@ -815,15 +824,15 @@ describe("the matrix view on a phone", () => {
     expect(screen.getByText(/^Median to appeal/)).toBeInTheDocument();
   });
 
-  it("shows three tiles, with the median time to appeal leading and the drawn count gone", () => {
+  it("shows three tiles, with the median time to appeal leading and the roster count gone", () => {
     stubViewportWidth(PHONE_WIDTH);
     renderAt("/");
 
     const labels = screen
-      .getAllByText(/^(Disputes read|Draws.*|Agent jurors drawn|Median to appeal.*)$/)
+      .getAllByText(/^(Disputes read|Draws.*|Agent jurors|Median to appeal.*)$/)
       .map((node) => node.textContent);
 
-    // `Mobile.dc.html:47-51`: the headline median, draws, disputes. The roster's drawn count is a fact
+    // `Mobile.dc.html:47-51`: the headline median, draws, disputes. The roster's size is a fact
     // about the roster rather than about the record, and `/agent-jurors` carries it in more
     // detail than a tile can.
     expect(labels).toHaveLength(3);

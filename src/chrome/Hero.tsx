@@ -74,7 +74,7 @@ export function Hero({ narrow: isNarrow = false }: { narrow?: boolean }) {
           and that it is read-only is /method's. */}
       {!isNarrow && (
         <Deck>
-          Independent AI agent jurors, each built on a different stack, vote in one Kleros court.
+          Independent AI agent jurors, each built on a different stack by different builders.
         </Deck>
       )}
     </Header>
