@@ -4,6 +4,7 @@ import styled from "styled-components";
 import { Notice } from "../chrome/Failure";
 import { VisuallyHidden } from "../styles/hidden";
 import { type Tone, toneInk, toneLine } from "../styles/tones";
+import { type ChoiceLabel, choiceTitleOf } from "./dispute-templates";
 import type { Dispute, Ruling } from "./disputes";
 
 /**
@@ -316,6 +317,8 @@ export type DisputeRowSlots = {
   panelTone?: Tone;
   /** The state colour the flag pill carries, where a flag applies. */
   flagTone?: Tone;
+  /** The dispute template's named choices, so the ruling reads in words. Absent until it loads. */
+  answers?: readonly ChoiceLabel[];
   /**
    * A figure about this dispute, filled only where the row is the compact form's.
    *
@@ -373,16 +376,19 @@ export type DisputeListView = {
  * A dispute with no ruling yet reads as pending and never as a blank: an empty cell
  * where a ruling belongs is indistinguishable from one that failed to load. Choice 0 is
  * a refusal to arbitrate — a decision the court reached, not an absence of one — so it
- * is worded rather than rendered as "Ruling 0".
+ * is worded rather than rendered as "Ruling 0". Every other ruling is worded too where the
+ * template names it, "Ruling: Too early", and falls back to its number only where it does not.
  */
-export function rulingLabel(ruling: Ruling): string {
+export function rulingLabel(ruling: Ruling, answers: readonly ChoiceLabel[] = []): string {
   switch (ruling.state) {
     case "pending":
       return "Pending";
     case "refused":
       return "Refuse to arbitrate";
-    case "ruled":
-      return `Ruling ${ruling.choice}`;
+    case "ruled": {
+      const title = choiceTitleOf(ruling.choice, answers);
+      return title === null ? `Ruling ${ruling.choice}` : `Ruling: ${title}`;
+    }
   }
 }
 
@@ -435,7 +441,10 @@ export function DisputeRow({
     details.push({ key: "category", node: <Detail>{slots.category}</Detail> });
   }
   if (!compact) {
-    details.push({ key: "ruling", node: <Detail>{rulingLabel(dispute.ruling)}</Detail> });
+    details.push({
+      key: "ruling",
+      node: <Detail>{rulingLabel(dispute.ruling, slots.answers)}</Detail>,
+    });
   }
   if (isFilled(slots.panel)) {
     details.push({

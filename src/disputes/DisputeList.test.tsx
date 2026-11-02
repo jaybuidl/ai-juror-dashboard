@@ -4,7 +4,7 @@ import { ThemeProvider } from "styled-components";
 import { describe, expect, it } from "vitest";
 import { theme } from "../styles/theme";
 import fixture from "./court-34.fixture.json" with { type: "json" };
-import { DisputeList, DisputeRow } from "./DisputeList";
+import { DisputeList, DisputeRow, rulingLabel } from "./DisputeList";
 import type { Dispute, RawDispute } from "./disputes";
 import { toDisputes } from "./disputes";
 
@@ -367,5 +367,18 @@ describe("DisputeList", () => {
     expect(notices).toHaveLength(2);
     expect(notices[0]).toHaveTextContent(/could not be read/i);
     expect(notices[1]).toHaveTextContent(/only the titles are missing/i);
+  });
+});
+
+describe("rulingLabel", () => {
+  const answers = [{ choice: 4, title: "Too early" }];
+
+  it("words a ruling by the template's name for it", () => {
+    expect(rulingLabel({ state: "ruled", choice: 4 }, answers)).toBe("Ruling: Too early");
+  });
+
+  it("falls back to the number where the template names nothing, or has not loaded", () => {
+    expect(rulingLabel({ state: "ruled", choice: 3 }, answers)).toBe("Ruling 3");
+    expect(rulingLabel({ state: "ruled", choice: 4 })).toBe("Ruling 4");
   });
 });

@@ -173,8 +173,9 @@ describe("the ruling card", () => {
 
   it("names choice 0 as refusing to arbitrate, which no template ever names", () => {
     renderDispute();
+    const card = screen.getByRole("region", { name: /final ruling/i });
 
-    expect(screen.getByText(/Refuse to arbitrate/)).toBeInTheDocument();
+    expect(within(card).getByText(/Refuse to arbitrate/)).toBeInTheDocument();
   });
 
   it("adds no note under a ruling the court has made", () => {
@@ -277,7 +278,8 @@ describe("the justification band", () => {
     expect(within(column).getByText("007")).toBeInTheDocument();
     expect(within(column).getByText("OpenClaw")).toBeInTheDocument();
     expect(within(column).getByText("Diverged")).toBeInTheDocument();
-    expect(within(column).getByText("Choice 0")).toBeInTheDocument();
+    // The vote by name, not by number: 007 voted choice 0 (2026-11-02).
+    expect(within(column).getByText("Refuse to arbitrate")).toBeInTheDocument();
     // The phrases, not the tooltips. Ticket 18 moved these off `title` — a tooltip on a
     // non-focusable span reaches a pointer and nothing else — so what to assert is the text a
     // reader is actually given, which is also what the matrix's own keys have always carried.

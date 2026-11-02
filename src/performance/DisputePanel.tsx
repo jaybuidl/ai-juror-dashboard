@@ -306,17 +306,18 @@ const Empty = styled.p`
 `;
 
 /**
- * What the choice slot says, and why it is not always a number.
+ * What the choice slot says: the choice's name off the ballot, "Choice N" only where it has none.
  *
  * `choices` is a list because a draw's vote IDs can in principle disagree, and the honest
- * rendering of that is both numbers rather than the first one. It has never happened in this
- * court; a column that printed "Choice 2" over a draw that voted 1 and 2 would be exactly the
- * kind of quiet falsehood the list exists to prevent.
+ * rendering of that is every choice rather than the first one. It has never happened in this
+ * court; a card that named one choice over a draw that voted for two would be exactly the kind
+ * of quiet falsehood the list exists to prevent.
  */
-function choiceLabel(choices: readonly number[]): string | null {
+function choiceLabel(choices: readonly number[], tally: DisputeReading["tally"]): string | null {
   if (choices.length === 0) return null;
-  if (choices.length === 1) return `Choice ${choices[0]}`;
-  return `Choices ${choices.join(", ")}`;
+  return choices
+    .map((choice) => tally.find((entry) => entry.choice === choice)?.title ?? `Choice ${choice}`)
+    .join(" and ");
 }
 
 function identityFor(roster: RosterView, address: string): AgentJurorIdentity | undefined {
@@ -325,10 +326,13 @@ function identityFor(roster: RosterView, address: string): AgentJurorIdentity | 
 
 function PanelMember({
   column,
+  tally,
   roster,
   commitScanned,
 }: {
   column: PanelColumn;
+  /** The ballot, whose entries carry each choice's name. */
+  tally: DisputeReading["tally"];
   roster: RosterView;
   commitScanned: boolean;
 }) {
@@ -337,7 +341,7 @@ function PanelMember({
   const identity = identityFor(roster, draw.agentJuror.address);
   const reveal = revealFigureOf(draw);
   const commit = commitFigureOf(draw, commitScanned);
-  const choice = choiceLabel(draw.choices);
+  const choice = choiceLabel(draw.choices, tally);
 
   return (
     <Column aria-label={`${draw.agentJuror.nickname}, ${presentation.word}`}>
@@ -458,6 +462,7 @@ export function DisputePanel({
               <PanelMember
                 key={column.draw.agentJuror.address}
                 column={column}
+                tally={reading.tally}
                 roster={roster}
                 commitScanned={commitScanned}
               />

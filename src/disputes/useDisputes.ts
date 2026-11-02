@@ -180,7 +180,7 @@ export function useDisputes(): DisputesView {
     slotsFor: (dispute) => {
       const template = templateFor(templates.data ?? NO_TEMPLATES, dispute);
 
-      return { title: template?.title, category: template?.category };
+      return { title: template?.title, category: template?.category, answers: template?.answers };
     },
     templateFor: (dispute) => templateFor(templates.data ?? NO_TEMPLATES, dispute),
   };

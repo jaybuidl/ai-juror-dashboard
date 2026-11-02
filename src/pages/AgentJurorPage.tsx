@@ -656,6 +656,7 @@ export function AgentJurorView({
             // built by a pure function, and `now` is threaded from the view for exactly that.
             flagContext={{ now }}
             titleFor={(dispute: Dispute) => disputes.templateFor?.(dispute)?.title ?? null}
+            answersFor={(dispute: Dispute) => disputes.templateFor?.(dispute)?.answers ?? []}
           />
         </>
       )}

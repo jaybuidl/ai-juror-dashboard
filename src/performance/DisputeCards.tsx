@@ -598,7 +598,7 @@ function DisputeCard({
       )}
       {/* Never a blank where the ruling sits: a dispute the court has not decided reads
           "Pending", and an empty slot there is indistinguishable from one that failed to load. */}
-      <span>{rulingLabel(dispute.ruling)}</span>
+      <span>{rulingLabel(dispute.ruling, slots?.answers)}</span>
       {/* Only where there is no panel to see, and the separator goes with it — a middot left
           behind by an absent neighbour is the same defect the matrix row carried until its own
           second line stopped wrapping. `panelPillOf` is where the two surviving cases are

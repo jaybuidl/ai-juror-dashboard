@@ -1,5 +1,6 @@
 import { Link } from "react-router";
 import styled from "styled-components";
+import { type ChoiceLabel, choiceNameOf } from "../disputes/dispute-templates";
 import type { Dispute } from "../disputes/disputes";
 import { useIsNarrow } from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
@@ -12,7 +13,6 @@ import {
   presentationOf,
   revealFigureOf,
 } from "./cell";
-import { listOf } from "./Footnotes";
 import { Legend, StateLegend } from "./Legend";
 import { type RowFlagContext, rowFlagOf } from "./row-flags";
 
@@ -150,6 +150,13 @@ const Value = styled.span<{ $tone: Figure["tone"] }>`
   white-space: nowrap;
 `;
 
+/* A choice's name may run to several words — "Refuse to arbitrate" — so it wraps inside its
+   column rather than holding one line the way a latency does. */
+const ChoiceValue = styled(Value)`
+  white-space: normal;
+  overflow-wrap: anywhere;
+`;
+
 const Quiet = styled.span`
   font: ${({ theme }) => theme.typeMono};
   font-feature-settings: ${({ theme }) => theme.featureMono};
@@ -279,20 +286,23 @@ type DrawLine = {
 };
 
 /**
- * What this draw voted for, as the bare number: the column header and the card key say "Choice".
+ * What this draw voted for, by the choice's name from the dispute's template, and by "Choice N"
+ * only where the template names nothing (2026-11-02, maintainer's ruling).
  *
  * A list and not a single value, because `Draw.choices` is one: a draw holds several vote IDs
  * and nothing in the model forces them to agree. It has never happened in this court, and
- * printing "2" over a draw that voted 1 *and* 2 would be a claim the draw did not make.
+ * printing one name over a draw that voted for two would be a claim the draw did not make.
  *
  * A `Figure` and not a string, so the em dash carries its own pending tone the way the two
  * latencies beside it do. Returning the dash as text left both renderings comparing against the
  * character to decide the ink — a sentinel neither of them should have had to know.
  */
-function choiceOf(choices: readonly number[]): Figure {
+function choiceOf(choices: readonly number[], answers: readonly ChoiceLabel[]): Figure {
   if (choices.length === 0) return { text: "—", tone: "pending" };
-  if (choices.length === 1) return { text: `${choices[0]}`, tone: "value" };
-  return { text: listOf(choices), tone: "value" };
+  return {
+    text: choices.map((choice) => choiceNameOf(choice, answers)).join(" and "),
+    tone: "value",
+  };
 }
 
 function linesOf(
@@ -300,6 +310,7 @@ function linesOf(
   scanned: boolean,
   flagContext: RowFlagContext,
   titleFor: (dispute: Dispute) => string | null,
+  answersFor: (dispute: Dispute) => readonly ChoiceLabel[],
 ): DrawLine[] {
   return draws.map(({ row, draw }) => {
     const flag = rowFlagOf(row, flagContext);
@@ -309,7 +320,7 @@ function linesOf(
       title: titleFor(row.dispute),
       panelSize: row.panelSize,
       lonePanel: row.panelSize === 1,
-      choice: choiceOf(draw.choices),
+      choice: choiceOf(draw.choices, answersFor(row.dispute)),
       reveal: revealFigureOf(draw),
       commit: commitFigureOf(draw, scanned),
       state: presentationOf(draw.state),
@@ -329,6 +340,8 @@ export type AgentJurorDrawsProps = {
   flagContext: RowFlagContext;
   /** The dispute's subject, or `null` where the template subgraph gave none. */
   titleFor: (dispute: Dispute) => string | null;
+  /** The dispute template's named choices, so a vote reads in words; empty where none loaded. */
+  answersFor: (dispute: Dispute) => readonly ChoiceLabel[];
 };
 
 export function AgentJurorDraws({
@@ -337,9 +350,10 @@ export function AgentJurorDraws({
   scanned,
   flagContext,
   titleFor,
+  answersFor,
 }: AgentJurorDrawsProps) {
   const isNarrow = useIsNarrow();
-  const lines = linesOf(draws, scanned, flagContext, titleFor);
+  const lines = linesOf(draws, scanned, flagContext, titleFor, answersFor);
 
   return (
     <Section aria-labelledby="draws-heading">
@@ -385,7 +399,7 @@ function DrawTable({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
         <col style={{ width: "56px" }} />
         <col />
         <col style={{ width: "92px" }} />
-        <col style={{ width: "104px" }} />
+        <col style={{ width: "180px" }} />
         <col style={{ width: "120px" }} />
         <col style={{ width: "120px" }} />
         <col style={{ width: "150px" }} />
@@ -426,7 +440,7 @@ function DrawTable({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
               <Quiet>{line.panelSize}</Quiet>
             </BodyCell>
             <BodyCell>
-              <Value $tone={line.choice.tone}>{line.choice.text}</Value>
+              <ChoiceValue $tone={line.choice.tone}>{line.choice.text}</ChoiceValue>
             </BodyCell>
             <BodyCell>
               <Value $tone={line.reveal.tone}>{line.reveal.text}</Value>
@@ -476,7 +490,7 @@ function DrawCards({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
             <div>
               <FigureKey>Choice</FigureKey>
               <FigureValue>
-                <Value $tone={line.choice.tone}>{line.choice.text}</Value>
+                <ChoiceValue $tone={line.choice.tone}>{line.choice.text}</ChoiceValue>
               </FigureValue>
             </div>
             <div>

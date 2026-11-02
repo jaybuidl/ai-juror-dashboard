@@ -1,4 +1,8 @@
-import type { ChoiceLabel, DisputeTemplate } from "../disputes/dispute-templates";
+import {
+  choiceTitleOf,
+  type DisputeTemplate,
+  REFUSE_TO_ARBITRATE,
+} from "../disputes/dispute-templates";
 import type { Dispute, DisputeRound } from "../disputes/disputes";
 import { type Justification, toJustification } from "./justifications";
 import type { Draw, MatrixRow } from "./performance";
@@ -473,24 +477,7 @@ export type ChoiceTally = ChoiceVotes & {
   isRuling: boolean;
 };
 
-/**
- * What choice 0 is, on every ballot in every court.
- *
- * Not read from the template, because it is never in one: refusing to arbitrate is a property
- * of the protocol rather than of the arbitrable's question (`CONTEXT.md`), and it is always
- * valid. A card that left it unnamed would present the one choice every panel always has as the
- * one choice nobody could name.
- */
-export const REFUSE_TO_ARBITRATE = "Refuse to arbitrate";
-
-function titleOf(choice: number, answers: readonly ChoiceLabel[]): string | null {
-  if (choice === 0) return REFUSE_TO_ARBITRATE;
-
-  const named = answers.find((answer) => answer.choice === choice);
-  // An answer present but titled `""` is a choice the template declined to name, which reads
-  // the same way as one it never mentioned: there are no words to print either way.
-  return named === undefined || named.title === "" ? null : named.title;
-}
+export { REFUSE_TO_ARBITRATE };
 
 /**
  * The ruling's choice number, or `null` while the court has not decided.
@@ -551,7 +538,7 @@ export function buildDisputeReading({
     panelSize: row.panelSize,
     tally: detail.ballot.map((entry) => ({
       ...entry,
-      title: titleOf(entry.choice, answers),
+      title: choiceTitleOf(entry.choice, answers),
       isRuling: ruling !== null && entry.choice === ruling,
     })),
     evidenceCount: detail.evidenceCount,

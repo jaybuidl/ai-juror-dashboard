@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { templateFor, templateIdsOf, toDisputeTemplates } from "./dispute-templates";
+import {
+  choiceNameOf,
+  REFUSE_TO_ARBITRATE,
+  templateFor,
+  templateIdsOf,
+  toDisputeTemplates,
+} from "./dispute-templates";
 
 /** A DRT row, with `templateData` given as the object it is a JSON string of. */
 function raw(id: string, data: unknown) {
@@ -235,5 +241,26 @@ describe("templateFor", () => {
     // Asking for an id that has no template is not an error at the endpoint — it simply
     // does not come back — so this is the ordinary shape of a missing title.
     expect(templateFor(templates, { templateId: 999 })).toBeUndefined();
+  });
+});
+
+describe("choiceNameOf", () => {
+  const answers = [
+    { choice: 1, title: "Si" },
+    { choice: 2, title: "" },
+  ];
+
+  it("names a choice by its template title", () => {
+    expect(choiceNameOf(1, answers)).toBe("Si");
+  });
+
+  it("names choice 0 though no template ever does", () => {
+    expect(choiceNameOf(0, [])).toBe(REFUSE_TO_ARBITRATE);
+  });
+
+  it("falls back to the number, said as a choice, where nothing names it", () => {
+    // "Choice" stays in front so a lone number is never read as a count.
+    expect(choiceNameOf(2, answers)).toBe("Choice 2");
+    expect(choiceNameOf(3, answers)).toBe("Choice 3");
   });
 });

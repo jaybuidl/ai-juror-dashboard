@@ -38,6 +38,35 @@ export type ChoiceLabel = {
 };
 
 /**
+ * What choice 0 is, on every ballot in every court.
+ *
+ * Not read from the template, because it is never in one: refusing to arbitrate is a property
+ * of the protocol rather than of the arbitrable's question (`CONTEXT.md`), and it is always
+ * valid. A view that left it unnamed would present the one choice every panel always has as the
+ * one choice nobody could name.
+ */
+export const REFUSE_TO_ARBITRATE = "Refuse to arbitrate";
+
+/** What a choice is called, or `null` where nothing named it. Choice 0 always has a name. */
+export function choiceTitleOf(choice: number, answers: readonly ChoiceLabel[]): string | null {
+  if (choice === 0) return REFUSE_TO_ARBITRATE;
+
+  const named = answers.find((answer) => answer.choice === choice);
+  // An answer present but titled `""` is a choice the template declined to name, which reads
+  // the same way as one it never mentioned: there are no words to print either way.
+  return named === undefined || named.title === "" ? null : named.title;
+}
+
+/**
+ * A choice by its name, and by "Choice N" only where it has none (2026-11-02, maintainer's
+ * ruling: a bare number was not a way to tell a reader what was voted for). "Choice" stays in the
+ * fallback so a lone number is never read as a count.
+ */
+export function choiceNameOf(choice: number, answers: readonly ChoiceLabel[]): string {
+  return choiceTitleOf(choice, answers) ?? `Choice ${choice}`;
+}
+
+/**
  * What a dispute shows about itself once its template resolves.
  *
  * Every field is a plain string or a list of them, and every one may be empty — which a row
