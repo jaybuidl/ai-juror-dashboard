@@ -276,7 +276,11 @@ describe("the justification band", () => {
     const column = screen.getAllByRole("article")[0];
     if (column === undefined) throw new Error("no columns rendered");
 
-    expect(within(column).getByText("007")).toBeInTheDocument();
+    // The name is a link to the agent juror's own page.
+    expect(within(column).getByRole("link", { name: "007" })).toHaveAttribute(
+      "href",
+      "/agent-jurors/007",
+    );
     expect(within(column).getByText("OpenClaw")).toBeInTheDocument();
     expect(within(column).getByText("Diverged")).toBeInTheDocument();
     // The vote by name, not by number: 007 voted choice 0 (2026-11-02).

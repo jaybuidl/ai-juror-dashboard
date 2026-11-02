@@ -1,5 +1,6 @@
+import { Link } from "react-router";
 import styled from "styled-components";
-import { stackLabelOf } from "../roster/agent-jurors";
+import { agentJurorPathOf, stackLabelOf } from "../roster/agent-jurors";
 import type { AgentJurorIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
 import { narrow } from "../styles/breakpoints";
@@ -130,11 +131,24 @@ const Named = styled.div`
   gap: ${({ theme }) => theme.space2};
 `;
 
-const Nickname = styled.span`
+/* A link to the agent juror's own page, as the matrix's column header is: heading ink at rest,
+   the accent and an underline on hover, so it reads as a name first. */
+const Nickname = styled(Link)`
   font: ${({ theme }) => theme.typeTitle3};
   letter-spacing: ${({ theme }) => theme.trackingTitle};
   color: ${({ theme }) => theme.textHeading};
   overflow-wrap: anywhere;
+  text-decoration: none;
+
+  &:hover {
+    color: ${({ theme }) => theme.accent};
+    text-decoration: underline;
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.focusRing};
+    outline-offset: 3px;
+  }
 `;
 
 const StackLabel = styled.span`
@@ -357,7 +371,9 @@ function PanelMember({
           <Named>
             {/* The ENS nickname is a display name; the roster's is the key, because a `name`
                 record is rewritable from a wallet. */}
-            <Nickname>{identity?.nickname ?? draw.agentJuror.nickname}</Nickname>
+            <Nickname to={agentJurorPathOf(draw.agentJuror)}>
+              {identity?.nickname ?? draw.agentJuror.nickname}
+            </Nickname>
             <StackLabel>{stackLabelOf(draw.agentJuror)}</StackLabel>
           </Named>
           <Mark $tone={presentation.tone}>
