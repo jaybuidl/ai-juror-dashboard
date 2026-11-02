@@ -99,6 +99,13 @@ const Fact = styled.span`
   white-space: nowrap;
 `;
 
+/* The category, in the accent — the same ink and quiet border as the agent juror page's stack
+   pill. */
+const AccentFact = styled(Fact)`
+  border-color: ${({ theme }) => theme.accentQuiet};
+  color: ${({ theme }) => theme.accent};
+`;
+
 /* A pill that is also a link out. Still a pill, because it states the same fact it did before it
    linked anywhere, in a pill's own grey (2026-11-02, maintainer's ruling: on the agent juror
    page only the stack pill is green, and these follow it). Marked as a link by the arrow and an
@@ -158,16 +165,15 @@ const CardLabel = styled.h2`
   color: ${({ theme }) => theme.textPending};
 `;
 
-const Winner = styled.div`
-  display: flex;
-  align-items: baseline;
-  gap: ${({ theme }) => theme.space5};
-`;
-
-const WinnerChoice = styled.span`
-  font: ${({ theme }) => theme.typeMetric};
-  font-feature-settings: ${({ theme }) => theme.featureMono};
+/* The ruling in words, large and in the accent, with no choice number beside it (2026-11-02,
+   maintainer's ruling). The number was drawn as a metric and read as a count — "4" over a
+   ballot of 5 votes from four agent jurors — when it is only the choice's id, which the tally
+   below still carries on the ruling's own row. */
+const Winner = styled.p`
+  font: ${({ theme }) => theme.typeTitle1};
+  letter-spacing: ${({ theme }) => theme.trackingTitle};
   color: ${({ theme }) => theme.accent};
+  text-wrap: balance;
 `;
 
 const WinnerName = styled.span`
@@ -181,10 +187,12 @@ const CardNote = styled.p`
   color: ${({ theme }) => theme.textMeta};
 `;
 
+/* Flush with the card's left edge: a list keeps the browser's 40px start padding unless it is
+   reset, and list-style none removes the bullets without removing the indent they sat in. */
 const Tally = styled.ul`
   display: flex;
   flex-direction: column;
-  padding-top: ${({ theme }) => theme.space5};
+  padding: ${({ theme }) => theme.space5} 0 0;
   border-top: ${({ theme }) => theme.borderHairline};
   list-style: none;
 `;
@@ -197,13 +205,15 @@ const TallyRow = styled.li`
   padding: ${({ theme }) => `${theme.space3} 0`};
 `;
 
-const TallyName = styled.span`
+/* The ruling's own row is in the accent, name and count alike, so the list points back at the
+   headline above it. */
+const TallyName = styled.span<{ $ruling: boolean }>`
   min-width: 0;
   font: ${({ theme }) => theme.typeMonoSm};
   font-feature-settings: ${({ theme }) => theme.featureMono};
   letter-spacing: ${({ theme }) => theme.trackingMono};
   text-transform: uppercase;
-  color: ${({ theme }) => theme.textPending};
+  color: ${({ theme, $ruling }) => ($ruling ? theme.accent : theme.textPending)};
   overflow-wrap: anywhere;
 `;
 
@@ -548,7 +558,11 @@ export function DisputeView({
                   )}
                 </Title>
                 <Facts>
-                  {reading.template?.category && <Fact>{reading.template.category}</Fact>}
+                  {/* The one accent pill in the row, as the stack is on the agent juror page
+                      (2026-11-02, maintainer's ruling): it is what kind of dispute this is. */}
+                  {reading.template?.category && (
+                    <AccentFact>{reading.template.category}</AccentFact>
+                  )}
                   {/* The dispute's own pill is the link to its case on the court: the id is what
                       the court's page is keyed on, so the pill naming it is the one that goes
                       there. "on Kleros Court" is said and not drawn — a links list is read out of
@@ -572,9 +586,9 @@ export function DisputeView({
                       Round {reading.round.index + 1} of {reading.dispute.rounds.length}
                     </Fact>
                   )}
-                  {/* No panel size here either. This page draws every panel member side by
-                      side and says so — the whole panel fits at once, so there is nothing to page —
-                      so the chip counted what the reader is already looking at, the same reason
+                  {/* No panel size here either. This page draws every panel member, one card
+                      each, under a heading that counts them — nothing is paged away — so the
+                      chip counted what the reader is already looking at, the same reason
                       it left the matrix row and the phone's card. The two absences it used to
                       guard are unaffected: ticket 09 words both in prose on this view rather
                       than in a chip, which is where `panelPillOf` took the idea from. */}
@@ -658,24 +672,29 @@ function RulingCard({ reading }: { reading: DisputeReading }) {
             : "The court has not ruled on this dispute"}
         </WinnerName>
       ) : (
-        <Winner>
-          <WinnerChoice>{winner.choice}</WinnerChoice>
-          <WinnerName>{winner.title ?? "This choice is not named by the template"}</WinnerName>
-        </Winner>
+        // An unnamed choice falls back to its number, said as a choice so it cannot be read as a
+        // count: without the title there is nothing else to name it by.
+        <Winner>{winner.title ?? `Choice ${winner.choice}`}</Winner>
       )}
 
-      <CardNote>
-        {ruled
-          ? "Coherence on this page is measured against this ruling and nothing else."
-          : "Coherence cannot be measured until the court rules. A round majority before the appeal period closes is a prediction, not a ruling."}
-      </CardNote>
+      {/* Only before the court rules (2026-11-02, maintainer's ruling: the ruled half, "measured
+          against this ruling and nothing else", went). The unruled half stays, because a panel
+          majority shown before the ruling must not read as one. */}
+      {!ruled && (
+        <CardNote>
+          Coherence cannot be measured until the court rules. A round majority before the appeal
+          period closes is a prediction, not a ruling.
+        </CardNote>
+      )}
 
       {reading.tally.length > 0 && (
         <Tally>
           {reading.tally.map((entry) => (
             <TallyRow key={entry.choice}>
-              <TallyName>
-                Choice {entry.choice}
+              {/* The bare number, no "Choice" in front (2026-11-02, maintainer's ruling): every
+                  row in this list is a choice, and the word said so six times over. */}
+              <TallyName $ruling={entry.isRuling}>
+                {entry.choice}
                 {entry.title !== null && ` · ${entry.title}`}
               </TallyName>
               <TallyVotes $ruling={entry.isRuling} $any={entry.votes > 0}>

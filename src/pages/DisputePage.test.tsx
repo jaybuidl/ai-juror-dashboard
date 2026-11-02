@@ -12,7 +12,7 @@ import { disputes, measured, READ_AT, resolvedRoster, unresolvedRoster } from ".
 import { DisputeView, type DisputeViewProps } from "./DisputePage";
 
 /**
- * One dispute, side by side.
+ * One dispute, its whole panel on one page.
  *
  * Rendered through `DisputeView` rather than the route, because the route reads the one thing
  * this view fetches for itself and `yarn test` reaches no network. What the route does — that
@@ -68,9 +68,8 @@ describe("the header", () => {
   it("identifies the dispute beyond its title", () => {
     // Ticket 09's criterion named five — category, court, round, panel size and the period — and
     // this is three of them on purpose. The panel size left every surface that already draws the
-    // panel, and this view draws it most plainly of all: every member side by side in roster
-    // order, under a sentence saying the whole panel fits at once. The
-    // chip counted what the reader is looking at. Where a panel cannot be counted off the page
+    // panel, and this view draws it most plainly of all: every member, one card each, in roster
+    // order, under a heading that counts it. The chip counted what the reader is looking at. Where a panel cannot be counted off the page
     // the figure stays, which is why `AgentJurorDraws` keeps its column. The court left on
     // 2026-11-02: this dashboard reads one court, so its pill said the same thing on every
     // dispute.
@@ -145,12 +144,14 @@ describe("the header", () => {
 });
 
 describe("the ruling card", () => {
-  it("names the winning choice by number and in words", () => {
+  it("names the winning choice in words, with no bare number that reads as a count", () => {
+    // The choice number left the headline on 2026-11-02: drawn as a metric beside a ballot it
+    // read as a vote count. The tally's ruling row still carries it, as "2 · NO (under 50%)".
     renderDispute();
     const card = screen.getByRole("region", { name: /final ruling/i });
 
-    expect(within(card).getByText("2")).toBeInTheDocument();
-    expect(within(card).getByText("NO (under 50%)")).toBeInTheDocument();
+    expect(within(card).getAllByText(/NO \(under 50%\)/)).toHaveLength(2);
+    expect(within(card).queryByText(/^2$/)).not.toBeInTheDocument();
   });
 
   it("gives the vote count for every choice, including one nobody picked", () => {
@@ -161,9 +162,11 @@ describe("the ruling card", () => {
     const rows = within(card).getAllByRole("listitem");
 
     expect(rows).toHaveLength(3);
-    expect(rows[0]).toHaveTextContent("Choice 0");
+    // The bare choice number leads each row, with no "Choice" in front of it.
+    expect(rows[0]).toHaveTextContent(/^0 · Refuse to arbitrate/);
     expect(rows[0]).toHaveTextContent("1 vote");
-    expect(rows[1]).toHaveTextContent("Choice 1");
+    expect(rows[1]).toHaveTextContent(/^1\b/);
+    expect(rows[1]).not.toHaveTextContent(/Choice/);
     expect(rows[1]).toHaveTextContent("0 votes");
     expect(rows[2]).toHaveTextContent("4 votes");
   });
@@ -174,12 +177,12 @@ describe("the ruling card", () => {
     expect(screen.getByText(/Refuse to arbitrate/)).toBeInTheDocument();
   });
 
-  it("states that coherence is measured against this ruling and nothing else", () => {
+  it("adds no note under a ruling the court has made", () => {
     renderDispute();
 
     expect(
-      screen.getByText(/Coherence on this page is measured against this ruling and nothing else/),
-    ).toBeInTheDocument();
+      screen.queryByText(/Coherence on this page is measured against this ruling/),
+    ).not.toBeInTheDocument();
   });
 
   it("asserts no ruling while the court has not reached one", () => {
@@ -280,15 +283,6 @@ describe("the justification band", () => {
     // reader is actually given, which is also what the matrix's own keys have always carried.
     expect(within(column).getByText("Reveal latency")).toBeInTheDocument();
     expect(within(column).getByText("Commit latency")).toBeInTheDocument();
-  });
-
-  it("carries the justification's length and what it is", () => {
-    renderDispute();
-    const columns = screen.getAllByRole("article");
-    const footers = columns.map((column) => column.textContent ?? "");
-
-    // Spanish is named in place of the format — the more surprising of the two facts.
-    expect(footers.some((text) => /· ES$|· ES\b/.test(text) || text.includes("· ES"))).toBe(true);
   });
 
   it("renders Markdown with GitHub-flavoured extensions", () => {
@@ -481,10 +475,17 @@ describe("a draw that published nothing", () => {
     ).toBeInTheDocument();
   });
 
-  it("counts it as zero characters rather than naming the format of nothing", () => {
+  it("says how many votes each panel member holds, and nothing about the prose's length", () => {
+    // The card footer — the prose's length and format, and the vote count only above one — went
+    // on 2026-11-02 (maintainer's ruling). The vote count moved to the header, on every card.
     renderDispute();
+    const cards = screen.getAllByRole("article");
 
-    expect(screen.getByText("0 chars")).toBeInTheDocument();
+    for (const card of cards) {
+      expect(within(card).getByText(/^\d+ votes?$/)).toBeInTheDocument();
+    }
+    expect(screen.queryByText("0 chars")).not.toBeInTheDocument();
+    expect(screen.queryByText(/ · MD$/)).not.toBeInTheDocument();
   });
 
   it("tells prose published empty from prose never published", () => {

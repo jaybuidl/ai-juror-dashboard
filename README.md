@@ -31,8 +31,8 @@ outright, because a public page whose figures may be cited must never let "not b
 **A dispute's own page is where the experiment is legible.** It carries the question the panel was
 asked, a ruling card giving the vote count for every choice — including choice 0 and any choice
 nobody picked — a timeline of the four periods as a configured window beside how long each actually
-ran, and every panel member's published reasoning side by side, in roster order, at equal width.
-Coherence never reorders those columns: a diverged reading keeps its position and is never sorted
+ran, and every panel member's published reasoning, one full-width card each, in roster order.
+Coherence never reorders those cards: a diverged reading keeps its position and is never sorted
 last. Justifications are reproduced verbatim in the language they were written in, rendered as
 GitHub-flavoured Markdown with **raw HTML disabled at the parser** — deliberately stricter than the
 Kleros court frontend, which enables it and sanitises afterwards — and a link inside one warns

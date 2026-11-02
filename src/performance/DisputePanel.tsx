@@ -8,22 +8,21 @@ import { type Tone, toneInk, toneLine, toneWash } from "../styles/tones";
 import { commitFigureOf, type Figure, presentationOf, revealFigureOf } from "./cell";
 import type { DisputeReading, PanelColumn } from "./dispute-detail";
 import { JustificationProse } from "./Justification";
-import type { Form } from "./justifications";
 
 /**
- * Every panel member's published reasoning, side by side.
+ * Every panel member's published reasoning, one card under another.
  *
  * The thing this experiment exists to show: identical evidence, one question, and however many
- * independent stacks the court drew, reasoning about it in their own words. Columns of equal
- * width, in roster order, with the whole panel visible at once — a panel is a handful of vote IDs
- * and has never exceeded the roster, so there is no carousel and no pagination.
+ * independent stacks the court drew, reasoning about it in their own words. One full-width card
+ * per panel member, in roster order — a panel is a handful of vote IDs and has never exceeded the
+ * roster, so there is no carousel and no pagination.
  *
  * "At most six" is what this said until the roster stopped being six (ticket 24), and the number
  * was the wrong thing to lean on twice over: it is a bound on the *roster*, and the quantity that
- * decides whether this layout works is how many jurors the court drew for one dispute. `Columns`
- * is `repeat(auto-fit, minmax(...))` and was never sized against either, so what changed here is
- * only the sentence — which is the tell `CONTEXT.md`'s Panel entry warns about: a claim quantified
- * over a set that has since been widened.
+ * decides whether this layout works is how many jurors the court drew for one dispute. Neither
+ * bound sizes `Columns`, so what changed then was only the sentence — which is the tell
+ * `CONTEXT.md`'s Panel entry warns about: a claim quantified over a set that has since been
+ * widened.
  *
  * Coherence does not reorder them. A diverged reading keeps its roster position and is never
  * sorted last: the ordering is `MatrixRow.cells`', which is `agent-jurors.ts`', and nothing
@@ -56,51 +55,18 @@ const Heading = styled.h2`
   color: ${({ theme }) => theme.textHeading};
 `;
 
-const Lede = styled.p`
-  max-width: 72ch;
-  margin-top: ${({ theme }) => theme.space4};
-  color: ${({ theme }) => theme.textMeta};
-`;
-
-const Pills = styled.div`
-  display: flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.space4};
-  flex-wrap: wrap;
-`;
-
-const Pill = styled.span`
-  display: inline-flex;
-  align-items: center;
-  gap: ${({ theme }) => theme.space3};
-  padding: ${({ theme }) => `${theme.space3} ${theme.space4}`};
-  border: ${({ theme }) => theme.borderVisible};
-  border-radius: ${({ theme }) => theme.radiusChip};
-  font: ${({ theme }) => theme.typeMonoSm};
-  letter-spacing: ${({ theme }) => theme.trackingMono};
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.textMeta};
-  white-space: nowrap;
-`;
-
 /**
- * Equal width, and the whole panel at once.
+ * One card per row, full width, in roster order (2026-11-02, maintainer's ruling).
  *
- * `minmax(0, 1fr)` rather than `1fr`: a track's minimum is `auto`, which is its content's
- * minimum, so a long unbroken word in a justification would widen its column and push the row
- * sideways with nothing in the console. `DisputeList` carries the same pair for the same reason.
- *
- * Columns wrap to a readable minimum rather than shrinking indefinitely — a panel's worth of 256px
- * columns does not fit a phone, and prose narrower than about 30 characters is not prose anybody
- * reads. **The wrap is what lets this caption claim the whole panel is on screen at once** without
- * a comparison against the roster's size, which `CONTEXT.md` forbids and which the sentence below
- * used to make.
+ * They were equal-width columns side by side — an auto-fit grid — and at four or five to a row
+ * each card was about 250px wide, which is prose nobody can read. Stacked, a card and its
+ * reasoning take the page's full width. The panel is no
+ * longer all on screen at once; the order is still the roster's and nothing is ranked.
  */
 const Columns = styled.div`
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(min(260px, 100%), 1fr));
+  display: flex;
+  flex-direction: column;
   gap: ${({ theme }) => theme.space6};
-  align-items: stretch;
 `;
 
 const Column = styled.article`
@@ -229,8 +195,20 @@ const MeasureValue = styled.span<{ $tone: Figure["tone"] }>`
   }};
 `;
 
-const Choice = styled.span<{ $tone: Tone }>`
+/* How many of the dispute's vote IDs this draw holds — the court can draw one juror more than
+   once, and each draw is a vote. In the header since 2026-11-02, when the footer that carried it
+   (as "N vote IDs", and only above one) went with the prose's length and format. */
+const Votes = styled.span`
   margin-left: auto;
+  font: ${({ theme }) => theme.typeMonoSm};
+  font-feature-settings: ${({ theme }) => theme.featureMono};
+  letter-spacing: ${({ theme }) => theme.trackingMono};
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.textMeta};
+  white-space: nowrap;
+`;
+
+const Choice = styled.span<{ $tone: Tone }>`
   font: ${({ theme }) => theme.typeMonoSm};
   font-feature-settings: ${({ theme }) => theme.featureMono};
   letter-spacing: ${({ theme }) => theme.trackingMono};
@@ -239,6 +217,8 @@ const Choice = styled.span<{ $tone: Tone }>`
   white-space: nowrap;
 `;
 
+/* The reasoning takes the card's full width (2026-11-02, maintainer's ruling: an 80ch measure
+   was tried and read as unused space). */
 const ColumnBody = styled.div`
   display: flex;
   flex: 1;
@@ -290,20 +270,6 @@ const UnpublishedNote = styled.p`
   color: ${({ theme }) => theme.textPending};
 `;
 
-const ColumnFoot = styled.footer`
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: ${({ theme }) => theme.space5};
-  padding: ${({ theme }) => `${theme.space5} ${theme.space6}`};
-  border-top: ${({ theme }) => theme.borderHairline};
-  font: ${({ theme }) => theme.typeMonoSm};
-  font-feature-settings: ${({ theme }) => theme.featureMono};
-  letter-spacing: ${({ theme }) => theme.trackingMono};
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.textPending};
-`;
-
 const Caption = styled.div`
   display: flex;
   align-items: baseline;
@@ -338,18 +304,6 @@ const Empty = styled.p`
   background-color: ${({ theme }) => theme.surfaceCard};
   color: ${({ theme }) => theme.textMeta};
 `;
-
-/** How a column's footer names what it is showing: the length, then the format or the language. */
-function formLabel(form: Form): string {
-  switch (form.kind) {
-    case "markdown":
-      return "MD";
-    case "plain":
-      return "Plain";
-    case "language":
-      return form.language.toUpperCase();
-  }
-}
 
 /**
  * What the choice slot says, and why it is not always a number.
@@ -424,6 +378,9 @@ function PanelMember({
             <VisuallyHidden>Commit latency</VisuallyHidden>
             <MeasureValue $tone={commit.tone}>{commit.text}</MeasureValue>
           </Measure>
+          <Votes>
+            {draw.voteCount} {draw.voteCount === 1 ? "vote" : "votes"}
+          </Votes>
           {choice !== null && <Choice $tone={presentation.tone}>{choice}</Choice>}
         </Measures>
       </ColumnHead>
@@ -451,25 +408,6 @@ function PanelMember({
           <JustificationProse justification={justification} />
         </ColumnBody>
       )}
-
-      <ColumnFoot>
-        {justification === null ? (
-          <span>No prose</span>
-        ) : (
-          <>
-            {/* Length first, then what it is. A justification published empty says "0 chars"
-                rather than "0 · Plain": naming the format of nothing is a category error, and
-                the word "chars" is what makes the zero read as a measurement of the prose
-                rather than as a figure that failed to load. */}
-            <span>
-              {justification.length === 0
-                ? "0 chars"
-                : `${justification.length.toLocaleString("en-GB")} · ${formLabel(justification.form)}`}
-            </span>
-            {draw.voteCount > 1 && <span>{draw.voteCount} vote IDs</span>}
-          </>
-        )}
-      </ColumnFoot>
     </Column>
   );
 }
@@ -504,18 +442,7 @@ export function DisputePanel({
                 ? "One stack, one set of evidence."
                 : `${shown} stacks, one set of evidence.`}
           </Heading>
-          <Lede>
-            {shown === 0
-              ? "This is where every panel member's published reasoning is shown side by side, once there is a panel."
-              : "Every panel member's published reasoning, side by side, in roster order. Reproduced verbatim, in the language it was written in, Markdown rendered. This dashboard does not summarise, translate or rank them."}
-          </Lede>
         </div>
-        {shown > 0 && (
-          <Pills>
-            <Pill>Roster order ↓</Pill>
-            <Pill>Markdown rendered</Pill>
-          </Pills>
-        )}
       </BandHead>
 
       {shown === 0 ? (
@@ -537,19 +464,15 @@ export function DisputePanel({
             ))}
           </Columns>
           <Caption>
-            <CaptionText>
-              {/* Justified from the layout and from this panel's own measured size, never from the
-                  roster's. `CONTEXT.md` forbids the second explicitly — a panel is a fact about
-                  the court, and its size and the roster's move for unrelated reasons — and the
-                  sentence that stood here rested on the two coinciding. `Columns` is an auto-fit
-                  grid that wraps, so every column is on screen at any panel size, and the claim
-                  holds without a comparison it is not entitled to make. */}
-              Equal width, roster order. The columns wrap rather than scroll, so all of them are on
-              screen at once — no carousel, no ranking, and the diverged reading is never sorted
-              last.
-              {drawn > shown &&
-                ` ${drawn - shown} of the ${drawn} drawn are not agent jurors on this dashboard's roster, so they have no column here.`}
-            </CaptionText>
+            {/* Only the shortfall is said (2026-11-02, maintainer's ruling: the sentence on order
+                and ranking went, as did the two pills above). A drawn juror with no card is a
+                gap in what is shown, and a gap must not read as a complete panel. */}
+            {drawn > shown && (
+              <CaptionText>
+                {drawn - shown} of the {drawn} drawn are not agent jurors on this dashboard's
+                roster, so they have no card here.
+              </CaptionText>
+            )}
             <CaptionCount>
               {shown} of {drawn} shown
             </CaptionCount>

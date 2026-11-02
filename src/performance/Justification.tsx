@@ -16,9 +16,9 @@ import type { Justification } from "./justifications";
  * One agent juror's published reasoning, reproduced.
  *
  * Reproduced is the operative word: this dashboard does not summarise, translate or rank
- * justifications, and the whole point of putting a panel's side by side is that a reader
+ * justifications, and the whole point of putting a panel's on one page is that a reader
  * compares them for themselves. What this component adds is the three things prose needs to be
- * *readable* in a column — Markdown rendering, a bound on its height, and a warning before a
+ * *readable* in a card — Markdown rendering, a bound on its height, and a warning before a
  * link inside it takes you somewhere this repository does not control.
  *
  * Raw HTML is disabled, which is what `react-markdown` does when nothing enables it: there is
