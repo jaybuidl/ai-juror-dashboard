@@ -69,12 +69,12 @@ export function Hero({ narrow: isNarrow = false }: { narrow?: boolean }) {
           of its claims were the method page's said a second time. */}
       {/* No count in this sentence, deliberately: the roster gains entries, this deck has no
           roster to read one off, and the number carries no argument here — the matrix's own
-          "drawn" tile states it against the roster's length a screenful below. */}
+          "drawn" tile states it against the roster's length a screenful below. One sentence since
+          2026-11-02 (maintainer's ruling): what the page measures is its column headers' to say,
+          and that it is read-only is /method's. */}
       {!isNarrow && (
         <Deck>
           Independent AI agent jurors, each built on a different stack, vote in one Kleros court.
-          This page measures two things about them: how fast they act, and how often they vote with
-          the final ruling. It does nothing else — it never votes, stakes, or holds a key.
         </Deck>
       )}
     </Header>

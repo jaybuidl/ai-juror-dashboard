@@ -102,10 +102,14 @@ describe("the matrix view", () => {
     );
   });
 
-  it("says what it measures and, in the same breath, that it does nothing else", () => {
+  it("introduces the agent jurors in one sentence and leaves the rest to /method", () => {
+    // Cut to its first sentence on 2026-11-02 (maintainer's ruling). The read-only invariant it
+    // also stated is on /method, which says it in full.
     renderAt("/");
 
-    expect(screen.getByText(/it never votes, stakes, or holds a key/i)).toBeInTheDocument();
+    expect(screen.getByText(/vote in one Kleros court\.$/)).toBeInTheDocument();
+    expect(screen.queryByText(/this page measures two things/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/it never votes, stakes, or holds a key/i)).not.toBeInTheDocument();
   });
 
   it("says what it has measured and, in the same breath, what it has not", () => {
