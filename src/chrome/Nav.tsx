@@ -139,10 +139,26 @@ const DestinationLink = styled(Link)`
   }
 `;
 
-const DestinationHere = styled.span`
-  ${destination}
+const here = css`
   color: ${({ theme }) => theme.textHeading};
   border-bottom-color: ${({ theme }) => theme.accent};
+`;
+
+const DestinationHere = styled.span`
+  ${destination}
+  ${here}
+`;
+
+/* Beneath a destination rather than on it — a dispute under Disputes — so it is marked as the
+   section you are in and still links back to its index. It was a span, marked current, on every
+   child route too, which left the nav's Disputes dead on /disputes/326 while the breadcrumb's
+   worked. */
+const DestinationAbove = styled(DestinationLink)`
+  ${here}
+
+  &:hover {
+    color: ${({ theme }) => theme.textHeading};
+  }
 `;
 
 const NarrowRight = styled.div`
@@ -322,9 +338,19 @@ function Home({ pathname, wordmark = false }: { pathname: string; wordmark?: boo
 }
 
 function DestinationItem({ path, label, pathname }: Destination & { pathname: string }) {
-  return isCurrent(path, pathname) ? (
+  if (!isCurrent(path, pathname)) return <DestinationLink to={path}>{label}</DestinationLink>;
+  // The index itself: not a link to the page you are on. Beneath it: a link back up, marked as
+  // the current section — `aria-current="true"`, since "page" would claim this is that page.
+  return isIndex(path, pathname) ? (
     <DestinationHere aria-current="page">{label}</DestinationHere>
   ) : (
-    <DestinationLink to={path}>{label}</DestinationLink>
+    <DestinationAbove to={path} aria-current="true">
+      {label}
+    </DestinationAbove>
   );
+}
+
+function isIndex(path: string, pathname: string): boolean {
+  const here = pathname.length > 1 ? pathname.replace(/\/+$/, "") : pathname;
+  return here === path;
 }

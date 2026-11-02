@@ -456,9 +456,9 @@ describe("an address that names nothing", () => {
     expect(
       screen.getByRole("heading", { level: 1, name: /that is not an agent juror/i }),
     ).toBeInTheDocument();
-    // Two of them: the breadcrumb's parent and the way out in the body. The nav's third is text
-    // rather than a link, because `isCurrent` keeps the index marked while you are beneath it.
-    expect(screen.getAllByRole("link", { name: "Agent jurors" })).toHaveLength(2);
+    // Three of them: the nav's, which beneath the index is a link back up (marked as the current
+    // section), the breadcrumb's parent and the way out in the body.
+    expect(screen.getAllByRole("link", { name: "Agent jurors" })).toHaveLength(3);
     expect(screen.queryByText(/nothing at this address/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/could not be read/i)).not.toBeInTheDocument();
   });

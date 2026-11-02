@@ -237,8 +237,11 @@ describe("the shell", () => {
     // unscoped query would find that one and pass whatever the nav did.
     const nav = screen.getByRole("navigation", { name: "Dashboard" });
 
-    expect(within(nav).queryByRole("link", { name: "Agent jurors" })).not.toBeInTheDocument();
-    expect(within(nav).getByText("Agent jurors")).toBeInTheDocument();
+    // Marked as the current section, and still a link back to the index (2026-11-02): as text it
+    // went nowhere, while the breadcrumb beside it worked.
+    const index = within(nav).getByRole("link", { name: "Agent jurors" });
+    expect(index).toHaveAttribute("href", "/agent-jurors");
+    expect(index).toHaveAttribute("aria-current", "true");
   });
 
   it("keeps the dispute index marked in the nav while you are on one of its disputes", () => {
@@ -247,11 +250,12 @@ describe("the shell", () => {
     // unscoped query would find that one and pass whatever the nav did.
     const nav = screen.getByRole("navigation", { name: "Dashboard" });
 
-    // The destination stays current on the view beneath it, and a current destination is text
-    // rather than a link to itself — which is what makes the nav and the breadcrumb agree
-    // about where the reader is.
-    expect(within(nav).queryByRole("link", { name: "Disputes" })).not.toBeInTheDocument();
-    expect(within(nav).getByText("Disputes")).toBeInTheDocument();
+    // The destination stays marked on the view beneath it, as the current section rather than
+    // the current page, and links back to its index — as the breadcrumb does. It was text here,
+    // and clicking it on /disputes/326 went nowhere (2026-11-02).
+    const index = within(nav).getByRole("link", { name: "Disputes" });
+    expect(index).toHaveAttribute("href", "/disputes");
+    expect(index).toHaveAttribute("aria-current", "true");
   });
 
   it("says a path matches nothing, rather than showing the matrix at the wrong URL", () => {
