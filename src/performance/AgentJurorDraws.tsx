@@ -275,7 +275,9 @@ const FigureValue = styled.dd`
 type DrawLine = {
   dispute: Dispute;
   title: string | null;
-  panelSize: number;
+  /** Vote IDs this draw holds, and how many the round holds in all — its share of the vote. */
+  votes: number;
+  roundVotes: number;
   lonePanel: boolean;
   /** What this draw voted, or the em dash for a draw that has not revealed. */
   choice: Figure;
@@ -318,7 +320,8 @@ function linesOf(
     return {
       dispute: row.dispute,
       title: titleFor(row.dispute),
-      panelSize: row.panelSize,
+      votes: draw.voteCount,
+      roundVotes: draw.roundVoteCount,
       lonePanel: row.panelSize === 1,
       choice: choiceOf(draw.choices, answersFor(row.dispute)),
       reveal: revealFigureOf(draw),
@@ -408,7 +411,7 @@ function DrawTable({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
         <tr>
           <HeaderCell scope="col">ID</HeaderCell>
           <HeaderCell scope="col">Dispute</HeaderCell>
-          <HeaderCell scope="col">Panel</HeaderCell>
+          <HeaderCell scope="col">Votes</HeaderCell>
           <HeaderCell scope="col">Choice</HeaderCell>
           <HeaderCell scope="col">Reveal</HeaderCell>
           <HeaderCell scope="col">Commit</HeaderCell>
@@ -437,7 +440,7 @@ function DrawTable({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
               )}
             </BodyCell>
             <BodyCell>
-              <Quiet>{line.panelSize}</Quiet>
+              <VoteShare line={line} />
             </BodyCell>
             <BodyCell>
               <ChoiceValue $tone={line.choice.tone}>{line.choice.text}</ChoiceValue>
@@ -482,9 +485,9 @@ function DrawCards({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
           </CardMarks>
           <CardFigures>
             <div>
-              <FigureKey>Panel</FigureKey>
+              <FigureKey>Votes</FigureKey>
               <FigureValue>
-                <Quiet>{line.panelSize}</Quiet>
+                <VoteShare line={line} />
               </FigureValue>
             </div>
             <div>
@@ -509,6 +512,25 @@ function DrawCards({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
         </CardItem>
       ))}
     </Cards>
+  );
+}
+
+/**
+ * This draw's share of the round's vote, "2/5" (2026-11-02, maintainer's ruling: it replaced the
+ * panel size, which said how many jurors were drawn and nothing about how much this one counted).
+ * Drawn as the fraction, said in words, since a screen reader reads "2/5" as a date or a slash.
+ * A panel of one is still marked, by the ‡ on the state.
+ */
+function VoteShare({ line }: { line: DrawLine }) {
+  return (
+    <Quiet>
+      <span aria-hidden="true">
+        {line.votes}/{line.roundVotes}
+      </span>
+      <VisuallyHidden>
+        {line.votes} of {line.roundVotes} {line.roundVotes === 1 ? "vote" : "votes"}
+      </VisuallyHidden>
+    </Quiet>
   );
 }
 

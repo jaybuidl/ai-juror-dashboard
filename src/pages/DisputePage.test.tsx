@@ -69,8 +69,9 @@ describe("the header", () => {
     // Ticket 09's criterion named five — category, court, round, panel size and the period — and
     // this is three of them on purpose. The panel size left every surface that already draws the
     // panel, and this view draws it most plainly of all: every member, one card each, in roster
-    // order, under a heading that counts it. The chip counted what the reader is looking at. Where a panel cannot be counted off the page
-    // the figure stays, which is why `AgentJurorDraws` keeps its column. The court left on
+    // order, under a heading that counts it. The chip counted what the reader is looking at.
+    // `AgentJurorDraws` kept a panel column until 2026-11-02, when each draw's share of the
+    // round's vote replaced it, and the ‡ took over marking a panel of one. The court left on
     // 2026-11-02: this dashboard reads one court, so its pill said the same thing on every
     // dispute.
     renderDispute();
@@ -484,7 +485,9 @@ describe("a draw that published nothing", () => {
     const cards = screen.getAllByRole("article");
 
     for (const card of cards) {
-      expect(within(card).getByText(/^\d+ votes?$/)).toBeInTheDocument();
+      // Its share of the round's vote: drawn "1/5 votes", said "1 of 5 votes".
+      expect(within(card).getByText(/^\d+\/\d+ votes?$/)).toBeInTheDocument();
+      expect(within(card).getByText(/^\d+ of \d+ votes?$/)).toBeInTheDocument();
     }
     expect(screen.queryByText("0 chars")).not.toBeInTheDocument();
     expect(screen.queryByText(/ · MD$/)).not.toBeInTheDocument();

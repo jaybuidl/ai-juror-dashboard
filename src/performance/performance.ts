@@ -267,6 +267,11 @@ export type Draw = {
   /** How many vote IDs this one draw holds. `1` for most of them. */
   voteCount: number;
   /**
+   * How many vote IDs the draw's round holds across everyone drawn — so `voteCount` of
+   * `roundVoteCount` is this agent juror's share of the vote, "2/5".
+   */
+  roundVoteCount: number;
+  /**
    * Every distinct choice this draw's vote IDs revealed, ascending. Empty until it reveals.
    *
    * A list and not a number, because the model has always had to reckon with a draw whose vote
@@ -557,6 +562,8 @@ type DrawGroup = {
   round: DisputeRound;
   votes: RawVote[];
   voteCount: number;
+  /** Every vote ID the round holds, whoever holds them — filled once the court's draws are all in. */
+  roundVoteCount: number;
   /** For the failure message: which draw could not be read. */
   id: string;
 };
@@ -727,6 +734,7 @@ function drawOf(
       committedAt === null || commitOpenedAt === null ? null : committedAt - commitOpenedAt,
     committed,
     voteCount: group.voteCount,
+    roundVoteCount: group.roundVoteCount,
     choices,
     // The same key the commitments use, and `undefined` collapsed to `null` because the model
     // says "no reward" with a null everywhere else it says anything is absent.
@@ -787,6 +795,11 @@ type DisputeDraws = {
    * the roster.
    */
   panel: Set<string>;
+  /**
+   * How many vote IDs each round holds, counted over every juror drawn, on the roster or not —
+   * the denominator of an agent juror's share of the vote.
+   */
+  votesByRound: Map<number, number>;
 };
 
 /**
@@ -825,19 +838,20 @@ function groupDraws(raw: RawCourtData, disputes: readonly Dispute[]): Map<number
 
     let rows = grouped.get(disputeId);
     if (rows === undefined) {
-      rows = { byAgentJuror: new Map(), panel: new Set() };
+      rows = { byAgentJuror: new Map(), panel: new Set(), votesByRound: new Map() };
       grouped.set(disputeId, rows);
     }
 
     const address = drawn.juror.id.toLowerCase();
     rows.panel.add(address);
+    const index = roundIndexOf(drawn.round.id);
+    rows.votesByRound.set(index, (rows.votesByRound.get(index) ?? 0) + 1);
 
     // Not every address in a panel is an agent juror. The roster is the column set, and an
     // address outside it has no column to sit in — but it was still on the panel, counted above.
     const agentJuror = byAddress.get(address);
     if (agentJuror === undefined) continue;
 
-    const index = roundIndexOf(drawn.round.id);
     const round = dispute.rounds.find((candidate) => candidate.index === index);
     if (round === undefined) {
       throw new Error(`Draw ${drawn.id} sits in round ${index}, which dispute ${disputeId} lacks`);
@@ -856,6 +870,7 @@ function groupDraws(raw: RawCourtData, disputes: readonly Dispute[]): Map<number
         round,
         votes: drawn.vote === null ? [] : [drawn.vote],
         voteCount: 1,
+        roundVoteCount: 0,
         id: drawn.id,
       });
       continue;
@@ -863,6 +878,15 @@ function groupDraws(raw: RawCourtData, disputes: readonly Dispute[]): Map<number
 
     group.voteCount += 1;
     if (drawn.vote !== null) group.votes.push(drawn.vote);
+  }
+
+  // Only now is each round's total known: a later vote ID may belong to a juror off the roster.
+  for (const rows of grouped.values()) {
+    for (const rounds of rows.byAgentJuror.values()) {
+      for (const [index, group] of rounds) {
+        group.roundVoteCount = rows.votesByRound.get(index) ?? group.voteCount;
+      }
+    }
   }
 
   return grouped;

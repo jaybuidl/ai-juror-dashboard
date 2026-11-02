@@ -382,8 +382,16 @@ function PanelMember({
             <VisuallyHidden>Commit latency</VisuallyHidden>
             <MeasureValue $tone={commit.tone}>{commit.text}</MeasureValue>
           </Measure>
+          {/* Its share of the round's vote, "1/5 votes", as the agent juror page's table gives it;
+              said in words, since a screen reader reads "1/5" as a date. */}
           <Votes>
-            {draw.voteCount} {draw.voteCount === 1 ? "vote" : "votes"}
+            <span aria-hidden="true">
+              {draw.voteCount}/{draw.roundVoteCount} {draw.roundVoteCount === 1 ? "vote" : "votes"}
+            </span>
+            <VisuallyHidden>
+              {draw.voteCount} of {draw.roundVoteCount}{" "}
+              {draw.roundVoteCount === 1 ? "vote" : "votes"}
+            </VisuallyHidden>
           </Votes>
           {choice !== null && <Choice $tone={presentation.tone}>{choice}</Choice>}
         </Measures>

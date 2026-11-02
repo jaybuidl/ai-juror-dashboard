@@ -290,14 +290,18 @@ describe("the disputes it was drawn in", () => {
     expect(screen.queryByText("Unknown")).not.toBeInTheDocument();
   });
 
-  it("carries a panel column beside the coherence column", () => {
+  it("gives each draw its share of the round's vote where the panel size used to be", () => {
+    // 2026-11-02 (maintainer's ruling): "Votes" replaced "Panel". The panel-of-one caveat it
+    // carried is not lost: the ‡ on the state still marks it, tested below.
     renderAt("/agent-jurors/Columbo");
     const table = screen.getByRole("table");
 
-    // The standing requirement: coherence in a panel of one is tautological, so no coherence
-    // mark on this page appears without the panel size of the dispute it came from.
-    expect(within(table).getByRole("columnheader", { name: "Panel" })).toBeInTheDocument();
-    expect(within(table).getByRole("columnheader", { name: "Coherence" })).toBeInTheDocument();
+    expect(within(table).getByRole("columnheader", { name: "Votes" })).toBeInTheDocument();
+    expect(within(table).queryByRole("columnheader", { name: "Panel" })).not.toBeInTheDocument();
+    // Dispute 155: Columbo held all three of its vote IDs. Drawn "3/3", said in words.
+    const row = within(table).getByRole("row", { name: /^155 / });
+    expect(within(row).getByText("3/3")).toBeInTheDocument();
+    expect(within(row).getByText("3 of 3 votes")).toBeInTheDocument();
   });
 
   it("marks the coherence of the draw that sat on a panel of one", () => {
@@ -322,7 +326,6 @@ describe("the disputes it was drawn in", () => {
     // state word from `presentationOf`. What is being pinned is that this view reads the draw
     // rather than deriving a second account of it.
     const row = within(table).getByRole("row", { name: /^155 / });
-    expect(within(row).getByText("1")).toBeInTheDocument();
     expect(within(row).getByText(/coherent/i)).toBeInTheDocument();
   });
 });
@@ -636,12 +639,12 @@ describe("one agent juror's own view on a phone", () => {
     expect(screen.getByRole("table")).toBeInTheDocument();
   });
 
-  it("loses no figure with the table: panel, choice and both latencies stay on each block", () => {
+  it("loses no figure with the table: votes, choice and both latencies stay on each block", () => {
     stubViewportWidth(PHONE_WIDTH);
     renderAt("/agent-jurors/Columbo");
 
-    const labels = screen.getAllByText(/^(Panel|Choice|Reveal|Commit)$/).map((n) => n.textContent);
-    expect(new Set(labels)).toEqual(new Set(["Panel", "Choice", "Reveal", "Commit"]));
+    const labels = screen.getAllByText(/^(Votes|Choice|Reveal|Commit)$/).map((n) => n.textContent);
+    expect(new Set(labels)).toEqual(new Set(["Votes", "Choice", "Reveal", "Commit"]));
   });
 });
 

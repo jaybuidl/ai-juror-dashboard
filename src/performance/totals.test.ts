@@ -460,6 +460,7 @@ function medianOfSeconds(seconds: readonly number[]): number | undefined {
         commitLatencySeconds: value * 2,
         committed: true,
         voteCount: 1,
+        roundVoteCount: 1,
         choices: [1],
         reward: null,
       },
@@ -984,6 +985,7 @@ function column({
             commitLatencySeconds,
             committed: commitLatencySeconds !== null,
             voteCount: 1,
+            roundVoteCount: 3,
             // Ticket 09 put `choices` on `Draw`, and the seam never produces a revealed draw
             // with an empty one — `stateOf` throws on exactly that. So the list follows the
             // state rather than being a constant: everything but `no-vote` and an unrevealed
