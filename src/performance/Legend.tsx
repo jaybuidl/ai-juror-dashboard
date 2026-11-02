@@ -13,11 +13,16 @@ import { type Tone, toneInk } from "../styles/tones";
  * own word, and this exists so a reader meeting `∅` for the first time has somewhere to look.
  */
 
+/* As wide as the keys it holds, never the column (2026-11-02, maintainer's ruling): a box running
+   on past its last key reads as one missing. fit-content rather than align-self, because it holds
+   in a block parent and a flex column alike — a declared width is not stretched. It still wraps
+   inside the column on a phone, where the keys are wider than the room. */
 export const Legend = styled.div`
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  justify-content: space-between;
+  width: fit-content;
+  max-width: 100%;
   gap: ${({ theme }) => theme.space8};
   padding: ${({ theme }) => `${theme.space5} ${theme.space7}`};
   border: ${({ theme }) => theme.borderHairline};

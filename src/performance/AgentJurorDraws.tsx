@@ -47,13 +47,6 @@ const Heading = styled.h2`
   color: ${({ theme }) => theme.textHeading};
 `;
 
-/* As wide as the keys it holds, not the column: the section is a flex column, which stretches
-   every child to its width, and a box running on past its last key reads as a missing one. */
-const DrawsLegend = styled(Legend)`
-  align-self: flex-start;
-  max-width: 100%;
-`;
-
 /* `table-layout: fixed` and a colgroup, so the widths are the artboard's and a long title
    clips rather than widening its column. An auto-laid table sizes to its content exactly as a
    `1fr` grid track does, and the row then runs off the side of the page with nothing in the
@@ -360,9 +353,9 @@ export function AgentJurorDraws({
           because the sixth state cannot appear here — an unread row has no cell for anybody, so
           it contributes no line to this list at all, and naming a state the record does not
           contain teaches a reader to look for a failure that is not there. */}
-      <DrawsLegend>
+      <Legend>
         <StateLegend unknown={false} />
-      </DrawsLegend>
+      </Legend>
 
       {isNarrow ? (
         <DrawCards lines={lines} nickname={nickname} />
