@@ -67,6 +67,11 @@ export function presentationOf(state: DrawState): Presentation {
     // eye lands on across a page of forty-odd cells.
     case "coherent":
       return { glyph: "✓", word: "Coherent", tone: "pass", filled: false };
+    // Paid like a coherent vote, so in its ink — but outlined, where coherent is bare, and with
+    // a glyph and a word of its own (ADR-0009). Six disputes in 166 tied, and a reader has to be
+    // able to find them: a tie is how the court decided, and every voter in one was paid for it.
+    case "tied":
+      return { glyph: "=", word: "Tied", tone: "pass", filled: true };
     // Amber and not rose. Voting in the minority is a legitimate outcome that costs the agent
     // juror PNK; it is not a malfunction and must not look like one.
     case "diverged":

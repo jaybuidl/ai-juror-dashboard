@@ -291,9 +291,10 @@ export type WindowChange = {
 /**
  * Coherence as a count, and what qualifies it.
  *
- * A count and never a rate: `8/9` says how many draws are behind it, where `89%` does not, and
- * the difference matters most exactly where the panel is small enough for one draw to move the
- * figure ten points. Nobody is ranked on it — these are marginals on a matrix.
+ * Counted here, and never as a rate: a share is the view's to print, and only beside its base —
+ * the matrix header prints each outcome as a percentage of DRAWS with DRAWS beneath it, and the
+ * agent juror card prints the count beside the percentage (2026-11-02). Nobody is ranked on it —
+ * these are marginals on a matrix.
  *
  * `resolved` is the denominator, and it is the draws whose dispute the court has **ruled** on —
  * ADR-0007, not `period === "execution"`. Disputes 164–166 sat in `appeal` with every vote in
@@ -305,8 +306,24 @@ export type WindowChange = {
  * afford. The matrix says which those are; this figure only says how many were coherent.
  */
 export type Coherence = {
-  /** Draws that voted with the dispute's final ruling. */
+  /** Draws that voted with the final ruling of a dispute that did not tie. */
   coherent: number;
+  /**
+   * The breakdown of every draw by its state — ADR-0009. Counted by name, each of them, and never
+   * by subtraction: `resolved - coherent` would fold a missed vote into `diverged`.
+   *
+   * `coherent + tied + diverged + missed + acting === draws`, always: the first three exist only
+   * once the court has ruled, `missed` as soon as the vote period has closed without a reveal,
+   * and `acting` is every draw still in motion.
+   */
+  /** Voted, in a dispute whose ruling is a tie: paid as coherent, and coherent with nothing. */
+  tied: number;
+  /** Voted against the ruling of a dispute that did not tie. */
+  diverged: number;
+  /** Drawn, and let the vote period close without revealing — `no-vote`, penalised tie or not. */
+  missed: number;
+  /** Still acting: no ruling yet, or a vote period still open. */
+  acting: number;
   /** Draws with a ruling to be compared against at all. */
   resolved: number;
   /**
@@ -738,6 +755,10 @@ export function agentJurorMarginalsOf(
     let votes = 0;
     let commitments = 0;
     let coherent = 0;
+    let tied = 0;
+    let diverged = 0;
+    let missed = 0;
+    let acting = 0;
     let resolved = 0;
     const lonePanelDisputes: number[] = [];
     const revealSeconds: number[] = [];
@@ -769,12 +790,30 @@ export function agentJurorMarginalsOf(
       if (cell.revealLatencySeconds !== null) revealSeconds.push(cell.revealLatencySeconds);
       if (cell.commitLatencySeconds !== null) commitSeconds.push(cell.commitLatencySeconds);
 
+      // Every draw lands in exactly one, by its state — so the breakdown sums to `draws`.
+      switch (cell.state.kind) {
+        case "coherent":
+          coherent += 1;
+          break;
+        case "tied":
+          tied += 1;
+          break;
+        case "diverged":
+          diverged += 1;
+          break;
+        case "no-vote":
+          missed += 1;
+          break;
+        case "live":
+          acting += 1;
+          break;
+      }
+
       // The denominator is a fact about the dispute rather than about the draw, which is why it
       // is asked of the row: a draw's own state says `live` for both "no ruling yet" and "the
       // vote period is still open", and only one of those is a dispute the court has finished.
       if (!isFinalised(row.dispute)) continue;
       resolved += 1;
-      if (cell.state.kind === "coherent") coherent += 1;
       // Counted only among the resolved, for the same reason: a lone panel still being decided
       // has no coherence figure yet to qualify.
       if (row.panelSize === 1) lonePanelDisputes.push(row.dispute.id);
@@ -789,7 +828,15 @@ export function agentJurorMarginalsOf(
       commitments,
       // Ascending, because rows arrive newest first and a list of ids reads forwards — the same
       // reason `changedWindowsOf` sorts the ids inside a group.
-      coherence: { coherent, resolved, lonePanelDisputes: lonePanelDisputes.sort((a, b) => a - b) },
+      coherence: {
+        coherent,
+        tied,
+        diverged,
+        missed,
+        acting,
+        resolved,
+        lonePanelDisputes: lonePanelDisputes.sort((a, b) => a - b),
+      },
       // Over the rows this agent juror was actually drawn in, and not over every marked row.
       // Court-wide the group is a fact about the disputes and an unread row belongs in it with
       // a count of zero; here it is a claim about *this* number, and a column never drawn in

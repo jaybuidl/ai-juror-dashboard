@@ -168,11 +168,13 @@ describe("one agent juror's own view", () => {
     renderAt("/agent-jurors/Columbo");
     const card = screen.getByRole("region", { name: /what columbo has done/i });
 
-    // The same six values `Marginals` prints in 148px, read by the same module — three medians
-    // and a count, then the draw count and the two sums the court has paid.
+    // The same values `Marginals` prints in 148px, read by the same module — the medians, the
+    // outcome breakdown (ADR-0009: nine coherent, three still acting, each as a share of the
+    // twelve draws with the count beside it), the draw count and the two sums the court has paid.
     expect(within(card).getByText("117s")).toBeInTheDocument();
     expect(within(card).getByText("8m 52s")).toBeInTheDocument();
-    expect(within(card).getByText("9/9")).toBeInTheDocument();
+    expect(within(card).getByText("75% (9)")).toBeInTheDocument();
+    expect(within(card).getByText("25% (3)")).toBeInTheDocument();
     expect(within(card).getByText("12")).toBeInTheDocument();
     expect(within(card).getByText("0.0035")).toBeInTheDocument();
     expect(within(card).getByText("+171.42")).toBeInTheDocument();
@@ -392,8 +394,9 @@ describe("the agent juror the court has never drawn", () => {
   it("draws every unmeasurable figure as a dash, and says what a dash means", () => {
     renderAt("/agent-jurors/Baskerville");
 
-    // Three medians and the two sums: five dashes, and not one zero among them.
-    expect(screen.getAllByText("—")).toHaveLength(5);
+    // The two medians, the four outcome counts (ADR-0009) and the two sums: eight dashes, and
+    // not one zero among them.
+    expect(screen.getAllByText("—")).toHaveLength(8);
     expect(screen.getByText(/a dash means .no draws to measure./i)).toBeVisible();
     expect(
       screen.getByText(/it never means zero, and it never means the query failed/i),
@@ -612,7 +615,7 @@ describe("one agent juror's own view on a phone", () => {
     expect(within(card).getByText("0.0035")).toBeInTheDocument();
     expect(within(card).getByText("+171.42")).toBeInTheDocument();
     expect(within(card).getByText("117s")).toBeInTheDocument();
-    expect(within(card).getByText("9/9")).toBeInTheDocument();
+    expect(within(card).getByText("75% (9)")).toBeInTheDocument();
   });
 
   it("replaces the seven-column table with one block per dispute rather than shrinking it", () => {

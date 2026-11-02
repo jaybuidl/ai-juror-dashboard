@@ -182,6 +182,7 @@ describe("the persisted model shape", () => {
       "rounds",
       "ruling",
       "templateId",
+      "tied",
     ]);
   });
 

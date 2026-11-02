@@ -95,10 +95,28 @@ what it is for — it is the tripwire that says the next one has gone live.
 _Avoid_: unknown juror, stranger, naming the address, non-agent (it may well be an agent)
 
 **Coherence**:
-Having voted for the dispute's final ruling. Counted per draw. Only defined once the appeal period
-has closed and a ruling exists; a round majority before then is a prediction, not coherence. Always
-scoped to court 34 here.
+Having voted for the dispute's final ruling, in a dispute that did not tie. Counted per draw. Only
+defined once the appeal period has closed and a ruling exists; a round majority before then is a
+prediction, not coherence. Always scoped to court 34 here. A draw's outcome is one of coherent,
+**Tied**, **Diverged** or **Missed** (ADR-0009), and an agent juror's draws are reported as that
+breakdown, which sums to its draw count.
 _Avoid_: correctness, accuracy, agreement with the majority
+
+**Tied**:
+A draw that voted in a dispute whose ruling is a tie. The court rules to refuse to arbitrate and
+pays every juror who voted as coherent, whatever they chose, so a tied draw is paid and is coherent
+with nothing. Its own state, between coherent and diverged (ADR-0009).
+_Avoid_: incoherent (the protocol pays it), coherent (it did not vote for the ruling)
+
+**Diverged**:
+A draw that voted against the ruling of a dispute that did not tie. Penalised. Amber, never rose:
+voting in the minority is a legitimate outcome, not a malfunction (ADR-0006).
+_Avoid_: wrong, incorrect, incoherent (which would include ties and missed votes)
+
+**Missed**:
+A draw whose vote period closed without a vote. The cell says **No vote**; the count of them is
+**Missed**. Penalised whether the dispute tied or not.
+_Avoid_: abstained (nothing was cast), diverged
 
 **Commit latency**:
 Seconds from the moment the commit period opened to the moment a draw's `castCommit` was mined.

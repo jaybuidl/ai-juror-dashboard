@@ -19,6 +19,7 @@ function dispute(over: Partial<Dispute> = {}): Dispute {
     id: 151,
     period: "execution",
     ruling: { state: "ruled", choice: 1 },
+    tied: false,
     createdAt: NOW / 1000 - 86_400,
     // The moment the current period opened, which is what the live pill counts from — not the
     // round timeline. A `0` here is the subgraph's "has not happened", and `periodOpenSeconds`

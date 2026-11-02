@@ -114,6 +114,7 @@ function dispute(overrides: Partial<Dispute> = {}): Dispute {
     id: 151,
     period: "execution",
     ruling: { state: "ruled", choice: 1 },
+    tied: false,
     createdAt: 1_787_144_365,
     lastPeriodChange: 1_787_257_250,
     templateId: 161,

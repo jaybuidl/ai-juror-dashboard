@@ -44,8 +44,11 @@ import { browserStorage } from "./storage";
  * restores a parameter history with no `minStake` on it, `toRegimes` refuses to read it, and
  * every return visit for the next day renders the whole page as a failed build rather than a
  * cold read. Adding a field to a persisted raw payload is exactly the case this constant is for.
+ * It moved again on 2026-11-02, for the same reason: the dispute query gained `tied` (ADR-0009),
+ * and a cache from before it would restore every tied dispute as untied — its voters diverged —
+ * until the next refetch.
  */
-export const PERSISTED_MODEL_VERSION = "2026-09-04";
+export const PERSISTED_MODEL_VERSION = "2026-11-02";
 
 /** Namespaced, so nothing else this origin stores can collide with it. */
 export const PERSISTED_CACHE_KEY = "kleros-ai-juror-dashboard:query-cache";

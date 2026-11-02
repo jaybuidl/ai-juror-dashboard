@@ -72,6 +72,7 @@ function disputesQuery(hasCursor: boolean): string {
         period
         ruled
         currentRuling
+        tied
         createdAt
         lastPeriodChange
         currentRoundIndex

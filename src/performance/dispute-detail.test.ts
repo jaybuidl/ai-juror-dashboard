@@ -343,6 +343,7 @@ describe("periodsOf", () => {
     id: 152,
     period: "execution",
     ruling: { state: "ruled", choice: 1 },
+    tied: false,
     createdAt: 1000,
     lastPeriodChange: 9000,
     templateId: 163,
@@ -395,6 +396,7 @@ describe("periodsOf", () => {
       ...dispute,
       period: "appeal",
       ruling: { state: "pending" },
+      tied: false,
       rounds: [{ ...round, executionOpenedAt: null }],
     };
 

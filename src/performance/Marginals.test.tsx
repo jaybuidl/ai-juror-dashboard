@@ -40,7 +40,15 @@ function marginalsOf(over: Partial<AgentJurorMarginals> = {}): AgentJurorMargina
     revealLatency: summary([40, 48, 60, 90]),
     commitLatency: summary([100, 259, 300, 900]),
     commitments: 4,
-    coherence: { coherent: 3, resolved: 4, lonePanelDisputes: [] },
+    coherence: {
+      coherent: 3,
+      tied: 0,
+      diverged: 1,
+      missed: 0,
+      acting: 0,
+      resolved: 4,
+      lonePanelDisputes: [],
+    },
     changedWindows: [],
     rewards: {
       ethWei: 1080000000000000n,
@@ -83,8 +91,12 @@ describe("Marginals", () => {
 
     expect(screen.getByText("48s")).toBeInTheDocument();
     expect(screen.getByText("4m 19s")).toBeInTheDocument();
-    // A count and never a rate: "75%" hides that one draw moves it twenty-five points.
-    expect(screen.getByText("3/4")).toBeInTheDocument();
+    // The outcome breakdown as shares of the draws (2026-11-02): three coherent and one diverged
+    // of four, rounded to whole percent, with the draw count beneath as the base.
+    expect(screen.getByText("75%")).toBeInTheDocument();
+    expect(screen.getByText("25%")).toBeInTheDocument();
+    expect(screen.getAllByText("0%")).toHaveLength(2);
+    expect(screen.queryByText("3/4")).not.toBeInTheDocument();
     // The draw count alone: the vote-ID count beside it was removed on 2026-09-24.
     expect(screen.getByText("4")).toBeInTheDocument();
   });
@@ -112,11 +124,20 @@ describe("Marginals", () => {
       revealLatency: null,
       commitLatency: null,
       commitments: 0,
-      coherence: { coherent: 0, resolved: 0, lonePanelDisputes: [] },
+      coherence: {
+        coherent: 0,
+        tied: 0,
+        diverged: 0,
+        missed: 0,
+        acting: 0,
+        resolved: 0,
+        lonePanelDisputes: [],
+      },
       rewards: null,
     });
 
-    expect(screen.getAllByText("—")).toHaveLength(5);
+    // Eight now: the two medians, the four outcome counts (ADR-0009) and the two payouts.
+    expect(screen.getAllByText("—")).toHaveLength(8);
     expect(screen.queryByText("0/0")).not.toBeInTheDocument();
     expect(screen.queryByText("0.0000")).not.toBeInTheDocument();
   });
@@ -245,13 +266,16 @@ describe("Marginals", () => {
    * survives is a property of this list and its flags, not of the grid around it.
    */
   describe("the compact density", () => {
-    it("keeps four of the six figures and drops two", () => {
+    it("keeps the medians, the outcome breakdown and the draw count, and drops the payouts", () => {
       renderMarginals({}, { density: "compact" });
 
       for (const kept of [
         "Median commit latency",
         "Median reveal latency",
-        "Coherent draws, of the draws the court has ruled on",
+        "Coherent draws: voted with a ruling that did not tie",
+        "Tied draws: voted in a dispute whose ruling is a tie, and paid as coherent",
+        "Diverged draws: voted against a ruling that did not tie",
+        "Missed draws: the vote period closed without a vote",
         "Times the court drew this agent juror",
       ]) {
         expect(screen.getByText(kept)).toBeInTheDocument();
@@ -261,15 +285,45 @@ describe("Marginals", () => {
       }
     });
 
-    it("keeps the order of the four it keeps", () => {
+    it("keeps the order of the figures it keeps", () => {
       // Nothing is ranked here and nothing reorders: a compact header is the comfortable one
       // with two lines removed, never a second block that happens to agree with it.
       renderMarginals({}, { density: "compact" });
 
       const keys = screen
-        .getAllByText(/^(Med com|Med rev|Coherent|Draws)$/)
+        .getAllByText(/^(Med com|Med rev|Coherent|Tied|Diverged|Missed|Draws)$/)
         .map((key) => key.textContent);
-      expect(keys).toEqual(["Med com", "Med rev", "Coherent", "Draws"]);
+      expect(keys).toEqual([
+        "Med com",
+        "Med rev",
+        "Coherent",
+        "Tied",
+        "Diverged",
+        "Missed",
+        "Draws",
+      ]);
     });
+  });
+});
+
+describe("the outcome breakdown", () => {
+  it("adds an acting line only while something is still being decided", () => {
+    renderMarginals({
+      coherence: {
+        coherent: 2,
+        tied: 0,
+        diverged: 0,
+        missed: 0,
+        acting: 2,
+        resolved: 2,
+        lonePanelDisputes: [],
+      },
+    });
+    expect(screen.getByText("Draws still acting: no ruling yet")).toBeInTheDocument();
+  });
+
+  it("leaves the acting line out when nothing is acting", () => {
+    renderMarginals();
+    expect(screen.queryByText("Draws still acting: no ruling yet")).not.toBeInTheDocument();
   });
 });

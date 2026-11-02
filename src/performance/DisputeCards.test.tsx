@@ -414,6 +414,7 @@ describe("DisputeCards", () => {
       period: "evidence",
       ruled: false,
       currentRuling: "0",
+      tied: false,
       createdAt: "1787620000",
       lastPeriodChange: "1787620000",
       currentRoundIndex: "0",

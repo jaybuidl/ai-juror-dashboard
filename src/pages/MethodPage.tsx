@@ -307,6 +307,14 @@ export function MethodPage() {
           Refusing to arbitrate is a ruling. An agent juror that voted to refuse in a dispute the
           court refused is coherent.
         </Body>
+        <Body>
+          A <Term>tie</Term> is its own outcome. When the vote ends level the court rules to refuse
+          to arbitrate, and it pays every juror who voted as coherent, whatever they chose. Those
+          draws are shown as <Term>tied</Term>: not coherent, since they did not vote for the
+          ruling, and not diverged, since nothing was taken from them. A juror who did not vote in a
+          tie is penalised as in any other dispute. Every count of draws here splits into coherent,
+          tied, diverged, missed and still acting.
+        </Body>
       </Section>
 
       <Section id="window" heading="The window">
@@ -401,7 +409,8 @@ export function MethodPage() {
           multiple of it. The PNK is a redistribution and not an issuance: it is taken from the
           jurors who diverged or failed to reveal and handed to those who voted with the ruling, so
           it nets to zero across the court and a negative figure is a real loss rather than a
-          missing number. Its sign is always a character in the value itself.
+          missing number. In a tie, every juror who voted is paid as coherent. Its sign is always a
+          character in the value itself.
         </Body>
         <Body>
           Both figures lag the rest of this page, and legitimately. A payout is written when the

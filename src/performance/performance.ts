@@ -215,6 +215,13 @@ export type LiveStage = "awaiting" | "committed" | "revealed";
  */
 export type DrawState =
   | { kind: "coherent" }
+  /**
+   * Voted, in a dispute whose ruling is a tie — ADR-0009. A tie rules 0, and the dispute kit
+   * pays every juror who voted as coherent whatever they chose, so this is neither `coherent`
+   * (it did not vote for the ruling) nor `diverged` (it was not penalised for its vote).
+   */
+  | { kind: "tied" }
+  /** Voted against the ruling of a dispute that did not tie. */
   | { kind: "diverged" }
   | { kind: "no-vote" }
   | { kind: "live"; stage: LiveStage };
@@ -763,6 +770,9 @@ function stateOf({
     if (choices.length === 0) {
       throw new Error(`Draw ${group.id} is recorded as revealed but carries no choice`);
     }
+    // Before the choice is compared: in a tie the ruling is 0 and almost nobody voted 0, so a
+    // comparison would call every voter diverged — the opposite of what the court paid them.
+    if (dispute.tied) return { kind: "tied" };
     return choices.every((choice) => choice === ruling)
       ? { kind: "coherent" }
       : { kind: "diverged" };

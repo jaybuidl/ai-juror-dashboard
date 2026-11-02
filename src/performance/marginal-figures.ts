@@ -47,6 +47,12 @@ export type MarginalFigure = {
   /** The same key spelled out, for a reader who is hearing the figure rather than scanning it. */
   name: string;
   figure: Figure;
+  /**
+   * The count behind a share, where the figure is one — the outcome lines. The matrix header
+   * prints the share alone, with DRAWS beneath it as the base; the agent juror card has the room
+   * to print both, "84% (86)".
+   */
+  count?: number;
   /** Whether this figure is a net loss, which takes amber on top of its own sign character. */
   loss?: boolean;
   /**
@@ -127,19 +133,51 @@ export function marginalFiguresOf(
       name: "Median reveal latency",
       figure: latencyFigure(revealLatency?.median),
     },
-    {
-      key: "coherence",
-      dense: true,
-      label: "Coherent",
-      caption: "Coherent",
-      name: "Coherent draws, of the draws the court has ruled on",
-      // A count and never a rate, and a dash where there is no ruled draw to count over —
-      // "0/0" would be a figure, and there is nothing here to have a figure about.
-      figure:
-        coherence.resolved === 0
-          ? { text: "—", tone: "pending" }
-          : { text: `${coherence.coherent}/${coherence.resolved}`, tone: "value" },
-    },
+    // The breakdown of the draws below it, by outcome — ADR-0009. Plain counts that sum to DRAWS
+    // (`Coherence` says why), where this was "coherent/ruled" until 2026-11-02 and folded every
+    // tie, every divergence and every missed vote into one unnamed remainder. A dash where the
+    // court has never drawn this agent juror: a zero there would be a figure about nothing.
+    breakdown(
+      "coherence",
+      "Coherent",
+      "Coherent draws: voted with a ruling that did not tie",
+      coherence.coherent,
+      marginals.draws,
+    ),
+    breakdown(
+      "tied",
+      "Tied",
+      "Tied draws: voted in a dispute whose ruling is a tie, and paid as coherent",
+      coherence.tied,
+      marginals.draws,
+    ),
+    breakdown(
+      "diverged",
+      "Diverged",
+      "Diverged draws: voted against a ruling that did not tie",
+      coherence.diverged,
+      marginals.draws,
+    ),
+    breakdown(
+      "missed",
+      "Missed",
+      "Missed draws: the vote period closed without a vote",
+      coherence.missed,
+      marginals.draws,
+    ),
+    // Only while something is still being decided: a line reading zero on every finished court
+    // would be a figure about nothing, and without it the lines above would not sum to DRAWS.
+    ...(coherence.acting > 0
+      ? [
+          breakdown(
+            "acting",
+            "Acting",
+            "Draws still acting: no ruling yet",
+            coherence.acting,
+            marginals.draws,
+          ),
+        ]
+      : []),
     {
       key: "draws",
       dense: true,
@@ -170,6 +208,55 @@ export function marginalFiguresOf(
       loss: (marginals.rewards?.pnkWei ?? 0n) < 0n,
     },
   ];
+}
+
+/**
+ * The figures as the agent juror page's card groups them: the two medians and the draw count,
+ * then what those draws came to, then what the court paid. Grouped by key rather than by
+ * position, because the outcome lines are four or five depending on whether anything is acting.
+ */
+export function cardGroupsOf(figures: readonly MarginalFigure[]): {
+  metrics: MarginalFigure[];
+  outcomes: MarginalFigure[];
+  payouts: MarginalFigure[];
+} {
+  const of = (keys: readonly string[]) => figures.filter((figure) => keys.includes(figure.key));
+  return {
+    metrics: of(["commit", "reveal", "draws"]),
+    outcomes: of(["coherence", "tied", "diverged", "missed", "acting"]),
+    payouts: of(["eth", "pnk"]),
+  };
+}
+
+/**
+ * One line of the outcome breakdown: its share of the draws, whole percent, or a dash for an agent
+ * juror never drawn.
+ *
+ * A share since 2026-11-02 (maintainer's ruling), where this was a count: the draw count is the
+ * line beneath it in the header and the count itself rides beside it on the card, so the base is
+ * never hidden — which was the whole objection to a rate when this said "a count and never a
+ * rate". Each line is rounded on its own, so the five can total 99% or 101%; the counts on the
+ * card always total the draws.
+ */
+function breakdown(
+  key: string,
+  caption: string,
+  name: string,
+  count: number,
+  draws: number,
+): MarginalFigure {
+  return {
+    key,
+    dense: true,
+    label: caption,
+    caption,
+    name,
+    figure:
+      draws === 0
+        ? { text: "—", tone: "pending" }
+        : { text: `${Math.round((count / draws) * 100)}%`, tone: "value" },
+    ...(draws === 0 ? {} : { count }),
+  };
 }
 
 /** Drawn and paid nothing: a real zero, at the same precision as a real amount. */

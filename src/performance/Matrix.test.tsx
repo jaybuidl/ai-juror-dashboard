@@ -529,7 +529,11 @@ describe("Matrix", () => {
 
     // The legend's word for the family is not any cell's word for a stage: they are
     // deliberately different, so that neither can be mistaken for the other.
-    expect(screen.getAllByText("Acting")).toHaveLength(1);
+    // Scoped to the legend: a column header with a draw still in motion has an "Acting" line of
+    // its own (ADR-0009), which is the same family counted.
+    // The legend is the one outside the grid.
+    const outsideGrid = screen.getAllByText("Acting").filter((node) => !node.closest("table"));
+    expect(outsideGrid).toHaveLength(1);
     expect(screen.getAllByText("Revealed").length).toBeGreaterThan(0);
   });
 
@@ -544,6 +548,7 @@ describe("Matrix", () => {
           period: "execution",
           ruled: true,
           currentRuling: "1",
+          tied: false,
           createdAt: "100",
           lastPeriodChange: "900",
           currentRoundIndex: "0",
@@ -579,6 +584,7 @@ describe("Matrix", () => {
           period: "vote",
           ruled: false,
           currentRuling: "0",
+          tied: false,
           createdAt: "100",
           lastPeriodChange: "200",
           currentRoundIndex: "0",
@@ -616,10 +622,12 @@ describe("Matrix", () => {
       renderMatrix();
 
       // 007's own draws, not the court's: ten draws, a median reveal of 48s against the court's
-      // 85s, and coherence over the eight of them the court has ruled on.
+      // 85s, and seven of its ten draws coherent — printed as the share, 70%, with the draw
+      // count beneath it as the base (ADR-0009, 2026-11-02) rather than "7/8".
       expect(header("007").getByText("10")).toBeInTheDocument();
       expect(header("007").getByText("48s")).toBeInTheDocument();
-      expect(header("007").getByText("7/8")).toBeInTheDocument();
+      expect(header("007").getByText("70%")).toBeInTheDocument();
+      expect(header("007").queryByText("7/8")).not.toBeInTheDocument();
     });
 
     it("adds no column of its own: one row header and one per agent juror", () => {
@@ -641,7 +649,8 @@ describe("Matrix", () => {
       // Five dashes since ticket 10 and not three: an agent juror the court has not drawn has
       // not been paid nothing, it has not been in a position to be paid at all, and `0.0000`
       // would state the first.
-      expect(header("Baskerville").getAllByText("—")).toHaveLength(5);
+      // Eight since ADR-0009 broke coherence down into four outcome counts.
+      expect(header("Baskerville").getAllByText("—")).toHaveLength(8);
       expect(header("Baskerville").getByText("0")).toBeInTheDocument();
     });
 
@@ -1002,6 +1011,7 @@ describe("Matrix", () => {
       period: "evidence",
       ruled: false,
       currentRuling: "0",
+      tied: false,
       createdAt: String(READ_AT / 1000 + 600),
       lastPeriodChange: String(READ_AT / 1000 + 600),
       currentRoundIndex: "0",
@@ -1125,6 +1135,7 @@ describe("Matrix", () => {
       period: "evidence",
       ruled: false,
       currentRuling: "0",
+      tied: false,
       createdAt: "1787620000",
       lastPeriodChange: "1787620000",
       currentRoundIndex: "0",
@@ -1345,13 +1356,16 @@ describe("Matrix", () => {
       expect(within(row).queryByText("Not read")).not.toBeInTheDocument();
     });
 
-    it("keeps four of the six figures in the column header and drops two", () => {
+    it("keeps the medians, the outcome breakdown and the draw count, and drops the payouts", () => {
       renderMatrix(compactCourt());
 
       for (const kept of [
         "Median commit latency",
         "Median reveal latency",
-        "Coherent draws, of the draws the court has ruled on",
+        "Coherent draws: voted with a ruling that did not tie",
+        "Tied draws: voted in a dispute whose ruling is a tie, and paid as coherent",
+        "Diverged draws: voted against a ruling that did not tie",
+        "Missed draws: the vote period closed without a vote",
         "Times the court drew this agent juror",
       ]) {
         expect(screen.getAllByText(kept)).toHaveLength(FIXTURE_ROSTER.length);
@@ -1543,6 +1557,7 @@ describe("Matrix", () => {
         period: "evidence",
         ruled: false,
         currentRuling: "0",
+        tied: false,
         createdAt: String(NOW / 1000 + 600),
         lastPeriodChange: String(NOW / 1000 + 600),
         currentRoundIndex: "0",
@@ -1576,6 +1591,7 @@ describe("Matrix", () => {
           period: "evidence",
           ruled: false,
           currentRuling: "0",
+          tied: false,
           createdAt: "1787620000",
           lastPeriodChange: "1787620000",
           currentRoundIndex: "0",

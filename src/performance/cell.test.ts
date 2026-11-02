@@ -22,9 +22,10 @@ function draw(overrides: Partial<Draw> = {}): Draw {
   };
 }
 
-/** The four states a drawn cell can be in. Not drawn is the absence of one, and has none. */
+/** The five states a drawn cell can be in. Not drawn is the absence of one, and has none. */
 const DRAWN_STATES: DrawState[] = [
   { kind: "coherent" },
+  { kind: "tied" },
   { kind: "diverged" },
   { kind: "no-vote" },
   { kind: "live", stage: "awaiting" },

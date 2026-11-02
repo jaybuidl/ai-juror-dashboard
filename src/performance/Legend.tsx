@@ -77,6 +77,10 @@ export function StateLegend({ unknown }: { unknown: boolean }) {
       <LegendItem $tone="pass">
         <span aria-hidden="true">✓</span>Coherent
       </LegendItem>
+      {/* ADR-0009: a vote in a tied dispute, paid as coherent and coherent with nothing. */}
+      <LegendItem $tone="pass">
+        <span aria-hidden="true">=</span>Tied
+      </LegendItem>
       <LegendItem $tone="work">
         <span aria-hidden="true">✕</span>Diverged
       </LegendItem>

@@ -2,14 +2,16 @@ import styled from "styled-components";
 import { narrow } from "../styles/breakpoints";
 import type { AgentJurorReading } from "./agent-juror-detail";
 import type { Figure } from "./cell";
-import { marginalFiguresOf } from "./marginal-figures";
+import { cardGroupsOf, marginalFiguresOf } from "./marginal-figures";
 import type { CourtPerformance } from "./performance";
 
 /**
- * One agent juror's six figures, in the stat card at `canvas/Juror.dc.html:70-82`.
+ * One agent juror's figures, in the stat card at `canvas/Juror.dc.html:70-82`.
  *
- * The same six the matrix's column header prints, read by the same `marginalFiguresOf` — three
- * medians and a count across the top, the two sums and the draw count beneath a hairline. This
+ * The same figures the matrix's column header prints, read by the same `marginalFiguresOf` —
+ * the two medians and the draw count across the top, what those draws came to (coherent, tied,
+ * diverged, missed: ADR-0009) beneath a hairline, then the two sums. `cardGroupsOf` groups them
+ * by key. This
  * decides how they are laid out and reads none of them: the arithmetic is in `totals.ts` and the
  * gates and absences are in `marginal-figures.ts`. The caveat marks that rode these figures, and
  * the reasons listed under the card, were removed on 2026-09-24 (maintainer's ruling).
@@ -68,6 +70,12 @@ export const Counts = styled(Metrics)`
   border-top: ${({ theme }) => theme.borderHairline};
 `;
 
+/* What the draws came to — coherent, tied, diverged, missed — four abreast, so they read as one
+   breakdown of the draw count above them (ADR-0009). A fifth, acting, wraps. */
+export const Outcomes = styled(Counts)`
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+`;
+
 export const FigureKey = styled.dt`
   font: ${({ theme }) => theme.typeMonoSm};
   letter-spacing: ${({ theme }) => theme.trackingMono};
@@ -118,8 +126,7 @@ export function AgentJurorSummary({
     scanned: performance.commitCoverage.read,
     payouts: performance.rewards,
   });
-  const metrics = figures.slice(0, 3);
-  const counts = figures.slice(3);
+  const { metrics, outcomes, payouts } = cardGroupsOf(figures);
 
   return (
     <Card aria-label={`What ${nickname} has done, summarised`}>
@@ -133,8 +140,20 @@ export function AgentJurorSummary({
           </Item>
         ))}
       </Metrics>
+      <Outcomes>
+        {outcomes.map((figure) => (
+          <Item key={figure.key}>
+            <FigureKey>{figure.caption}</FigureKey>
+            <CountValue $tone={figure.figure.tone}>
+              {figure.count === undefined
+                ? figure.figure.text
+                : `${figure.figure.text} (${figure.count})`}
+            </CountValue>
+          </Item>
+        ))}
+      </Outcomes>
       <Counts>
-        {counts.map((figure) => (
+        {payouts.map((figure) => (
           <Item key={figure.key}>
             <FigureKey>{figure.caption}</FigureKey>
             <CountValue $tone={figure.figure.tone} $loss={figure.loss}>

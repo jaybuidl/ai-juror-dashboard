@@ -35,6 +35,13 @@ this file is the full account.
   before claiming that a blank means an agent juror was not selected. `Panel 0` is gone from both
   layouts: a zero there claims the court drew a panel of nobody.
 - **Dispute 155 had a panel of one.** Coherence is tautological there. Any aggregate carries this.
+- **A tie pays every voter as coherent** (2026-11-02, ADR-0009). A level vote rules 0, and
+  `DisputeKitClassicBase._getDegreeOfCoherence` then scores `voted && (choice == winningChoice ||
+  tied)`, so nobody who voted is penalised. Comparing votes against the 0 called whole panels
+  diverged — dispute 249's three voters earned PNK while the matrix said Diverged. Read
+  `Dispute.tied`, and only once `ruled`: before execution the subgraph's flag and `currentRuling`
+  follow the running tally. The subgraph's own `coherenceScore` gets ties wrong too (it counts only
+  0-voters). 6 of the first 166 court 34 disputes tied.
 - **A dispute in `appeal` has every vote in and no ruling.** Disputes 164–166 sat there with all
   twelve draws revealed and `ruled: false`. That is a real state and not a transient one — the
   appeal period runs ~18h — and it is none of the three the cell design first named: not coherent

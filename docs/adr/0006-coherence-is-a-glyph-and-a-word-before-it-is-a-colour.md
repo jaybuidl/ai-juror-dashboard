@@ -7,12 +7,15 @@ word, and takes a colour on top. `canvas/Cell.dc.html:87` is the rule in the des
 check with the word COHERENT reads the same in greyscale, at 60% zoom, and to a reader who cannot
 separate cyan from amber. The colour is the second signal, never the only one."
 
-Five cell states, in the design's own labels (`canvas/Cell.dc.html:97-169`):
+Five cell states, in the design's own labels (`canvas/Cell.dc.html:97-169`) — six since ADR-0009
+added Tied:
 
 - `✓` **Coherent**, cyan (`--cyan-400`) — voted with the ruling. The ordinary case, and the only
   state with no fill and no border: the common case is the quiet one, so the exceptions are what the
   eye lands on. How common it actually is has not been measured and is not asserted here.
-- `✕` **Diverged**, amber (`--amber-400`) — voted against the ruling.
+- `=` **Tied**, cyan, outlined — voted in a dispute whose ruling is a tie, and paid as coherent.
+  Added 2026-11-02 by ADR-0009; the sixth state, and the only one not on the original artboards.
+- `✕` **Diverged**, amber (`--amber-400`) — voted against the ruling of a dispute that did not tie.
 - `∅` **No vote**, rose (`--rose-400`) — drawn and failed to act. The only loud state. No example in
   44 draws.
 - `⋯` **Committed** or **Awaiting**, mint (`--mint-400`) — live, still acting: the cell words the

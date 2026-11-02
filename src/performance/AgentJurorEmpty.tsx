@@ -8,10 +8,11 @@ import {
   Item,
   Metrics,
   MetricValue,
+  Outcomes,
 } from "./AgentJurorSummary";
 import type { AgentJurorReading } from "./agent-juror-detail";
 import { listOf } from "./Footnotes";
-import { marginalFiguresOf } from "./marginal-figures";
+import { cardGroupsOf, marginalFiguresOf } from "./marginal-figures";
 import type { CourtPerformance } from "./performance";
 
 /**
@@ -146,10 +147,12 @@ export function AgentJurorEmpty({
    */
   const drawnDisputes = sparsity.disputes - sparsity.undrawnDisputes.length;
 
-  const figures = marginalFiguresOf(reading.marginals, {
-    scanned: performance.commitCoverage.read,
-    payouts: performance.rewards,
-  });
+  const groups = cardGroupsOf(
+    marginalFiguresOf(reading.marginals, {
+      scanned: performance.commitCoverage.read,
+      payouts: performance.rewards,
+    }),
+  );
 
   return (
     <>
@@ -187,15 +190,27 @@ export function AgentJurorEmpty({
         </Said>
 
         <Metrics>
-          {figures.slice(0, 3).map((figure) => (
+          {groups.metrics.map((figure) => (
             <Item key={figure.key}>
               <FigureKey>{figure.caption}</FigureKey>
               <MetricValue $tone={figure.figure.tone}>{figure.figure.text}</MetricValue>
             </Item>
           ))}
         </Metrics>
+        <Outcomes>
+          {groups.outcomes.map((figure) => (
+            <Item key={figure.key}>
+              <FigureKey>{figure.caption}</FigureKey>
+              <CountValue $tone={figure.figure.tone}>
+                {figure.count === undefined
+                  ? figure.figure.text
+                  : `${figure.figure.text} (${figure.count})`}
+              </CountValue>
+            </Item>
+          ))}
+        </Outcomes>
         <Counts>
-          {figures.slice(3).map((figure) => (
+          {groups.payouts.map((figure) => (
             <Item key={figure.key}>
               <FigureKey>{figure.caption}</FigureKey>
               <CountValue $tone={figure.figure.tone}>{figure.figure.text}</CountValue>

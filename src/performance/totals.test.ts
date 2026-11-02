@@ -361,6 +361,7 @@ function medianOfSeconds(seconds: readonly number[]): number | undefined {
     dispute: {
       id: index,
       ruling: { state: "ruled", choice: 1 },
+      tied: false,
       createdAt: 0,
       rounds: [],
     } as never,
@@ -423,6 +424,16 @@ describe("agentJurorMarginalsOf", () => {
     // roster would show five columns — which is the failure this asserts against, and the same
     // one that dropped grokleros from every figure until ticket 24.
     expect(marginals.find((m) => m.agentJuror.nickname === "Baskerville")?.draws).toBe(0);
+  });
+
+  it("breaks every column's draws down by outcome, and the outcomes sum to the draws", () => {
+    // ADR-0009: coherent + tied + diverged + missed + acting === draws, each counted by name.
+    // The fixture holds no tie, so tied is zero and acting is disputes 164–166.
+    for (const m of agentJurorMarginalsOf(built.rows, ROSTER)) {
+      const { coherent, tied, diverged, missed, acting } = m.coherence;
+      expect(coherent + tied + diverged + missed + acting).toBe(m.draws);
+      expect(tied).toBe(0);
+    }
   });
 
   it("slices the court's own totals down each column", () => {
@@ -772,6 +783,7 @@ describe("timeToAppealOf", () => {
         id,
         period: "appeal",
         ruling: { state: "pending" },
+        tied: false,
         createdAt,
         lastPeriodChange: createdAt,
         templateId: null,

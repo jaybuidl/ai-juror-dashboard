@@ -28,6 +28,12 @@ export type RawDispute = {
   period: Period;
   ruled: boolean;
   currentRuling: string;
+  /**
+   * Whether the last round's vote ended level. Mirrors the dispute kit's flag, which the
+   * subgraph copies on every vote and corrects from `KlerosCore.currentRuling()` at execution —
+   * so it is trustworthy once `ruled`, and only then (see `tiedOf`).
+   */
+  tied: boolean;
   createdAt: string;
   lastPeriodChange: string;
   currentRoundIndex: string;
@@ -71,6 +77,14 @@ export type Dispute = {
   id: number;
   period: Period;
   ruling: Ruling;
+  /**
+   * Whether the court's ruling is a tie — ADR-0009. A tied round rules 0, refuse to arbitrate,
+   * and the dispute kit pays *every* juror who voted as coherent, whatever they chose
+   * (`DisputeKitClassicBase._getDegreeOfCoherence`: `voted && (choice == winningChoice || tied)`).
+   * So a vote in a tie is its own outcome, neither coherent nor diverged. Always `false` until
+   * the court has ruled.
+   */
+  tied: boolean;
   createdAt: number;
   lastPeriodChange: number;
   /**
@@ -157,6 +171,19 @@ export function rulingOf(raw: RawDispute): Ruling {
 }
 
 /**
+ * Whether the ruling is a tie — only once there is a ruling.
+ *
+ * Before execution the subgraph's flag tracks the running tally, which a later vote can still
+ * break, and its `currentRuling` beside it holds the leader rather than the 0 a tie rules: a
+ * prediction, for the reason `rulingOf` refuses one. A ruled dispute reads both off the contract.
+ * A one-sided appeal that overrides the tie sets the flag false, which is what a tie that no
+ * longer stands should read.
+ */
+export function tiedOf(raw: RawDispute): boolean {
+  return raw.ruled && raw.tied === true;
+}
+
+/**
  * The court's disputes, newest core dispute ID first.
  *
  * The order is established here rather than left to the query, so it is a property of
@@ -171,6 +198,7 @@ export function toDisputes(raw: readonly RawDispute[]): Dispute[] {
       id: toNumber(dispute.disputeID, "disputeID"),
       period: dispute.period,
       ruling: rulingOf(dispute),
+      tied: tiedOf(dispute),
       createdAt: toNumber(dispute.createdAt, "createdAt"),
       lastPeriodChange: toNumber(dispute.lastPeriodChange, "lastPeriodChange"),
       templateId: toTemplateId(dispute.templateId),

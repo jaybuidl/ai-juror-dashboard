@@ -19,6 +19,7 @@ are still surfaced per cell, so a draw carrying disproportionate weight remains 
 
 The subgraph's `totalCoherentVotes` and `coherenceScore` fields cannot be used — they are per-vote
 and global across all courts, while this dashboard is per-draw and scoped to court 34. Coherence is
-recomputed from `ClassicVote.choice` against `Dispute.currentRuling`. The 61 votes in court 34
+recomputed from `ClassicVote.choice` against `Dispute.currentRuling` — except in a tied dispute,
+where every voter is Tied rather than compared against the 0 the tie rules (ADR-0009). The 61 votes in court 34
 collapse to 44 draws, which conveniently matches `ClassicJustification` — one per draw — so the draw
 is a row the subgraph can return rather than a rollup we assemble.

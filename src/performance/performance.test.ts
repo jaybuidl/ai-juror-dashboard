@@ -118,6 +118,7 @@ function rawDispute(overrides: Partial<RawDispute> = {}): RawDispute {
     period: "execution",
     ruled: true,
     currentRuling: "2",
+    tied: false,
     createdAt: "1787340123",
     lastPeriodChange: "1787409015",
     currentRoundIndex: "0",
@@ -336,6 +337,7 @@ describe("buildCourtPerformance", () => {
           period: "vote",
           ruled: false,
           currentRuling: "0",
+          tied: false,
           rounds: [
             { id: "163-0", timeline: ["1", "100", "500", "900"] },
             { id: "163-1", timeline: ["1000", "1100", "0", "0"] },
@@ -473,6 +475,7 @@ describe("buildCourtPerformance", () => {
             period: "evidence",
             ruled: false,
             currentRuling: "0",
+            tied: false,
             rounds: [{ id: "163-0", timeline: ["0", "0", "0", "0"] }],
           }),
         ],
@@ -604,6 +607,7 @@ describe("buildCourtPerformance", () => {
             period: "commit",
             ruled: false,
             currentRuling: "0",
+            tied: false,
             rounds: [{ id: "163-0", timeline: ["1787342856", "0", "0", "0"] }],
           }),
         ],
@@ -782,6 +786,52 @@ describe("buildCourtPerformance", () => {
       expect(cellFor(154, "Daemonhill")?.state).toEqual({ kind: "coherent" });
     });
 
+    describe("a tie — ADR-0009", () => {
+      // Dispute 249's shape: the vote ended level, the court ruled 0, and the dispute kit paid
+      // every juror who voted as coherent whatever they chose. Nobody here voted 0.
+      const tiedDispute = rawDispute({ currentRuling: "0", tied: true });
+
+      it("calls a vote in a tied dispute tied, not diverged from the 0 it rules", () => {
+        const raw = courtData({ disputes: [tiedDispute], draws: [rawDraw()], commits: [] });
+
+        expect(cellFor(163, "Blaise", built(raw))?.state).toEqual({ kind: "tied" });
+      });
+
+      it("still calls a missed vote in a tied dispute missed: the protocol penalises it", () => {
+        const raw = courtData({
+          disputes: [tiedDispute],
+          draws: [
+            rawDraw({ vote: { commited: false, voted: false, choice: null, justification: null } }),
+          ],
+          commits: [],
+        });
+
+        expect(cellFor(163, "Blaise", built(raw))?.state).toEqual({ kind: "no-vote" });
+      });
+
+      it("reads nothing into a tie the court has not ruled on, which a later vote may break", () => {
+        const raw = courtData({
+          disputes: [
+            rawDispute({ ruled: false, period: "appeal", currentRuling: "2", tied: true }),
+          ],
+          draws: [rawDraw()],
+          commits: [],
+        });
+        const performance = built(raw);
+
+        expect(rowFor(163, performance).dispute.tied).toBe(false);
+        expect(cellFor(163, "Blaise", performance)?.state).toEqual({
+          kind: "live",
+          stage: "revealed",
+        });
+      });
+
+      it("leaves an untied dispute's voters coherent or diverged as before", () => {
+        expect(rowFor(154).dispute.tied).toBe(false);
+        expect(cellFor(154, "Aletheia")?.state).toEqual({ kind: "diverged" });
+      });
+    });
+
     it("asserts nothing about a dispute the court has not ruled on", () => {
       // 164–166 were still in their appeal period: every vote is in, and the ruling is not.
       for (const id of [164, 165, 166]) {
@@ -856,6 +906,7 @@ describe("buildCourtPerformance", () => {
             period: "commit",
             ruled: false,
             currentRuling: "0",
+            tied: false,
             // `0` in a timeline is a period that has not opened, not midnight in 1970. The
             // helper's default has all four filled, which is a dispute that finished.
             rounds: [{ id: "163-0", timeline: ["1787342856", "0", "0", "0"] }],
@@ -895,6 +946,7 @@ describe("buildCourtPerformance", () => {
             period: "vote",
             ruled: false,
             currentRuling: "0",
+            tied: false,
             rounds: [{ id: "163-0", timeline: ["1787342856", "1787343398", "0", "0"] }],
           }),
         ],
@@ -916,6 +968,7 @@ describe("buildCourtPerformance", () => {
             period: "commit",
             ruled: false,
             currentRuling: "0",
+            tied: false,
             rounds: [{ id: "163-0", timeline: ["1787342856", "0", "0", "0"] }],
           }),
         ],
@@ -937,6 +990,7 @@ describe("buildCourtPerformance", () => {
             period: "commit",
             ruled: false,
             currentRuling: "0",
+            tied: false,
             rounds: [{ id: "163-0", timeline: ["1787342856", "0", "0", "0"] }],
           }),
         ],
@@ -1171,6 +1225,7 @@ describe("buildCourtPerformance", () => {
       period: "evidence",
       ruled: false,
       currentRuling: "0",
+      tied: false,
       createdAt: String(READ_AT_163 / 1000 + 600),
       rounds: [{ id: "170-0", timeline: ["0", "0", "0", "0"] }],
     });

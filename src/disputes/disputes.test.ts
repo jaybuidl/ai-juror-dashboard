@@ -21,6 +21,7 @@ function rawDispute(overrides: Partial<RawDispute> = {}): RawDispute {
     period: "execution",
     ruled: true,
     currentRuling: "1",
+    tied: false,
     createdAt: "1787340123",
     lastPeriodChange: "1787409015",
     currentRoundIndex: "0",

@@ -17,6 +17,7 @@ function dispute(over: Partial<Dispute> = {}): Dispute {
     id: 167,
     period: "evidence",
     ruling: { state: "pending" },
+    tied: false,
     createdAt: 1_787_604_932,
     lastPeriodChange: 1_787_604_932,
     templateId: null,
