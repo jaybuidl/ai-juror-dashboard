@@ -3,7 +3,6 @@ import disputeFixture from "../disputes/court-34.fixture.json" with { type: "jso
 import type { RawDispute } from "../disputes/disputes";
 import { isFinalised } from "../disputes/liveness";
 import { ROSTER } from "../roster/agent-jurors";
-import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import rewardFixture from "./court-34-rewards.fixture.json" with { type: "json" };
@@ -12,17 +11,10 @@ import {
   type CourtPerformance,
   type Draw,
   type MatrixRow,
-  type RawCommitCast,
   type RawDraw,
   type RawRewardShift,
 } from "./performance";
-import {
-  agentJurorMarginalsOf,
-  courtTotalsOf,
-  markedWindows,
-  rowCommitLatencyOf,
-  timeToAppealOf,
-} from "./totals";
+import { agentJurorMarginalsOf, courtTotalsOf, markedWindows, timeToAppealOf } from "./totals";
 import type { PeriodWindows, RawCourtParameters } from "./windows";
 
 /**
@@ -332,79 +324,6 @@ describe("sparsity", () => {
     const { sparsity } = courtTotalsOf([...built.rows.slice(1), unread], ROSTER);
 
     expect(sparsity.undrawnDisputes).toEqual([]);
-  });
-});
-
-describe("rowCommitLatencyOf", () => {
-  /**
-   * The same court with the commitments read, which the suite-wide `built` deliberately omits.
-   *
-   * Every other figure here is reveal-only and must hold whether or not the log scan came back;
-   * this one is the commit half, so it needs the scan.
-   */
-  const scanned = ((): CourtPerformance => {
-    const result = buildCourtPerformance({
-      disputes: disputeFixture as RawDispute[],
-      draws: drawFixture as RawDraw[],
-      commits: commitFixture as RawCommitCast[],
-      parameters: parameterFixture as RawCourtParameters[],
-      rewards: rewardFixture as RawRewardShift[],
-      roster: ROSTER,
-      drawsReadAt: null,
-    });
-    if (!result.success) throw new Error(`${result.code}: ${result.message}`);
-    return result.data;
-  })();
-
-  /** The row the compact grid puts a commit figure on, and the draws behind it. */
-  function rowFor(id: number): MatrixRow {
-    const row = scanned.rows.find((candidate) => candidate.dispute.id === id);
-    if (row === undefined) throw new Error(`no row for dispute ${id}`);
-    return row;
-  }
-
-  it("summarises one dispute's own commitments", () => {
-    const { latency, commitments } = rowCommitLatencyOf(rowFor(156));
-    const cells = rowFor(156).cells.filter((cell) => cell !== null);
-
-    expect(commitments).toBe(cells.filter((cell) => cell.committed).length);
-    expect(latency?.seconds).toEqual(
-      cells
-        .map((cell) => cell.commitLatencySeconds)
-        .filter((seconds) => seconds !== null)
-        .sort((a, b) => a - b),
-    );
-    // The lower of the two middle values, as every median in this file is taken.
-    expect(latency?.median).toBe(
-      latency?.seconds[Math.ceil((latency?.seconds.length ?? 0) / 2) - 1],
-    );
-  });
-
-  it("returns nothing to measure rather than a zero", () => {
-    // A dispute nobody was drawn in has no commitment and no median, and a `0` here would be a
-    // latency nobody measured — the same rule every summary in this file follows.
-    const empty: MatrixRow = { ...rowFor(156), cells: ROSTER.map(() => null) };
-    const { latency, commitments } = rowCommitLatencyOf(empty);
-
-    expect(latency).toBeNull();
-    expect(commitments).toBe(0);
-  });
-
-  it("counts a commitment the scan could not date, so the view can tell the two absences apart", () => {
-    // The distinction the whole commit half of this page rests on: a draw the subgraph records
-    // as committed and Arbitrum could not date is a read that came back short, and one that
-    // never committed is an agent juror that did not act. Counted here; worded in `cell.ts`.
-    const row = rowFor(156);
-    const undated: MatrixRow = {
-      ...row,
-      cells: row.cells.map((cell) =>
-        cell === null ? null : { ...cell, commitLatencySeconds: null },
-      ),
-    };
-    const { latency, commitments } = rowCommitLatencyOf(undated);
-
-    expect(latency).toBeNull();
-    expect(commitments).toBeGreaterThan(0);
   });
 });
 

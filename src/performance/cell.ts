@@ -6,7 +6,7 @@ import type { Draw, DrawState, LiveStage } from "./performance";
  *
  * `value` is a figure; `missed` is an agent juror that did not act while it could; `pending` is
  * a step not yet reached; `unread` is a moment this dashboard could not read. The two measures
- * share the type because they share the rail and the column, and a reader comparing them down a
+ * share the type because they share the column, and a reader comparing them down a
  * column is comparing like with like.
  *
  * `unread` was carved out of `pending` by ticket 13. They had been one tone, and the collapse

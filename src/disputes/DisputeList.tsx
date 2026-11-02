@@ -319,15 +319,6 @@ export type DisputeRowSlots = {
   flagTone?: Tone;
   /** The dispute template's named choices, so the ruling reads in words. Absent until it loads. */
   answers?: readonly ChoiceLabel[];
-  /**
-   * A figure about this dispute, filled only where the row is the compact form's.
-   *
-   * Ticket 17's: past forty rows the matrix's cells drop their commit line, and the median over
-   * the row's own draws lands here instead — the one thing the compact row gains for the second
-   * line it loses. Empty at the comfortable density, where every cell carries its own commit
-   * figure and a row-level median would be a seventh reading of the same draws.
-   */
-  measure?: ReactNode;
 };
 
 /**
@@ -422,8 +413,8 @@ export function DisputeRow({
   slots: DisputeRowSlots;
   as?: "li" | "div";
   /**
-   * Whether this row is drawn in ticket 17's compact form: one line, no category and no ruling,
-   * and the `measure` slot at the end of it.
+   * Whether this row is drawn in ticket 17's compact form: one line, no category and no ruling.
+   * It also carried the dispute's median commit until 2026-11-02 (maintainer's ruling: clutter).
    *
    * The same flag the compact cell and the compact column header read, threaded from the one
    * place it is decided. What the compact row loses is closed and is exactly this: nothing else
@@ -458,9 +449,6 @@ export function DisputeRow({
   }
   if (isFilled(slots.flag)) {
     details.push({ key: "flag", node: <Pill $tone={slots.flagTone}>{slots.flag}</Pill> });
-  }
-  if (compact && isFilled(slots.measure)) {
-    details.push({ key: "measure", node: slots.measure });
   }
 
   // The clipped title is unreadable past the row's width, so the full text goes on the

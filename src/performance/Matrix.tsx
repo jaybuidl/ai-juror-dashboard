@@ -19,7 +19,6 @@ import { VisuallyHidden } from "../styles/hidden";
 import { type Tone, toneInk, toneLine, toneWash } from "../styles/tones";
 import {
   commitFigureOf,
-  commitMedianFigureOf,
   type Figure,
   presentationOf,
   revealFigureOf,
@@ -28,12 +27,10 @@ import {
 } from "./cell";
 import { CELL_HEIGHT_PX, COMPACT_CELL_HEIGHT_PX, type Density, densityOf } from "./density";
 import { Dot, Legend, StateLegend } from "./Legend";
-import { railFraction } from "./latency";
 import { Marginals } from "./Marginals";
 import { panelPillOf } from "./panel";
-import type { CourtPerformance, Draw, MatrixRow } from "./performance";
+import type { CourtPerformance, Draw } from "./performance";
 import { type RowFlagContext, rowFlagOf } from "./row-flags";
-import { rowCommitLatencyOf } from "./totals";
 
 /**
  * The dispute matrix: one row per dispute, one column per agent juror, one cell per draw.
@@ -602,32 +599,9 @@ const MeasureValue = styled.span<{ $tone: Figure["tone"] }>`
   }};
 `;
 
-/* Decoration, and only ever beside the number it echoes: logarithmic from 1s to 1h, because
-   the record spans 7 seconds to 54 minutes and a linear bar renders most of it as nothing.
-   Ticket 07 hangs commit latency on the same scale. */
-const Rail = styled.span<{ $compact?: boolean }>`
-  /* Allowed to shrink at the compact density and never to grow: the column is a share of the
-     page there rather than 148px, and a rail that refused to give way would push the duration
-     beside it out of a narrow window — the figure is the carrier and the rail is the decoration,
-     so the rail is what yields. */
-  flex: ${({ $compact }) => ($compact === true ? "0 1 34px" : "none")};
-  width: ${({ $compact }) => ($compact === true ? "34px" : "42px")};
-  height: 3px;
-  border-radius: 999px;
-  overflow: hidden;
-  background-color: ${({ theme }) => theme.surfaceRaised};
-`;
-
-const RailFill = styled.span`
-  display: block;
-  height: 3px;
-  border-radius: 999px;
-  background-color: ${({ theme }) => theme.accent};
-`;
-
 /* Reveal latency is the figure the experiment is about, so it is the largest thing in the cell
-   and the only one in heading ink. Commit latency sits below it in the same unit and on the same
-   rail, a step smaller and a step dimmer, so it reads as context for the reveal rather than as a
+   and the only one in heading ink. Commit latency sits below it in the same unit, a step smaller
+   and a step dimmer, so it reads as context for the reveal rather than as a
    competing number. */
 const CommitValue = styled(MeasureValue)`
   font: ${({ theme }) => theme.typeMonoSm};
@@ -640,29 +614,6 @@ const CommitValue = styled(MeasureValue)`
     if ($tone === "missed" || $tone === "unread") return theme.stateFail;
     return $tone === "pending" ? theme.textPending : theme.textBody;
   }};
-`;
-
-/* The same rail, quieter: one scale shared by both measures is what lets a 7-second reveal and a
-   54-minute commit be compared by eye at all. */
-const CommitRailFill = styled(RailFill)`
-  background-color: ${({ theme }) => theme.accentQuiet};
-`;
-
-/* The row's own measure, at the end of the one line a compact row has. Nothing about it is new
-   ink: the key and the value are the cell's, at the grain of a dispute.
-
-   The key is widened here rather than in `MeasureKey`, which is 7px because a cell's key is one
-   letter. "MED C" in 7px overlapped the duration beside it — legible in a browser, invisible to
-   jsdom, and exactly the class of defect this repo keeps finding by opening the page. */
-const RowMeasure = styled.span`
-  display: inline-flex;
-  align-items: baseline;
-  gap: ${({ theme }) => theme.space3};
-  white-space: nowrap;
-
-  ${MeasureKey} {
-    width: auto;
-  }
 `;
 
 const Empty = styled.p`
@@ -782,9 +733,9 @@ function UnreadCell({
  * One draw, at whichever density the grid is in.
  *
  * One component behind one flag rather than two components, per ticket 17 — and the reduction is
- * closed: the commit line goes with its figure, its `C` key and its rail; the state word, the
+ * closed: the commit line goes with its figure and its `C` key; the state word, the
  * vote-count annotation and the `R` key go with it. What survives is reveal latency and the
- * coherence state, the reveal rail riding the figure it belongs to, and the glyph, fill and
+ * coherence state, and the glyph, fill and
  * border that keep the five states apart with hue removed (ADR-0006).
  *
  * The `R` key goes because one latency needs no key to name it. The commit figure is not lost
@@ -846,71 +797,18 @@ function DrawCell({
             <VisuallyHidden>Reveal latency</VisuallyHidden>
           </>
         )}
+        {/* No rail beside the figure (2026-11-02, maintainer's ruling): a bar scaled to the number
+            next to it said nothing the number did not, and read as more than it was. */}
         <MeasureValue $tone={figure.tone}>{figure.text}</MeasureValue>
-        {draw.revealLatencySeconds !== null && (
-          <Rail aria-hidden="true" $compact={compact}>
-            <RailFill style={{ width: `${railFraction(draw.revealLatencySeconds) * 100}%` }} />
-          </Rail>
-        )}
       </Measure>
       {!compact && (
         <Measure $context>
           <MeasureKey aria-hidden="true">C</MeasureKey>
           <VisuallyHidden>Commit latency</VisuallyHidden>
           <CommitValue $tone={commit.tone}>{commit.text}</CommitValue>
-          {draw.commitLatencySeconds !== null && (
-            <Rail aria-hidden="true">
-              <CommitRailFill
-                style={{ width: `${railFraction(draw.commitLatencySeconds) * 100}%` }}
-              />
-            </Rail>
-          )}
         </Measure>
       )}
     </CellBox>
-  );
-}
-
-/**
- * The commit figure the compact grid moves onto the dispute row.
- *
- * `MatrixDense.dc.html:64` states the move in the corner cell and does not draw it, so this is
- * where the ticket fixes what it says: the median over *this row's* dated commitments, named as
- * a median and counted, because a row holds up to six draws and one figure cannot be all of
- * them. An unlabelled duration on a row of six cells is a number a reader would have to guess at.
- *
- * Absent where there is nothing to say and never blank where there is: the three absences are
- * the ones every commit figure on this page tells apart, in `commitMedianFigureOf`.
- *
- * **`MED C` is doing the naming, and the count of draws behind it is said rather than drawn.**
- * The row is 441px wide and already carries an id, a title, a flag and a panel; "· 4 draws"
- * measured 40 of those pixels, and they come out of the title. What the criterion is protecting
- * against is a bare duration read as *the* commit latency of a dispute holding up to six draws,
- * and "MED" is what prevents that — a median is by construction not one draw's figure. The count
- * is in the accessible name, where it costs nothing, and the panel size sits beside it either way.
- */
-function RowCommit({ row, scanned }: { row: MatrixRow; scanned: boolean }) {
-  const { latency, commitments } = rowCommitLatencyOf(row);
-  // An unread row's cells are all null, so the reduction above counts no commitment and the
-  // figure would fall through to the em dash this design defines as "nothing to measure" — an
-  // unread state stating a fact about the court, in the one figure the row carries. Its six
-  // cells and its flag all say "Not read"; so does this. The same order `Matrix` draws the row
-  // in, and for the same reason: read first, then anything the cells could tell you.
-  const figure = row.read
-    ? commitMedianFigureOf(latency?.median, commitments, scanned)
-    : UNREAD_FIGURE;
-  const counted = row.read ? (latency?.seconds.length ?? 0) : 0;
-
-  return (
-    <RowMeasure>
-      <MeasureKey aria-hidden="true">MED C</MeasureKey>
-      <VisuallyHidden>
-        {counted > 0
-          ? `Median commit latency across ${counted} ${counted === 1 ? "draw" : "draws"} in this dispute`
-          : "Median commit latency in this dispute"}
-      </VisuallyHidden>
-      <CommitValue $tone={figure.tone}>{figure.text}</CommitValue>
-    </RowMeasure>
   );
 }
 
@@ -993,15 +891,16 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                   latencies — an absence indistinguishable from a fact. */}
               {/* Where the missing figures actually are, which the density moved. At the
                   comfortable density every draw has a commit slot and the short ones say so in
-                  words; past the threshold no cell carries a commit figure at all, and a row's
+                  words; past the threshold no cell or row carries a commit figure at all (the
+                  row's median left on 2026-11-02, maintainer's ruling), and a column header's
                   median goes quietly short instead — it is taken over the commitments that were
-                  dated, and only says "Not read" where none of that row's could be. Sending a
+                  dated. Sending a
                   reader to look for cells that read "Not read" on a grid whose cells have no
                   commit line is ticket 16's own review finding, one reduction later. */}
               {commitCoverage.resolved === 0
                 ? `None of the ${commitCoverage.expected} commitments this court recorded could be read from Arbitrum, so no commit latency below is a measurement.`
                 : compact
-                  ? `${unread} of the ${commitCoverage.expected} commitments this court recorded could not be found on Arbitrum, so each row's median commit is taken over fewer draws than that dispute holds, and a row where none could be found reads "Not read".`
+                  ? `${unread} of the ${commitCoverage.expected} commitments this court recorded could not be found on Arbitrum, so each column's median commit is taken over fewer draws than that agent juror holds.`
                   : `${unread} of the ${commitCoverage.expected} commitments this court recorded could not be found on Arbitrum, and those cells read "Not read".`}{" "}
               That is a read that came back short, not an agent juror that failed to commit. Reveal
               latency and coherence come from the subgraph and are unaffected.
@@ -1194,12 +1093,6 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                               </>
                             ),
                             flagTone: flag?.tone,
-                            // The commit figure the compact cell gave up, at the grain the corner
-                            // cell promises. Absent at the comfortable density, where every cell
-                            // carries its own.
-                            measure: compact ? (
-                              <RowCommit row={row} scanned={commitCoverage.read} />
-                            ) : undefined,
                           }}
                         />
                       </RowHeaderCell>

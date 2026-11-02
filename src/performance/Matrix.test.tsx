@@ -901,10 +901,10 @@ describe("Matrix", () => {
       expect(within(row).getAllByText("Commit latency")).toHaveLength(5);
     });
 
-    it("reproduces the range the rail was drawn for", () => {
+    it("reproduces the range of reveal and commit latencies the court recorded", () => {
       renderMatrix();
 
-      // 2m 06s to 53m 56s, both in dispute 151 — the spread that made the rail logarithmic.
+      // 2m 06s to 53m 56s, both in dispute 151 — three orders of magnitude in one row.
       const row = rowFor(151);
       if (row === null) throw new Error("no row for dispute 151");
       expect(within(row).getByText("2m 06s")).toBeInTheDocument();
@@ -1224,8 +1224,8 @@ describe("Matrix", () => {
      * consulted. This court is thirteen disputes — a third of the row threshold — and it compacts
      * anyway, on the roster that actually ships.
      *
-     * Asserted through what the reduction *does* rather than by reading the flag back: the rows
-     * carry their dispute's own median commit, and the column headers stop carrying the reward sums.
+     * Asserted through what the reduction *does* rather than by reading the flag back: the cells
+     * stop carrying a commit line, and the column headers stop carrying the reward sums.
      */
     it("compacts a short matrix on the shipped roster, which is past the column threshold", () => {
       expect(ROSTER.length).toBeGreaterThan(COMPACT_FROM_COLUMNS);
@@ -1233,7 +1233,7 @@ describe("Matrix", () => {
       renderMatrix(build({ roster: ROSTER }));
 
       expect(screen.getAllByRole("columnheader")).toHaveLength(ROSTER.length + 1);
-      expect(screen.getAllByText("MED C").length).toBeGreaterThan(0);
+      expect(screen.queryAllByText("Commit latency")).toHaveLength(0);
       expect(screen.queryByText("Cumulative ETH earned")).not.toBeInTheDocument();
     });
 
@@ -1269,7 +1269,7 @@ describe("Matrix", () => {
       // What survives: the reveal, said as a duration, with the state it belongs to.
       expect(within(cell).getByText("Reveal latency", { exact: false })).toBeInTheDocument();
       expect(within(cell).getByText(/^\d+s$/)).toBeInTheDocument();
-      // What goes: the commit figure, its key and its rail. Never rendered empty — an empty slot
+      // What goes: the commit figure and its key. Never rendered empty — an empty slot
       // beside a full one reads as missing data.
       expect(within(cell).queryByText("Commit latency")).not.toBeInTheDocument();
       expect(within(cell).queryByText("C")).not.toBeInTheDocument();
@@ -1321,30 +1321,18 @@ describe("Matrix", () => {
       );
     });
 
-    it("carries commit latency on the row once the cell has stopped carrying it", () => {
+    it("carries no commit figure on the row or in its cells", () => {
+      // The row's median commit left on 2026-11-02 (maintainer's ruling: clutter). At this
+      // density a dispute's commit latency is on its own page; each column header keeps the
+      // agent juror's median commit.
       renderMatrix(compactCourt());
       const row = rowOrThrow(156);
 
-      // One figure on the row, and none in any of its six cells.
-      expect(
-        within(row).getByText(/^Median commit latency across \d+ draws in this dispute$/),
-      ).toBeInTheDocument();
+      expect(within(row).queryByText(/med c/i)).not.toBeInTheDocument();
+      expect(within(row).queryByText(/^Median commit latency/)).not.toBeInTheDocument();
       for (const cell of within(row).getAllByRole("cell")) {
         expect(within(cell).queryByText("Commit latency")).not.toBeInTheDocument();
       }
-    });
-
-    it("names what the row's commit figure summarises rather than standing as a number", () => {
-      renderMatrix(compactCourt());
-      const row = rowOrThrow(156);
-
-      // A row holds up to six draws and one figure cannot be all of them. "MED" is what says so
-      // in the 40 pixels the row can spare; the count of draws behind it is in the accessible
-      // name, where it costs a reader who cannot see the row nothing.
-      expect(within(row).getByText("MED C")).toBeInTheDocument();
-      expect(
-        within(row).getByText(/^Median commit latency across \d+ draws in this dispute$/),
-      ).toBeInTheDocument();
     });
 
     it("says nothing on the row about a commit read that has not come back", () => {
@@ -1355,7 +1343,6 @@ describe("Matrix", () => {
       const row = rowOrThrow(156);
 
       expect(within(row).queryByText("Not read")).not.toBeInTheDocument();
-      expect(within(row).getByText("MED C").parentElement?.textContent).toContain("—");
     });
 
     it("keeps four of the six figures in the column header and drops two", () => {
@@ -1516,7 +1503,7 @@ describe("Matrix", () => {
       expect(within(compact).queryByText("Escrow")).not.toBeInTheDocument();
       expect(within(compact).queryByText("Ruling 2")).not.toBeInTheDocument();
       expect(within(compact).getByText("An escrow dispute")).toBeInTheDocument();
-      expect(within(compact).getByText(/med c/i)).toBeInTheDocument();
+      expect(within(compact).queryByText(/med c/i)).not.toBeInTheDocument();
       expect(within(compact).getByRole("link", { name: "156" })).toBeInTheDocument();
     });
 
@@ -1533,7 +1520,7 @@ describe("Matrix", () => {
     it("sends nobody looking for a shortfall in cells that carry no commit figure", () => {
       // The shortfall notice named cells reading "Not read" — true of the comfortable cell and
       // false of the compact one, which has no commit slot at all. At this density a partial
-      // shortfall shrinks each row's median instead, silently, so the notice has to say that.
+      // shortfall shrinks each column's median instead, silently, so the notice has to say that.
       const short = (commitFixture as RawCommitCast[]).slice(0, 5);
 
       renderMatrix(padTo(COMPACT_FROM_ROWS, { commits: short }));
@@ -1543,13 +1530,12 @@ describe("Matrix", () => {
       renderMatrix(padTo(COMPACT_FROM_ROWS + 1, { commits: short }));
       const notice = screen.getByRole("status");
       expect(notice).not.toHaveTextContent(/those cells read/);
-      expect(notice).toHaveTextContent(/each row's median commit is taken over fewer draws/);
+      expect(notice).toHaveTextContent(/each column's median commit is taken over fewer draws/);
     });
 
     it("says not read on the row of a dispute whose draws were never read", () => {
-      // An unread row has no cells, so the row's median has nothing to reduce and would fall
-      // through to the em dash this design defines as "nothing to measure" — an unread state
-      // stating a fact about the court, in the one figure a compact row carries.
+      // An unread row's cells say "Not read", never the em dash this design defines as "nothing
+      // to measure": an unread state must not state a fact about the court.
       const padded = padCourt(COMPACT_FROM_ROWS);
       const newcomer = {
         id: "300",
@@ -1573,7 +1559,7 @@ describe("Matrix", () => {
       );
       const row = rowOrThrow(300);
 
-      expect(within(row).getByText("MED C").parentElement).toHaveTextContent("Not read");
+      expect(within(row).getAllByText(/not read/i).length).toBeGreaterThan(0);
       expect(within(row).queryByText("—")).not.toBeInTheDocument();
     });
   });

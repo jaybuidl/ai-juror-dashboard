@@ -247,20 +247,18 @@ describe("DisputeList", () => {
               title: "A dispute",
               category: "Escrow",
               panel: "Panel 5",
-              measure: <span>MED C 41s</span>,
             }}
           />
         </MemoryRouter>
       </ThemeProvider>,
     );
 
-    // The reduction is closed: the second line goes, taking the category and the ruling with
-    // it, and the measure this ticket moves onto the row takes their place.
+    // The reduction is closed: the second line goes, taking the category and the ruling with it.
+    // The dispute's median commit that took their place left on 2026-11-02.
     expect(screen.queryByText("Escrow")).not.toBeInTheDocument();
     expect(screen.queryByText(/^Ruling/)).not.toBeInTheDocument();
     expect(screen.getByText("A dispute")).toBeInTheDocument();
     expect(screen.getByText("Panel 5")).toBeInTheDocument();
-    expect(screen.getByText("MED C 41s")).toBeInTheDocument();
   });
 
   it("keeps the whole title reachable once it is clipped", () => {

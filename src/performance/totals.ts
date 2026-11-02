@@ -717,43 +717,6 @@ function sparsityOf(rows: readonly MatrixRow[], agentJurors: readonly AgentJuror
 }
 
 /**
- * One dispute's commit latencies, and how many commitments it holds.
- *
- * Ticket 17 moves the commit figure out of the compact cell and onto the row it belongs to
- * (`MatrixDense.dc.html:64`, "commit latency moves to the row"), and this is the reduction behind
- * it. Here rather than in the component that prints it for the reason every figure in this file
- * is here: a median computed while rendering is a second definition of the word sitting one
- * import away from the first, free to disagree with the column medians above it.
- *
- * A row's draws all ran under one set of windows — a dispute passes each period once — so unlike
- * the column medians this one needs no `†` of its own. The row already carries the marker where
- * the whole dispute ran under superseded durations, which is the same fact at the same grain.
- *
- * `commitments` is what separates the three absences a missing median can mean, exactly as it
- * does on `AgentJurorMarginals`: no commitments at all is nothing to measure, commitments with no
- * median is a read of Arbitrum that came back short, and neither may be worded as the other.
- */
-export type RowCommitLatency = {
-  /** Commit latency across this row's dated commitments, or `null` where none is dated. */
-  latency: LatencySummary | null;
-  /** How many of this row's draws the subgraph records as committed, whatever the scan found. */
-  commitments: number;
-};
-
-export function rowCommitLatencyOf(row: MatrixRow): RowCommitLatency {
-  const seconds: number[] = [];
-  let commitments = 0;
-
-  for (const cell of row.cells) {
-    if (cell === null) continue;
-    if (cell.committed) commitments += 1;
-    if (cell.commitLatencySeconds !== null) seconds.push(cell.commitLatencySeconds);
-  }
-
-  return { latency: summaryOf(seconds), commitments };
-}
-
-/**
  * The same rows, sliced down each column: one summary per agent juror, in roster order.
  *
  * In **roster order and over the roster**, not over the draws — `agentJurors` is the authority

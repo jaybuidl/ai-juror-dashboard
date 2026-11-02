@@ -1,14 +1,13 @@
 /**
  * Where a latency sits on the strip's axis.
  *
- * Separate from `latency.ts`'s `railFraction` because the two scales measure different things
- * and must not be merged into one: the rail inside a cell spans 1s to 1h, which is the range a
- * single draw's figures live in, while the strip has to hold the whole distribution *and* the
+ * Its own scale, and it has to be: the matrix cells once drew a rail on a 1s-to-1h log scale
+ * (removed 2026-11-02), the range a single draw's figures live in, while the strip has to hold the whole distribution *and* the
  * band standing for an ordinary Kleros court, which takes days. A shared scale would either
  * crush the seven-second reveals against the left edge or leave the comparison band off the end.
  * The band itself is read from another court (`reference.ts`); this module only places it.
  *
- * The axis is logarithmic for the same reason it is on the rail: the record spans three orders
+ * The axis is logarithmic because the record spans three orders
  * of magnitude, and on a linear axis most of these marks would be one blob at zero.
  *
  * Nothing here converts a latency into a fraction of a *window* — ADR-0005. The axis is

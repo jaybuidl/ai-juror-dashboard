@@ -256,7 +256,7 @@ describe("DisputeCards", () => {
 
     // The reveal, read from the model rather than transcribed. Commit latency is off the face of
     // a finalised card entirely — it is behind the tap target, on the dispute's own view, along
-    // with the vote-ID count and the two logarithmic rails.
+    // with the vote-ID count.
     expect(slot).toHaveTextContent(formatLatencySeconds(drawn.revealLatencySeconds as number));
     expect(slot).not.toHaveTextContent(formatLatencySeconds(drawn.commitLatencySeconds as number));
     expect(slot.textContent).not.toMatch(/×\d/);
