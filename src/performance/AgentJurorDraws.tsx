@@ -64,8 +64,19 @@ const Table = styled.table`
   border-collapse: collapse;
 `;
 
+/* Pinned to the top of the viewport while its rows scroll by, so a reader ninety disputes down
+   can still tell the reveal from the commit. Sticky on the cells rather than the thead, which is
+   what every engine honours; given the page's own background, since a transparent cell shows the
+   rows through it, and top padding, so it does not sit flush against the window's edge. Nothing
+   between it and the document scrolls — `Shell.tsx` says why that has to stay true. The nav is
+   not sticky, so the top is 0. */
 const HeaderCell = styled.th`
-  padding: 0 ${({ theme }) => theme.space5} ${({ theme }) => theme.space5} 0;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: ${({ theme }) => theme.page};
+  padding: ${({ theme }) => theme.space5} ${({ theme }) => theme.space5}
+    ${({ theme }) => theme.space5} 0;
   font: ${({ theme }) => theme.typeMonoSm};
   font-size: 9px;
   letter-spacing: ${({ theme }) => theme.trackingMono};
