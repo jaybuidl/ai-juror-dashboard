@@ -54,7 +54,11 @@ this file is the full account.
   vertically, so it simply never freezes: no error, no warning, and nothing a jsdom test can see.
   `Ground` is `overflow: clip` now, which clips identically and is not a scroll container; the
   matrix drops its own box at the compact density and takes a `min-width` instead. Anything sticky
-  added here has to walk its ancestors first.
+  added here has to walk its ancestors first. Where the box is unavoidable — the grid too wide for
+  the window, which on an eleven-agent roster is every window under about 1680px — the fix is to
+  make it scroll vertically too: capped at `100dvh`, the header freezes at the box's top and the
+  dispute column at its left (2026-11-02). An opaque pinned cell must then repaint whatever the
+  row painted under it — the live wash and the flag rail moved onto it for that reason.
 - **An `auto` grid track takes its content's width before a `1fr` sibling gets anything.** The
   compact row was `2.5rem minmax(0, 1fr) auto` — id, title, details — and the title measured
   **zero pixels** on every row in a browser: an id, some pills and no subject. The floor is

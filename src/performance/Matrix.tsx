@@ -67,33 +67,37 @@ const Heading = styled.h2`
  *
  * The comfortable matrix is a 440px row header and a 148px column per agent juror at the canvas's
  * measurements — more than this page's 1200px container at any roster size the canvas drew. So it
- * scrolls sideways in its own box rather than pushing the page, which is what ticket 16 spared the
- * phone and what this keeps for the desktop.
+ * scrolls in its own box rather than pushing the page, which is what ticket 16 spared the phone
+ * and what this keeps for the desktop.
  *
- * **Absent at the compact density, and it has to be.** `overflow-x: auto` makes this element a
- * scroll container in *both* axes: `overflow-y`'s computed value beside it is `auto` rather than
- * `visible`, per CSS Overflow 3. A `position: sticky` header inside a scroll container sticks to
- * that container's scrollport and not to the page — and this box never scrolls vertically, so the
- * frozen column header would simply never freeze. Nothing throws, nothing warns, and jsdom lays
- * nothing out, so no test here could see it. The compact grid fits its container instead of
- * overflowing it (see `Table`), which is what leaves nothing to scroll.
+ * **Bounded to the window's height, and the header freezes inside it** (2026-11-02). An
+ * `overflow-x: auto` box is a scroll container in *both* axes — `overflow-y` beside it computes
+ * to `auto`, per CSS Overflow 3 — and a `position: sticky` header sticks to its nearest scroll
+ * container. Unbounded, this box grew to the grid's full height and never scrolled vertically, so
+ * the header inside it never froze: nothing threw, nothing warned, and on an eleven-agent roster
+ * that was every window under about 1680px, most laptops included. Capped at the viewport, the
+ * box scrolls both ways, the column header freezes at its top and the dispute column at its left.
+ * The cost is a scroll area inside the page: the wheel moves the box first, then the page.
  *
- * Below `breakpoints.compactGrid` it comes back, because there the compact grid does not fit
- * either: its columns would fall under the width a compact cell needs and the durations would
- * spill into the column beside them. The reader gets the sideways box the comfortable density
- * always has, and loses the freeze with it — every other reduction still holds.
+ * **Absent at the compact density above `breakpoints.compactGrid`.** There the grid fits its
+ * container (see `Table`), so there is nothing to scroll and the header freezes against the page
+ * itself, which keeps the one scroll context. Below it the box comes back, bounded as above.
  */
+const bounded = css`
+  overflow: auto;
+  max-height: 100vh;
+  max-height: 100dvh;
+`;
+
 const TableScroll = styled.div<{ $compact: boolean }>`
   ${({ $compact }) =>
     $compact
       ? css`
           ${belowCompactGrid} {
-            overflow-x: auto;
+            ${bounded}
           }
         `
-      : css`
-          overflow-x: auto;
-        `}
+      : bounded}
 `;
 
 /**
@@ -182,30 +186,33 @@ const Table = styled.table<{ $grid: GridMetrics }>`
 `;
 
 /**
- * The corner cell, which freezes with the header it is part of.
+ * The corner cell, which freezes with the header it is part of — and, where the box scrolls
+ * sideways, with the dispute column too, so it is pinned on both axes and sits above both.
  *
- * Sticky at the compact density and given a background of its own, since a transparent cell that
- * outlives the rows scrolling under it shows them through. With `border-collapse: collapse` the
- * table paints the borders rather than the cell, and a sticky cell leaves its bottom border
- * behind as it moves — so the hairline travels as an inset shadow instead.
+ * Given a background of its own, since a transparent cell that outlives the rows scrolling under
+ * it shows them through. With `border-collapse: collapse` the table paints the borders rather than
+ * the cell, and a sticky cell leaves its borders behind as it moves — so the hairlines travel as
+ * inset shadows instead.
  */
-const CaptionCell = styled.th<{ $compact: boolean; $grid: GridMetrics }>`
+const CaptionCell = styled.th<{ $pinned: boolean; $grid: GridMetrics }>`
   width: ${({ $grid }) => $grid.rowHeader};
   box-sizing: border-box;
   padding: ${({ theme }) => `${theme.space6} ${theme.space6} ${theme.space5} 0`};
-  border-bottom: 1px solid ${({ theme }) => theme.lineStrongColor};
   text-align: left;
   vertical-align: bottom;
   font-weight: inherit;
-  ${({ theme, $compact }) =>
-    $compact &&
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  background-color: ${({ theme }) => theme.page};
+  box-shadow: ${({ theme, $pinned }) =>
+    $pinned
+      ? `inset 0 -1px 0 ${theme.lineStrongColor}, inset -1px 0 0 ${theme.lineStrongColor}`
+      : `inset 0 -1px 0 ${theme.lineStrongColor}`};
+  ${({ $pinned }) =>
+    $pinned &&
     css`
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      background-color: ${theme.page};
-      border-bottom: none;
-      box-shadow: inset 0 -1px 0 ${theme.lineStrongColor};
+      left: 0;
     `}
 `;
 
@@ -247,19 +254,15 @@ const AgentColumn = styled.th<{ $compact: boolean; $grid: GridMetrics }>`
   text-align: left;
   vertical-align: top;
   font-weight: inherit;
-  /* Frozen at the compact density, so a reader hundreds of rows down still knows which agent
-     juror each column belongs to. The freeze is this row's alone — the dispute rows, the legend
-     and the footnotes scroll past it, and the page keeps one scroll context. */
-  ${({ theme, $compact }) =>
-    $compact &&
-    css`
-      position: sticky;
-      top: 0;
-      z-index: 1;
-      background-color: ${theme.page};
-      border-bottom: none;
-      box-shadow: inset 0 -1px 0 ${theme.lineStrongColor};
-    `}
+  /* Frozen at both densities, so a reader hundreds of rows down still knows which agent juror
+     each column belongs to — against the page where the grid fits, against the top of
+     TableScroll where it does not. */
+  position: sticky;
+  top: 0;
+  z-index: 1;
+  background-color: ${({ theme }) => theme.page};
+  border-bottom: none;
+  box-shadow: inset 0 -1px 0 ${({ theme }) => theme.lineStrongColor};
 `;
 
 /**
@@ -457,13 +460,44 @@ const BodyRow = styled.tr<{ $live: boolean; $rail?: Tone }>`
     `}
 `;
 
-const RowHeaderCell = styled.th<{ $compact: boolean; $grid: GridMetrics }>`
+/* Pinned to the left of TableScroll where it scrolls sideways, so the dispute a row belongs to
+   stays on screen while the far columns come into view. Opaque, since the cells pass under it,
+   which means it has to carry the row's own marks itself — the live wash and the flag's rail are
+   painted on the row and would otherwise be hidden behind this cell. */
+const RowHeaderCell = styled.th<{
+  $pinned: boolean;
+  $live: boolean;
+  $rail?: Tone;
+  $grid: GridMetrics;
+}>`
   width: ${({ $grid }) => $grid.rowHeader};
   box-sizing: border-box;
   padding: 0;
   text-align: left;
   vertical-align: middle;
   font-weight: inherit;
+  ${({ theme, $pinned, $live, $rail }) =>
+    $pinned &&
+    css`
+      position: sticky;
+      left: 0;
+      z-index: 1;
+      background-color: ${theme.page};
+      ${
+        $live &&
+        css`
+          background-image: linear-gradient(
+            color-mix(in srgb, ${theme.washMint} 50%, transparent),
+            color-mix(in srgb, ${theme.washMint} 50%, transparent)
+          );
+        `
+      }
+      box-shadow: ${
+        $rail !== undefined
+          ? `inset 2px 0 0 ${toneInk(theme, $rail)}, inset -1px 0 0 ${theme.lineStrongColor}`
+          : `inset -1px 0 0 ${theme.lineStrongColor}`
+      };
+    `}
 `;
 
 /**
@@ -988,7 +1022,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
               what makes the name announceable, and the name is what makes the tab stop
               explicable rather than a mystery stop on an empty box.
 
-              The condition mirrors the `overflow-x` rule on `TableScroll` exactly, because at
+              The condition mirrors the `overflow` rule on `TableScroll` exactly, because at
               the compact density the box is only a scroll container below `compactGrid` — ticket
               17 had to drop it above that width, since a scroll container breaks the sticky
               header inside it. Unconditional attributes here would leave a named, focusable
@@ -1029,7 +1063,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                       paragraph inside became the declared column header of every row header in
                       the grid, so a reader moving down the disputes met this sentence again and
                       again as though it named them. */}
-                  <CaptionCell $compact={compact} $grid={grid}>
+                  <CaptionCell $pinned={scrolls} $grid={grid}>
                     {/* Read off the model rather than reduced here. It is a court-wide count,
                         and those live on `CourtTotals` beside the ones the stat tiles print —
                         a caption that reduced the rows itself would be a second definition of
@@ -1122,7 +1156,13 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
 
                   return (
                     <BodyRow key={row.dispute.id} $live={isLive} $rail={flag?.tone}>
-                      <RowHeaderCell scope="row" $compact={compact} $grid={grid}>
+                      <RowHeaderCell
+                        scope="row"
+                        $pinned={scrolls}
+                        $live={isLive}
+                        $rail={flag?.tone}
+                        $grid={grid}
+                      >
                         <DisputeRow
                           as="div"
                           dispute={row.dispute}

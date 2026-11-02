@@ -85,9 +85,10 @@ a threshold in the region of forty rows — or past the columns a comfortable gr
 which the roster has already crossed — the matrix drops to a denser form of itself: the cell keeps its reveal
 latency and its coherence state and gives up its commit line, halving in height; the row gives up
 its second line and gains the median commit over that dispute's own draws; each column header keeps
-its median reveal, its coherence count and its draw count, and freezes at the top of the page so a
-reader hundreds of rows down still knows which agent juror each column is. Nothing leaves: every
-dispute the court has held is still a row, every column is where it was, and no figure is
+its median reveal, its coherence count and its draw count, and freezes at the top of the page — or,
+where the grid is too wide for the window, at the top of its own window-high scroll box, beside a
+pinned dispute column — so a reader hundreds of rows down still knows which agent juror each
+column is. Nothing leaves: every dispute the court has held is still a row, every column is where it was, and no figure is
 paginated, filtered or collapsed away. The row threshold is a guess about how much screen a reader
 has rather than a fact about this court; the column threshold is arithmetic, the count at which a
 row header and one column per agent juror stop fitting an ordinary desktop. Both are named

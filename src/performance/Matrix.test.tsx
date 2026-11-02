@@ -1484,12 +1484,21 @@ describe("Matrix", () => {
       );
     });
 
-    it("leaves the column header unfrozen at the comfortable density", () => {
+    it("freezes the header and pins the dispute column inside the box at the comfortable density", () => {
+      // The comfortable grid always scrolls in its own box, so a sticky header there sticks to
+      // that box rather than to the page. Until 2026-11-02 the box never scrolled vertically and
+      // the header was left unfrozen; it is capped at the viewport's height now, so the header
+      // freezes at its top and the dispute column, which the far columns scroll under, at its
+      // left. Whether the box really is bounded is a layout question jsdom cannot answer.
       renderMatrix(comfortableCourt());
 
       for (const column of screen.getAllByRole("columnheader")) {
-        expect(getComputedStyle(column).position).not.toBe("sticky");
+        expect(getComputedStyle(column).position).toBe("sticky");
+        expect(getComputedStyle(column).top).toBe("0px");
       }
+      const rowHeader = screen.getByRole("rowheader", { name: /^156\b/ });
+      expect(getComputedStyle(rowHeader).position).toBe("sticky");
+      expect(getComputedStyle(rowHeader).left).toBe("0px");
     });
 
     it("takes the second line off the row and leaves everything else on it", () => {

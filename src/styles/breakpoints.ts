@@ -176,10 +176,12 @@ export const breakpoints = {
    * so its scroll container is gone — and still wider than the room it has. Nothing scrolls and
    * nothing warns; the columns are simply crushed below what a compact cell needs.
    *
-   * What it costs below itself is the freeze and nothing else. The compact grid keeps its
-   * `min-width` and scrolls sideways in its own box exactly as the comfortable grid always does,
-   * and a `position: sticky` header inside a scroll container sticks to that box rather than to
-   * the page — so between `narrow` and here, the column header scrolls away with the rows. Every
+   * What it costs below itself is the one scroll context. The compact grid keeps its `min-width`
+   * and scrolls in its own box exactly as the comfortable grid always does, and a `position:
+   * sticky` header inside a scroll container sticks to that box rather than to the page. Until
+   * 2026-11-02 that box never scrolled vertically, so between `narrow` and here the column header
+   * scrolled away with the rows; the box is now capped at the viewport's height, so the header
+   * freezes at its top and the dispute column at its left (`Matrix.tsx`, on TableScroll). Every
    * other reduction the density makes holds at every width.
    */
   compactGrid: `${COMPACT_GRID_MIN_PX + PAGE_CHROME_PX}px`,
