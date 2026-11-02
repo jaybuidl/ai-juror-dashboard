@@ -100,7 +100,9 @@ const Fact = styled.span`
 `;
 
 /* A pill that is also a link out. Still a pill, because it states the same fact it did before it
-   linked anywhere; marked as a link by the accent, the arrow and an underline on hover.
+   linked anywhere, in a pill's own grey (2026-11-02, maintainer's ruling: on the agent juror
+   page only the stack pill is green, and these follow it). Marked as a link by the arrow and an
+   underline on hover — not by colour, which WCAG 1.4.1 would not allow to be the only mark.
 
    The gap is the space before the arrow. A pill is inline-flex, so a hidden span splits the label
    into anonymous flex items and each loses its edge whitespace — the space written in the markup
@@ -108,7 +110,6 @@ const Fact = styled.span`
    character puts it back; the hidden span is out of flow and takes no gap of its own. */
 const FactLink = styled(Fact)`
   gap: 1ch;
-  color: ${({ theme }) => theme.accent};
   text-decoration: none;
 
   &:hover {

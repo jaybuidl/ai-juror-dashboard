@@ -175,12 +175,12 @@ const FromRoster = styled.span`
 `;
 
 /* A pill that is also a link out — the address to Arbiscan, the profiles to the court and to X.
-   Still a pill, because it states a fact about the agent juror; marked as a link by the accent,
-   the arrow and an underline on hover. The gap is one mono character, the space before the arrow:
+   Still a pill, because it states a fact about the agent juror, and in a pill's own grey: the
+   stack is the one green pill in the row (2026-11-02, maintainer's ruling). Marked as a link by
+   the arrow and an underline on hover, never by colour alone. The gap is one mono character, the space before the arrow:
    a pill is inline-flex, so its text runs become flex items and lose their edge whitespace. */
 const FactLink = styled(Fact)`
   gap: 1ch;
-  color: ${({ theme }) => theme.accent};
   text-decoration: none;
 
   &:hover {
@@ -533,12 +533,21 @@ export function AgentJurorView({
                   </Fact>
                   {/* Left out, not guessed, where there is no subname, and marked where the
                       subname is chosen but not yet registered: an unmarked name nobody
-                      registered would send a reader to an ENS app to find nothing. */}
+                      registered would send a reader to an ENS app to find nothing — which is
+                      also why only a registered name links to its profile there. "on ENS" is
+                      said and not drawn, for the reason the address pill gives. */}
                   {ensName !== null &&
                     (agentJuror.ensSubname === "pending" ? (
                       <PendingFact>{ensName} · not yet registered</PendingFact>
                     ) : (
-                      <Fact>{ensName}</Fact>
+                      <FactLink
+                        as="a"
+                        href={`https://app.ens.domains/${encodeURIComponent(ensName)}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                      >
+                        {ensName} <VisuallyHidden>on ENS</VisuallyHidden> ↗
+                      </FactLink>
                     ))}
                   {/* The short form is drawn; the whole address is said. It was reachable only
                       through a `title` tooltip, so the one identifier that distinguishes this

@@ -80,7 +80,10 @@ describe("one agent juror's own view", () => {
     renderAt("/agent-jurors/Columbo");
 
     expect(screen.getByText("claude -p")).toBeInTheDocument();
-    expect(screen.getByText("columbo.agents.kleroslabs.eth")).toBeInTheDocument();
+    // The ENS pill is the link to the name's profile in the ENS app.
+    expect(
+      screen.getByRole("link", { name: "columbo.agents.kleroslabs.eth on ENS ↗" }),
+    ).toHaveAttribute("href", "https://app.ens.domains/columbo.agents.kleroslabs.eth");
     // Truncated on the page and whole in the link, which is the only place it has to be exact.
     expect(screen.getByText("0x7023…bF4C")).toBeInTheDocument();
     // The address pill is the Arbiscan link — one link, not a pill and a second link beside it.
@@ -124,13 +127,17 @@ describe("one agent juror's own view", () => {
     expect(
       screen.getByText("jonesy.agents.kleroslabs.eth · not yet registered"),
     ).toBeInTheDocument();
+    // Not a link: the ENS app has nothing to show for a name nobody registered.
+    expect(screen.queryByRole("link", { name: /on ENS/ })).not.toBeInTheDocument();
   });
 
   it("shows a registered subname plainly", () => {
     renderAt("/agent-jurors/Jonesy");
 
     expect(screen.getByText("Hermes")).toBeInTheDocument();
-    expect(screen.getByText("jonesy.agents.kleroslabs.eth")).toBeInTheDocument();
+    expect(
+      screen.getByRole("link", { name: "jonesy.agents.kleroslabs.eth on ENS ↗" }),
+    ).toBeVisible();
     expect(screen.queryByText(/not yet registered/)).toBeNull();
   });
 
