@@ -83,7 +83,8 @@ describe("one agent juror's own view", () => {
     expect(screen.getByText("columbo.agents.kleroslabs.eth")).toBeInTheDocument();
     // Truncated on the page and whole in the link, which is the only place it has to be exact.
     expect(screen.getByText("0x7023…bF4C")).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: /arbiscan/i })).toHaveAttribute(
+    // The address pill is the Arbiscan link — one link, not a pill and a second link beside it.
+    expect(screen.getByRole("link", { name: /^Address 0x7023\w+ on Arbiscan ↗$/ })).toHaveAttribute(
       "href",
       // By nickname and not by index. This read ROSTER[3] while the page above it is rendered at
       // /agent-jurors/Columbo — a named lookup and a positional one pointing at one agent juror,
@@ -93,9 +94,9 @@ describe("one agent juror's own view", () => {
     );
   });
 
-  it("links to its juror profile on the Kleros court, before the Arbiscan link", () => {
+  it("links to its juror profile on the Kleros court, after the address", () => {
     renderAt("/agent-jurors/Columbo");
-    const court = screen.getByRole("link", { name: "Kleros Court ↗" });
+    const court = screen.getByRole("link", { name: "Juror profile on Kleros Court ↗" });
 
     expect(court).toHaveAttribute(
       "href",
@@ -103,7 +104,7 @@ describe("one agent juror's own view", () => {
     );
     expect(court).toHaveAttribute("target", "_blank");
     expect(court).toHaveAttribute("rel", "noopener noreferrer");
-    expect(court.compareDocumentPosition(screen.getByRole("link", { name: /arbiscan/i }))).toBe(
+    expect(screen.getByRole("link", { name: /arbiscan/i }).compareDocumentPosition(court)).toBe(
       Node.DOCUMENT_POSITION_FOLLOWING,
     );
   });
@@ -178,13 +179,14 @@ describe("one agent juror's own view", () => {
     expect(screen.getByText("-93.50")).toBeInTheDocument();
   });
 
-  it("says the opposite in as many words where no panel of one is behind the count", () => {
+  it("prints no prose under the figures, nor over the list of draws", () => {
+    // Both were deleted on 2026-11-02 (maintainer's ruling: prose at that density reads as
+    // filler). What they carried is not lost — the panel-of-one caveat is on /method, the panel
+    // column sits in every row, and the unread-disputes banner still heads the page.
     renderAt("/agent-jurors/Blaise");
 
-    // The artboard's own sentence, and a claim — so it is made only where it is true.
-    expect(
-      screen.getByText(/every panel blaise sat on held two or more agent jurors/i),
-    ).toBeVisible();
+    expect(screen.queryByText(/every panel blaise sat on/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/every coherence mark here is given/i)).not.toBeInTheDocument();
   });
 });
 
@@ -200,18 +202,14 @@ describe("the latency profile", () => {
     ).toBeVisible();
   });
 
-  it("excludes commit latency and does not give the artboard's false reason for it", () => {
+  it("plots reveals only, and explains no further than its reading", () => {
     renderAt("/agent-jurors/Columbo");
     const plot = screen.getByRole("region", { name: /reveals against the whole court/i });
 
-    // ADR-0005: excluded rather than normalised into the comparison. The reason is that the two
-    // are measured from different periods — and emphatically NOT "the window change touches
-    // commit alone", which `Juror.dc.html:108` gives and which is false: court 34 moved its vote
-    // window from 8h to 30m in the same `CourtModified` that moved commit from 8h to 45m.
-    expect(within(plot).getByText(/commit latency is not plotted here/i)).toBeVisible();
-    expect(
-      within(plot).getByText(/measured from the commit period rather than the vote period/i),
-    ).toBeVisible();
+    // ADR-0005: commit latency is excluded rather than normalised into the comparison, and the
+    // caption that said why was removed on 2026-11-02 — the reason is on /method. The artboard's
+    // false reason ("the window change touches commit alone", `Juror.dc.html:108`) stays out too.
+    expect(within(plot).queryByText(/commit latency is not plotted here/i)).not.toBeInTheDocument();
     expect(within(plot).queryByText(/not comparable across dispute 151/i)).not.toBeInTheDocument();
   });
 
@@ -283,18 +281,6 @@ describe("the disputes it was drawn in", () => {
       expect(screen.getAllByText(word).length, word).toBeGreaterThan(0);
     }
     expect(screen.queryByText("Unknown")).not.toBeInTheDocument();
-  });
-
-  it("gives every coherence mark its panel size without naming a position", () => {
-    renderAt("/agent-jurors/Columbo");
-
-    // "Beside" would be a claim about which layout the reader is looking at: in the table the
-    // panel is the third column and the coherence the seventh, and on a card the state sits
-    // above the figures rather than next to one.
-    expect(
-      screen.getByText(/every coherence mark here is given with the panel size/i),
-    ).toBeVisible();
-    expect(screen.queryByText(/panel size sits beside/i)).not.toBeInTheDocument();
   });
 
   it("carries a panel column beside the coherence column", () => {
@@ -664,49 +650,33 @@ describe("the whole court's own reads, seen from here", () => {
 });
 
 describe("an agent juror's own account", () => {
-  it("links out to it, the same way the Arbiscan link beside it does", () => {
+  it("links out to it as an X profile pill, the same way the address pill links to Arbiscan", () => {
     renderAt("/agent-jurors/Grokleros");
 
-    const account = screen.getByRole("link", { name: /^@Grokleros/ });
+    const account = screen.getByRole("link", { name: /^X profile/ });
 
     expect(account).toHaveAttribute("href", "https://x.com/Grokleros");
     expect(account).toHaveAttribute("target", "_blank");
     expect(account).toHaveAttribute("rel", "noopener noreferrer");
   });
 
-  it("shows the handle in the capitals it was given, and does not shout it", () => {
-    // The one thing here a DOM assertion cannot see. `text-transform` leaves text content alone,
-    // so the accessible name and every string assertion above are identical whether the link is
-    // uppercased or not — the row's other links are, by the mono label convention, and this one
-    // rendered as @GROKLEROS until a browser said so. Pinned through the computed style, which
-    // is the only place the difference exists.
+  it("says whose profile it is, since the pill draws only where it goes", () => {
+    // The handle is no longer drawn, so the hidden half is the only place it is said. Asserted as
+    // one name and not as two halves, because the join is where this breaks: an accessible name
+    // trims each child element's contribution, so a space written inside the hidden span
+    // disappears and the link announces as "X profile@Grokleros". The space has to be a text node
+    // of the anchor. Nothing on screen changes either way.
     renderAt("/agent-jurors/Grokleros");
 
-    const account = screen.getByRole("link", { name: /^@Grokleros/ });
-
-    expect(account).toHaveTextContent("@Grokleros");
-    expect(getComputedStyle(account).textTransform).toBe("none");
-  });
-
-  it("says where the link goes, since an account name does not", () => {
-    // The link beside it announces as "Arbiscan" and names its destination. A links list is read
-    // out of context, so "@Grokleros ↗" on its own leaves a screen-reader user with no way to
-    // know it leaves the dashboard, or for where. WCAG 2.4.4.
-    renderAt("/agent-jurors/Grokleros");
-
-    // Asserted as one name and not as two halves, because the join is where this breaks: an
-    // accessible name trims each child element's contribution, so a space written inside the
-    // hidden span disappears and the link announces as "@Grokleroson X". The space has to be a
-    // text node of the anchor. Nothing on screen changes either way.
-    expect(screen.getByRole("link", { name: "@Grokleros on X ↗" })).toBeVisible();
+    expect(screen.getByRole("link", { name: "X profile @Grokleros ↗" })).toBeVisible();
   });
 
   it("leaves the row exactly as it was for an agent juror with no account", () => {
-    // Three of the seven have one, so the absent case is the common one. No empty slot and no
-    // separator left standing where a link used to be.
+    // Most have none, so the absent case is the common one. No empty slot and no separator left
+    // standing where a link used to be.
     renderAt("/agent-jurors/Columbo");
 
-    expect(screen.queryByRole("link", { name: /^@/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^X profile/ })).not.toBeInTheDocument();
     expect(screen.getByRole("link", { name: /Arbiscan/ })).toBeVisible();
   });
 
@@ -714,9 +684,9 @@ describe("an agent juror's own account", () => {
     // Not on the index, not in the matrix, not in a column header — a handle is a fact about one
     // agent juror and the other views are about the court.
     renderAt("/agent-jurors");
-    expect(screen.queryByRole("link", { name: /^@/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^X profile/ })).not.toBeInTheDocument();
 
     renderAt("/");
-    expect(screen.queryByRole("link", { name: /^@/ })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /^X profile/ })).not.toBeInTheDocument();
   });
 });

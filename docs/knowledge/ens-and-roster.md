@@ -43,8 +43,10 @@ this file is the full account.
   the type's doc comment rather than only into the ticket: the next person adding one reads the
   type. A minority of entries carry one — deliberately not counted here, the same rule that keeps
   the roster's own length out of prose — it is stored as the `@` form with the host in `handleUrlOf`,
-  and it is drawn only on the agent juror's own page — not on the index, not in the matrix, not in
-  a column header. It links out like the Arbiscan link beside it and deliberately **without** the
+  and it is linked only from the agent juror's own page — not on the index, not in the matrix, not
+  in a column header. Since 2026-11-02 the link is an "X profile ↗" pill, named for its destination
+  like the address pill (Arbiscan) and the juror profile pill (Kleros Court) beside it; the handle
+  itself is said in the link's accessible name and no longer drawn. It goes deliberately **without** the
   justification interstitial, because that interstitial exists for URLs the agents write and this
   one is hard-coded here and reviewed in a pull request.
 
@@ -53,7 +55,9 @@ this file is the full account.
   identifiers whose text content is untouched — and wrong for a handle, whose capitals are the
   fact. `@BlaiseBuidl` shipped as `@BLAISEBUIDL` through a green suite: the DOM, the accessible
   name and every string assertion are identical either way. Found by looking at the page, and now
-  pinned through `getComputedStyle`, which jsdom does resolve for styled-components.
+  pinned through `getComputedStyle`, which jsdom does resolve for styled-components. Moot for the
+  handle since 2026-11-02, when it stopped being drawn; the lesson holds for any cased string put
+  in that row.
 
 - **The stack marks are vendored, and two of the four had to be recovered** (2026-09-04, ticket
   26). Claude, Grok Bot and OpenClaw are inline SVG on `currentColor`; Hermes has **no vector

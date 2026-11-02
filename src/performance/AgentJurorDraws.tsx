@@ -47,12 +47,11 @@ const Heading = styled.h2`
   color: ${({ theme }) => theme.textHeading};
 `;
 
-const Deck = styled.p`
-  max-width: 68ch;
-  font: ${({ theme }) => theme.typeBody};
-  font-feature-settings: ${({ theme }) => theme.featureNumeric};
-  color: ${({ theme }) => theme.textMeta};
-  text-wrap: pretty;
+/* As wide as the keys it holds, not the column: the section is a flex column, which stretches
+   every child to its width, and a box running on past its last key reads as a missing one. */
+const DrawsLegend = styled(Legend)`
+  align-self: flex-start;
+  max-width: 100%;
 `;
 
 /* `table-layout: fixed` and a colgroup, so the widths are the artboard's and a long title
@@ -276,11 +275,11 @@ type DrawLine = {
 };
 
 /**
- * What this draw voted for, as a phrase rather than a number.
+ * What this draw voted for, as the bare number: the column header and the card key say "Choice".
  *
  * A list and not a single value, because `Draw.choices` is one: a draw holds several vote IDs
  * and nothing in the model forces them to agree. It has never happened in this court, and
- * printing "Choice 2" over a draw that voted 1 *and* 2 would be a claim the draw did not make.
+ * printing "2" over a draw that voted 1 *and* 2 would be a claim the draw did not make.
  *
  * A `Figure` and not a string, so the em dash carries its own pending tone the way the two
  * latencies beside it do. Returning the dash as text left both renderings comparing against the
@@ -288,8 +287,8 @@ type DrawLine = {
  */
 function choiceOf(choices: readonly number[]): Figure {
   if (choices.length === 0) return { text: "—", tone: "pending" };
-  if (choices.length === 1) return { text: `Choice ${choices[0]}`, tone: "value" };
-  return { text: `Choices ${listOf(choices)}`, tone: "value" };
+  if (choices.length === 1) return { text: `${choices[0]}`, tone: "value" };
+  return { text: listOf(choices), tone: "value" };
 }
 
 function linesOf(
@@ -326,8 +325,6 @@ export type AgentJurorDrawsProps = {
   flagContext: RowFlagContext;
   /** The dispute's subject, or `null` where the template subgraph gave none. */
   titleFor: (dispute: Dispute) => string | null;
-  /** Disputes whose draws were never read, which this list is short by. */
-  unreadDisputes: readonly number[];
 };
 
 export function AgentJurorDraws({
@@ -336,33 +333,15 @@ export function AgentJurorDraws({
   scanned,
   flagContext,
   titleFor,
-  unreadDisputes,
 }: AgentJurorDrawsProps) {
   const isNarrow = useIsNarrow();
   const lines = linesOf(draws, scanned, flagContext, titleFor);
-  const unread = unreadDisputes.length;
 
   return (
     <Section aria-labelledby="draws-heading">
       <Heading id="draws-heading">
         Drawn in {lines.length} {lines.length === 1 ? "dispute" : "disputes"}.
       </Heading>
-      <Deck>
-        Newest first. Every coherence mark here is given with the panel size of the dispute it came
-        from, because one does not mean anything without the other: a lone agent juror is
-        automatically the majority.
-        {/* "Given with" and not "beside": in the table the panel is the third column and the
-            coherence the seventh, and on a card the state sits above the figures rather than
-            next to one. A sentence naming a position is a claim about which layout the reader is
-            looking at, which is the fault ticket 16's review caught five times over.
-
-            The heading counts what was read, and a dispute whose draws were never read is not a
-            dispute this agent juror was absent from — nobody asked. Said here because the count
-            it qualifies is in the heading directly above it, and said in the banner above that.
-            Twice and never a third time. */}
-        {unread > 0 &&
-          ` ${unread === 1 ? "Dispute" : "Disputes"} ${listOf(unreadDisputes)} ${unread === 1 ? "is" : "are"} not counted: ${unread === 1 ? "its draws were" : "their draws were"} never read, so whether ${nickname} was drawn ${unread === 1 ? "there" : "in them"} is unknown rather than no.`}
-      </Deck>
 
       {/* The decoder for the state words below, in the one place both this view and the matrix
           read it from. Ticket 16's rule: any view that shows a draw's state owes its reader the
@@ -370,9 +349,9 @@ export function AgentJurorDraws({
           because the sixth state cannot appear here — an unread row has no cell for anybody, so
           it contributes no line to this list at all, and naming a state the record does not
           contain teaches a reader to look for a failure that is not there. */}
-      <Legend>
+      <DrawsLegend>
         <StateLegend unknown={false} />
-      </Legend>
+      </DrawsLegend>
 
       {isNarrow ? (
         <DrawCards lines={lines} nickname={nickname} />

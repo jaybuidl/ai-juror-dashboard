@@ -331,28 +331,25 @@ export function AgentJurorLatency({
         .
       </Reading>
 
-      <Caption>
-        {/* The background series is every reveal the court recorded, this agent juror's own
-            among them, and the key says exactly that. The artboard labels it "All other draws",
-            which would need this column subtracted out of the court's distribution — a second
-            reduction of one set of numbers, and one that would leave the plot and the court
-            median beside it counting different draws. */}
-        Each mark is one draw, placed by how long it took to reveal after the vote period opened.
-        Commit latency is not plotted here: it is measured from the commit period rather than the
-        vote period, so the two are not one distribution and pooling them would compare durations
-        against different clocks (ADR-0005). This agent juror's median commit is on the card above.
-        {marked.draws > 0 && (
-          <>
-            {" "}
-            <CaptionMark aria-hidden="true">†</CaptionMark> {marked.draws} of the{" "}
-            {own.seconds.length} reveals plotted here ran under{" "}
-            {marked.changes.length === 1 && marked.changes[0] !== undefined
-              ? `a vote window of ${formatWindowSeconds(marked.changes[0].windows.voteSeconds)}, which the court has since changed`
-              : "vote windows the court has since changed"}
-            , so they are not comparable with the marks beside them.
-          </>
-        )}
-      </Caption>
+      {/* The background series is every reveal the court recorded, this agent juror's own among
+          them, and the key above says exactly that. The artboard labels it "All other draws",
+          which would need this column subtracted out of the court's distribution — a second
+          reduction of one set of numbers, and one that would leave the plot and the court median
+          beside it counting different draws.
+
+          No caption explaining the plot or why commit latency is absent from it (removed
+          2026-11-02, maintainer's ruling): ADR-0005's reason is on /method. What stays is the
+          dagger's, because a mark on the plot must never go unexplained. */}
+      {marked.draws > 0 && (
+        <Caption>
+          <CaptionMark aria-hidden="true">†</CaptionMark> {marked.draws} of the {own.seconds.length}{" "}
+          reveals plotted here ran under{" "}
+          {marked.changes.length === 1 && marked.changes[0] !== undefined
+            ? `a vote window of ${formatWindowSeconds(marked.changes[0].windows.voteSeconds)}, which the court has since changed`
+            : "vote windows the court has since changed"}
+          , so they are not comparable with the marks beside them.
+        </Caption>
+      )}
     </Card>
   );
 }

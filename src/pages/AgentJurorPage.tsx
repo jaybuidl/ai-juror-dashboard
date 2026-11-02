@@ -174,16 +174,14 @@ const FromRoster = styled.span`
   color: ${({ theme }) => theme.stateWork};
 `;
 
-/* An external link in the pill row: same ink, same weight, no pill around it. Used for the
-   court profile, the Arbiscan link and the agent juror's own account, because they are the same
-   object — a link out of this dashboard, marked as one. */
-const Outbound = styled.a`
-  font: ${({ theme }) => theme.typeMonoSm};
-  letter-spacing: ${({ theme }) => theme.trackingMono};
-  text-transform: uppercase;
+/* A pill that is also a link out — the address to Arbiscan, the profiles to the court and to X.
+   Still a pill, because it states a fact about the agent juror; marked as a link by the accent,
+   the arrow and an underline on hover. The gap is one mono character, the space before the arrow:
+   a pill is inline-flex, so its text runs become flex items and lose their edge whitespace. */
+const FactLink = styled(Fact)`
+  gap: 1ch;
   color: ${({ theme }) => theme.accent};
   text-decoration: none;
-  white-space: nowrap;
 
   &:hover {
     text-decoration: underline;
@@ -193,24 +191,6 @@ const Outbound = styled.a`
     outline: 2px solid ${({ theme }) => theme.focusRing};
     outline-offset: 3px;
   }
-`;
-
-/* The one string in this row whose capitals are the fact.
- *
- * Everything else here is uppercased by the mono label convention and loses nothing by it: the
- * ENS name and the address are case-insensitive identifiers, and their text content — the thing
- * a reader copies — is untouched by a transform. A handle is display text whose capitals are
- * chosen, the same distinction the roster already draws between a nickname that routes and a
- * name that renders, so uppercasing it would be showing a spelling nobody uses.
- *
- * Only a browser says so. `text-transform` does not touch text content, so the DOM, the
- * accessible name and every assertion over either are identical with the transform and without
- * it — the test beside this one passes on the uppercased version. It was found by looking.
- *
- * There is a second reason not to shout it, and it is the one hidden.ts records: some screen
- * readers announce uppercased text letter by letter. */
-const Handle = styled(Outbound)`
-  text-transform: none;
 `;
 
 const Description = styled.p`
@@ -564,54 +544,51 @@ export function AgentJurorView({
                       through a `title` tooltip, so the one identifier that distinguishes this
                       agent juror from any other was available to a mouse and to nothing else.
                       The abbreviation stays visible — the full 42 characters would take the
-                      line — and the Arbiscan link beside it goes to the same address. */}
-                  <Fact title={agentJuror.address}>
-                    <span aria-hidden="true">{shortAddress(agentJuror.address)}</span>
-                    <VisuallyHidden>Address {agentJuror.address}</VisuallyHidden>
-                  </Fact>
-                  {/* The court before the chain, the order the dispute page uses: the profile is
-                      this agent juror as the court sees it — its courts, its cases, its stake —
-                      and Arbiscan is the raw account behind it. */}
-                  <Outbound
+                      line. The pill is itself the Arbiscan link: the address is what Arbiscan
+                      shows, so the pill naming it is the one that goes there, and the hidden
+                      half says so for a links list read out of context. */}
+                  <FactLink
+                    as="a"
+                    href={`https://arbiscan.io/address/${agentJuror.address}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title={agentJuror.address}
+                  >
+                    <span aria-hidden="true">{shortAddress(agentJuror.address)}</span>{" "}
+                    <VisuallyHidden>Address {agentJuror.address} on Arbiscan</VisuallyHidden> ↗
+                  </FactLink>
+                  {/* This agent juror as the court sees it — its courts, its cases, its stake.
+                      "on Kleros Court" is said and not drawn, for the reason the address pill
+                      gives: "Juror profile" alone does not say whose site it opens. */}
+                  <FactLink
+                    as="a"
                     href={jurorProfileOf(agentJuror.address)}
                     target="_blank"
                     rel="noopener noreferrer"
                   >
-                    Kleros Court ↗
-                  </Outbound>
-                  <Outbound
-                    href={`https://arbiscan.io/address/${agentJuror.address}`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                  >
-                    Arbiscan ↗
-                  </Outbound>
+                    Juror profile <VisuallyHidden>on Kleros Court</VisuallyHidden> ↗
+                  </FactLink>
                   {/* The agent juror's own account, where it has one — most have none, so the
                       absent case is the common one and draws nothing at all rather than an empty
                       slot. Not counted here, for the reason `ROSTER.length` is never a literal:
-                      the roster grows and so does this subset of it. Deliberately *not* behind the justification interstitial that guards
-                      every other outbound link on this dashboard: that interstitial exists
-                      because justification prose is written by the agents themselves, so the
-                      URLs in it are arbitrary and unreviewed, whereas this one is hard-coded in
-                      this repository and reviewed in a pull request. Putting a warning in front
-                      of content the repo itself controls teaches readers to click through
-                      warnings.
+                      the roster grows and so does this subset of it. Deliberately *not* behind
+                      the justification interstitial that guards every other outbound link on
+                      this dashboard: that interstitial exists because justification prose is
+                      written by the agents themselves, so the URLs in it are arbitrary and
+                      unreviewed, whereas this one is hard-coded in this repository and reviewed
+                      in a pull request. Putting a warning in front of content the repo itself
+                      controls teaches readers to click through warnings.
 
-                      The link beside it announces as "Arbiscan" and names where it goes; an
-                      account name alone does not, and a links list is read out of context, so
-                      "on X" is said and not drawn — the visible spelling is the whole reason
-                      `Handle` exists. WCAG 2.4.4.
-
-                      The space in front of that hidden half is a text node of the anchor and not
-                      the first character inside `VisuallyHidden`, and the placement is the whole
-                      of it: an accessible name is built from each child element's contribution
-                      *trimmed*, so a space written inside is dropped and the name comes out
-                      "@Grokleroson X" — the fix reading worse than the defect it fixes. A raw
-                      text node keeps its space. Only the test can see the difference. */}
+                      A pill named for its destination, like the juror profile beside it, rather
+                      than the handle itself (2026-11-02). The handle is still said — a links
+                      list read out of context hears whose profile it is — and the space before
+                      it is a text node of the anchor: an accessible name trims each child
+                      element's contribution, so a space written inside the hidden span would be
+                      dropped and the name would run together. */}
                   {handleUrl !== null && (
-                    <Handle href={handleUrl} target="_blank" rel="noopener noreferrer">
-                      {agentJuror.handle} <VisuallyHidden>on X</VisuallyHidden> ↗
-                    </Handle>
+                    <FactLink as="a" href={handleUrl} target="_blank" rel="noopener noreferrer">
+                      X profile <VisuallyHidden>{agentJuror.handle}</VisuallyHidden> ↗
+                    </FactLink>
                   )}
                   {/* Beside the stack and the name, never instead of them: which stack an agent
                       juror runs is a fact about the roster and is still true when ENS is down. */}
@@ -670,7 +647,6 @@ export function AgentJurorView({
             // built by a pure function, and `now` is threaded from the view for exactly that.
             flagContext={{ now }}
             titleFor={(dispute: Dispute) => disputes.templateFor?.(dispute)?.title ?? null}
-            unreadDisputes={measured.totals.unreadDisputes}
           />
         </>
       )}

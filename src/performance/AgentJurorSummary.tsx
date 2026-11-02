@@ -120,7 +120,6 @@ export function AgentJurorSummary({
   });
   const metrics = figures.slice(0, 3);
   const counts = figures.slice(3);
-  const note = coherenceNote(reading);
 
   return (
     <Card aria-label={`What ${nickname} has done, summarised`}>
@@ -144,28 +143,6 @@ export function AgentJurorSummary({
           </Item>
         ))}
       </Counts>
-
-      {note !== null && <CardNote>{note}</CardNote>}
     </Card>
   );
-}
-
-/**
- * The sentence under the card, in whichever of its three states this column is in.
- *
- * The artboard's is the affirmative one — "every panel this agent sat on had 2 or more members"
- * — and it is a claim, so it is made only where it is true and only where there is a coherence
- * figure for it to be about. Where a lone panel *is* behind the count, it says nothing: the claim
- * would be false, and the lone-panel caveat itself lives on /method since 2026-09-24.
- */
-function coherenceNote(reading: AgentJurorReading): string | null {
-  const nickname = reading.agentJuror.nickname;
-  const { coherent, resolved, lonePanelDisputes } = reading.marginals.coherence;
-
-  if (resolved === 0) {
-    return `The court has not ruled on any dispute ${nickname} was drawn in, so it has no coherence figure yet. A round majority before the appeal period closes is a prediction, not a ruling.`;
-  }
-  if (lonePanelDisputes.length > 0) return null;
-
-  return `Every panel ${nickname} sat on held two or more agent jurors, so none of this coherence is tautological. It is ${coherent} of ${resolved} draws the court has ruled on, counted and never rated.`;
 }

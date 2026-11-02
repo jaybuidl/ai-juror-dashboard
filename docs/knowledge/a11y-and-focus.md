@@ -22,7 +22,8 @@ this file is the full account.
   every string matcher are identical whether an element shouts or not. `@BlaiseBuidl` rendered as
   `@BLAISEBUIDL` through a green suite, inheriting the pill row's mono-label uppercase — right for
   the ENS name and the address beside it, whose case is not a fact, and wrong for a handle, whose
-  capitals are the whole point. It was found by looking at the page. The guard is
+  capitals are the whole point (the handle is no longer drawn since 2026-11-02; the trap stands).
+  It was found by looking at the page. The guard is
   `getComputedStyle(el).textTransform`, and it works: see `testing.md`.
 
 - **A green axe run is not an accessibility sweep, and no test here can measure a hit area.**
