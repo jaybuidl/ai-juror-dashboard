@@ -1,5 +1,5 @@
 import { useParams } from "react-router";
-import styled from "styled-components";
+import styled, { type DefaultTheme } from "styled-components";
 import { Breadcrumb } from "../chrome/Breadcrumb";
 import { Notice } from "../chrome/Failure";
 import { type Failures, olderOf, present } from "../chrome/failures";
@@ -205,26 +205,30 @@ const TallyRow = styled.li`
   padding: ${({ theme }) => `${theme.space3} 0`};
 `;
 
-/* The ruling's own row is in the accent, name and count alike, so the list points back at the
-   headline above it. */
-const TallyName = styled.span<{ $ruling: boolean }>`
+/** One ink for a tally row's name and its count, so the two cannot drift apart. */
+function tallyInk(theme: DefaultTheme, ruling: boolean, any: boolean): string {
+  if (ruling) return theme.accent;
+  if (any) return theme.stateWork;
+  return theme.textPending;
+}
+
+/* Each row's name takes its count's ink, so a row reads as one line: the ruling's in the accent,
+   pointing back at the headline; a choice that drew votes and lost — a tie the court broke the
+   other way, say — in gold; a choice nobody picked stays quiet. */
+const TallyName = styled.span<{ $ruling: boolean; $any: boolean }>`
   min-width: 0;
   font: ${({ theme }) => theme.typeMonoSm};
   font-feature-settings: ${({ theme }) => theme.featureMono};
   letter-spacing: ${({ theme }) => theme.trackingMono};
   text-transform: uppercase;
-  color: ${({ theme, $ruling }) => ($ruling ? theme.accent : theme.textPending)};
+  color: ${({ theme, $ruling, $any }) => tallyInk(theme, $ruling, $any)};
   overflow-wrap: anywhere;
 `;
 
 const TallyVotes = styled.span<{ $ruling: boolean; $any: boolean }>`
   font: ${({ theme }) => theme.typeMono};
   font-feature-settings: ${({ theme }) => theme.featureMono};
-  color: ${({ theme, $ruling, $any }) => {
-    if ($ruling) return theme.accent;
-    if ($any) return theme.stateWork;
-    return theme.textPending;
-  }};
+  color: ${({ theme, $ruling, $any }) => tallyInk(theme, $ruling, $any)};
   white-space: nowrap;
 `;
 
@@ -693,7 +697,7 @@ function RulingCard({ reading }: { reading: DisputeReading }) {
             <TallyRow key={entry.choice}>
               {/* The bare number, no "Choice" in front (2026-11-02, maintainer's ruling): every
                   row in this list is a choice, and the word said so six times over. */}
-              <TallyName $ruling={entry.isRuling}>
+              <TallyName $ruling={entry.isRuling} $any={entry.votes > 0}>
                 {entry.choice}
                 {entry.title !== null && ` · ${entry.title}`}
               </TallyName>
