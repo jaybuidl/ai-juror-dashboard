@@ -5,7 +5,7 @@ import { Notice } from "../chrome/Failure";
 import { type Failures, olderOf, present } from "../chrome/failures";
 import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
-import { COURT_ID } from "../disputes/court-subgraph";
+import { casePageOf } from "../court-frontend";
 import type { DisputesView } from "../disputes/useDisputes";
 import { arbitrumSource } from "../performance/arbitrum";
 import { DisputePanel } from "../performance/DisputePanel";
@@ -21,6 +21,7 @@ import { failureOf, SOURCES } from "../read-failure";
 import { ensFallbackOf } from "../roster/ens-fallback";
 import type { RosterView } from "../roster/useRoster";
 import { narrow } from "../styles/breakpoints";
+import { VisuallyHidden } from "../styles/hidden";
 
 /**
  * One dispute, and every panel member's reasoning about it, at its own URL.
@@ -98,13 +99,17 @@ const Fact = styled.span`
   white-space: nowrap;
 `;
 
-const OnChain = styled.a`
-  font: ${({ theme }) => theme.typeMonoSm};
-  letter-spacing: ${({ theme }) => theme.trackingMono};
-  text-transform: uppercase;
+/* A pill that is also a link out. Still a pill, because it states the same fact it did before it
+   linked anywhere; marked as a link by the accent, the arrow and an underline on hover.
+
+   The gap is the space before the arrow. A pill is inline-flex, so a hidden span splits the label
+   into anonymous flex items and each loses its edge whitespace — the space written in the markup
+   survives in the accessible name and vanishes on screen, drawing "DISPUTE 156↗". One mono
+   character puts it back; the hidden span is out of flow and takes no gap of its own. */
+const FactLink = styled(Fact)`
+  gap: 1ch;
   color: ${({ theme }) => theme.accent};
   text-decoration: none;
-  white-space: nowrap;
 
   &:hover {
     text-decoration: underline;
@@ -543,8 +548,20 @@ export function DisputeView({
                 </Title>
                 <Facts>
                   {reading.template?.category && <Fact>{reading.template.category}</Fact>}
-                  <Fact>Court {COURT_ID}</Fact>
-                  <Fact>Dispute {reading.dispute.id}</Fact>
+                  {/* The dispute's own pill is the link to its case on the court: the id is what
+                      the court's page is keyed on, so the pill naming it is the one that goes
+                      there. "on Kleros Court" is said and not drawn — a links list is read out of
+                      context, and "Dispute 156" alone does not say the link leaves this
+                      dashboard. The space is a text node of the anchor; inside the hidden span it
+                      would be trimmed. */}
+                  <FactLink
+                    as="a"
+                    href={casePageOf(reading.dispute.id)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Dispute {reading.dispute.id} <VisuallyHidden>on Kleros Court</VisuallyHidden> ↗
+                  </FactLink>
                   {/* Only where there is one. `|| 1` here would print "Round 1 of 1" over a
                       dispute that has no round at all, which is a claim about the court rather
                       than a formatting default — and a dispute with no round is a real state,
@@ -561,14 +578,19 @@ export function DisputeView({
                       guard are unaffected: ticket 09 words both in prose on this view rather
                       than in a chip, which is where `panelPillOf` took the idea from. */}
                   <Fact>{reading.dispute.period}</Fact>
+                  {/* Last, after the court's own link: Arbiscan is where a reader checks the
+                      transaction behind the dispute, not where they read it. A pill like the
+                      dispute's, and named by destination — "On chain" said what it held but not
+                      that it was Arbiscan. */}
                   {reading.transactionHash !== null && (
-                    <OnChain
+                    <FactLink
+                      as="a"
                       href={`https://arbiscan.io/tx/${reading.transactionHash}`}
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      On chain ↗
-                    </OnChain>
+                      Arbiscan ↗
+                    </FactLink>
                   )}
                 </Facts>
                 {reading.template?.question && (

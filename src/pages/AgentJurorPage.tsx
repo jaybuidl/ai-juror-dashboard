@@ -6,6 +6,7 @@ import { Notice } from "../chrome/Failure";
 import { type Failures, olderOf, present } from "../chrome/failures";
 import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
+import { jurorProfileOf } from "../court-frontend";
 import type { Dispute } from "../disputes/disputes";
 import type { DisputesView } from "../disputes/useDisputes";
 import { AgentJurorDraws } from "../performance/AgentJurorDraws";
@@ -173,9 +174,9 @@ const FromRoster = styled.span`
   color: ${({ theme }) => theme.stateWork};
 `;
 
-/* An external link in the pill row: same ink, same weight, no pill around it. Used for both
-   the Arbiscan link and the agent juror's own account, because they are the same object — a
-   link out of this dashboard, marked as one. */
+/* An external link in the pill row: same ink, same weight, no pill around it. Used for the
+   court profile, the Arbiscan link and the agent juror's own account, because they are the same
+   object — a link out of this dashboard, marked as one. */
 const Outbound = styled.a`
   font: ${({ theme }) => theme.typeMonoSm};
   letter-spacing: ${({ theme }) => theme.trackingMono};
@@ -568,6 +569,16 @@ export function AgentJurorView({
                     <span aria-hidden="true">{shortAddress(agentJuror.address)}</span>
                     <VisuallyHidden>Address {agentJuror.address}</VisuallyHidden>
                   </Fact>
+                  {/* The court before the chain, the order the dispute page uses: the profile is
+                      this agent juror as the court sees it — its courts, its cases, its stake —
+                      and Arbiscan is the raw account behind it. */}
+                  <Outbound
+                    href={jurorProfileOf(agentJuror.address)}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Kleros Court ↗
+                  </Outbound>
                   <Outbound
                     href={`https://arbiscan.io/address/${agentJuror.address}`}
                     target="_blank"

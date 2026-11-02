@@ -93,6 +93,21 @@ describe("one agent juror's own view", () => {
     );
   });
 
+  it("links to its juror profile on the Kleros court, before the Arbiscan link", () => {
+    renderAt("/agent-jurors/Columbo");
+    const court = screen.getByRole("link", { name: "Kleros Court ↗" });
+
+    expect(court).toHaveAttribute(
+      "href",
+      `https://v2.kleros.builders/#/profile/1/desc/all?address=${ROSTER.find((a) => a.nickname === "Columbo")?.address}`,
+    );
+    expect(court).toHaveAttribute("target", "_blank");
+    expect(court).toHaveAttribute("rel", "noopener noreferrer");
+    expect(court.compareDocumentPosition(screen.getByRole("link", { name: /arbiscan/i }))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+  });
+
   it("shows a subname chosen but not yet registered, and says it is not registered", () => {
     // No roster entry is pending today, so this marks one: Jonesy was, from 2026-10-02 to 05.
     const pendingRoster: RosterView = {

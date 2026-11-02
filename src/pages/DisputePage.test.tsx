@@ -62,20 +62,22 @@ describe("the header", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent(
       "Image Similarity Assessment",
     );
-    expect(screen.getByText("Dispute 156")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "Dispute 156 on Kleros Court ↗" })).toBeVisible();
   });
 
   it("identifies the dispute beyond its title", () => {
     // Ticket 09's criterion named five — category, court, round, panel size and the period — and
-    // this is four of them on purpose. The panel size left every surface that already draws the
+    // this is three of them on purpose. The panel size left every surface that already draws the
     // panel, and this view draws it most plainly of all: every member side by side in roster
     // order, under a sentence saying the whole panel fits at once. The
     // chip counted what the reader is looking at. Where a panel cannot be counted off the page
-    // the figure stays, which is why `AgentJurorDraws` keeps its column.
+    // the figure stays, which is why `AgentJurorDraws` keeps its column. The court left on
+    // 2026-11-02: this dashboard reads one court, so its pill said the same thing on every
+    // dispute.
     renderDispute();
 
     expect(screen.getByText("IP")).toBeInTheDocument();
-    expect(screen.getByText("Court 34")).toBeInTheDocument();
+    expect(screen.queryByText(/Court 34/)).not.toBeInTheDocument();
     expect(screen.getByText("Round 1 of 1")).toBeInTheDocument();
     expect(screen.queryByText(/^Panel \d+$/)).not.toBeInTheDocument();
     expect(screen.getByText("execution")).toBeInTheDocument();
@@ -93,7 +95,7 @@ describe("the header", () => {
     // A transaction and not the arbitrator's address: Arbiscan has no page for a dispute, and
     // linking the contract would send a reader to one holding hundreds of them.
     renderDispute();
-    const link = screen.getByRole("link", { name: /on chain/i });
+    const link = screen.getByRole("link", { name: /arbiscan/i });
 
     expect(link).toHaveAttribute(
       "href",
@@ -105,7 +107,28 @@ describe("the header", () => {
   it("offers no chain link at all rather than a broken one", () => {
     renderDispute({ detail: read({ detail: NO_DETAIL }) });
 
-    expect(screen.queryByRole("link", { name: /on chain/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole("link", { name: /arbiscan/i })).not.toBeInTheDocument();
+  });
+
+  it("makes the dispute's own pill the link to its case on the Kleros court, Arbiscan last", () => {
+    renderDispute();
+    const court = screen.getByRole("link", { name: "Dispute 156 on Kleros Court ↗" });
+
+    expect(court).toHaveAttribute("href", "https://v2.kleros.builders/#/cases/156/overview");
+    expect(court).toHaveAttribute("target", "_blank");
+    expect(court).toHaveAttribute("rel", "noopener noreferrer");
+    // The court first, Arbiscan last: the order is the design, so it is asserted.
+    expect(court.compareDocumentPosition(screen.getByRole("link", { name: /arbiscan/i }))).toBe(
+      Node.DOCUMENT_POSITION_FOLLOWING,
+    );
+    // One link to the case, not a pill and a second link beside it.
+    expect(screen.queryByRole("link", { name: "Kleros Court ↗" })).not.toBeInTheDocument();
+  });
+
+  it("keeps the case link when the transaction is unknown, since it needs only the id", () => {
+    renderDispute({ detail: read({ detail: NO_DETAIL }) });
+
+    expect(screen.getByRole("link", { name: "Dispute 156 on Kleros Court ↗" })).toBeVisible();
   });
 
   it("points its breadcrumb at the index it sits under", () => {
