@@ -25,7 +25,8 @@ and the spelling the route is keyed on; the ENS subname's label is its lowercase
 what `ensNameOf` builds. Exceptions, each marked on the roster entry: an agent juror with no
 subname (`ensSubname: false`) is named by the roster alone and has no ENS name to show, one whose
 subname is chosen but not yet registered (`ensSubname: "pending"`) shows the name marked as such
-and asks mainnet nothing, and a nickname with a space in it — which can be neither a label nor a clean path segment — is routed by
+and asks mainnet nothing, one that arrived with an ENS name of its own (`ensName`, such as
+`intendant.eth`) is shown and resolved by that name rather than a subname, and a nickname with a space in it — which can be neither a label nor a clean path segment — is routed by
 an explicit `pathSegment` (`pathSegmentOf`).
 _Avoid_: handle (a different thing here — see **Handle**), alias, label
 

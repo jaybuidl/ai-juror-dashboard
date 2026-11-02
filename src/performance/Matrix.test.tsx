@@ -13,6 +13,7 @@ import {
   COMPACT_GRID_MIN_PX,
   comfortableGridMinPx,
   compactGridMinPx,
+  PAGE_CHROME_PX,
   ROW_HEADER_PX,
 } from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
@@ -348,7 +349,10 @@ describe("the matrix's own structure", () => {
     // scroll container breaks the `position: sticky` header inside it — so above that width
     // there is nothing to pan. A focusable region there is a stop that goes nowhere, under a
     // name that says it scrolls. Review found it; the gate now mirrors the CSS exactly.
-    stubViewportWidth(1400);
+    //
+    // Just past the breakpoint rather than a literal desktop, because the breakpoint moves with
+    // the roster: a literal 1400 cleared it at eight columns and fell 72px short at nine.
+    stubViewportWidth(COMPACT_GRID_MIN_PX + PAGE_CHROME_PX + 1);
     try {
       renderMatrix(compactCourt());
       expect(screen.queryByRole("region", { name: "The matrix, scrollable" })).toBeNull();
@@ -1082,18 +1086,18 @@ describe("Matrix", () => {
       // asked. Saying "never drawn" there is an unread state rendering as a fact about the
       // court, over the single observation this dashboard was built to catch.
       //
-      // Three columns are in that state in this fixture rather than one. That used to be
+      // Six columns are in that state in this fixture rather than one. That used to be
       // baskerville alone and the test was written as though it always would be; the court drew
-      // baskerville and two more agent jurors joined, and the count is a property of the capture
+      // baskerville and five more agent jurors joined, and the count is a property of the capture
       // either way.
       //
-      // Over the **shipped** roster rather than the fixture's, which is what makes the count three:
+      // Over the **shipped** roster rather than the fixture's, which is what makes the count six:
       // `FIXTURE_ROSTER` is short by exactly the agent jurors appended from ticket 24 onward, and this claim
       // is the one that has to hold about the roster a reader actually meets. The grid is compact
       // there — the shipped roster is past `COMPACT_FROM_COLUMNS` — and the stack label carries the
       // words at both densities, which is why the assertion reads the same either way.
       renderMatrix(build({ roster: ROSTER }));
-      expect(screen.getAllByText("Never drawn")).toHaveLength(3);
+      expect(screen.getAllByText("Never drawn")).toHaveLength(6);
 
       cleanup();
       renderDrifted();

@@ -6,8 +6,9 @@ import { createMainnetClient, resolveAgentJurorIdentities } from "./ens";
 const client = createMainnetClient();
 
 /**
- * The entries mainnet can vouch for. One with no subname, or one not yet registered, has
- * nothing there to check: drop its `"pending"` once registered and this checks it too.
+ * The entries mainnet can vouch for — a subname, or a name of the agent juror's own. One with no
+ * ENS name, or one not yet registered, has nothing there to check: drop its `"pending"` once
+ * registered and this checks it too.
  */
 const withSubnames = ROSTER.flatMap((agentJuror) => {
   const ensName = resolvableEnsNameOf(agentJuror);

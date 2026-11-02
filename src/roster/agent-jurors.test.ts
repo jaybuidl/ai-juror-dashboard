@@ -37,6 +37,9 @@ describe("the roster", () => {
       "Baskerville",
       "Grokleros",
       "Jonesy",
+      "Intendant",
+      "0xd66b",
+      "0x518f",
     ]);
   });
 
@@ -88,9 +91,30 @@ describe("the roster", () => {
 
     for (const agentJuror of ROSTER) {
       const ensName = ensNameOf(agentJuror);
-      if (ensName === null) continue;
+      if (ensName === null || agentJuror.ensName !== undefined) continue;
       expect(ensName).toBe(`${agentJuror.nickname.toLowerCase()}.${AGENT_JUROR_ENS_PARENT}`);
       expect(ensName).toBe(ensName.toLowerCase());
+    }
+  });
+
+  it("names an agent juror by an ENS name of its own where it has one, building no subname", () => {
+    const ownName = {
+      nickname: "Intendant",
+      address: "0x0",
+      stack: null,
+      ensName: "intendant.eth",
+    } as const;
+
+    expect(ensNameOf(ownName)).toBe("intendant.eth");
+    expect(resolvableEnsNameOf(ownName)).toBe("intendant.eth");
+
+    // Drawn on the page as a name to paste into an ENS app, so held in the form that app shows,
+    // and never alongside a subname marker, which would say two things about one name.
+    for (const agentJuror of ROSTER) {
+      if (agentJuror.ensName === undefined) continue;
+      expect(agentJuror.ensName).toBe(agentJuror.ensName.toLowerCase());
+      expect(agentJuror.ensName).toMatch(/\.eth$/);
+      expect(agentJuror.ensSubname, agentJuror.nickname).toBeUndefined();
     }
   });
 

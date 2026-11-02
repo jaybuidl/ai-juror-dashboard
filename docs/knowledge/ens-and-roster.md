@@ -10,7 +10,7 @@ this file is the full account.
 
 - **ENS reverse records are mostly unset.** Three of the roster's addresses had one on 2026-08-25,
   because setting it requires each operator to act from the agent's own wallet — and an entry added
-  since arrives without one. Resolve *forward* from the roster's subname; `getEnsName(address)`
+  since arrives without one. Resolve *forward* from the roster's ENS name; `getEnsName(address)`
   leaves most of the roster anonymous.
 - **`getEnsAvatar` is a `connect-src` fetch, not just an image load.** viem sends a `HEAD` to the
   avatar URL before it ever reaches an `<img>`. Blocked, it fails *silently* — viem catches it and
@@ -153,7 +153,7 @@ placeholder value:
   nothing, and the agent juror's page leaves the ENS-name pill out rather than showing a name
   nobody registered. Its avatar is initials whether ENS answered or not, so the "From roster"
   caveat is **not** raised for it: `isResolvedFromEns` is roster-wide and the other entries carry
-  it. The live ENS integration test checks only entries with a subname, because mainnet has
+  it. The live ENS integration test checks only entries with an ENS name, because mainnet has
   nothing to vouch for here. The address was checked against court-34 stakes and draws instead.
 - **`pathSegment: "Jonesy"`.** A space cannot be an ENS label (ENSIP-15, so `normalize` throws), and
   in a path it becomes `%20`. The nickname stays the display string everywhere; the route is
@@ -193,8 +193,9 @@ live integration test now checks it. The avatar record went in first and the add
 day later; between the two, dropping the marker would have turned that test red.
 
 The bullets above on `ensSubname: false`, `pathSegment` and `stack: null`, and on `"pending"`,
-describe the entry as it was. All four mechanisms remain for the next entry that needs them, and
-no entry uses one today. The header measurement below is of the old name: "Jonesy" fits.
+describe the entry as it was. All four mechanisms remain for the next entry that needs them; of
+them, `stack: null` is in use by `Intendant`, `0xd66b` and `0x518f`, and `ensSubname: false` by
+the last two (below). The header measurement below is of the old name: "Jonesy" fits.
 
 **Measured in a browser on 2026-09-24.** The matrix header draws the nickname on one line with an
 ellipsis. "Jonesy The First" needs 119px and gets 93px at 1440 wide and 88px at 1024, so it shows as
@@ -202,4 +203,59 @@ ellipsis. "Jonesy The First" needs 119px and gets 93px at 1440 wide and 88px at 
 accessible name, on the index and on the agent juror's own page. "Stack unknown" wraps to two lines
 in the header, where every recorded stack fits on one. With an eighth column the compact grid's
 floor is 1272px, which puts its breakpoint at 1368px. A 1280px window now scrolls the table inside
-its own box and loses the pinned header, where seven columns fit.
+its own box and loses the pinned header, where seven columns fit. (Superseded at nine columns —
+see the Intendant section.)
+
+## Intendant: the first agent juror with an ENS name of its own
+
+*2026-10-30.*
+
+`Intendant` is the first agent juror to arrive with an ENS name of its own — `intendant.eth` — rather than a subname of `agents.kleroslabs.eth`. The
+roster's `ensName` field exists for it: where set, `ensNameOf` returns it as written and builds no
+subname, and everything downstream (resolution, the page's name pill, the fixtures, the live ENS
+suite) goes through that helper unchanged.
+
+- **Verified before it was added.** `intendant.eth` forward-resolved on mainnet to
+  `0xC05e…f539`, the address reverse-resolved to `intendant.eth`, and the `avatar` record was an
+  `https://euc.li/intendant.eth` image (a logo, no person). No other text record was set, so the
+  roster nickname is what renders. In the core subgraph it held 12 vote slots across 11 disputes
+  (two in 322), all in court 34 (first 310, on 2026-10-22), all ruled. The dashboard counts a draw
+  per dispute (ADR-0002), so its page reads 11 draws and 10 of 11 coherent: 325 diverged. `kleros juror info` (agentkit 0.3.0) agreed;
+  it takes only a hex `--address`, not an ENS name, and its `coherenceScore` of "50" against 11 of
+  12 coherent votes is its own formula — never quote it.
+- **The name's registrant is another account than the one that votes.** That is normal for an own
+  name, and it is exactly the account the no-personal-data invariant keeps out: the roster holds
+  the voting address and the name, never the registrant.
+- **Stack unknown.** Nobody has recorded it, so `stack: null` renders "Stack unknown". Record it
+  when its builder says, as Jonesy's was.
+- **Nine columns: the 1440 desktop scrolls the matrix.** Measured in a browser on 2026-10-30: the
+  compact floor is 1376px and its breakpoint 1472px, so at 1280 and 1440 the table scrolls inside
+  its own box and loses the pinned header; no page-level scroll at any width, and the phone cards
+  are unaffected. This is the outcome ticket 25 measured and accepted for nine. "Intendant" fits
+  its header (73px; Daemonhill is still widest, at 83px); "Stack unknown" wraps to two lines.
+- **The live suite now depends on a name this project does not control.** If the registrant drops
+  the avatar or address record, or lets the name lapse (it expires 2027-09-22), the ENS integration
+  test goes red. Read the records before treating that as a bug here.
+
+## 0xd66b and 0x518f: drawn, off the roster, and named by their addresses
+
+*2026-10-30.*
+
+Verifying Intendant turned up two more accounts drawn in court 34 and missing from `ROSTER`, the
+trap the note on `ROSTER` describes: their draws had no column and fell out of every figure. Both
+were added the same day, at the right-hand end, with `stack: null` and `ensSubname: false` — no
+ENS name resolves to either (reverse record, forward index and the agents parent all checked).
+With no name to borrow, each is nicknamed by its own address prefix. The address is the agent's
+voting account, so naming it is not the operator's identity; who built either is, as ever, kept
+out of this repo.
+
+- **`0xd66b`** (`0xd66b…Ebe41`): drawn in 216 (two vote slots), 217, 315 and 320; voted only in
+  315 and 320. Still staked, 11,839 PNK, when added.
+- **`0x518f`** (`0x518f…3A41`): drawn in 290, 291 (two vote slots), 294 and 295, voted in none,
+  and unstaked by the time it was added. Its column is all missed votes, and that is the record.
+- **Both avatars are initials, and the initials are the same.** The fallback draws the first two
+  characters of the nickname, so both read "0x". The nickname beside each tells them apart; a
+  fallback that skips a hex prefix would be the fix if that proves not enough.
+- **Eleven columns.** The compact floor is 440 + 11 × 104 = 1584px and its breakpoint 1680px, so
+  every ordinary desktop scrolls the matrix in its own box. Ticket 25 measured nine, not eleven.
+
