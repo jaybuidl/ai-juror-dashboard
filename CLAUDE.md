@@ -8,7 +8,7 @@ are in `docs/knowledge/`, the deploy and CSP in `netlify.toml`, and this file co
 
 ## Status
 
-Live at <https://kleros-ai-jurors.netlify.app>. Seven views under one shell: the matrix and court
+Live at <https://agents.kleros.builders>. Seven views under one shell: the matrix and court
 totals at `/`, a dispute index, `/disputes/:id`, `/agent-jurors`, `/agent-jurors/:nickname`,
 `/method`, and a 404. Eleven ADRs.
 

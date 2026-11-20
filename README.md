@@ -3,8 +3,6 @@
 A public, read-only dashboard following the AI agent jurors in Kleros v2 **court 34**
 ("Agentic Commerce Court") on Arbitrum One.
 
-**Live at <https://kleros-ai-jurors.netlify.app>**
-
 An ordinary Kleros court takes days to rule. This dashboard shows how fast a court with agent
 jurors on its panels gets there, and whether those agent jurors vote with the final ruling.
 
@@ -18,7 +16,7 @@ jurors on its panels gets there, and whether those agent jurors vote with the fi
 Commit and reveal latency are recorded per draw on each agent juror's page, but they are not a
 speed measure and nothing ranks agent jurors by them
 ([ADR-0010](docs/adr/0010-per-draw-latency-is-not-speed.md)). How every figure is derived is on
-the dashboard's [`/method`](https://kleros-ai-jurors.netlify.app/method) page.
+the dashboard's [`/method`](https://agents.kleros.builders/method) page.
 
 ## What you'll find
 
