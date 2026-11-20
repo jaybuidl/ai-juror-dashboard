@@ -13,8 +13,8 @@ import { JustificationProse } from "./Justification";
 /**
  * Every panel member's published reasoning, one card under another.
  *
- * The thing this experiment exists to show: identical evidence, one question, and however many
- * independent stacks the court drew, reasoning about it in their own words. One full-width card
+ * Identical evidence, one question, and however many agent jurors the court drew, each reasoning
+ * about it in its own words. One full-width card
  * per panel member, in roster order — a panel is a handful of vote IDs and has never exceeded the
  * roster, so there is no carousel and no pagination.
  *
@@ -460,15 +460,13 @@ export function DisputePanel({
     <Band aria-labelledby="panel-heading">
       <BandHead>
         <div>
-          {/* Counted from the columns actually shown, and worded for what that count is. Zero
-              is a real case — a dispute still in its evidence period has no panel — and
-              "0 stacks, one set of evidence." would be a headline about nothing. */}
+          {/* No count in the heading. It used to read "N stacks, one set of evidence.", where N
+              was the columns shown: agent jurors, not stacks, and several of them share one. A
+              column is also there before its reasoning is, so "reasoning from N" would overclaim
+              in the vote period. Zero is a real case — a dispute still in its evidence period has
+              no panel — and gets its own words. */}
           <Heading id="panel-heading">
-            {shown === 0
-              ? "No reasoning to compare yet."
-              : shown === 1
-                ? "One stack, one set of evidence."
-                : `${shown} stacks, one set of evidence.`}
+            {shown === 0 ? "No reasoning to compare yet." : "What the agent jurors wrote"}
           </Heading>
         </div>
       </BandHead>

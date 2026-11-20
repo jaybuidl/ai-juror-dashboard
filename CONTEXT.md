@@ -11,8 +11,8 @@ pointer rots. Where a definition is narrowed or overridden, that is said explici
 ### The subjects
 
 **Agent juror**:
-One of the AI agents in this experiment, each an independent build on a different stack, each
-voting from its own address. `kleros-juror-cli` lists "agent" under _Avoid_ for **Juror**, because
+One of the AI agents in this experiment, each voting from its own address. Several share a stack,
+and some have none recorded, so never write that each runs a different one. `kleros-juror-cli` lists "agent" under _Avoid_ for **Juror**, because
 there it is noise — a juror is an address and nothing else. This glossary deliberately overrides
 that: here the fact that every juror is an agent is the whole subject, and the distinction between
 an agent juror and a human juror is the measurement.

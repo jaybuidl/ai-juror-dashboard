@@ -185,8 +185,8 @@ export function MethodPage() {
       <Header>
         <Title>Method</Title>
         <Deck>
-          What this dashboard measures, in what unit, from which source — and what it does not
-          measure, which on a page that may be cited matters just as much.
+          What this dashboard measures, in what unit and from which source, and what it does not
+          measure.
         </Deck>
       </Header>
 

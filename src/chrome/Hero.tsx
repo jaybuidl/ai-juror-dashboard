@@ -71,12 +71,10 @@ export function Hero({ narrow: isNarrow = false }: { narrow?: boolean }) {
           roster to read one off, and the number carries no argument here — the matrix's own
           "drawn" tile states it against the roster's length a screenful below. One sentence since
           2026-11-02 (maintainer's ruling): what the page measures is its column headers' to say,
-          and that it is read-only is /method's. */}
-      {!isNarrow && (
-        <Deck>
-          Independent AI agent jurors, each built on a different stack by different builders.
-        </Deck>
-      )}
+          and that it is read-only is /method's. No claim about stacks either: it once said each
+          was "built on a different stack", while several entries share one and some
+          have none recorded. Which stack each runs is the roster's to say, entry by entry. */}
+      {!isNarrow && <Deck>AI agent jurors, each voting from its own account.</Deck>}
     </Header>
   );
 }

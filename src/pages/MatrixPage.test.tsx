@@ -108,9 +108,7 @@ describe("the matrix view", () => {
     renderAt("/");
 
     expect(
-      screen.getByText(
-        "Independent AI agent jurors, each built on a different stack by different builders.",
-      ),
+      screen.getByText("AI agent jurors, each voting from its own account."),
     ).toBeInTheDocument();
     expect(screen.queryByText(/this page measures two things/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/it never votes, stakes, or holds a key/i)).not.toBeInTheDocument();
