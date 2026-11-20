@@ -1,6 +1,5 @@
 import { screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { STRIP_RANGE_LABEL } from "../performance/strip";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { ROSTER } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
@@ -24,10 +23,9 @@ import { PHONE_WIDTH, stubViewportWidth } from "../test/viewport";
  * One agent juror on its own.
  *
  * Three agent jurors in the captured court carry the states worth testing and each is used for
- * the one it carries: `columbo` is the only column with both markers on it — a † on each median
- * from dispute 151's superseded windows and a ‡ on its coherence from dispute 155's panel of one
- * — `blaise` has a description and no marker at all, and `baskerville` has never been drawn,
- * which is the whole of `canvas/JurorEmpty.dc.html`.
+ * the one it carries: `columbo` sat on dispute 155's panel of one and was drawn in dispute 151
+ * under the court's first windows, `blaise` has a description and neither, and `baskerville` has
+ * never been drawn, which is the whole of `canvas/JurorEmpty.dc.html`.
  */
 
 /**
@@ -164,20 +162,29 @@ describe("one agent juror's own view", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("Blaise of Kleros");
   });
 
-  it("summarises the six figures the matrix's column header prints, at length", () => {
+  it("summarises the figures the matrix's column header prints, at length", () => {
     renderAt("/agent-jurors/Columbo");
     const card = screen.getByRole("region", { name: /what columbo has done/i });
 
-    // The same values `Marginals` prints in 148px, read by the same module — the medians, the
-    // outcome breakdown (ADR-0009: nine coherent, three still acting, each as a share of the
-    // twelve draws with the count beside it), the draw count and the two sums the court has paid.
-    expect(within(card).getByText("117s")).toBeInTheDocument();
-    expect(within(card).getByText("8m 52s")).toBeInTheDocument();
+    // The same values `Marginals` prints in 148px, read by the same module — the outcome
+    // breakdown (ADR-0009: nine coherent, three still acting, each as a share of the twelve draws
+    // with the count beside it), the draw count and the two sums the court has paid.
     expect(within(card).getByText("75% (9)")).toBeInTheDocument();
     expect(within(card).getByText("25% (3)")).toBeInTheDocument();
     expect(within(card).getByText("12")).toBeInTheDocument();
     expect(within(card).getByText("0.0035")).toBeInTheDocument();
     expect(within(card).getByText("+171.42")).toBeInTheDocument();
+  });
+
+  it("summarises no commit or reveal latency on the card (ADR-0010)", () => {
+    // Columbo's reveal median was 117s and its commit median 8m 52s. Neither is a measure of
+    // speed, so neither is printed as one. Its draws still carry their own figures below.
+    renderAt("/agent-jurors/Columbo");
+    const card = screen.getByRole("region", { name: /what columbo has done/i });
+
+    expect(within(card).queryByText(/median/i)).not.toBeInTheDocument();
+    expect(within(card).queryByText("117s")).not.toBeInTheDocument();
+    expect(within(card).queryByText("8m 52s")).not.toBeInTheDocument();
   });
 
   it("carries the sign of a net PNK loss in the value itself, not only in its colour", () => {
@@ -199,69 +206,24 @@ describe("one agent juror's own view", () => {
   });
 });
 
-describe("the latency profile", () => {
-  it("plots this agent juror's reveals against the whole court's", () => {
+describe("the latency profile it no longer has (ADR-0010)", () => {
+  it("plots no agent juror's latency against the court's", () => {
     renderAt("/agent-jurors/Columbo");
-    const plot = screen.getByRole("region", { name: /12 reveals against the whole court/i });
-
-    // The plot is decoration over figures printed in full: this is the reading beside it, which
-    // is what a reader who cannot see the marks is given instead of a description of a picture.
-    expect(
-      within(plot).getByText(/its median is 117s against a court median of 68s across 56 reveals/i),
-    ).toBeVisible();
-  });
-
-  it("plots reveals only, and explains no further than its reading", () => {
-    renderAt("/agent-jurors/Columbo");
-    const plot = screen.getByRole("region", { name: /reveals against the whole court/i });
-
-    // ADR-0005: commit latency is excluded rather than normalised into the comparison, and the
-    // caption that said why was removed on 2026-11-02 — the reason is on /method. The artboard's
-    // false reason ("the window change touches commit alone", `Juror.dc.html:108`) stays out too.
-    expect(within(plot).queryByText(/commit latency is not plotted here/i)).not.toBeInTheDocument();
-    expect(within(plot).queryByText(/not comparable across dispute 151/i)).not.toBeInTheDocument();
-  });
-
-  it("marks the plot where the vote window behind some of its marks has since changed", () => {
-    renderAt("/agent-jurors/Columbo");
-    const plot = screen.getByRole("region", { name: /reveals against the whole court/i });
 
     expect(
-      within(plot).getByText(/1 of the 12 reveals plotted here ran under a vote window of 8h/i),
-    ).toBeVisible();
+      screen.queryByRole("region", { name: /reveals against the whole court/i }),
+    ).not.toBeInTheDocument();
+    expect(screen.queryByText(/court median/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/^Log scale/)).not.toBeInTheDocument();
   });
 
-  it("leaves the plot unmarked for a column never drawn under the earlier windows", () => {
-    renderAt("/agent-jurors/Blaise");
-    const plot = screen.getByRole("region", { name: /reveals against the whole court/i });
-
-    // The marker is a claim about the draws behind *this* figure. blaise was never drawn in
-    // dispute 151, so the court's own change says nothing about its median.
-    expect(within(plot).queryByText(/ran under a vote window/i)).not.toBeInTheDocument();
-  });
-
-  it("names the axis's real range rather than a range it used to have", () => {
-    // This is the sentence ticket 22 was written around: the plot printed "1s to 1d" as a
-    // literal, so widening the shared axis to hold a five-day band would have left one line of
-    // text contradicting the picture immediately beneath it. Pinned against the scale rather
-    // than against the words, which is the only version of this test that cannot rot the same
-    // way — `Juror.dc.html:89` still says "1s to 1h" and has been superseded since ticket 11.
-    renderAt("/agent-jurors/Columbo");
-    const plot = screen.getByRole("region", { name: /reveals against the whole court/i });
-
-    expect(within(plot).getByText(`Log scale · ${STRIP_RANGE_LABEL}`)).toBeVisible();
-  });
-
-  it("draws the band's place as not read, and names the failure in the banner once", () => {
+  it("raises no banner over a comparison read this page no longer draws", () => {
+    // The band sat on the latency plot and nowhere else on this page. A failure of the read
+    // behind it costs nothing here, and a banner about it would describe nothing on screen.
     renderAt("/agent-jurors/Columbo", { performance: referenceFailed });
 
-    const plot = screen.getByRole("region", { name: /reveals against the whole court/i });
-    expect(within(plot).getByText("not read")).toBeInTheDocument();
-    expect(
-      within(screen.getByRole("alert")).getByText(
-        /the comparison court's disputes could not be read/i,
-      ),
-    ).toBeInTheDocument();
+    expect(screen.queryByText(/comparison court's disputes/i)).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
 
@@ -394,9 +356,9 @@ describe("the agent juror the court has never drawn", () => {
   it("draws every unmeasurable figure as a dash, and says what a dash means", () => {
     renderAt("/agent-jurors/Baskerville");
 
-    // The two medians, the four outcome counts (ADR-0009) and the two sums: eight dashes, and
-    // not one zero among them.
-    expect(screen.getAllByText("—")).toHaveLength(8);
+    // The four outcome counts (ADR-0009) and the two sums: six dashes, and not one zero among
+    // them.
+    expect(screen.getAllByText("—")).toHaveLength(6);
     expect(screen.getByText(/a dash means .no draws to measure./i)).toBeVisible();
     expect(
       screen.getByText(/it never means zero, and it never means the query failed/i),
@@ -414,7 +376,7 @@ describe("the agent juror the court has never drawn", () => {
     renderAt("/agent-jurors/Baskerville");
     const coming = screen.getByRole("region", { name: /what appears here on its first draw/i });
 
-    expect(within(coming).getByText(/commit and reveal latency/i)).toBeVisible();
+    expect(within(coming).getByText(/when it committed and revealed/i)).toBeVisible();
     expect(within(coming).getByText(/coherence, once ruled/i)).toBeVisible();
     expect(
       within(coming).getByText(/undefined until the appeal period closes and a ruling exists/i),
@@ -542,9 +504,9 @@ describe("what the page says before, and instead of, a read", () => {
     const card = screen.getByRole("region", { name: /what columbo has done/i });
 
     // A sum's natural degradation is `0.0000`, in the ink of a measurement. Both must be dashes
-    // until the read is in — and the four figures beside them are unaffected.
+    // until the read is in — and the figures beside them are unaffected.
     expect(within(card).getAllByText("—")).toHaveLength(2);
-    expect(within(card).getByText("117s")).toBeInTheDocument();
+    expect(within(card).getByText("75% (9)")).toBeInTheDocument();
   });
 
   it("reads a payout that came back short as unknown, not as a zero", () => {
@@ -607,14 +569,13 @@ describe("one agent juror's own view on a phone", () => {
     vi.unstubAllGlobals();
   });
 
-  it("keeps every one of the six figures, including the two the matrix's phone form drops", () => {
+  it("keeps every figure, including the two sums the matrix's phone form drops", () => {
     stubViewportWidth(PHONE_WIDTH);
     renderAt("/agent-jurors/Columbo");
     const card = screen.getByRole("region", { name: /what columbo has done/i });
 
     expect(within(card).getByText("0.0035")).toBeInTheDocument();
     expect(within(card).getByText("+171.42")).toBeInTheDocument();
-    expect(within(card).getByText("117s")).toBeInTheDocument();
     expect(within(card).getByText("75% (9)")).toBeInTheDocument();
   });
 
@@ -648,17 +609,6 @@ describe("one agent juror's own view on a phone", () => {
 
     const labels = screen.getAllByText(/^(Votes|Choice|Reveal|Commit)$/).map((n) => n.textContent);
     expect(new Set(labels)).toEqual(new Set(["Votes", "Choice", "Reveal", "Commit"]));
-  });
-});
-
-describe("the whole court's own reads, seen from here", () => {
-  it("keeps the matrix's own figures untouched: this view derives none of them", () => {
-    // The court median the plot compares against is `totals.revealLatency`, computed by the seam
-    // over every row — the same number the matrix's own strip plots. A second reduction here
-    // would be two accounts of one court on two pages.
-    renderAt("/agent-jurors/Columbo", { performance: measured });
-
-    expect(screen.getByText(/court median of 68s across 56 reveals/i)).toBeVisible();
   });
 });
 

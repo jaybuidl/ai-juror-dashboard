@@ -81,8 +81,9 @@ describe("the method page", () => {
 
   it("says the third change moved the evidence period and reached no latency", () => {
     // Ticket 19. The court was reconfigured on 26 August and dispute 152 is older than that
-    // change and unmarked, which is a contradiction to anyone who has not been told that the
-    // row marker is about the commit and vote windows alone. This is where they are told.
+    // change, and its latencies are still comparable with today's, which is a contradiction to
+    // anyone who has not been told that only the commit and vote windows matter to a latency.
+    // This is where they are told.
     renderAt("/method");
 
     const section = screen.getByRole("region", { name: /the window/i });
@@ -90,7 +91,7 @@ describe("the method page", () => {
     expect(section).toHaveTextContent(/moved the evidence period alone, from 45 minutes to 10/i);
     expect(section).toHaveTextContent(/The second reconfiguration reaches no latency/i);
     expect(section).toHaveTextContent(
-      /dispute 152 ran under a configuration the court has since replaced and its row carries no marker/i,
+      /dispute 152 ran under a configuration the court has since replaced, and still the windows its latencies were measured against are the windows the court holds now/i,
     );
   });
 
@@ -114,11 +115,23 @@ describe("the method page", () => {
   it("defines time to appeal where latency is defined, per dispute and round 0 only", () => {
     renderAt("/method");
 
-    const section = screen.getByRole("region", { name: /latency is seconds/i });
+    const section = screen.getByRole("region", { name: /speed is time to appeal/i });
 
     expect(section).toHaveTextContent(/time to appeal/i);
     expect(section).toHaveTextContent(/measured per dispute rather than per draw/i);
     expect(section).toHaveTextContent(/only the first round counts/i);
+  });
+
+  it("calls time to appeal the speed figure, and says why latency is not one (ADR-0010)", () => {
+    renderAt("/method");
+
+    const section = screen.getByRole("region", { name: /speed is time to appeal/i });
+
+    expect(section).toHaveTextContent(/it is the one figure here that measures speed/i);
+    expect(section).toHaveTextContent(/neither is averaged, ranked or plotted here/i);
+    expect(section).toHaveTextContent(/reveals in the same block reads 0 seconds/i);
+    // The framing this replaced, on the page a citing reader goes to for definitions.
+    expect(screen.queryByText(/speed and coherence/i)).not.toBeInTheDocument();
   });
 
   it("says the band on the matrix page is not the quantity its marks are", () => {

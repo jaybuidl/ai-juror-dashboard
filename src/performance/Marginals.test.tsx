@@ -7,27 +7,16 @@ import { theme } from "../styles/theme";
 import type { Density } from "./density";
 import { Marginals } from "./Marginals";
 import type { RewardCoverage } from "./performance";
-import type { AgentJurorMarginals, LatencySummary } from "./totals";
+import type { AgentJurorMarginals } from "./totals";
 
 /**
  * One agent juror's column header, on its own.
  *
  * Rendered apart from the matrix because the states worth checking are ones the captured court
- * cannot produce: a commit scan that came back empty over commitments the subgraph records, and a
- * payout read that came back short. `Matrix.test.tsx` checks that the block reaches the column
+ * cannot produce: a payout read that came back short, and a column never drawn. `Matrix.test.tsx` checks that the block reaches the column
  * headers at all, over the real court. The caveat marks these figures carried were removed on
  * 2026-09-24 (maintainer's ruling), and their tests with them.
  */
-
-function summary(seconds: number[]): LatencySummary {
-  const ascending = [...seconds].sort((a, b) => a - b);
-  return {
-    seconds: ascending,
-    fastest: ascending[0] ?? 0,
-    median: ascending[Math.ceil(ascending.length / 2) - 1] ?? 0,
-    slowest: ascending[ascending.length - 1] ?? 0,
-  };
-}
 
 function marginalsOf(over: Partial<AgentJurorMarginals> = {}): AgentJurorMarginals {
   const agentJuror = ROSTER[0];
@@ -37,9 +26,6 @@ function marginalsOf(over: Partial<AgentJurorMarginals> = {}): AgentJurorMargina
     agentJuror,
     draws: 4,
     votes: 5,
-    revealLatency: summary([40, 48, 60, 90]),
-    commitLatency: summary([100, 259, 300, 900]),
-    commitments: 4,
     coherence: {
       coherent: 3,
       tied: 0,
@@ -49,7 +35,6 @@ function marginalsOf(over: Partial<AgentJurorMarginals> = {}): AgentJurorMargina
       resolved: 4,
       lonePanelDisputes: [],
     },
-    changedWindows: [],
     rewards: {
       ethWei: 1080000000000000n,
       pnkWei: 218166666666666666666n,
@@ -65,32 +50,21 @@ const PAID: RewardCoverage = { read: true, paidDraws: 4, feeTokenDraws: 0, short
 
 function renderMarginals(
   over: Partial<AgentJurorMarginals> = {},
-  {
-    scanned = true,
-    payouts = PAID,
-    density = "comfortable",
-  }: { scanned?: boolean; payouts?: RewardCoverage; density?: Density } = {},
+  { payouts = PAID, density = "comfortable" }: { payouts?: RewardCoverage; density?: Density } = {},
 ) {
   return render(
     <ThemeProvider theme={theme}>
       <MemoryRouter>
-        <Marginals
-          marginals={marginalsOf(over)}
-          scanned={scanned}
-          payouts={payouts}
-          density={density}
-        />
+        <Marginals marginals={marginalsOf(over)} payouts={payouts} density={density} />
       </MemoryRouter>
     </ThemeProvider>,
   );
 }
 
 describe("Marginals", () => {
-  it("summarises the column in the four figures this ticket fills", () => {
+  it("summarises the column as its draws and what they came to", () => {
     renderMarginals();
 
-    expect(screen.getByText("48s")).toBeInTheDocument();
-    expect(screen.getByText("4m 19s")).toBeInTheDocument();
     // The outcome breakdown as shares of the draws (2026-11-02): three coherent and one diverged
     // of four, rounded to whole percent, with the draw count beneath as the base.
     expect(screen.getByText("75%")).toBeInTheDocument();
@@ -104,26 +78,38 @@ describe("Marginals", () => {
   it("names each figure in full for a reader who cannot see the column", () => {
     renderMarginals();
 
-    // The abbreviations are what a 148px column has room for; "MED REV" read aloud is not a
-    // measure of anything.
-    expect(screen.getByText("Median reveal latency")).toBeInTheDocument();
-    expect(screen.getByText("Median commit latency")).toBeInTheDocument();
+    // The labels are what a 148px column has room for; a bare "Tied" read aloud does not say
+    // what was tied.
+    expect(
+      screen.getByText(
+        "Tied draws: voted in a dispute whose ruling is a tie, and paid as coherent",
+      ),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Times the court drew this agent juror")).toBeInTheDocument();
+  });
+
+  it("summarises no commit or reveal latency, at either density (ADR-0010)", () => {
+    // Per-draw latency is not a measure of speed, so no column reduces it to a median. The
+    // cells below still carry each draw's own figures; the header ranks nothing by them.
+    for (const density of ["comfortable", "compact"] as const) {
+      const { unmount } = renderMarginals({}, { density });
+      expect(screen.queryByText(/latency/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/^Med (com|rev)$/)).not.toBeInTheDocument();
+      unmount();
+    }
   });
 
   it("shows a dash for every figure an agent juror never drawn cannot have", () => {
     // `canvas/JurorEmpty.dc.html:66-76`. A dash means "no draws to measure"; it never means
     // zero, and it never means the read failed.
     //
-    // Five of the six now: the two reveal and commit medians, the coherence count, and — since
-    // ticket 10 — cumulative ETH and net PNK. An agent juror the court has never asked cannot
-    // have been paid, so `0.0000` there would be a measurement of something that never happened.
-    // Only the draw count is a real zero, which is the next case down.
+    // The outcome lines and — since ticket 10 — cumulative ETH and net PNK. An agent juror the
+    // court has never asked cannot have been paid, so `0.0000` there would be a measurement of
+    // something that never happened. Only the draw count is a real zero, which is the next case
+    // down.
     renderMarginals({
       draws: 0,
       votes: 0,
-      revealLatency: null,
-      commitLatency: null,
-      commitments: 0,
       coherence: {
         coherent: 0,
         tied: 0,
@@ -136,41 +122,16 @@ describe("Marginals", () => {
       rewards: null,
     });
 
-    // Eight now: the two medians, the four outcome counts (ADR-0009) and the two payouts.
-    expect(screen.getAllByText("—")).toHaveLength(8);
+    // Six: the four outcome counts (ADR-0009) and the two payouts.
+    expect(screen.getAllByText("—")).toHaveLength(6);
     expect(screen.queryByText("0/0")).not.toBeInTheDocument();
     expect(screen.queryByText("0.0000")).not.toBeInTheDocument();
   });
 
   it("shows its draw count as a real zero, because zero draws is a measurement", () => {
-    renderMarginals({ draws: 0, votes: 0, revealLatency: null, commitLatency: null });
+    renderMarginals({ draws: 0, votes: 0 });
 
     expect(screen.getByText("0")).toBeInTheDocument();
-  });
-
-  it("reads a commit median that has not been scanned for as a step not reached", () => {
-    // The same gate `commitFigureOf` takes. Arbitrum answers slower than the subgraph and this
-    // page does not wait for it, so between the two answers every column would otherwise come
-    // up rose reading "Not read" — a failure announced before it has happened.
-    renderMarginals({ commitLatency: null, commitments: 4 }, { scanned: false });
-
-    expect(screen.queryByText("Not read")).not.toBeInTheDocument();
-    expect(screen.getAllByText("—").length).toBeGreaterThan(0);
-  });
-
-  it("reads a commit median the scan could not fill as unknown, not as a missing commitment", () => {
-    // The subgraph says these draws committed and no log was found for any of them. Wording
-    // that as an em dash would report a read that came back short as an agent juror that did
-    // not act — ticket 13's Unknown, in the aggregate.
-    renderMarginals({ commitLatency: null, commitments: 4 }, { scanned: true });
-
-    expect(screen.getByText("Not read")).toBeInTheDocument();
-  });
-
-  it("keeps the dash where there was nothing to commit at all", () => {
-    renderMarginals({ commitLatency: null, commitments: 0 }, { scanned: true });
-
-    expect(screen.queryByText("Not read")).not.toBeInTheDocument();
   });
 
   describe("what the column has been paid", () => {
@@ -225,7 +186,7 @@ describe("Marginals", () => {
     });
 
     it("says nothing at all before the payouts have been read", () => {
-      // The gate, and the reason it has to exist for these two and not for the medians beside
+      // The gate, and the reason it has to exist for these two and not for the counts above
       // them. `read` is false while the subgraph is being asked *and* after it refused — the
       // fourth recurrence of that trap in `CLAUDE.md` — so a figure keyed on the data alone
       // would print `0.0000` for the length of every cold load and then correct itself. A
@@ -246,8 +207,8 @@ describe("Marginals", () => {
 
       expect(screen.queryByText("0.0000")).not.toBeInTheDocument();
       expect(screen.queryByText("0.00")).not.toBeInTheDocument();
-      // Ticket 13's Unknown, in the aggregate — the same words the commit median uses one gate
-      // up, because it is the same thing: a read that happened and came up short.
+      // Ticket 13's Unknown, in the aggregate — the same words a cell's commit figure uses,
+      // because it is the same thing: a read that happened and came up short.
       expect(screen.getAllByText("Not read")).toHaveLength(2);
     });
 
@@ -266,12 +227,10 @@ describe("Marginals", () => {
    * survives is a property of this list and its flags, not of the grid around it.
    */
   describe("the compact density", () => {
-    it("keeps the medians, the outcome breakdown and the draw count, and drops the payouts", () => {
+    it("keeps the outcome breakdown and the draw count, and drops the payouts", () => {
       renderMarginals({}, { density: "compact" });
 
       for (const kept of [
-        "Median commit latency",
-        "Median reveal latency",
         "Coherent draws: voted with a ruling that did not tie",
         "Tied draws: voted in a dispute whose ruling is a tie, and paid as coherent",
         "Diverged draws: voted against a ruling that did not tie",
@@ -291,17 +250,9 @@ describe("Marginals", () => {
       renderMarginals({}, { density: "compact" });
 
       const keys = screen
-        .getAllByText(/^(Med com|Med rev|Coherent|Tied|Diverged|Missed|Draws)$/)
+        .getAllByText(/^(Coherent|Tied|Diverged|Missed|Draws)$/)
         .map((key) => key.textContent);
-      expect(keys).toEqual([
-        "Med com",
-        "Med rev",
-        "Coherent",
-        "Tied",
-        "Diverged",
-        "Missed",
-        "Draws",
-      ]);
+      expect(keys).toEqual(["Coherent", "Tied", "Diverged", "Missed", "Draws"]);
     });
   });
 });

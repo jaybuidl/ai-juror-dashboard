@@ -104,10 +104,10 @@ function costingTiles(read: FailedRead | null): CoreFailure | null {
   return read === null ? null : { read, costsTiles: true };
 }
 
-function coreFailureOf({
-  disputes,
-  performance,
-}: Pick<MatrixPageProps, "disputes" | "performance">): CoreFailure | null {
+function coreFailureOf(
+  { disputes, performance }: Pick<MatrixPageProps, "disputes" | "performance">,
+  { strip }: { strip: boolean },
+): CoreFailure | null {
   const measured = performance.performance;
 
   if (disputes.error !== null) {
@@ -209,9 +209,9 @@ function coreFailureOf({
   // page, and a banner that went quiet would leave them to find that out by arriving.
   //
   // Ticket 17's compact density is the same case a second time and takes the same answer. Past
-  // forty disputes the column header keeps three of its six figures, so these two leave this page
-  // exactly as they leave the phone — and they are reachable exactly as they are from the phone,
-  // on the agent juror view, which has one density and prints all six. What both readers lose is
+  // forty disputes the column header drops the two sums, so they leave this page exactly as they
+  // leave the phone — and they are reachable exactly as they are from the phone, on the agent
+  // juror view, which has one density and prints every figure. What both readers lose is
   // the figure on *this* page, which is why the wording above says "below" rather than naming the
   // column headers: that half is ticket 16's, and it holds at either density.
   if (measured?.rewards.short === true) {
@@ -227,11 +227,14 @@ function coreFailureOf({
 
   // Ticket 23's comparison court, read from this same deployment. Last because it costs the
   // least: where the comparison band begins, and no figure of court 34's. It is the loud tier
-  // all the same, because since that ticket the band *is* a figure, the one the page's whole
-  // speed comparison is drawn against. The band's own place on the plot says it is missing,
-  // which makes the banner the second voice and not the only one. On a phone there is no strip on
-  // this page, and it still stands for the reason the payouts' does: the agent juror view draws
-  // the band at every width, one link away.
+  // all the same, because since that ticket the band *is* a figure, the one the time to appeal
+  // is compared against. The band's own place on the plot says it is missing, which makes the
+  // banner the second voice and not the only one.
+  //
+  // Only where the strip is drawn. On a phone there is no strip, and since ADR-0010 removed the
+  // agent juror view's latency plot there is no band anywhere else either, so a failure of this
+  // read costs a phone reader nothing and a banner about it would describe nothing on screen.
+  if (!strip) return null;
   const comparison = comparisonFailureOf(performance.reference, performance.referenceError);
   return comparison === null ? null : { read: comparison, costsTiles: false };
 }
@@ -352,13 +355,13 @@ export function MatrixPage(props: MatrixPageProps) {
   useDocumentTitle(null);
   const { roster, disputes, performance } = props;
   const measured = performance.performance;
-  const core = coreFailureOf(props);
-  const failures = failuresOf(props, core);
   // Below the breakpoint the matrix is not rendered at all — not scaled, not scrolled sideways,
   // not transposed into a narrower grid. `DisputeCards` replaces it, and only one of the two is
   // ever in the DOM: a `display: none` table is still 168 cells of it on the device least able
   // to afford them, and still there in a page a reader saves or prints.
   const isNarrow = useIsNarrow();
+  const core = coreFailureOf(props, { strip: !isNarrow });
+  const failures = failuresOf(props, core);
   // Asked of the core subgraph specifically, because that is the only source the tiles and the
   // strip read: disputes, draws, votes and time to appeal all come from it, and none of them
   // touches the template subgraph or Arbitrum. Labelling them partial over a missing title would
@@ -389,8 +392,8 @@ export function MatrixPage(props: MatrixPageProps) {
       <StatTiles totals={measured?.totals ?? null} partial={partial} narrow={isNarrow} />
       {/* Absent below the breakpoint, and no measured figure leaves the page with it: the
           strip's headline figure is the median time to appeal, which the tiles lead with. Its
-          comparison band is a reading of another court since ticket 23, and the agent juror view
-          draws the same band at every width, so the phone loses it here and not everywhere.
+          comparison band is a reading of another court since ticket 23, and a phone does not
+          see it anywhere: the agent juror view's plot that also drew it went with ADR-0010.
 
           The provenance footer that once said what the band rests on was removed with all its
           footer-only caveats (maintainer's ruling, 2026-09-24); /method describes the band. */}
@@ -439,10 +442,10 @@ export function MatrixPage(props: MatrixPageProps) {
         <Caveat>
           <CaveatTitle>Nothing measured on this load</CaveatTitle>
           <CaveatBody>
-            This page measures how long each agent juror took to commit its vote, how long it took
-            to reveal it, and whether that vote matched the dispute's final ruling — but not on this
-            load: what it needed could not be read, and it shows what it did read rather than a
-            matrix built from part of it. Nothing below is a latency, a coherence or a draw.
+            This page measures how long the court took to bring each dispute to appeal, and whether
+            each agent juror voted with the dispute's final ruling — but not on this load: what it
+            needed could not be read, and it shows what it did read rather than a matrix built from
+            part of it. Nothing below is a latency, a coherence or a draw.
           </CaveatBody>
         </Caveat>
       ) : null}

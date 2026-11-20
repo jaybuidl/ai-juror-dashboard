@@ -370,7 +370,7 @@ export type MatrixRow = {
 };
 
 /**
- * Whether the commit half of the speed dimension was read whole.
+ * Whether the commit half of the per-draw latency record was read whole.
  *
  * A count and not an error, because the failure it exists for throws nothing: an endpoint that
  * caps `eth_getLogs` answers with fewer logs and no complaint, and every draw it dropped then
@@ -485,16 +485,14 @@ export type CourtPerformance = {
   /** The matrix rows, newest dispute first. */
   rows: readonly MatrixRow[];
   /**
-   * What the rows amount to court-wide: the stat tiles' figures and the latency distribution.
+   * What the rows amount to court-wide: the stat tiles' figures and the time-to-appeal
+   * distribution.
    *
    * Computed here rather than reduced in a view, so the tiles above the matrix and the matrix
    * itself are two readings of one model. See `totals.ts`.
    *
-   * Reveal latency only, and named so on `CourtTotals` itself: the rows carry a commit latency
-   * too, and an aggregate that silently averaged both would be the fraction-of-a-window mistake
-   * in another form. The commit median is per agent juror, on `marginals` below — a column of
-   * one agent juror's draws is a set the median describes, where the court's whole commit
-   * distribution pooled across two commit windows is one the reader cannot use.
+   * No latency distribution, court-wide or per agent juror: ADR-0010 keeps commit and reveal
+   * latency as a per-draw record and summarises neither.
    */
   totals: CourtTotals;
   /**

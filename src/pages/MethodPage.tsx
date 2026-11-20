@@ -10,7 +10,7 @@ import { REFERENCE_COURT_ID } from "../performance/reference";
  *
  * A citing reader needs somewhere to find out what a figure on the matrix actually is, and a
  * footnote under a grid is not that place. The vocabulary is `CONTEXT.md`'s throughout — draw,
- * panel, coherence, reveal latency — because the glossary is what the rest of the codebase and
+ * panel, coherence, time to appeal, reveal latency — because the glossary is what the rest of the codebase and
  * the sibling repositories are written in, and a page that paraphrased it would be a second,
  * slightly different definition of the same words.
  *
@@ -160,7 +160,7 @@ const RegimeWindows = styled.span`
 
 const SECTIONS: readonly { id: string; label: string }[] = [
   { id: "unit", label: "The unit" },
-  { id: "latency", label: "Latency" },
+  { id: "latency", label: "Speed and latency" },
   { id: "comparison", label: "The comparison" },
   { id: "coherence", label: "Coherence" },
   { id: "window", label: "The window" },
@@ -212,7 +212,21 @@ export function MethodPage() {
         </Body>
       </Section>
 
-      <Section id="latency" heading="Latency is seconds from the moment a period opened">
+      {/* `#latency` keeps its id although the section now leads with time to appeal: the
+          fragment may be linked from outside, and the latencies are still defined here. ADR-0010
+          is why the order changed and why the last paragraph exists. */}
+      <Section id="latency" heading="Speed is time to appeal, and latency is a record">
+        <Body>
+          <Term>Time to appeal</Term> is the figure at the top of the matrix page, and it is the one
+          figure here that measures speed. It is the seconds from the moment a dispute was created
+          to the moment its first round's appeal period opened — the point at which every vote in
+          that round was in and the parties could see the result. It is measured per dispute rather
+          than per draw. It spans the evidence, commit and vote periods, so it includes the time the
+          court spent drawing a panel as well as the time the panel took to act. Only the first
+          round counts, whatever rounds follow. A dispute that has not reached its appeal period yet
+          has no time to appeal; it is not plotted, and the plot says how many such disputes there
+          are.
+        </Body>
         <Body>
           <Term>Reveal latency</Term> is the number of seconds from the moment the vote period
           opened to the moment that draw's reveal was recorded. Both moments come from the chain's
@@ -235,35 +249,33 @@ export function MethodPage() {
           counted and stated above the matrix rather than shown as commitments that never happened.
         </Body>
         <Body>
-          <Term>Time to appeal</Term> is the figure at the top of the matrix page, and it is not a
-          latency: it is measured per dispute rather than per draw, and from the dispute's creation
-          rather than from a period. It is the seconds from the moment a dispute was created to the
-          moment its first round's appeal period opened — the point at which every vote in that
-          round was in and the parties could see the result. It spans the evidence, commit and vote
-          periods, so it includes the time the court spent drawing a panel as well as the time the
-          panel took to act. Only the first round counts, whatever rounds follow. A dispute that has
-          not reached its appeal period yet has no time to appeal; it is not plotted, and the plot
-          says how many such disputes there are.
+          Neither latency measures how fast an agent juror judges a case, so neither is averaged,
+          ranked or plotted here. The evidence is public from the moment a dispute is created, and
+          the panel is drawn during the evidence period, so an agent juror can study a case before
+          the commit period opens; its commit latency cannot say when it did. A reveal involves no
+          judgment at all, because the vote was fixed at commit. And both count from the moment a
+          period opened, which is whenever any account told the court to advance it. An agent juror
+          that advances the period itself and reveals in the same block reads 0 seconds. Each draw's
+          two figures are shown where that draw is shown, as a record of when it acted.
         </Body>
         <Body>
-          Neither measure is ever shown as a fraction of a period's window — not in a cell, not in a
-          total, not anywhere. See the window, below.
+          Neither latency is ever shown as a fraction of a period's window — not in a cell, not on a
+          dispute's page, not anywhere. See the window, below.
         </Body>
       </Section>
 
-      {/* Ticket 23. Directly after latency, because it is what a latency is compared against
-          on both plots, and it is the one read on this dashboard that is not of court 34. The
+      {/* Ticket 23. Directly after time to appeal, because it is what that figure is compared
+          against, and it is the one read on this dashboard that is not of court 34. The
           figures themselves are not quoted here: this page reads nothing, and a median typed
           into it would go stale the next time court 29 ruled. The band's own label states
           the court and its median as read on that load. */}
       <Section id="comparison" heading="The comparison band is another court's time to ruling">
         <Body>
-          Both time plots — the court's time to appeal on the matrix page and each agent juror's
-          reveal latency on its own page — carry a violet band marking where an ordinary Kleros
-          court sits on the same time axis. It is read, not drawn by hand. Its boundary is the
-          median <Term>time to ruling</Term> of court {REFERENCE_COURT_ID} on the same core
-          subgraph, over every single-round dispute that court has ruled: the seconds from a
-          dispute's creation to the moment its execution period opened, when the ruling became
+          The court's time to appeal is plotted on the matrix page with a violet band marking where
+          an ordinary Kleros court sits on the same time axis. It is read, not drawn by hand. Its
+          boundary is the median <Term>time to ruling</Term> of court {REFERENCE_COURT_ID} on the
+          same core subgraph, over every single-round dispute that court has ruled: the seconds from
+          a dispute's creation to the moment its execution period opened, when the ruling became
           final.
         </Body>
         <Body>
@@ -281,17 +293,18 @@ export function MethodPage() {
           courts; this section is where the court and the reading are named.
         </Body>
         <Body>
-          On the matrix page the marks and the band are not the same quantity: each mark is a time
-          to appeal, which stops where the appeal period opens, and the band is a time to ruling,
-          which runs on through the appeal period to the ruling.
+          The marks and the band are not the same quantity: each mark is a time to appeal, which
+          stops where the appeal period opens, and the band is a time to ruling, which runs on
+          through the appeal period to the ruling.
         </Body>
         <Body>
           A read of that court can come back short without failing. So the disputes returned are
           counted against the number the court itself says it holds, and a shortfall is reported as
           those two numbers. Where the read is short, has failed, or is still out, no band is drawn
-          at all. The band's place on the plot says which, and a failure raises the banner. The band
-          is never drawn at a default, and no latency is shown as a fraction of it: it is a position
-          on an absolute time axis, like every mark beside it.
+          at all. The band's place on the plot says which, and a failure raises the banner wherever
+          the plot is drawn; a phone draws neither. The band is never drawn at a default, and no
+          figure is shown as a fraction of it: it is a position on an absolute time axis, like every
+          mark beside it.
         </Body>
       </Section>
 
@@ -300,8 +313,8 @@ export function MethodPage() {
           A draw is <Term>coherent</Term> when the choice it revealed is the dispute's final ruling
           — the winning choice the arbitrator reports, not the majority of a round. The distinction
           is not academic: a dispute in its appeal period has every vote in and no ruling, and a
-          majority read off it would be a prediction. Those draws are shown as revealed, and are
-          excluded from coherence while still counting toward latency.
+          majority read off it would be a prediction. Those draws are shown as revealed, with their
+          latencies, and are excluded from coherence.
         </Body>
         <Body>
           Refusing to arbitrate is a ruling. An agent juror that voted to refuse in a dispute the
@@ -350,29 +363,28 @@ export function MethodPage() {
 
         <Body>
           Dispute 151 is the only dispute that ran under the first configuration: the change was
-          mined 48 minutes before dispute 152 was created. So it is the one row of the matrix
-          carrying a <Term>†</Term>, and the marker travels with every latency it touches rather
-          than sitting on the row alone — an aggregate latency that counts that dispute is marked
-          too.
+          mined 48 minutes before dispute 152 was created. Its commit and vote periods ran under
+          windows of 8 hours rather than 45 and 30 minutes, so its latencies cannot be set beside
+          any later dispute's. Nothing here summarises latency across disputes, so no figure mixes
+          the two.
         </Body>
 
         <Body>
           The second reconfiguration reaches no latency, and is worth a sentence for what it does
           not do. Every latency here is measured from the commit period or the vote period, and 26
           August left both of them exactly where they were. So dispute 152 ran under a configuration
-          the court has since replaced and its row carries no marker: the windows its latencies were
-          measured against are the windows the court holds now.
+          the court has since replaced, and still the windows its latencies were measured against
+          are the windows the court holds now.
         </Body>
 
         <Body>
           The median time to appeal is the exception, because it is measured from a dispute's
           creation and so spans the evidence period too. A dispute created before 26 August sat
           through 45 minutes of evidence where one created today sits through 10, so its time to
-          appeal is not the same measurement. The <Term>†</Term> on that figure counts every dispute
-          behind it that ran under an evidence, commit or vote window the court has since changed —
-          which is more disputes than carry the marker on their rows. Where a configured window
-          would otherwise stand beside the evidence period, the dispute view gives the count of
-          evidence submissions instead.
+          appeal is not the same measurement. The median time to appeal still counts those disputes,
+          dispute 151's 12-hour evidence period included. Where a configured window would otherwise
+          stand beside the evidence period, the dispute view gives the count of evidence submissions
+          instead.
         </Body>
 
         <Body>
@@ -393,8 +405,8 @@ export function MethodPage() {
       </Section>
 
       {/* Ticket 10. Below coherence and above the caveats, which is where it belongs in the
-          argument: it is what the two measured dimensions cost and earned, and deliberately not
-          a third dimension anyone is ranked on. */}
+          argument: it is what the measured figures cost and earned, and deliberately not a
+          dimension anyone is ranked on. */}
       <Section id="rewards" heading="What each agent juror has earned">
         <Body>
           Each column header also states what that agent juror has been paid: cumulative ETH and net

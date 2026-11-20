@@ -5,7 +5,6 @@ import {
   APPEAL_AXIS_MIN_SECONDS,
   APPEAL_TICKS,
   STRIP_MAX_SECONDS,
-  STRIP_RANGE_LABEL,
   STRIP_TICKS,
   stripFraction,
   stripMarks,
@@ -93,16 +92,7 @@ describe("the axis ticks", () => {
   });
 });
 
-describe("the range label", () => {
-  /**
-   * The agent juror view printed "Log scale · 1s to 1d" as a copied string, so it stated a range
-   * the axis no longer had the moment the maximum moved — a sentence contradicting the picture
-   * directly beneath it. Pinned against the ends of the axis rather than against the words.
-   */
-  it("names the axis's real ends rather than a transcription of them", () => {
-    expect(STRIP_RANGE_LABEL).toBe(`${STRIP_TICKS[0]?.label} to ${STRIP_TICKS.at(-1)?.label}`);
-  });
-
+describe("the axis's end", () => {
   it("ends where the axis ends", () => {
     expect(STRIP_TICKS.at(-1)?.seconds).toBe(STRIP_MAX_SECONDS);
   });

@@ -1,5 +1,7 @@
 # Latency is stored in absolute seconds, not as a fraction of the period
 
+_Superseded in part by [ADR-0010](0010-per-draw-latency-is-not-speed.md) (2026-11-20): the storage decision stands, but a latency is no longer "a juror's speed" and is never summarised per agent juror._
+
 A juror's speed could be expressed as seconds since the period opened, as a fraction of the court's
 configured period length, or as a fraction of how long the period actually ran. We store absolute
 seconds, and treat any fraction as a display detail computed on top.

@@ -56,7 +56,6 @@ function totalsOf(timeToAppeal: TimeToAppeal): CourtTotals {
     votes: 61,
     agentJurorsDrawn: 5,
     agentJurors: 6,
-    revealLatency: { seconds: [7, 85, 86, 552], fastest: 7, median: 85, slowest: 552 },
     timeToAppeal,
     lonePanelDisputes: [],
     changedWindows: [],

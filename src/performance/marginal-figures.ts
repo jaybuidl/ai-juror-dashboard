@@ -1,25 +1,27 @@
-import { commitMedianFigureOf, type Figure, UNREAD_FIGURE } from "./cell";
-import { formatLatencySeconds } from "./latency";
+import { type Figure, UNREAD_FIGURE } from "./cell";
 import type { RewardCoverage } from "./performance";
 import { formatEthWei, formatPnkWei } from "./rewards";
 import type { AgentJurorMarginals, AgentJurorRewards } from "./totals";
 
 /**
- * How one agent juror's six figures are *read* — the gates and the absences.
+ * How one agent juror's figures are *read* — the gates and the absences.
  *
- * Lifted out of `Marginals.tsx` by ticket 11, which gave the same six figures a second
- * rendering: the matrix's column header prints them stacked in 148px, and the agent juror's own
- * view prints them across a stat card at `canvas/Juror.dc.html:70-82`. This is the ticket 16
- * move made again one level down — the matrix and the phone's card list were two renderings of
- * one record, and these are two renderings of one column.
+ * Lifted out of `Marginals.tsx` by ticket 11, which gave the same figures a second rendering:
+ * the matrix's column header prints them stacked in 148px, and the agent juror's own view prints
+ * them across a stat card at `canvas/Juror.dc.html:70-82`. This is the ticket 16 move made again
+ * one level down — the matrix and the phone's card list were two renderings of one record, and
+ * these are two renderings of one column.
  *
- * What that buys is exactly what it bought there. Four of these six are figures with three or
- * four absences behind them, and every one of those absences is a sentence about what this
- * dashboard did or did not read: a commit median missing before Arbitrum answers is a step not
- * reached, and the same absence after it refuses is a read that came up short. A second
- * implementation on the agent juror's page would be a second set of those judgements, free to
- * put "Not read" on a cold load or `0.0000` under a subgraph that returned nothing — on the one
- * page where an agent juror is named at the top and the figure is the largest thing under it.
+ * What that buys is exactly what it bought there. The reward sums have four absences behind
+ * them, and every one of those absences is a sentence about what this dashboard did or did not
+ * read. A second implementation on the agent juror's page would be a second set of those
+ * judgements, free to put `0.0000` under a subgraph that returned nothing — on the one page where
+ * an agent juror is named at the top and the figure is the largest thing under it.
+ *
+ * **There is no commit or reveal median here, deliberately** (ADR-0010). Both were the first two
+ * figures until 2026-11-20. Commit latency does not measure deliberation and reveal latency
+ * involves none, so a median of either per agent juror ranked something the data does not
+ * support. Do not add one back without superseding that ADR.
  *
  * Nothing here computes an aggregate. `AgentJurorMarginals` is the arithmetic and it lives in
  * `totals.ts`, below the seam; this decides only how each of its fields is to be read out loud.
@@ -58,31 +60,21 @@ export type MarginalFigure = {
   /**
    * Whether this figure survives the matrix header's compact density.
    *
-   * Four of the six do: the median commit, the median reveal, the coherence count and the draw
-   * count. Ticket 17 dropped the median commit too; it was restored on 2026-09-24. What goes is
-   * the two reward sums, which are supporting context beside the measures rather than a
-   * dimension anyone is ranked on. A flag on the figure rather than a
-   * second list, because a second list is a second order and the order is the artboard's.
+   * Everything but the two reward sums does: the outcome breakdown and the draw count. What goes
+   * is the sums, which are supporting context beside the measures rather than a dimension anyone
+   * is ranked on. A flag on the figure rather than a second list, because a second list is a
+   * second order and the order is the artboard's.
    *
    * It lives here, beside the readings, rather than in `Marginals.tsx` which is the only caller
-   * that filters on it: the agent juror view takes all six at `canvas/Juror.dc.html:70-82` and
-   * has no density of its own, and a flag kept next to the figure it describes cannot drift from
-   * the order the two renderings share.
+   * that filters on it: the agent juror view takes every figure at `canvas/Juror.dc.html:70-82`
+   * and has no density of its own, and a flag kept next to the figure it describes cannot drift
+   * from the order the two renderings share.
    */
   dense: boolean;
 };
 
 /** What a figure needs to know about the reads behind it before it can be read out. */
 export type MarginalContext = {
-  /**
-   * Whether the commit log scan has come back — `commitCoverage.read`.
-   *
-   * The same gate `commitFigureOf` takes, and for the same reason: the flag is false while
-   * Arbitrum is being asked as well as after it refused, so a commit median missing before the
-   * answer arrives is a step not reached rather than a read that came up short. Without it every
-   * column would read "Not read" for the length of every cold load.
-   */
-  scanned: boolean;
   /**
    * What the court's payouts amount to — `CourtPerformance.rewards`.
    *
@@ -96,12 +88,13 @@ export type MarginalContext = {
 };
 
 /**
- * The six figures, in the artboard's order.
+ * The figures, in the artboard's order less the two latency medians ADR-0010 removed.
  *
- * A list rather than six hard-coded blocks because the block was designed to hold six and held
- * four until ticket 10: the last two entries are cumulative ETH and net PNK, under the same
- * hairline as the four above them and not in a summary column of their own
- * (`canvas/Main.dc.html:136-152`, `canvas/Juror.dc.html:70-82`).
+ * A list rather than hard-coded blocks because the block was designed to hold six and held four
+ * until ticket 10: the last two entries are cumulative ETH and net PNK, under the same hairline as
+ * the figures above them and not in a summary column of their own
+ * (`canvas/Main.dc.html:136-152`, `canvas/Juror.dc.html:70-82`). The artboards still draw a median
+ * commit and a median reveal first; ADR-0010 overrules them on that point.
  *
  * Nothing here is ranked and nothing reorders: the order is the artboard's, and the rewards sit
  * last because they are supporting context beside the marginals rather than a dimension this
@@ -109,30 +102,11 @@ export type MarginalContext = {
  */
 export function marginalFiguresOf(
   marginals: AgentJurorMarginals,
-  { scanned, payouts }: MarginalContext,
+  { payouts }: MarginalContext,
 ): MarginalFigure[] {
-  const { revealLatency, coherence } = marginals;
+  const { coherence } = marginals;
 
   return [
-    {
-      key: "commit",
-      // First, because a commit precedes its reveal and the two medians read in that order.
-      // Kept at the compact density too (ruled 2026-09-24): the grid's dispute row carries that
-      // row's own commit, which is not this column's median, so dropping it here lost a figure.
-      dense: true,
-      label: "Med com",
-      caption: "Median commit",
-      name: "Median commit latency",
-      figure: commitMedianFigureOf(marginals.commitLatency?.median, marginals.commitments, scanned),
-    },
-    {
-      key: "reveal",
-      dense: true,
-      label: "Med rev",
-      caption: "Median reveal",
-      name: "Median reveal latency",
-      figure: latencyFigure(revealLatency?.median),
-    },
     // The breakdown of the draws below it, by outcome — ADR-0009. Plain counts that sum to DRAWS
     // (`Coherence` says why), where this was "coherent/ruled" until 2026-11-02 and folded every
     // tie, every divergence and every missed vote into one unnamed remainder. A dash where the
@@ -211,9 +185,9 @@ export function marginalFiguresOf(
 }
 
 /**
- * The figures as the agent juror page's card groups them: the two medians and the draw count,
- * then what those draws came to, then what the court paid. Grouped by key rather than by
- * position, because the outcome lines are four or five depending on whether anything is acting.
+ * The figures as the agent juror page's card groups them: the draw count, then what those draws
+ * came to, then what the court paid. Grouped by key rather than by position, because the outcome
+ * lines are four or five depending on whether anything is acting.
  */
 export function cardGroupsOf(figures: readonly MarginalFigure[]): {
   metrics: MarginalFigure[];
@@ -222,7 +196,7 @@ export function cardGroupsOf(figures: readonly MarginalFigure[]): {
 } {
   const of = (keys: readonly string[]) => figures.filter((figure) => keys.includes(figure.key));
   return {
-    metrics: of(["commit", "reveal", "draws"]),
+    metrics: of(["draws"]),
     outcomes: of(["coherence", "tied", "diverged", "missed", "acting"]),
     payouts: of(["eth", "pnk"]),
   };
@@ -270,21 +244,20 @@ const EMPTY_REWARDS: AgentJurorRewards = {
 /**
  * A reward figure, and the four absences it has to tell apart before it prints a zero.
  *
- * The same shape as `commitMedianFigureOf` in `cell.ts` and for a sharper version of the same
- * reason. Every
- * other figure here degrades to an em dash when it cannot be taken; these two are sums, and a
- * sum's natural degradation is `0.0000` — a number, in the ink of a measurement, saying an agent
+ * The same shape as `commitFigureOf` in `cell.ts` and for a sharper version of the same reason.
+ * Every other figure here degrades to an em dash when it cannot be taken; these two are sums, and
+ * a sum's natural degradation is `0.0000` — a number, in the ink of a measurement, saying an agent
  * juror earned nothing. So every gate comes first and the arithmetic last:
  *
  * - **The read is not in.** Pending ink and a dash. `read` is false while the subgraph is being
  *   asked *and* after it refused, which is the fourth recurrence of that trap in `CLAUDE.md` —
  *   the failed half is the banner's to say, and this only has to not lie in the meantime.
  * - **Never drawn.** Pending ink and a dash, which is what `canvas/JurorEmpty.dc.html:66-76`
- *   draws and what the four figures above already do. An agent juror the court has not drawn
+ *   draws and what the outcome lines above already do. An agent juror the court has not drawn
  *   has nothing on chain to have earned from. Asked *before* the shortfall below, because a
  *   column with no draws has nothing that could have been read short.
  * - **The read came back short.** Ticket 13's Unknown — rose, and the word "Not read" beside it,
- *   exactly as the commit median states the same thing one gate up. This is the case the whole
+ *   exactly as a cell's commit figure states the same thing. This is the case the whole
  *   `short` flag exists for: without it a reindexing subgraph's `[]` renders as every column
  *   reading `0.0000`, and a wrong figure is worse than an absent one on a page that may be cited.
  * - **Drawn, read whole, and paid nothing.** A real zero, because that is a measurement: the
@@ -301,11 +274,4 @@ function rewardFigure(
   // `format` is given a zero rather than being skipped, so that the zero is written to the same
   // precision as every figure beside it — "0.0000" lines up under "0.0026" and "0" would not.
   return { text: format(marginals.rewards ?? EMPTY_REWARDS), tone: "value" };
-}
-
-/** A duration, or the em dash that means there were no draws to measure. */
-function latencyFigure(median: number | undefined): Figure {
-  return median === undefined
-    ? { text: "—", tone: "pending" }
-    : { text: formatLatencySeconds(median), tone: "value" };
 }

@@ -5,7 +5,7 @@ import { type BlockTimes, browserBlockTimes } from "./block-times";
 import type { RawCommitCast } from "./performance";
 
 /**
- * The other half of the speed dimension: when each commitment was published.
+ * The commit half of the per-draw record: when each commitment was published.
  *
  * `ClassicVote.commited` is a boolean and nothing in the core subgraph's schema records *when*
  * a commitment was published, so the moment is recovered from `CommitCast` logs and the block

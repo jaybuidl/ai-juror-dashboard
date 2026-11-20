@@ -88,6 +88,18 @@ Lesser, noted in passing: `Main.dc.html:118`'s legend words the live state `Acti
 words it `Committed`/`Awaiting`, and `Dispute.dc.html`'s justification columns are not in roster
 order despite its caption saying they are.
 
+## Overruled by an ADR, artboards not yet amended
+
+- **The latency medians and the agent juror latency profile are not built** (ADR-0010,
+  2026-11-20). `Main.dc.html:147-148` heads each column with a median reveal and a median commit,
+  and `MatrixDense.dc.html:77` with the median reveal; `Juror.dc.html:72-73` puts both on the stat
+  card and `:86-110` plots the reveal latencies against the court's. Per-draw latency does not measure how fast an agent
+  juror judges, so none of those is drawn, whatever the artboard shows. This is not the canvas-wins
+  rule failing: the artboards decide how a figure looks, and ADR-0010 decides that this figure is
+  not shown. Amending the artboards is stage 2 of issue #8, together with the cell. Until then, do
+  not restore a median or the plot to match them. The `Juror.dc.html:73` defect above is moot for
+  the same reason.
+
 ## Fixed, by amending the artboard
 
 - **`Main.dc.html`'s comparison band began at one hour and read "hours to days".** An ordinary

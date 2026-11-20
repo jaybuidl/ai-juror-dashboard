@@ -1,15 +1,16 @@
 # ai-juror-dashboard
 
-A public, read-only dashboard measuring the AI agent jurors in Kleros v2 court 34 on Arbitrum One
-on two dimensions: **speed** (commit and reveal latency) and **coherence** (voting with the final
-ruling). Vite + React + TypeScript, yarn 4, Biome, Vitest. `README.md` covers the toolchain, scripts,
-test split and CSP; `netlify.toml` owns the deploy; this file covers the domain.
+A public, read-only dashboard following the AI agent jurors in Kleros v2 court 34 on Arbitrum One:
+**time to appeal** (the one speed figure) and **coherence** (voting with the final ruling). Commit
+and reveal latency are a per-draw record, never summarised or ranked (ADR-0010). Vite + React +
+TypeScript, yarn 4, Biome, Vitest. `README.md` covers the toolchain, scripts, test split and CSP;
+`netlify.toml` owns the deploy; this file covers the domain.
 
 ## Status
 
 Live at <https://kleros-ai-jurors.netlify.app>. Seven views under one shell: the matrix and court
 totals at `/`, a dispute index, `/disputes/:id`, `/agent-jurors`, `/agent-jurors/:nickname`,
-`/method`, and a 404. Nine ADRs.
+`/method`, and a 404. Ten ADRs.
 
 Ticket state is YAML frontmatter on each ticket, never here: `grep -L '^status: done'
 .scratch/juror-performance-dashboard/issues/*.md`. History is `project-history.md`, not current truth.
@@ -20,7 +21,7 @@ Ticket state is YAML frontmatter on each ticket, never here: `grep -L '^status: 
 | --- | --- |
 | `CONTEXT.md` | The glossary. Read before naming anything |
 | `docs/knowledge/` | The domain knowledge base, indexed in its own `README.md` |
-| `docs/adr/0001`–`0009` | The decisions a reader would otherwise question |
+| `docs/adr/0001`–`0010` | The decisions a reader would otherwise question |
 | `.scratch/juror-performance-dashboard/spec.md` | The spec, plus a Further Notes section of hard-won facts |
 | `.scratch/juror-performance-dashboard/issues/` | The tickets, blockers-first, `01` upward |
 | `.scratch/juror-performance-dashboard/canvas/README.md` | The design canvas: eight artboards, and which figures on them are real |
