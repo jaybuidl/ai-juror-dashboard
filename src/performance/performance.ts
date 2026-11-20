@@ -351,8 +351,8 @@ export type MatrixRow = {
    *
    * What the † row marker showed until 2026-09-24. No view reads it now, and the court totals
    * that grouped it went on 2026-11-20 (#14); it stays because the live tripwire in
-   * `court-parameters.integration.test.ts` asserts on it, which is how a commit or vote window
-   * moving on chain gets noticed. It is a fact about comparability rather than about the
+   * `court-parameters.integration.test.ts` asserts on it (dispute 151 alone is marked), a second
+   * witness beside its `measuredRegimes` assertion that no commit or vote window has moved. It is a fact about comparability rather than about the
    * dispute: the figures in this row were measured against different windows from the rows
    * above it. False while the history is unread — an unknown is not a denial.
    */

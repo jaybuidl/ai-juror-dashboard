@@ -3,7 +3,6 @@ import { MemoryRouter } from "react-router";
 import { ThemeProvider } from "styled-components";
 import { describe, expect, it } from "vitest";
 import type { CourtTotals, TimeToAppeal } from "../performance/totals";
-import type { PeriodWindows } from "../performance/windows";
 import { theme } from "../styles/theme";
 import { StatTiles } from "./StatTiles";
 
@@ -15,22 +14,12 @@ import { StatTiles } from "./StatTiles";
  * through the real page.
  */
 
-/** What the court holds now: the 2026-08-26 configuration, evidence 10m. */
-const CURRENT: PeriodWindows = {
-  evidenceSeconds: 600,
-  commitSeconds: 2700,
-  voteSeconds: 1800,
-  appealSeconds: 129_600,
-};
-
-function timeToAppealOf(
-  windows: readonly (PeriodWindows | null)[],
-  notYetAtAppeal: readonly number[] = [],
-): TimeToAppeal {
-  const seconds = [5400, 6000, 6600, 90_000].slice(0, windows.length);
+/** `count` disputes at appeal, from a fixed set of four durations. */
+function timeToAppealOf(count: number, notYetAtAppeal: readonly number[] = []): TimeToAppeal {
+  const seconds = [5400, 6000, 6600, 90_000].slice(0, count);
   return {
     summary:
-      windows.length === 0
+      count === 0
         ? null
         : {
             seconds,
@@ -38,11 +27,7 @@ function timeToAppealOf(
             median: seconds[Math.ceil(seconds.length / 2) - 1] ?? 0,
             slowest: seconds[seconds.length - 1] ?? 0,
           },
-    disputes: windows.map((ran, index) => ({
-      dispute: 151 + index,
-      seconds: seconds[index] ?? 0,
-      windows: ran,
-    })),
+    disputes: seconds.map((duration, index) => ({ dispute: 151 + index, seconds: duration })),
     notYetAtAppeal,
   };
 }
@@ -86,7 +71,7 @@ function renderTiles(timeToAppeal: TimeToAppeal) {
 
 describe("StatTiles", () => {
   it("leads with the median time to appeal, in minutes", () => {
-    renderTiles(timeToAppealOf([CURRENT, CURRENT, CURRENT, CURRENT]));
+    renderTiles(timeToAppealOf(4));
 
     // 6000s, the lower middle of four.
     expect(screen.getByText("100m")).toBeInTheDocument();
@@ -95,7 +80,7 @@ describe("StatTiles", () => {
   });
 
   it("says no dispute has reached appeal rather than printing a zero", () => {
-    renderTiles(timeToAppealOf([], [170]));
+    renderTiles(timeToAppealOf(0, [170]));
 
     expect(
       screen.getByText("Median to appeal · no dispute has reached appeal"),

@@ -610,9 +610,7 @@ describe("timeToAppealOf", () => {
  * One row with one draw in one column, for the cases the captured court cannot produce.
  *
  * Hand-built for the reason `CLAUDE.md` gives: every fixture here is one successful read of a
- * working court, so none of them holds a lone panel that is still live, a court that has
- * superseded two sets of measured windows, or one column drawn under earlier windows while the
- * column beside it was not.
+ * working court, so none of them holds a lone panel that is still live.
  */
 function column({
   id,
