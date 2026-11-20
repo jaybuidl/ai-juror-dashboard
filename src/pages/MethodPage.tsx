@@ -32,12 +32,12 @@ import { REFERENCE_COURT_ID } from "../performance/reference";
  * **That guard has fired once, and rewriting this section was ticket 19.** Court 34 is a live
  * demo instrument and its periods get retimed to suit a demo, so expect it again. Two things
  * to hold on to when it does. The prose here counts *configurations*, which is not the count
- * of changes that moved a latency — the third moved the evidence period alone and moved no
- * latency. And the section has to keep saying so: a reader who knows the court was reconfigured
- * on 26 August is owed the reason dispute 152's latencies still compare with today's. **It does
- * move one figure**: the headline median time to appeal runs from a dispute's creation, so the
- * evidence window is inside it, and nothing on the matrix marks the disputes created before
- * 26 August. The section says both halves, and it is the only place either is said.
+ * of changes that moved a commit or vote window — the third moved the evidence period alone.
+ * And the section has to keep saying so: a reader who knows the court was reconfigured on 26
+ * August is owed the reason dispute 152's per-draw times were taken against today's windows.
+ * **It does move one figure**: the headline median time to appeal runs from a dispute's
+ * creation, so the evidence window is inside it, and nothing on the matrix marks the disputes
+ * created before 26 August. The section says both halves, and it is the only place either is said.
  */
 
 const Header = styled.header`
@@ -162,7 +162,7 @@ const RegimeWindows = styled.span`
 
 const SECTIONS: readonly { id: string; label: string }[] = [
   { id: "unit", label: "The unit" },
-  { id: "latency", label: "Speed and latency" },
+  { id: "latency", label: "Speed" },
   { id: "comparison", label: "The comparison" },
   { id: "coherence", label: "Coherence" },
   { id: "window", label: "The window" },
@@ -214,10 +214,10 @@ export function MethodPage() {
         </Body>
       </Section>
 
-      {/* `#latency` keeps its id although the section now leads with time to appeal: the
-          fragment may be linked from outside, and the latencies are still defined here. ADR-0010
-          is why the order changed and why the last paragraph exists. */}
-      <Section id="latency" heading="Speed is time to appeal, and latency is a record">
+      {/* `#latency` keeps its id although the section is about time to appeal: the fragment may
+          be linked from outside, and the per-draw record is still defined here. ADR-0010 and
+          ADR-0011 are why latency is a record and not a measure. */}
+      <Section id="latency" heading="Speed is time to appeal">
         <Body>
           <Term>Time to appeal</Term> is the figure at the top of the matrix page, and it is the one
           figure here that measures speed. It is the seconds from the moment a dispute was created
@@ -230,42 +230,30 @@ export function MethodPage() {
           are.
         </Body>
         <Body>
-          <Term>Reveal latency</Term> is the number of seconds from the moment the vote period
-          opened to the moment that draw's reveal was recorded. Both moments come from the chain's
-          own record — the round's timeline and the justification published with the reveal — and
-          neither is read from the browser's clock. A page that decided a juror had missed a
-          deadline by consulting your clock would say different things in different timezones.
+          Commit and reveal latency are a record here, not a measure. Each agent juror's page keeps
+          two per draw, in the table of its draws: <Term>commit latency</Term>, the seconds from the
+          moment the commit period opened to the moment the draw's commitment was mined, and{" "}
+          <Term>reveal latency</Term>, the seconds from the moment the vote period opened to the
+          moment its reveal was recorded. Both moments come from the chain, never from your
+          browser's clock.
         </Body>
         <Body>
-          <Term>Commit latency</Term> is the same measure for the commit: seconds from the moment
-          the commit period opened to the moment that draw's commitment was mined. It is measured
-          from its own period, so a draw's reveal figure is not the time since its commit — the two
-          are two durations, not a duration and a total.
-        </Body>
-        <Body>
-          It is the one figure here that no subgraph carries. The subgraph records only{" "}
-          <em>whether</em> a juror committed and never when, so the moment comes from the{" "}
-          <Term>CommitCast</Term> logs the dispute kit emits on Arbitrum, dated by the block they
-          were mined in. Because a log scan can come back short without failing, every draw the
-          subgraph calls committed is checked against a matching log, and any that are missing are
-          counted and stated on each agent juror's page rather than shown as commitments that never
-          happened.
-        </Body>
-        <Body>
-          Neither latency measures how fast an agent juror judges a case, so neither is averaged,
-          ranked or plotted here. The evidence is public from the moment a dispute is created, and
-          the panel is drawn during the evidence period, so an agent juror can study a case before
-          the commit period opens; its commit latency cannot say when it did. A reveal involves no
+          Neither says how fast an agent juror judges a case, so neither is averaged, ranked or
+          plotted here, and no page sets one agent juror's beside another's. The evidence is public
+          from the moment a dispute is created and the panel is drawn during the evidence period, so
+          an agent juror can study a case before the commit period opens. A reveal involves no
           judgment at all, because the vote was fixed at commit. And both count from the moment a
-          period opened, which is whenever any account told the court to advance it. An agent juror
-          that advances the period itself and reveals in the same block reads 0 seconds. Each draw's
-          two figures are on its agent juror's page, in the table of its draws, as a record of when
-          it acted. The matrix and each dispute's page show what a draw did, not when: agent jurors'
-          times set side by side read as a ranking, whatever the page says about them.
+          period opened, which is whenever any account told the court to advance it: an agent juror
+          that advances the period itself and reveals in the same block reads 0 seconds. The matrix
+          and each dispute's page show what a draw did, not when.
         </Body>
         <Body>
-          Neither latency is ever shown as a fraction of a period's window, anywhere. See the
-          window, below.
+          The commit moment is the one no subgraph carries. The subgraph records only{" "}
+          <em>whether</em> a juror committed, so the moment comes from the <Term>CommitCast</Term>{" "}
+          logs the dispute kit emits on Arbitrum, dated by the block they were mined in. A log scan
+          can come back short without failing, so every draw the subgraph calls committed is checked
+          against a matching log, and any that are missing are counted on each agent juror's page
+          rather than shown as commitments that never happened.
         </Body>
       </Section>
 
@@ -318,8 +306,8 @@ export function MethodPage() {
           A draw is <Term>coherent</Term> when the choice it revealed is the dispute's final ruling
           — the winning choice the arbitrator reports, not the majority of a round. The distinction
           is not academic: a dispute in its appeal period has every vote in and no ruling, and a
-          majority read off it would be a prediction. Those draws are shown as revealed, with their
-          latencies, and are excluded from coherence.
+          majority read off it would be a prediction. Those draws are shown as revealed and are
+          excluded from coherence.
         </Body>
         <Body>
           Refusing to arbitrate is a ruling. An agent juror that voted to refuse in a dispute the
@@ -338,9 +326,9 @@ export function MethodPage() {
       <Section id="window" heading="The window">
         <Body>
           Court {COURT_ID}'s period durations changed partway through this experiment, so the same
-          latency means different things either side of that change. This is why every figure on
-          this dashboard is an absolute duration and never a percentage of the window it ran in: a
-          fraction is false the moment it is quoted away from the page.
+          duration means different things either side of that change. This is why every duration on
+          this dashboard is absolute and never a percentage of the window it ran in: a fraction is
+          false the moment it is quoted away from the page.
         </Body>
         <Body>
           The court has been configured three times. It was created on 11 August 2026 with a 12-hour
@@ -369,17 +357,14 @@ export function MethodPage() {
         <Body>
           Dispute 151 is the only dispute that ran under the first configuration: the change was
           mined 48 minutes before dispute 152 was created. Its commit and vote periods ran under
-          windows of 8 hours rather than 45 and 30 minutes, so its latencies cannot be set beside
-          any later dispute's. Nothing here summarises latency across disputes, so no figure mixes
-          the two.
+          windows of 8 hours rather than 45 and 30 minutes, so its draws' commit and reveal times
+          cannot be set beside any later dispute's, and nothing here sets them side by side.
         </Body>
 
         <Body>
-          The second reconfiguration reaches no latency, and is worth a sentence for what it does
-          not do. Every latency here is measured from the commit period or the vote period, and 26
-          August left both of them exactly where they were. So dispute 152 ran under a configuration
-          the court has since replaced, and still the windows its latencies were measured against
-          are the windows the court holds now.
+          The second reconfiguration left the commit and vote windows exactly where they were. So
+          dispute 152 ran under a configuration the court has since replaced, and still its draws'
+          commit and reveal times were taken against the windows the court holds now.
         </Body>
 
         <Body>
@@ -402,10 +387,10 @@ export function MethodPage() {
         </Body>
 
         <Body>
-          A window appears on this dashboard only ever beside a duration, as two absolute figures. A
-          latency is never divided by one, in a cell, in a total, or anywhere else — a ratio is a
-          fact about a relationship whose second term changed midway through this dataset, and it
-          cannot carry that caveat into a screenshot.
+          A window appears on this dashboard only ever beside a duration, as two absolute figures,
+          and no duration is ever divided by one. A ratio is a fact about a relationship whose
+          second term changed midway through this dataset, and it cannot carry that caveat into a
+          screenshot.
         </Body>
       </Section>
 
