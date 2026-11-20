@@ -925,6 +925,23 @@ describe("what could not be read", () => {
     );
   });
 
+  it("still says so when the read it fell back to predates the draws and has no range", () => {
+    // The read landed before anyone was drawn, and its re-read once the court saw a draw failed:
+    // the payload is held, but it has no block range, so the timeline's chain read cannot run.
+    renderDispute({
+      detail: read({
+        error: new ReadFailure("The core subgraph returned HTTP 503 Service Unavailable", {
+          source: SOURCES.core,
+          status: "HTTP 503",
+        }),
+        detail: { ...detail156, blockRange: null },
+      }),
+      chain: pending(),
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/the timeline cannot say who opened/);
+  });
+
   it("does not say so when only a re-read failed, since the timeline still has what it needs", () => {
     // A failed re-read keeps the earlier payload, block range and all, so the chain read runs and
     // the timeline is drawn: a banner saying it cannot be would describe something not on screen.

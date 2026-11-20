@@ -238,7 +238,7 @@ ADR-0010 says it is not. `Juror.dc.html:113-134` now draws one **Dispute's time 
 where `Reveal` and `Commit` were. It holds the *dispute's* time to appeal in whole minutes, the same
 for its whole panel, and the header says "Dispute's" so that the page named after one agent juror
 does not present it as that agent juror's. Amended in place, line for line: the grid's track list
-at `:116` lost a 150px track and widened another to 200px, the `Commit` header at `:122` and its cell at
+at `:116` lost a 150px track and widened another to 170px, the `Commit` header at `:122` and its cell at
 `:131` are blank lines, `:121` and `:130` carry the new header and cell, and each sampled row in the
 script gained a `t:` in seconds (sampled, like every per-draw figure here). The file is 198 lines as
 before. Its median reveal and commit at `:72-73` and the latency plot at `:86-110` are still

@@ -297,12 +297,14 @@ function coreFailureOf({
   }
 
   if (detail.error !== null) {
-    // The timeline's half only where this read never landed: it carries the block range the
-    // chain read needs, and a re-read that failed keeps the range from the read before it.
+    // The timeline's half only where the chain read has no block range to scan: this read
+    // carries it, so a first read that failed leaves none, and so does an earlier read made
+    // before anyone was drawn whose re-read has now failed. A failed re-read of a drawn dispute
+    // keeps its range, and the timeline is drawn.
     return failureOf(
       detail.error,
       SOURCES.core,
-      detail.readAt === null
+      detail.detail.blockRange === null
         ? "This dispute's ballot, evidence count and published reasoning could not be read, so the ruling card and every column below are missing what they would have said, and the timeline cannot say who opened each period or when each agent juror committed."
         : "This dispute's ballot, evidence count and published reasoning could not be read again, so the ruling card and every column below show what an earlier read said.",
     );

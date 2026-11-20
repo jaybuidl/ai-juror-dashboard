@@ -398,7 +398,7 @@ function DrawTable({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
         <col />
         <col style={{ width: "92px" }} />
         <col style={{ width: "180px" }} />
-        <col style={{ width: "200px" }} />
+        <col style={{ width: "170px" }} />
         <col style={{ width: "150px" }} />
       </colgroup>
       <thead>
