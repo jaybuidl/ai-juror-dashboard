@@ -96,13 +96,15 @@ export function useDisputeDetail(
   // One re-read per count, and never a second for the same one: a re-read that fails keeps the
   // old payload and so stays behind, and asking again the moment it settles would loop against
   // a failing endpoint. Recovery from that is the banner's retry, or the next reveal.
-  const asked = useRef<number | null>(null);
+  // Keyed by dispute too, so a count asked for on one dispute never stands in for another's.
+  const asked = useRef<string | null>(null);
   const { refetch, isFetching } = detail;
   useEffect(() => {
-    if (!isBehindReveals || isFetching || asked.current === revealed) return;
-    asked.current = revealed;
+    const ask = `${disputeId}:${revealed}`;
+    if (!isBehindReveals || isFetching || asked.current === ask) return;
+    asked.current = ask;
     void refetch();
-  }, [isBehindReveals, isFetching, revealed, refetch]);
+  }, [isBehindReveals, isFetching, disputeId, revealed, refetch]);
 
   return {
     // `toDisputeDetail` is applied here rather than inside the query function, which is the
