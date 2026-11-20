@@ -98,10 +98,14 @@ describe("useDisputeDetail and reveals it has not seen", () => {
     });
     await waitFor(() => expect(result.current.readAt).not.toBeNull());
 
-    fetched.mockRejectedValue(new Error("HTTP 503"));
+    // Failing after a moment, as a network does: one that rejects in the same tick never shows
+    // the read as in flight, and a loop keyed on that never gets the chance to spin.
+    fetched.mockImplementation(
+      () => new Promise((_, reject) => setTimeout(() => reject(new Error("HTTP 503")), 5)),
+    );
     rerender({ revealed: 3 });
     await waitFor(() => expect(result.current.error).not.toBeNull());
-    await new Promise((resolve) => setTimeout(resolve, 50));
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     // Still behind, and honest about it, but not hammering the endpoint.
     expect(result.current.isBehindReveals).toBe(true);
