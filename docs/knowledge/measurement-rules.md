@@ -88,3 +88,10 @@ this file is the full account.
   and counts disputes, not draws. The strip's violet band is still court 29's **time to ruling**,
   a longer quantity; it was deliberately not re-read as a time to appeal, and `/method#comparison`
   says the two differ.
+
+- **A reveal in the second its vote period opened is a self-opened period** (ADR-0010). Intendant
+  calls `passPeriod` and reveals in the next transaction, so from the opening it is 0s by
+  construction. Such a draw is timed from min(commit deadline, panel's last commit); everyone else
+  from the observed opening, because that gap (14–498s over disputes 151–166) is keeper lag. The
+  could-open moment needs every committed panel member's `CommitCast` log; the logs are read for the
+  roster only, so an off-roster committer leaves it `Not dated`, never `0s`.

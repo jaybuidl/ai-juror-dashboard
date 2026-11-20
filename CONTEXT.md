@@ -125,7 +125,9 @@ through the experiment, so a fraction means different things in different disput
 _Avoid_: commit speed, commit time (ambiguous — could be the timestamp)
 
 **Reveal latency**:
-The same measure for `castVote`, from the moment the vote period opened.
+The same measure for `castVote`, from the moment the vote period opened. For a draw that **opened
+the vote period** itself, revealing in the second it opened, it is measured from when the period
+could open instead: the earlier of the commit deadline and the panel's last commitment (ADR-0010).
 _Avoid_: reveal speed, vote latency
 
 **Time to appeal**:

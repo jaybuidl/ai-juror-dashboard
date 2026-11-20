@@ -13,6 +13,7 @@ import {
   type RawCourtParameters,
   sameMeasuredWindows,
   toRegimes,
+  windowsAt,
   windowsFor,
 } from "./windows";
 
@@ -251,10 +252,20 @@ export type Draw = {
   state: DrawState;
   /**
    * Seconds from the moment the vote period opened to the moment the reveal was recorded,
-   * per ADR-0001. `null` where it is not known: nothing was revealed, or a reveal exists
-   * with no justification to date it. Never a fraction of a window — ADR-0005.
+   * per ADR-0001 — or, for a draw that `openedVotePeriod`, from the moment the period *could*
+   * have opened (ADR-0010). `null` where it is not known: nothing was revealed, a reveal exists
+   * with no justification to date it, or the draw opened the period and that moment could not
+   * be placed. Never a fraction of a window — ADR-0005.
    */
   revealLatencySeconds: number | null;
+  /**
+   * Whether the reveal was recorded in the same second the vote period opened — which, with a
+   * fastest reveal of 7s from anyone else, is an agent juror that called `passPeriod` itself and
+   * revealed straight after. Measured from the observed opening its latency would be 0 by
+   * construction, so it is measured from when the period could open instead (ADR-0010), and the
+   * cell says so.
+   */
+  openedVotePeriod: boolean;
   /**
    * Seconds from the moment the commit period opened to the moment the commitment was mined,
    * per ADR-0001 and on the same scale as the reveal. `null` where no log matched this draw's
@@ -571,6 +582,13 @@ type DrawGroup = {
   voteCount: number;
   /** Every vote ID the round holds, whoever holds them — filled once the court's draws are all in. */
   roundVoteCount: number;
+  /**
+   * Who on the round's whole panel, roster or not, holds a committed vote ID, and how many vote
+   * IDs in the round are still uncommitted — filled with `roundVoteCount`. Together they say
+   * when the round's vote period could first have opened (`couldOpenVoteAt`).
+   */
+  roundCommitters: ReadonlySet<string>;
+  roundUncommitted: number;
   /** For the failure message: which draw could not be read. */
   id: string;
 };
@@ -710,11 +728,57 @@ function commitAt(timestamps: readonly number[] | undefined, round: DisputeRound
   return timestamps.find((timestamp) => timestamp >= opened) ?? null;
 }
 
+/**
+ * The first moment the round's vote period could have opened, or `null` where it cannot be placed.
+ *
+ * `passPeriod` moves a round from commit to vote once the commit window has elapsed **or** every
+ * vote ID in the round is committed, whichever comes first, and anyone may call it. So the moment
+ * is the earlier of the commit deadline and the panel's last commitment — the last one only
+ * counting when there *was* a last one, every vote ID committed.
+ *
+ * The panel is the whole panel, on the roster or not, and that is what can make this `null`: the
+ * commitment logs are read for the roster only, so a committed juror off the roster has no
+ * moment here, and nor does a roster juror whose log the scan missed. The deadline alone would
+ * then overstate the wait, so nothing is returned rather than a moment that is only an upper
+ * bound. The window is the one in force when the commit period opened — `windowsFor` gives the
+ * limit of that reading.
+ *
+ * Asked only of a draw that `openedVotePeriod`. Every other draw is measured from the observed
+ * opening, because the gap between the two is how long the court waited for *somebody* to call
+ * `passPeriod` — 14s to 498s across disputes 151–166, often longer than the reveals themselves —
+ * and charging that to every agent juror would measure the court's keepers, not the jurors.
+ */
+function couldOpenVoteAt(
+  group: DrawGroup,
+  dispute: Dispute,
+  commits: Map<string, number[]>,
+  regimes: readonly ParameterRegime[],
+): number | null {
+  const { round } = group;
+  if (round.commitOpenedAt === null) return null;
+
+  const window = regimes.length === 0 ? null : windowsAt(regimes, round.commitOpenedAt);
+  const deadline = window === null ? null : round.commitOpenedAt + window.commitSeconds;
+
+  let lastCommit: number | null = null;
+  if (group.roundUncommitted === 0) {
+    for (const address of group.roundCommitters) {
+      const committedAt = commitAt(commits.get(`${dispute.id}/${address}`), round);
+      if (committedAt === null) return null;
+      if (lastCommit === null || committedAt > lastCommit) lastCommit = committedAt;
+    }
+  }
+
+  if (deadline === null) return null;
+  return lastCommit === null ? deadline : Math.min(deadline, lastCommit);
+}
+
 function drawOf(
   group: DrawGroup,
   dispute: Dispute,
   commits: Map<string, number[]>,
   rewards: Map<string, DrawReward>,
+  regimes: readonly ParameterRegime[],
 ): Draw {
   const revealed = group.votes.some((vote) => vote.voted);
   const committed = group.votes.some((vote) => vote.commited);
@@ -725,12 +789,25 @@ function drawOf(
   const voteOpenedAt = group.round.voteOpenedAt;
 
   let revealLatencySeconds: number | null = null;
+  let openedVotePeriod = false;
   if (revealedTimestamp !== null && voteOpenedAt !== null) {
     revealLatencySeconds = revealedTimestamp - voteOpenedAt;
     if (revealLatencySeconds < 0) {
       throw new Error(
         `Draw ${group.id} revealed ${-revealLatencySeconds}s before its vote period opened`,
       );
+    }
+
+    // A reveal in the very second the period opened is a juror that opened it (ADR-0010).
+    // Measured from the observed opening that is 0 by construction, so it is measured from when
+    // the period could open instead — or not at all, where that moment cannot be placed. A
+    // could-open moment *after* the observed opening is a read this cannot believe (a short
+    // commit scan would make the last commitment look early, never late), and is not shown.
+    if (revealLatencySeconds === 0) {
+      openedVotePeriod = true;
+      const couldOpen = couldOpenVoteAt(group, dispute, commits, regimes);
+      revealLatencySeconds =
+        couldOpen === null || couldOpen > voteOpenedAt ? null : revealedTimestamp - couldOpen;
     }
   }
 
@@ -747,6 +824,7 @@ function drawOf(
     agentJuror: group.agentJuror,
     state: stateOf({ group, dispute, revealed, committed, choices }),
     revealLatencySeconds,
+    openedVotePeriod,
     commitLatencySeconds:
       committedAt === null || commitOpenedAt === null ? null : committedAt - commitOpenedAt,
     committed,
@@ -820,6 +898,10 @@ type DisputeDraws = {
    * the denominator of an agent juror's share of the vote.
    */
   votesByRound: Map<number, number>;
+  /** Per round: every address, on the roster or not, holding a committed vote ID. */
+  committersByRound: Map<number, Set<string>>;
+  /** Per round: how many vote IDs were never committed. */
+  uncommittedByRound: Map<number, number>;
 };
 
 /**
@@ -858,7 +940,13 @@ function groupDraws(raw: RawCourtData, disputes: readonly Dispute[]): Map<number
 
     let rows = grouped.get(disputeId);
     if (rows === undefined) {
-      rows = { byAgentJuror: new Map(), panel: new Set(), votesByRound: new Map() };
+      rows = {
+        byAgentJuror: new Map(),
+        panel: new Set(),
+        votesByRound: new Map(),
+        committersByRound: new Map(),
+        uncommittedByRound: new Map(),
+      };
       grouped.set(disputeId, rows);
     }
 
@@ -866,6 +954,16 @@ function groupDraws(raw: RawCourtData, disputes: readonly Dispute[]): Map<number
     rows.panel.add(address);
     const index = roundIndexOf(drawn.round.id);
     rows.votesByRound.set(index, (rows.votesByRound.get(index) ?? 0) + 1);
+    if (drawn.vote?.commited === true) {
+      let committers = rows.committersByRound.get(index);
+      if (committers === undefined) {
+        committers = new Set();
+        rows.committersByRound.set(index, committers);
+      }
+      committers.add(address);
+    } else {
+      rows.uncommittedByRound.set(index, (rows.uncommittedByRound.get(index) ?? 0) + 1);
+    }
 
     // Not every address in a panel is an agent juror. The roster is the column set, and an
     // address outside it has no column to sit in — but it was still on the panel, counted above.
@@ -891,6 +989,8 @@ function groupDraws(raw: RawCourtData, disputes: readonly Dispute[]): Map<number
         votes: drawn.vote === null ? [] : [drawn.vote],
         voteCount: 1,
         roundVoteCount: 0,
+        roundCommitters: new Set(),
+        roundUncommitted: 0,
         id: drawn.id,
       });
       continue;
@@ -905,6 +1005,8 @@ function groupDraws(raw: RawCourtData, disputes: readonly Dispute[]): Map<number
     for (const rounds of rows.byAgentJuror.values()) {
       for (const [index, group] of rounds) {
         group.roundVoteCount = rows.votesByRound.get(index) ?? group.voteCount;
+        group.roundCommitters = rows.committersByRound.get(index) ?? new Set();
+        group.roundUncommitted = rows.uncommittedByRound.get(index) ?? 0;
       }
     }
   }
@@ -991,7 +1093,7 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
         const group = currentDraw(drawn?.byAgentJuror.get(agentJuror.address.toLowerCase()));
         if (group === undefined) return null;
 
-        const draw = drawOf(group, dispute, commits, rewards);
+        const draw = drawOf(group, dispute, commits, rewards, regimes);
         if (group.votes.some((vote) => vote.commited)) {
           expected += 1;
           if (draw.commitLatencySeconds !== null) resolved += 1;

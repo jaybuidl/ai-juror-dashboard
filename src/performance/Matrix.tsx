@@ -26,6 +26,7 @@ import {
   UNREAD_PRESENTATION,
 } from "./cell";
 import { CELL_HEIGHT_PX, COMPACT_CELL_HEIGHT_PX, type Density, densityOf } from "./density";
+import { FigureText } from "./FigureText";
 import { Dot, Legend, StateLegend } from "./Legend";
 import { Marginals } from "./Marginals";
 import { panelPillOf } from "./panel";
@@ -799,7 +800,9 @@ function DrawCell({
         )}
         {/* No rail beside the figure (2026-11-02, maintainer's ruling): a bar scaled to the number
             next to it said nothing the number did not, and read as more than it was. */}
-        <MeasureValue $tone={figure.tone}>{figure.text}</MeasureValue>
+        <MeasureValue $tone={figure.tone}>
+          <FigureText figure={figure} />
+        </MeasureValue>
       </Measure>
       {!compact && (
         <Measure $context>
@@ -911,7 +914,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
             {/* The states are shared with the phone's card list — they are ADR-0006's vocabulary
                 rather than the grid's. The rail keys that followed them were removed on
                 2026-09-24 (maintainer's ruling). */}
-            <StateLegend unknown={unreadRows > 0} />
+            <StateLegend unknown={unreadRows > 0} openedPeriod={totals.selfOpenedReveals > 0} />
           </Legend>
 
           {/* Focusable and named *when it scrolls*, and only then. The comfortable grid is wider

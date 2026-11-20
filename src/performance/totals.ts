@@ -107,6 +107,12 @@ export type CourtTotals = {
    */
   revealLatency: LatencySummary | null;
   /**
+   * How many draws revealed in the second their vote period opened — an agent juror that called
+   * `passPeriod` itself (ADR-0010). Counted so a view can name the mark those reveals carry in
+   * its legend only when one is on the page.
+   */
+  selfOpenedReveals: number;
+  /**
    * Time to appeal across every dispute whose first round has reached its appeal period, and
    * the disputes that have not. The headline tile and the strip under it are figures of this.
    *
@@ -641,6 +647,7 @@ export function courtTotalsOf(
   let votes = 0;
   const seconds: number[] = [];
   const drawn = new Set<string>();
+  let selfOpenedReveals = 0;
 
   for (const row of rows) {
     for (const cell of row.cells) {
@@ -649,6 +656,7 @@ export function courtTotalsOf(
       votes += cell.voteCount;
       drawn.add(cell.agentJuror.address);
       if (cell.revealLatencySeconds !== null) seconds.push(cell.revealLatencySeconds);
+      if (cell.openedVotePeriod) selfOpenedReveals += 1;
     }
   }
 
@@ -663,6 +671,7 @@ export function courtTotalsOf(
     agentJurorsDrawn: drawn.size,
     agentJurors: agentJurors.length,
     revealLatency: summaryOf(seconds),
+    selfOpenedReveals,
     timeToAppeal: timeToAppealOf(rows),
     // A panel of one is a fact about a dispute that *was* read, so an unread row is not counted
     // among them — its panel size is 0 because nobody asked, not because the court drew one

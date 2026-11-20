@@ -71,7 +71,14 @@ export const Dot = styled.span`
  * contain teaches a reader to look for a failure that is not there — and this is the entry a
  * reader would most readily mistake for one of the others.
  */
-export function StateLegend({ unknown }: { unknown: boolean }) {
+export function StateLegend({
+  unknown,
+  openedPeriod = false,
+}: {
+  unknown: boolean;
+  /** Whether a reveal on the page carries ADR-0010's mark. Named only when one does. */
+  openedPeriod?: boolean;
+}) {
   return (
     <LegendGroup>
       <LegendItem $tone="pass">
@@ -99,6 +106,11 @@ export function StateLegend({ unknown }: { unknown: boolean }) {
         <Dot aria-hidden="true" />
         Not drawn
       </LegendItem>
+      {openedPeriod && (
+        <LegendItem>
+          <span aria-hidden="true">↥</span>Opened the vote period, timed from when it could open
+        </LegendItem>
+      )}
     </LegendGroup>
   );
 }

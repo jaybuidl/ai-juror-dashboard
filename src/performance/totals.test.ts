@@ -376,6 +376,7 @@ function medianOfSeconds(seconds: readonly number[]): number | undefined {
         agentJuror: ROSTER[index % ROSTER.length] as never,
         state: { kind: "coherent" } as const,
         revealLatencySeconds: value,
+        openedVotePeriod: false,
         // Present and non-null on purpose: a commit latency must not reach the reveal median.
         commitLatencySeconds: value * 2,
         committed: true,
@@ -913,6 +914,7 @@ function column({
             agentJuror,
             state,
             revealLatencySeconds,
+            openedVotePeriod: false,
             commitLatencySeconds,
             committed: commitLatencySeconds !== null,
             voteCount: 1,

@@ -10,6 +10,7 @@ function draw(overrides: Partial<Draw> = {}): Draw {
     agentJuror: AGENT_JUROR,
     state: { kind: "coherent" },
     revealLatencySeconds: 85,
+    openedVotePeriod: false,
     commitLatencySeconds: 396,
     committed: true,
     voteCount: 1,
@@ -78,6 +79,22 @@ describe("presentationOf", () => {
 describe("revealFigureOf", () => {
   it("reads a measured latency as a figure", () => {
     expect(revealFigureOf(draw())).toEqual({ text: "85s", tone: "value" });
+  });
+
+  it("marks a reveal by the agent juror that opened the vote period itself", () => {
+    expect(revealFigureOf(draw({ openedVotePeriod: true, revealLatencySeconds: 100 }))).toEqual({
+      text: "100s",
+      tone: "value",
+      openedPeriod: true,
+    });
+  });
+
+  it("never reads a self-opened reveal as 0s when its moment is not placed", () => {
+    expect(revealFigureOf(draw({ openedVotePeriod: true, revealLatencySeconds: null }))).toEqual({
+      text: "Not dated",
+      tone: "pending",
+      openedPeriod: true,
+    });
   });
 
   it("reads a reveal that will not come as a miss, not as a number", () => {

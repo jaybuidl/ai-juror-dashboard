@@ -29,5 +29,9 @@ pre-modification parameters: this dashboard is public and may be cited in resear
 silently computed across two period regimes would be misleading. Whether any fraction is ever shown
 on top of the stored seconds is a separate question, settled by ADR-0005: none is.
 
+Where the period opens is a separate question, settled by ADR-0010: a draw that opened its vote
+period itself is timed from when the period could open, because from the opening it is 0s by
+construction.
+
 Display units are not covered by this decision. Reveal latency has a median of 85 seconds and a
 minimum of 7, so the UI formats short latencies in seconds and long ones in minutes.

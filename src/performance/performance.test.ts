@@ -418,6 +418,142 @@ describe("buildCourtPerformance", () => {
     });
   });
 
+  describe("a reveal by the agent juror that opened the vote period", () => {
+    // Intendant calls `passPeriod` and reveals in the next transaction, so its reveal lands in
+    // the second the vote period opens and, measured from that opening, takes 0s by
+    // construction. ADR-0010 measures such a draw from when the period *could* open: the
+    // earlier of the commit deadline and the panel's last commitment.
+    const BLAISE = "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea";
+    const COLUMBO = "0x70239816581Afff150814B46C831e2e5F9E3bF4C";
+    const OFF_ROSTER = "0x00000000000000000000000000000000000000aa";
+
+    /** A 2700s commit window from the start of time, so the deadline is `commitOpened + 2700`. */
+    const parameters = [rawRegime("0", ["600", "2700", "1800", "129600"])];
+
+    function vote(timestamp: string | null) {
+      return {
+        commited: true,
+        voted: timestamp !== null,
+        choice: timestamp === null ? null : "2",
+        justification: timestamp === null ? null : { timestamp, choice: "2" },
+      };
+    }
+
+    function scenario({
+      voteOpened = "1500",
+      draws,
+      commits,
+    }: {
+      voteOpened?: string;
+      draws: RawDraw[];
+      commits: RawCommitCast[] | null;
+    }) {
+      return built(
+        courtData({
+          disputes: [
+            rawDispute({ rounds: [{ id: "163-0", timeline: ["1000", voteOpened, "0", "0"] }] }),
+          ],
+          draws,
+          commits,
+          parameters,
+        }),
+      );
+    }
+
+    const blaiseOpens = rawDraw({
+      id: "163-0-0",
+      juror: { id: BLAISE.toLowerCase() },
+      vote: vote("1500"),
+    });
+    const columboFollows = rawDraw({
+      id: "163-0-1",
+      juror: { id: COLUMBO.toLowerCase() },
+      vote: vote("1530"),
+    });
+    const bothCommitted = [
+      rawCommit({ juror: BLAISE, timestamp: "1100" }),
+      rawCommit({ juror: COLUMBO, timestamp: "1400" }),
+    ];
+
+    it("measures it from the panel's last commitment when that came before the deadline", () => {
+      const performance = scenario({
+        draws: [blaiseOpens, columboFollows],
+        commits: bothCommitted,
+      });
+
+      expect(cellFor(163, "Blaise", performance)).toMatchObject({
+        openedVotePeriod: true,
+        revealLatencySeconds: 100,
+      });
+    });
+
+    it("leaves every other draw measured from the observed opening", () => {
+      // The 100s between the last commitment and the opening is the court waiting for someone
+      // to call `passPeriod`. Charged to Columbo, it would be the keepers' speed, not its own.
+      const performance = scenario({
+        draws: [blaiseOpens, columboFollows],
+        commits: bothCommitted,
+      });
+
+      expect(cellFor(163, "Columbo", performance)).toMatchObject({
+        openedVotePeriod: false,
+        revealLatencySeconds: 30,
+      });
+    });
+
+    it("measures it from the commit deadline when a vote ID was never committed", () => {
+      const silent = rawDraw({
+        id: "163-0-1",
+        juror: { id: COLUMBO.toLowerCase() },
+        vote: { commited: false, voted: false, choice: null, justification: null },
+      });
+      const performance = scenario({
+        voteOpened: "3750",
+        draws: [
+          rawDraw({ id: "163-0-0", juror: { id: BLAISE.toLowerCase() }, vote: vote("3750") }),
+          silent,
+        ],
+        commits: [rawCommit({ juror: BLAISE, timestamp: "1100" })],
+      });
+
+      expect(cellFor(163, "Blaise", performance)?.revealLatencySeconds).toBe(50);
+    });
+
+    it("states no figure where a committed juror off the roster leaves the last commitment unknown", () => {
+      // The commitment logs are read for the roster only. The deadline alone would overstate
+      // the wait, so the cell says the draw opened the period and gives no number.
+      const offRoster = rawDraw({ id: "163-0-2", juror: { id: OFF_ROSTER }, vote: vote(null) });
+      const performance = scenario({
+        draws: [blaiseOpens, columboFollows, offRoster],
+        commits: bothCommitted,
+      });
+
+      expect(cellFor(163, "Blaise", performance)).toMatchObject({
+        openedVotePeriod: true,
+        revealLatencySeconds: null,
+      });
+    });
+
+    it("states no figure until the commitments are read, and never a 0", () => {
+      const performance = scenario({ draws: [blaiseOpens, columboFollows], commits: null });
+
+      expect(cellFor(163, "Blaise", performance)).toMatchObject({
+        openedVotePeriod: true,
+        revealLatencySeconds: null,
+      });
+      expect(cellFor(163, "Columbo", performance)?.revealLatencySeconds).toBe(30);
+    });
+
+    it("counts the opener's measured figure in the court's reveal median, never a 0", () => {
+      const performance = scenario({
+        draws: [blaiseOpens, columboFollows],
+        commits: bothCommitted,
+      });
+
+      expect(performance.totals.revealLatency).toMatchObject({ fastest: 30, slowest: 100 });
+    });
+  });
+
   describe("commit latency", () => {
     it("measures from the moment the commit period opened to the moment the block was mined", () => {
       // Dispute 163's commit period opened at 1787342856; blaise's CommitCast landed in a

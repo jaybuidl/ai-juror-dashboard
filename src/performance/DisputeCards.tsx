@@ -521,7 +521,10 @@ export function DisputeCards({
               handled correctly in code, and a reader who does not know they have been misled
               does not go looking. */}
           <Legend>
-            <StateLegend unknown={totals.unreadDisputes.length > 0} />
+            <StateLegend
+              unknown={totals.unreadDisputes.length > 0}
+              openedPeriod={totals.selfOpenedReveals > 0}
+            />
           </Legend>
           <SparsityNote performance={performance} noun="slot" />
 

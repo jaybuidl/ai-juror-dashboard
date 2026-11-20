@@ -13,6 +13,7 @@ import {
   presentationOf,
   revealFigureOf,
 } from "./cell";
+import { FigureText } from "./FigureText";
 import { Legend, StateLegend } from "./Legend";
 import { type RowFlagContext, rowFlagOf } from "./row-flags";
 
@@ -371,7 +372,10 @@ export function AgentJurorDraws({
           it contributes no line to this list at all, and naming a state the record does not
           contain teaches a reader to look for a failure that is not there. */}
       <Legend>
-        <StateLegend unknown={false} />
+        <StateLegend
+          unknown={false}
+          openedPeriod={lines.some((line) => line.reveal.openedPeriod === true)}
+        />
       </Legend>
 
       {isNarrow ? (
@@ -446,7 +450,9 @@ function DrawTable({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
               <ChoiceValue $tone={line.choice.tone}>{line.choice.text}</ChoiceValue>
             </BodyCell>
             <BodyCell>
-              <Value $tone={line.reveal.tone}>{line.reveal.text}</Value>
+              <Value $tone={line.reveal.tone}>
+                <FigureText figure={line.reveal} />
+              </Value>
             </BodyCell>
             <BodyCell>
               <Value $tone={line.commit.tone}>{line.commit.text}</Value>
@@ -499,7 +505,9 @@ function DrawCards({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
             <div>
               <FigureKey>Reveal</FigureKey>
               <FigureValue>
-                <Value $tone={line.reveal.tone}>{line.reveal.text}</Value>
+                <Value $tone={line.reveal.tone}>
+                  <FigureText figure={line.reveal} />
+                </Value>
               </FigureValue>
             </div>
             <div>

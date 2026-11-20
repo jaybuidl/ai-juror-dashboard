@@ -221,6 +221,18 @@ export function MethodPage() {
           deadline by consulting your clock would say different things in different timezones.
         </Body>
         <Body>
+          One kind of draw is measured differently. Any juror can open the vote period once the
+          commit period has run out or every vote is committed, and an agent juror that does so can
+          reveal a moment later, in the same second. Measured from that opening, its reveal would
+          take no time at all. So a reveal recorded in the second its vote period opened is measured
+          from when the period <em>could</em> have opened: the commit deadline, or the panel's last
+          commitment if that came first. These figures carry a ↥ mark. Every other reveal is still
+          measured from when the period actually opened, because the wait between the two, often
+          several minutes, is the time it took someone to open the period, and no juror controls
+          that. Where that moment cannot be placed, because the commitments are not read yet or a
+          juror outside the roster committed, the cell says Not dated rather than 0s.
+        </Body>
+        <Body>
           <Term>Commit latency</Term> is the same measure for the commit: seconds from the moment
           the commit period opened to the moment that draw's commitment was mined. It is measured
           from its own period, so a cell's reveal figure is not the time since its commit — the two

@@ -8,6 +8,7 @@ import { VisuallyHidden } from "../styles/hidden";
 import { type Tone, toneInk, toneLine, toneWash } from "../styles/tones";
 import { commitFigureOf, type Figure, presentationOf, revealFigureOf } from "./cell";
 import type { DisputeReading, PanelColumn } from "./dispute-detail";
+import { FigureText } from "./FigureText";
 import { JustificationProse } from "./Justification";
 
 /**
@@ -391,7 +392,9 @@ function PanelMember({
           <Measure>
             <MeasureKey aria-hidden="true">R</MeasureKey>
             <VisuallyHidden>Reveal latency</VisuallyHidden>
-            <MeasureValue $tone={reveal.tone}>{reveal.text}</MeasureValue>
+            <MeasureValue $tone={reveal.tone}>
+              <FigureText figure={reveal} />
+            </MeasureValue>
           </Measure>
           <Measure>
             <MeasureKey aria-hidden="true">C</MeasureKey>

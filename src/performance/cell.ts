@@ -17,6 +17,12 @@ import type { Draw, DrawState, LiveStage } from "./performance";
 export type Figure = {
   text: string;
   tone: "value" | "missed" | "pending" | "unread";
+  /**
+   * Set on a reveal by an agent juror that opened the vote period itself, whose figure is
+   * measured from when the period could open rather than from when it did (ADR-0010).
+   * `FigureText` draws it, so every view that prints a reveal marks it the same way.
+   */
+  openedPeriod?: true;
 };
 
 /**
@@ -114,6 +120,9 @@ export const UNREAD_FIGURE: Figure = { text: "Not read", tone: "unread" };
 /**
  * What the reveal slot reads, and why it never goes blank.
  *
+ * A reveal by an agent juror that opened the vote period itself carries `openedPeriod`, with a
+ * figure measured from when the period could open, or `Not dated` where that is not placed.
+ *
  * Three absences that must not be confused: a reveal that will not come (`Missed`), one that
  * has not come yet (`—`), and one that came without leaving a moment behind (`Not dated` — the
  * timestamp lives only on the justification, so a reveal with none cannot be dated). Blank is
@@ -128,8 +137,15 @@ export const UNREAD_FIGURE: Figure = { text: "Not read", tone: "unread" };
  */
 export function revealFigureOf(draw: Draw): Figure {
   if (draw.revealLatencySeconds !== null) {
-    return { text: formatLatencySeconds(draw.revealLatencySeconds), tone: "value" };
+    const text = formatLatencySeconds(draw.revealLatencySeconds);
+    return draw.openedVotePeriod
+      ? { text, tone: "value", openedPeriod: true }
+      : { text, tone: "value" };
   }
+  // Opened the period itself, and the moment it could have opened is not placed yet — the
+  // commitments are unread, or a committed juror sits off the roster. Never a `0s`: that is
+  // the figure ADR-0010 exists to stop printing.
+  if (draw.openedVotePeriod) return { text: "Not dated", tone: "pending", openedPeriod: true };
   if (draw.state.kind === "no-vote") return { text: "Missed", tone: "missed" };
   if (draw.state.kind === "live" && draw.state.stage !== "revealed") {
     return { text: "—", tone: "pending" };
