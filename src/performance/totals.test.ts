@@ -111,13 +111,6 @@ describe("courtTotalsOf", () => {
     expect(changedWindows[0]?.windows.commitSeconds).toBe(28_800);
   });
 
-  it("counts how many revealed draws ran under the changed window", () => {
-    // Dispute 151's panel was two, both revealed.
-    const { changedWindows } = courtTotalsOf(built.rows, ROSTER);
-
-    expect(changedWindows[0]?.revealedDraws).toBe(2);
-  });
-
   it("gathers them by the windows they ran under rather than listing them flat", () => {
     // A flat list could not say what the difference was, which is the whole content of the
     // footnote. Two superseded configurations are two sentences, not one list of ids.
@@ -133,14 +126,10 @@ describe("courtTotalsOf", () => {
       {
         disputes: [151, 152],
         windows: { commitSeconds: 28_800, voteSeconds: 28_800 },
-        revealedDraws: 0,
-        committedDraws: 0,
       },
       {
         disputes: [153],
         windows: { commitSeconds: 600, voteSeconds: 600 },
-        revealedDraws: 0,
-        committedDraws: 0,
       },
     ]);
   });

@@ -3,11 +3,11 @@ import type { Comparison } from "./reference";
 import { stripFraction } from "./strip";
 
 /**
- * The comparison band: where an ordinary Kleros court sits on either plot — the court's time to
- * appeal on the matrix page, and one agent juror's reveal latency on its own view.
+ * The comparison band: where an ordinary Kleros court sits on the matrix page's time-to-appeal
+ * plot. One agent juror's reveal latency plot drew it too, until ADR-0010 removed that plot.
  *
- * One component rather than a pair of copies because both plots draw it and both label it, and
- * this repo has learned twice over that two renderings of one thing fork in the *prose* long
+ * One component rather than a copy inside the plot because two plots drew it and both labelled
+ * it, and a third may yet, and this repo has learned twice over that two renderings of one thing fork in the *prose* long
  * before they fork in the model — `cell.ts`, `row-flags.ts` and `panel.ts` were all lifted out
  * for that reason. A band that said five days on one page and something else on the other would
  * be the same defect on the one element whose whole purpose is a comparison.

@@ -1553,6 +1553,17 @@ describe("Matrix", () => {
       expect(notice).not.toHaveTextContent(/median/i);
     });
 
+    it("sends nobody looking below for commit figures when none could be read", () => {
+      // The same reduction for the whole scan coming back empty: "no commit latency below is
+      // a measurement" points at figures this density does not draw.
+      renderMatrix(padTo(COMPACT_FROM_ROWS + 1, { commits: [] }));
+      const notice = screen.getByRole("status");
+
+      expect(notice).toHaveTextContent(/none of the \d+ commitments/i);
+      expect(notice).toHaveTextContent(/no commit latency is shown at this density/i);
+      expect(notice).not.toHaveTextContent(/below is a measurement/i);
+    });
+
     it("says not read on the row of a dispute whose draws were never read", () => {
       // An unread row's cells say "Not read", never the em dash this design defines as "nothing
       // to measure": an unread state must not state a fact about the court.

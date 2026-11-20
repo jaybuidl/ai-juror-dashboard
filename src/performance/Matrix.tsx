@@ -898,7 +898,9 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                   that read "Not read" on a grid whose cells have no commit line is ticket 16's
                   own review finding, one reduction later. */}
               {commitCoverage.resolved === 0
-                ? `None of the ${commitCoverage.expected} commitments this court recorded could be read from Arbitrum, so no commit latency below is a measurement.`
+                ? compact
+                  ? `None of the ${commitCoverage.expected} commitments this court recorded could be read from Arbitrum. No commit latency is shown at this density; on each dispute's own page they read "Not read".`
+                  : `None of the ${commitCoverage.expected} commitments this court recorded could be read from Arbitrum, so no commit latency below is a measurement.`
                 : compact
                   ? `${unread} of the ${commitCoverage.expected} commitments this court recorded could not be found on Arbitrum. No commit latency is shown at this density; on each dispute's own page those read "Not read".`
                   : `${unread} of the ${commitCoverage.expected} commitments this court recorded could not be found on Arbitrum, and those cells read "Not read".`}{" "}

@@ -262,24 +262,8 @@ export type WindowChange = {
   disputes: readonly number[];
   /** What those disputes ran under. Compare against `CourtParameters.current`. */
   windows: MeasuredWindows;
-  /**
-   * How many of those disputes' draws put a reveal latency into `revealLatency`.
-   *
-   * The figure the marker's own line needs: "1 of 67 draws ran under a vote window of 8h" is
-   * what makes a dagger on a median mean something. Counted here rather than in the tile that
-   * prints it, for the reason every count in this file is.
-   */
-  revealedDraws: number;
-  /**
-   * The same count for the commit median, which is measured from a different period.
-   *
-   * Two counts and not one because they are two distributions: a draw that committed and never
-   * revealed is in one and not the other, and a marker saying "1 of 8" over a median of seven
-   * would be a figure quoting the wrong denominator. Court 34 changed both windows at once, so
-   * both medians take a marker today; a court that changed only one would mark only the median
-   * that window governs, which is why the view compares against `CourtParameters.current`.
-   */
-  committedDraws: number;
+  // How many of those draws revealed and committed was counted here for the † on the latency
+  // medians and the agent juror plot. Both went with ADR-0010, and the counts with them.
 };
 
 /**
@@ -468,14 +452,6 @@ function changedWindowsOf(rows: readonly MatrixRow[]): WindowChange[] {
   for (const row of rows) {
     if (!row.underEarlierWindows || row.windows === null) continue;
 
-    const draws = row.cells;
-    const revealed = draws.filter(
-      (cell) => cell !== null && cell.revealLatencySeconds !== null,
-    ).length;
-    const committed = draws.filter(
-      (cell) => cell !== null && cell.commitLatencySeconds !== null,
-    ).length;
-
     const { commitSeconds, voteSeconds } = row.windows;
     const key = `${commitSeconds}/${voteSeconds}`;
     const group = groups.get(key);
@@ -483,13 +459,9 @@ function changedWindowsOf(rows: readonly MatrixRow[]): WindowChange[] {
       groups.set(key, {
         disputes: [row.dispute.id],
         windows: { commitSeconds, voteSeconds },
-        revealedDraws: revealed,
-        committedDraws: committed,
       });
     } else {
       group.disputes.push(row.dispute.id);
-      group.revealedDraws += revealed;
-      group.committedDraws += committed;
     }
   }
 
@@ -603,8 +575,7 @@ export function courtTotalsOf(
     // facts about the dispute rather than about its draws. Which windows a dispute ran under
     // comes from its own timeline and the court's parameter history — both read from sources
     // that have nothing to do with the draw query — so an unread row still ran under what it
-    // ran under. What it contributes to `revealedDraws` is 0, which is the honest count of
-    // draws in hand for it.
+    // ran under.
     changedWindows: changedWindowsOf(rows),
     unplacedDisputes: unplacedDisputesOf(rows),
     sparsity: sparsityOf(rows, agentJurors),

@@ -301,9 +301,10 @@ export function MethodPage() {
           A read of that court can come back short without failing. So the disputes returned are
           counted against the number the court itself says it holds, and a shortfall is reported as
           those two numbers. Where the read is short, has failed, or is still out, no band is drawn
-          at all. The band's place on the plot says which, and a failure raises the banner. The band
-          is never drawn at a default, and no figure is shown as a fraction of it: it is a position
-          on an absolute time axis, like every mark beside it.
+          at all. The band's place on the plot says which, and a failure raises the banner wherever
+          the plot is drawn; a phone draws neither. The band is never drawn at a default, and no
+          figure is shown as a fraction of it: it is a position on an absolute time axis, like every
+          mark beside it.
         </Body>
       </Section>
 
