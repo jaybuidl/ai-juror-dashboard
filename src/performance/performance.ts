@@ -349,11 +349,12 @@ export type MatrixRow = {
   /**
    * Whether this dispute's commit and vote windows differ from the ones the court holds now.
    *
-   * What the † row marker showed until 2026-09-24; no view reads it now. It is a fact about
-   * comparability rather than about the dispute: the figures
-   * in this row were measured against different windows from the rows above it, so a reader
-   * scanning the column is not comparing like with like. False while the history is unread —
-   * an unknown is not a denial.
+   * What the † row marker showed until 2026-09-24. No view reads it now, and the court totals
+   * that grouped it went on 2026-11-20 (#14); it stays because the live tripwire in
+   * `court-parameters.integration.test.ts` asserts on it (dispute 151 alone is marked), a second
+   * witness beside its `measuredRegimes` assertion that no commit or vote window has moved. It is a fact about comparability rather than about the
+   * dispute: the figures in this row were measured against different windows from the rows
+   * above it. False while the history is unread — an unknown is not a denial.
    */
   underEarlierWindows: boolean;
   /**

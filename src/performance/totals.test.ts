@@ -100,60 +100,10 @@ describe("courtTotalsOf", () => {
     expect(courtTotalsOf(built.rows, ROSTER).lonePanelDisputes).toEqual([155]);
   });
 
-  it("names the disputes that ran under windows the court has since changed", () => {
-    // The other half of the same obligation: a coherence figure has to disclose a panel of
-    // one, and a latency figure has to disclose a window change. Ticket 06's marginals are the
-    // first figures that will carry both markers.
-    const { changedWindows } = courtTotalsOf(built.rows, ROSTER);
-
-    expect(changedWindows).toHaveLength(1);
-    expect(changedWindows[0]?.disputes).toEqual([151]);
-    expect(changedWindows[0]?.windows.commitSeconds).toBe(28_800);
-  });
-
-  it("gathers them by the windows they ran under rather than listing them flat", () => {
-    // A flat list could not say what the difference was, which is the whole content of the
-    // footnote. Two superseded configurations are two sentences, not one list of ids.
-    const rows = [
-      row(151, { commitSeconds: 28_800, voteSeconds: 28_800 }),
-      row(152, { commitSeconds: 28_800, voteSeconds: 28_800 }),
-      row(153, { commitSeconds: 600, voteSeconds: 600 }),
-    ];
-
-    // Ordered oldest group first, whatever order the rows arrive in — and rows arrive newest
-    // first, so insertion order would print the court's history backwards.
-    expect(courtTotalsOf([...rows].reverse(), ROSTER).changedWindows).toEqual([
-      {
-        disputes: [151, 152],
-        windows: { commitSeconds: 28_800, voteSeconds: 28_800 },
-      },
-      {
-        disputes: [153],
-        windows: { commitSeconds: 600, voteSeconds: 600 },
-      },
-    ]);
-  });
-
-  it("reports none of them while the parameter history has not been read", () => {
-    expect(courtTotalsOf([row(151, null)], ROSTER).changedWindows).toEqual([]);
-  });
-
-  it("counts a dispute the history could not place, separately from one that matched", () => {
-    // The difference between "nothing ran under earlier windows" and "the history is too short
-    // to say" — which nothing else on the model can tell apart, and which a page reading
-    // `changedWindows` alone would render as a clean bill of health.
-    const totals = courtTotalsOf(
-      [row(151, null), row(152, { commitSeconds: 28_800, voteSeconds: 28_800 })],
-      ROSTER,
-    );
-
-    expect(totals.unplacedDisputes).toEqual([151]);
-    expect(totals.changedWindows).toHaveLength(1);
-    expect(totals.changedWindows[0]?.disputes).toEqual([152]);
-  });
-
   it("places every dispute in the captured court, because the history reaches back far enough", () => {
-    expect(courtTotalsOf(built.rows, ROSTER).unplacedDisputes).toEqual([]);
+    // The dispute view's configured windows depend on it: a row the history cannot place has
+    // none, and its timeline can show only how long each period ran.
+    expect(built.rows.filter((row) => row.windows === null)).toEqual([]);
   });
 
   it("is the same model the matrix is built from", () => {
@@ -289,34 +239,6 @@ describe("sparsity", () => {
     expect(sparsity.undrawnDisputes).toEqual([]);
   });
 });
-
-/**
- * One row with nothing in it but the windows it ran under.
- *
- * Hand-built rather than captured: no fixture can hold two superseded configurations at the
- * same time, and grouping is the thing being tested.
- *
- * The *reason* changed under ticket 19 while the claim did not, which is why it is spelled out
- * rather than left as a count. The court has been reconfigured twice, so a capture now holds
- * three configurations — but the second reconfiguration moved the evidence period alone, and
- * grouping is over the measured windows. Two reconfigurations, still one superseded group.
- */
-function row(id: number, measured: { commitSeconds: number; voteSeconds: number } | null) {
-  return {
-    // Ruled, so `courtTotalsOf`'s finalised count has a ruling to read. It was `{ id }` alone
-    // until the caption's count moved onto the totals, and a dispute with no ruling at all is
-    // a shape the seam cannot produce.
-    dispute: { id, ruling: { state: "ruled", choice: 1 }, createdAt: 0, rounds: [] } as never,
-    panelSize: 2,
-    offRosterDraws: 0,
-    cells: [],
-    windows: measured === null ? null : { evidenceSeconds: 1, appealSeconds: 129_600, ...measured },
-    underEarlierWindows: measured !== null,
-    // Read, so these rows reach every aggregate. What an *unread* row does to each of them is
-    // ticket 13's own suite; this one is about grouping windows.
-    read: true,
-  };
-}
 
 describe("the court's own live and finalised counts", () => {
   it("counts the disputes the court has ruled on, and the ones it is still deciding", () => {
@@ -688,9 +610,7 @@ describe("timeToAppealOf", () => {
  * One row with one draw in one column, for the cases the captured court cannot produce.
  *
  * Hand-built for the reason `CLAUDE.md` gives: every fixture here is one successful read of a
- * working court, so none of them holds a lone panel that is still live, a court that has
- * superseded two sets of measured windows, or one column drawn under earlier windows while the
- * column beside it was not.
+ * working court, so none of them holds a lone panel that is still live.
  */
 function column({
   id,
