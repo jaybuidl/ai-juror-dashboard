@@ -1,7 +1,6 @@
 import { Link } from "react-router";
 import styled from "styled-components";
 import { narrow } from "../styles/breakpoints";
-import { VisuallyHidden } from "../styles/hidden";
 import { Lockup } from "./Lockup";
 
 /**
@@ -9,10 +8,9 @@ import { Lockup } from "./Lockup";
  * one line saying what Kleros AI is for, and a row of links. Three columns on a desktop, stacked
  * on a phone. It carries no caveat and no figure: those live where the figure is, or on /method.
  *
- * A colophon row under the three columns credits the dashboard's maintainer and links its source
- * (maintainer's request, 2026-11-20). It sits apart from the Kleros links on purpose: that nav is
- * named "Kleros", and the repository is not a Kleros destination. Crediting who built the
- * *dashboard* does not touch the rule against naming who built an agent juror.
+ * GitHub's mark closes the link row, pointing at this dashboard's source (maintainer's request,
+ * 2026-11-20). It sits beside the nav rather than in it: that nav is named "Kleros", and the
+ * repository is not a Kleros destination.
  */
 
 const Bar = styled.footer`
@@ -65,32 +63,17 @@ const Out = styled.a`
   }
 `;
 
-const Colophon = styled.div`
-  grid-column: 1 / -1;
+const End = styled.div`
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
-  gap: ${({ theme }) => theme.space5};
-  font: ${({ theme }) => theme.typeBodySm};
-  color: ${({ theme }) => theme.textMeta};
-
-  p {
-    margin: 0;
-  }
-`;
-
-/* The colophon's two links, styled like the row above. No resting underline on the inline name:
-   the maintainer's ruling (2026-11-20), knowingly against the prose-link tripwire, since hover
-   and focus change its colour. The block padding lifts each target to at least 24px tall. */
-const ColophonLink = styled(Out)`
-  display: inline-flex;
   align-items: center;
-  padding-block: ${({ theme }) => theme.space2};
+  gap: ${({ theme }) => theme.space6};
 `;
 
-/* A little air either side of the emoji, which sits tight against a word space at this size. */
-const Heart = styled.span`
-  margin-inline: 0.2em;
+/* The block padding lifts the 20px mark to a target at least 24px tall. */
+const Source = styled(Out)`
+  display: inline-flex;
+  padding-block: ${({ theme }) => theme.space2};
 `;
 
 const REPOSITORY = "https://github.com/jaybuidl/ai-juror-dashboard";
@@ -127,34 +110,22 @@ export function SiteFooter() {
         <Lockup />
       </Home>
       <Tagline>Fair, open coordination for an economy of autonomous software.</Tagline>
-      <nav aria-label="Kleros">
-        <Links>
-          {LINKS.map((link) => (
-            <li key={link.href}>
-              <Out href={link.href} target="_blank" rel="noreferrer">
-                {link.label}
-              </Out>
-            </li>
-          ))}
-        </Links>
-      </nav>
-      <Colophon>
-        <p>
-          Built with <Heart aria-hidden="true">🩶</Heart>
-          <VisuallyHidden>love</VisuallyHidden> by{" "}
-          <ColophonLink href="https://github.com/jaybuidl" target="_blank" rel="noreferrer">
-            jaybuidl
-          </ColophonLink>
-        </p>
-        <ColophonLink
-          href={REPOSITORY}
-          target="_blank"
-          rel="noreferrer"
-          aria-label="Source on GitHub"
-        >
+      <End>
+        <nav aria-label="Kleros">
+          <Links>
+            {LINKS.map((link) => (
+              <li key={link.href}>
+                <Out href={link.href} target="_blank" rel="noreferrer">
+                  {link.label}
+                </Out>
+              </li>
+            ))}
+          </Links>
+        </nav>
+        <Source href={REPOSITORY} target="_blank" rel="noreferrer" aria-label="Source on GitHub">
           <GitHubMark />
-        </ColophonLink>
-      </Colophon>
+        </Source>
+      </End>
     </Bar>
   );
 }

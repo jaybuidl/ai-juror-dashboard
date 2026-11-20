@@ -16,7 +16,7 @@ function renderFooter() {
 }
 
 describe("SiteFooter", () => {
-  it("links the dashboard's source repository", () => {
+  it("links the dashboard's source repository by name, not by the mark alone", () => {
     renderFooter();
     expect(screen.getByRole("link", { name: "Source on GitHub" })).toHaveAttribute(
       "href",
@@ -24,18 +24,9 @@ describe("SiteFooter", () => {
     );
   });
 
-  it('credits the maintainer, hiding the heart emoji behind the word "love"', () => {
-    renderFooter();
-    const credit = screen.getByRole("link", { name: "jaybuidl" });
-    expect(credit).toHaveAttribute("href", "https://github.com/jaybuidl");
-    const line = credit.closest("p");
-    expect(line?.querySelector('[aria-hidden="true"]')?.textContent).toBe("🩶");
-    expect(line?.textContent?.replace("🩶", "")).toBe("Built with love by jaybuidl");
-  });
-
   it("keeps the repository out of the nav named Kleros", () => {
     renderFooter();
     const nav = screen.getByRole("navigation", { name: "Kleros" });
-    expect(nav.textContent).not.toContain("GitHub");
+    expect(nav.querySelector('a[href*="github.com"]')).toBeNull();
   });
 });
