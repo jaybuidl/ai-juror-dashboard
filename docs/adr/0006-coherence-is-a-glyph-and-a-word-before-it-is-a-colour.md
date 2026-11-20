@@ -1,5 +1,7 @@
 # Coherence is a glyph and a word before it is a colour
 
+_Amended by [ADR-0011](0011-a-cell-shows-what-a-draw-did-not-when.md) (2026-11-20): each live stage has its own glyph, and the cell carries no latency._
+
 `DESIGN_PROMPT.md:202` is a constraint, not a preference: "coherence must never be encoded by colour
 alone." The line after it explains why the constraint bites — "Numbers must be scannable in a dense
 grid. Typography carries a lot of weight here." Every cell state therefore leads with a glyph and a
@@ -18,9 +20,10 @@ added Tied:
 - `✕` **Diverged**, amber (`--amber-400`) — voted against the ruling of a dispute that did not tie.
 - `∅` **No vote**, rose (`--rose-400`) — drawn and failed to act. The only loud state. No example in
   44 draws.
-- `⋯` **Committed** or **Awaiting**, mint (`--mint-400`) — live, still acting: the cell words the
-  stage the draw has reached, while a legend names the state once as a family. What has not happened
-  yet is dimmed to pending ink and dashed, never blank, because blank means something else here.
+- `⋯` **Awaiting**, `◐` **Committed** or `●` **Revealed**, mint (`--mint-400`) — live, still
+  acting, one glyph per stage since ADR-0011 (they shared `⋯` until the cell lost the latency that
+  told them apart). An awaiting draw, which has done nothing yet, has a dashed border, never a
+  blank one, because blank means something else here.
 - **Not drawn** — no glyph, no word, no colour, no tile and no border: one 3px dot so the matrix
   keeps its rhythm. 34 of 78 cells.
 
@@ -62,14 +65,14 @@ one occur, without owning how it looks. Ticket 07 adds the commit half of the ce
 reuses the same vocabulary on the agent juror view. Ticket 13 owns Unknown, which is rose without
 being any agent juror's failure.
 
-At the compact density the word drops and the glyph does not. `MatrixDense.dc.html:97` renders the
-glyph and the reveal figure alone, and the legend below it goes on naming all five states by glyph,
-word and colour. What this ADR decides still holds: colour is never the only signal, because the
+At the compact density the word drops and the glyph does not. `MatrixDense.dc.html:96-100` renders
+the glyph alone (with the vote count where it is above one, since ADR-0011), and the legend below it
+goes on naming every state by glyph, word and colour. What this ADR decides still holds: colour is never the only signal, because the
 glyph, the fill and the border all survive the reduction. The word is the strongest form of the rule
 and is what the cell trades for height once the matrix outgrows the screen. Ticket 17 owns that
 trade and states it, so it happens in the open rather than by attrition.
 
-The phone slot makes the same trade for width. `Mobile.dc.html` carries a glyph and one figure, and
+The phone slot makes the same trade for width. `Mobile.dc.html` carries a glyph and no figure, and
 ticket 16 keeps the word in the slot's accessible name. Both reductions are bounded the same way:
 the glyph never goes, and the word stays reachable on the surface — in a legend beside the matrix,
 or in the accessible name of the thing that lost it. A state carried by hue alone is the one outcome

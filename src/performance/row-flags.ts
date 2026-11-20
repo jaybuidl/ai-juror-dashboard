@@ -52,6 +52,8 @@ export type RowFlag = {
    *
    * **Every flag still says what it is.** What goes is the qualifier a reader can get from the
    * row itself — how long the period has been open — which is still on that dispute's own view.
+   * The live flag keeps its period (ADR-0011), so its short form is "⋯ Live · vote" where the
+   * artboard drew "⋯ Live"; `MatrixDense.dc.html` was amended to match.
    */
   shortLabel: (row: MatrixRow, context: RowFlagContext) => string;
   tone: Tone;
@@ -93,10 +95,12 @@ export const ROW_FLAGS: readonly RowFlag[] = [
       const elapsed = open === null ? "" : ` ${formatElapsedSeconds(open)}`;
       return `Live · ${row.dispute.period}${elapsed}`;
     },
-    // "Live", and neither the period nor the elapsed time — 175px of a 375px row went here, and
-    // the row it sat on could not show which dispute it was. The live *treatment* is untouched:
-    // the tint and the rail still mark the row, and this pill still says it is live.
-    shortLabel: () => "Live",
+    // The period without the elapsed time. The full label was 175px of a 375px row, and the row
+    // it sat on could not show which dispute it was, so this was "Live" alone until ADR-0011. The
+    // period came back because the cells lost their times: an awaiting cell is on time in the
+    // commit period and late in the vote period, and with no time beside it this pill is the only
+    // thing on the row that says which.
+    shortLabel: (row) => `Live · ${row.dispute.period}`,
     tone: "live",
   },
 ];

@@ -65,7 +65,7 @@ export const Dot = styled.span`
 `;
 
 /**
- * The five states and the blank, in one group.
+ * Every state and the blank, in one group.
  *
  * `unknown` is named only when one is on screen. A legend entry for a state the record does not
  * contain teaches a reader to look for a failure that is not there — and this is the entry a
@@ -87,8 +87,16 @@ export function StateLegend({ unknown }: { unknown: boolean }) {
       <LegendItem $tone="fail">
         <span aria-hidden="true">∅</span>No vote
       </LegendItem>
+      {/* One entry per live stage, where this was one "Acting" entry for the family: the cell
+          tells the three apart by glyph alone since ADR-0011, so the decoder has to as well. */}
       <LegendItem $tone="live">
-        <span aria-hidden="true">⋯</span>Acting
+        <span aria-hidden="true">⋯</span>Awaiting
+      </LegendItem>
+      <LegendItem $tone="live">
+        <span aria-hidden="true">◐</span>Committed
+      </LegendItem>
+      <LegendItem $tone="live">
+        <span aria-hidden="true">●</span>Revealed
       </LegendItem>
       {unknown && (
         <LegendItem $tone="fail">

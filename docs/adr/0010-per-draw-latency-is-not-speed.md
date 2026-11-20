@@ -58,6 +58,8 @@ ADR-0005's account of the agent juror plot, which no longer exists.
 - **Remove per-draw latency entirely.** Deferred. Whether matrix cells, dispute cards and the
   dispute panel keep their per-draw figures, and whether those moments move to a timeline on the
   dispute page, is stage 2 of issue #8. Whether the Arbitrum `CommitCast` scan survives is stage 3.
+  Stage 2 was decided by ADR-0011: those three carry no time, and the agent juror page's table of
+  draws keeps them.
 
 ## Consequences
 

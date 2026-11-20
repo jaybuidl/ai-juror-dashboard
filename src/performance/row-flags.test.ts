@@ -89,10 +89,14 @@ describe("rowFlagOf", () => {
      * named: a compact row 441px wide has an id, a title, a panel and a figure on it too, and
      * the live pill's 175px were coming out of the title.
      */
-    it("keeps saying which flag it is, without the qualifier after it", () => {
-      const live = row({ dispute: dispute({ period: "commit", ruling: { state: "pending" } }) });
+    it("keeps saying which flag it is and which period, without how long it has run", () => {
+      // The period came back with ADR-0011: with no time in the cells, it is what tells a reader
+      // whether an awaiting cell is on time or late.
+      for (const period of ["commit", "vote", "appeal"] as const) {
+        const live = row({ dispute: dispute({ period, ruling: { state: "pending" } }) });
 
-      expect(rowFlagOf(live, context)?.shortLabel(live, context)).toBe("Live");
+        expect(rowFlagOf(live, context)?.shortLabel(live, context)).toBe(`Live · ${period}`);
+      }
     });
 
     it("says a read that failed in full at either density", () => {

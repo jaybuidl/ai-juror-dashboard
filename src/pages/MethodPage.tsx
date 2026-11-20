@@ -239,7 +239,7 @@ export function MethodPage() {
         <Body>
           <Term>Commit latency</Term> is the same measure for the commit: seconds from the moment
           the commit period opened to the moment that draw's commitment was mined. It is measured
-          from its own period, so a cell's reveal figure is not the time since its commit — the two
+          from its own period, so a draw's reveal figure is not the time since its commit — the two
           are two durations, not a duration and a total.
         </Body>
         <Body>
@@ -248,7 +248,8 @@ export function MethodPage() {
           <Term>CommitCast</Term> logs the dispute kit emits on Arbitrum, dated by the block they
           were mined in. Because a log scan can come back short without failing, every draw the
           subgraph calls committed is checked against a matching log, and any that are missing are
-          counted and stated above the matrix rather than shown as commitments that never happened.
+          counted and stated on the agent juror's page rather than shown as commitments that never
+          happened.
         </Body>
         <Body>
           Neither latency measures how fast an agent juror judges a case, so neither is averaged,
@@ -258,7 +259,9 @@ export function MethodPage() {
           judgment at all, because the vote was fixed at commit. And both count from the moment a
           period opened, which is whenever any account told the court to advance it. An agent juror
           that advances the period itself and reveals in the same block reads 0 seconds. Each draw's
-          two figures are shown where that draw is shown, as a record of when it acted.
+          two figures are on its agent juror's page, in the table of its draws, as a record of when
+          it acted. The matrix, the dispute cards and the dispute pages show what a draw did and not
+          when: a column of times reads as a ranking whatever the page says about it.
         </Body>
         <Body>
           Neither latency is ever shown as a fraction of a period's window — not in a cell, not on a

@@ -6,7 +6,7 @@ import type { RosterView } from "../roster/useRoster";
 import { narrow } from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
 import { type Tone, toneInk, toneLine, toneWash } from "../styles/tones";
-import { commitFigureOf, type Figure, presentationOf, revealFigureOf } from "./cell";
+import { presentationOf } from "./cell";
 import type { DisputeReading, PanelColumn } from "./dispute-detail";
 import { JustificationProse } from "./Justification";
 
@@ -183,37 +183,11 @@ const Measures = styled.div`
   flex-wrap: wrap;
 `;
 
-const Measure = styled.span`
-  display: inline-flex;
-  align-items: baseline;
-  gap: ${({ theme }) => theme.space3};
-`;
-
-const MeasureKey = styled.abbr`
-  font: ${({ theme }) => theme.typeMonoSm};
-  letter-spacing: ${({ theme }) => theme.trackingMono};
-  color: ${({ theme }) => theme.textPending};
-  text-decoration: none;
-`;
-
-const MeasureValue = styled.span<{ $tone: Figure["tone"] }>`
-  font: ${({ theme }) => theme.typeMono};
-  /* The type token is a font shorthand and resets the tabular figures base.css puts on body.
-     A column of latencies that stops lining up is the whole reason this is re-declared. */
-  font-feature-settings: ${({ theme }) => theme.featureMono};
-  color: ${({ theme, $tone }) => {
-    if ($tone === "value") return theme.textHeading;
-    if ($tone === "missed") return theme.stateWork;
-    if ($tone === "unread") return theme.stateFail;
-    return theme.textPending;
-  }};
-`;
-
 /* How many of the dispute's vote IDs this draw holds — the court can draw one juror more than
    once, and each draw is a vote. In the header since 2026-11-02, when the footer that carried it
-   (as "N vote IDs", and only above one) went with the prose's length and format. */
+   (as "N vote IDs", and only above one) went with the prose's length and format. First on its
+   line since ADR-0011 took the commit and reveal times off the card. */
 const Votes = styled.span`
-  margin-left: auto;
   font: ${({ theme }) => theme.typeMonoSm};
   font-feature-settings: ${({ theme }) => theme.featureMono};
   letter-spacing: ${({ theme }) => theme.trackingMono};
@@ -342,19 +316,15 @@ function PanelMember({
   column,
   tally,
   roster,
-  commitScanned,
 }: {
   column: PanelColumn;
   /** The ballot, whose entries carry each choice's name. */
   tally: DisputeReading["tally"];
   roster: RosterView;
-  commitScanned: boolean;
 }) {
   const { draw, justification } = column;
   const presentation = presentationOf(draw.state);
   const identity = identityFor(roster, draw.agentJuror.address);
-  const reveal = revealFigureOf(draw);
-  const commit = commitFigureOf(draw, commitScanned);
   const choice = choiceLabel(draw.choices, tally);
 
   return (
@@ -382,22 +352,9 @@ function PanelMember({
           </Mark>
         </Who>
         <Measures>
-          {/* The key is drawn as a letter and said as the phrase, which is the pattern the
-              matrix already uses for the same two keys. It was a `title` here, and a `title` is
-              a tooltip: it needs a pointer hovering a non-focusable span, so a keyboard reader
-              cannot reach it, a touch reader cannot reach it, and screen readers disagree about
-              whether to announce it at all. The letter is the abbreviation; the phrase is what
-              it abbreviates, and both should exist. */}
-          <Measure>
-            <MeasureKey aria-hidden="true">R</MeasureKey>
-            <VisuallyHidden>Reveal latency</VisuallyHidden>
-            <MeasureValue $tone={reveal.tone}>{reveal.text}</MeasureValue>
-          </Measure>
-          <Measure>
-            <MeasureKey aria-hidden="true">C</MeasureKey>
-            <VisuallyHidden>Commit latency</VisuallyHidden>
-            <MeasureValue $tone={commit.tone}>{commit.text}</MeasureValue>
-          </Measure>
+          {/* No commit or reveal time (ADR-0011): they timed how soon the draw reacted to an
+              opening, not how fast it judged, and side by side down a panel they read as a
+              ranking. Each draw's moments are on its agent juror's page. */}
           {/* Its share of the round's vote, "1/5 votes", as the agent juror page's table gives it;
               said in words, since a screen reader reads "1/5" as a date. */}
           <Votes>
@@ -440,16 +397,7 @@ function PanelMember({
   );
 }
 
-export function DisputePanel({
-  reading,
-  roster,
-  commitScanned,
-}: {
-  reading: DisputeReading;
-  roster: RosterView;
-  /** Whether the Arbitrum log scan has answered. See `commitFigureOf`. */
-  commitScanned: boolean;
-}) {
+export function DisputePanel({ reading, roster }: { reading: DisputeReading; roster: RosterView }) {
   const shown = reading.columns.length;
   // Everyone the court drew, which is not the same number. A juror outside the roster gets no
   // column and still counts — `CONTEXT.md` on panel against roster — and where the two differ
@@ -498,7 +446,6 @@ export function DisputePanel({
                 column={column}
                 tally={reading.tally}
                 roster={roster}
-                commitScanned={commitScanned}
               />
             ))}
           </Columns>

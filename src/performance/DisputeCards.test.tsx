@@ -240,57 +240,65 @@ describe("DisputeCards", () => {
     // The word does not fit under a 36pt avatar, and a state carried by hue alone would fail
     // ADR-0006. The glyph meets the greyscale test on screen; the word stays reachable here.
     const slots = slotsOf(163);
-    expect(slots[0]).toHaveTextContent(/^007: Coherent,/);
+    expect(slots[0]).toHaveTextContent(/^007: Coherent\./);
   });
 
-  it("shows one figure per slot, and it is the reveal on a finalised card", () => {
+  it("shows no time in any slot, finalised or live", () => {
+    // ADR-0011. The slot carried one latency until then — the reveal on a finalised card, the
+    // commit on a live one still waiting to reveal — and it is the glyph alone now, with the vote
+    // count beside it where the draw held more than one.
     const built = build();
-    const row = built.rows.find((entry) => entry.dispute.id === 163) as MatrixRow;
-    const column = row.cells.findIndex(
-      (cell) => cell?.revealLatencySeconds != null && cell.commitLatencySeconds != null,
-    );
-    const drawn = row.cells[column] as Draw;
     renderCards(built);
 
-    const slot = slotsOf(163)[column] as HTMLElement;
-
-    // The reveal, read from the model rather than transcribed. Commit latency is off the face of
-    // a finalised card entirely — it is behind the tap target, on the dispute's own view, along
-    // with the vote-ID count.
-    expect(slot).toHaveTextContent(formatLatencySeconds(drawn.revealLatencySeconds as number));
-    expect(slot).not.toHaveTextContent(formatLatencySeconds(drawn.commitLatencySeconds as number));
-    expect(slot.textContent).not.toMatch(/×\d/);
+    for (const row of built.rows) {
+      const slots = slotsOf(row.dispute.id);
+      row.cells.forEach((cell, column) => {
+        if (cell === null) return;
+        const slot = slots[column] as HTMLElement;
+        for (const seconds of [cell.revealLatencySeconds, cell.commitLatencySeconds]) {
+          if (seconds !== null) {
+            expect(slot).not.toHaveTextContent(formatLatencySeconds(seconds));
+          }
+        }
+      });
+    }
   });
 
-  it("shows the commit on a live card, where no reveal exists yet", () => {
-    // Every draw in disputes 164–166 has revealed, so the live-but-unrevealed case has to be
-    // built: it is the only state in which a commit latency reaches a slot at all.
-    const built = build();
-    const live = built.rows.find((row) => row.dispute.id === 166) as MatrixRow;
-    const committed: Draw = {
-      ...(live.cells.find((cell) => cell !== null) as Draw),
-      state: { kind: "live", stage: "committed" },
-      revealLatencySeconds: null,
-      commitLatencySeconds: 41,
-      committed: true,
-    };
-    renderCards(withRow(built, 166, { cells: [committed, ...live.cells.slice(1)] }));
+  it("says nothing about the commit scan, which no slot reads", () => {
+    // The notice that counted a short scan went with the slot's figure (ADR-0011).
+    renderCards(build({ commits: [] }));
 
-    expect(slotsOf(166)[0]).toHaveTextContent("41s");
+    expect(screen.queryByText(/Arbitrum/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Not read/)).not.toBeInTheDocument();
+  });
+
+  it("annotates a draw holding several vote IDs, and says nothing on one holding one", () => {
+    const built = build();
+    const row = built.rows.find((entry) => entry.dispute.id === 163) as MatrixRow;
+    const first = row.cells.find((cell) => cell !== null) as Draw;
+    renderCards(
+      withRow(built, 163, { cells: [{ ...first, voteCount: 2 }, ...row.cells.slice(1)] }),
+    );
+
+    const [heavy, light] = slotsOf(163) as HTMLElement[];
+    expect(heavy).toHaveTextContent("×2");
+    expect(heavy).toHaveTextContent(/Coherent, 2 vote IDs\./);
+    expect(light?.textContent).not.toMatch(/×\d/);
   });
 
   it("renders every state, including the two with no example in this court", () => {
     // NO VOTE has never happened here and neither has a draw awaiting its commit. Both are
     // built rather than deferred to the day they occur.
-    const states: { state: DrawState; glyph: string; word: string; figure: string }[] = [
-      { state: { kind: "coherent" }, glyph: "✓", word: "Coherent", figure: "46s" },
-      { state: { kind: "diverged" }, glyph: "✕", word: "Diverged", figure: "46s" },
-      { state: { kind: "no-vote" }, glyph: "∅", word: "No vote", figure: "Missed" },
-      { state: { kind: "live", stage: "awaiting" }, glyph: "⋯", word: "Awaiting", figure: "—" },
-      { state: { kind: "live", stage: "revealed" }, glyph: "⋯", word: "Revealed", figure: "46s" },
+    const states: { state: DrawState; glyph: string; word: string }[] = [
+      { state: { kind: "coherent" }, glyph: "✓", word: "Coherent" },
+      { state: { kind: "diverged" }, glyph: "✕", word: "Diverged" },
+      { state: { kind: "no-vote" }, glyph: "∅", word: "No vote" },
+      { state: { kind: "live", stage: "awaiting" }, glyph: "⋯", word: "Awaiting" },
+      { state: { kind: "live", stage: "committed" }, glyph: "◐", word: "Committed" },
+      { state: { kind: "live", stage: "revealed" }, glyph: "●", word: "Revealed" },
     ];
 
-    for (const { state, glyph, word, figure } of states) {
+    for (const { state, glyph, word } of states) {
       const built = build();
       const row = built.rows.find((entry) => entry.dispute.id === 163) as MatrixRow;
       const first = row.cells.find((cell) => cell !== null) as Draw;
@@ -308,7 +316,6 @@ describe("DisputeCards", () => {
       const slot = slotsOf(163)[0] as HTMLElement;
       expect(slot).toHaveTextContent(word);
       expect(slot.textContent).toContain(glyph);
-      expect(slot).toHaveTextContent(figure);
       unmount();
     }
   });
@@ -332,7 +339,7 @@ describe("DisputeCards", () => {
 
     // The loudest slot on the card against a bare dot: no shared glyph, no shared avatar, no
     // shared fill and no shared border. This is the distinction ticket 05 exists to protect.
-    expect(missed).toHaveTextContent("Missed");
+    expect(missed).toHaveTextContent("No vote");
     expect(missed.textContent).toContain("∅");
     expect(getComputedStyle(missed).backgroundColor).not.toBe(TRANSPARENT);
     expect(getComputedStyle(missed).boxShadow).not.toBe("none");
@@ -487,7 +494,15 @@ describe("DisputeCards", () => {
     // visible, at the head of the list rather than its foot. A reader scrolling a stack of
     // cards may never reach the foot, and the sparsity note is the one that prevents a
     // misreading rather than answering a question a reader knows they have.
-    for (const word of ["Coherent", "Diverged", "No vote", "Acting", "Not drawn"]) {
+    for (const word of [
+      "Coherent",
+      "Diverged",
+      "No vote",
+      "Awaiting",
+      "Committed",
+      "Revealed",
+      "Not drawn",
+    ]) {
       expect(screen.getAllByText(word).length).toBeGreaterThan(0);
     }
     expect(screen.getByText(/sparsity is the normal state of this record/i)).toBeInTheDocument();

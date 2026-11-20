@@ -13,7 +13,7 @@ wrong is a different fact from no entry at all.
 
 ## Already correct, confirmed rather than assumed
 
-- **Every glyph is hidden and every state is worded.** `✓ ✕ ∅ ⋯ ?`, the row-flag glyphs and the
+- **Every glyph is hidden and every state is worded.** `✓ = ✕ ∅ ⋯ ◐ ● ?`, the row-flag glyphs and the
   not-drawn dot all carry `aria-hidden`, on every surface, at both densities and on the phone.
   The word is beside the glyph where there is room and in the accessible name where there is not
   — the compact cell and the phone slot both trade the drawn word for a hidden one, which is the

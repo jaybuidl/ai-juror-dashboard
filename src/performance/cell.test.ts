@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ROSTER } from "../roster/agent-jurors";
-import { commitFigureOf, presentationOf, revealFigureOf, slotFigureOf } from "./cell";
+import { commitFigureOf, presentationOf, revealFigureOf, voteWeightOf } from "./cell";
 import type { Draw, DrawState } from "./performance";
 
 const AGENT_JUROR = ROSTER[0] as (typeof ROSTER)[number];
@@ -22,13 +22,15 @@ function draw(overrides: Partial<Draw> = {}): Draw {
   };
 }
 
-/** The five states a drawn cell can be in. Not drawn is the absence of one, and has none. */
+/** Every state a drawn cell can be in. Not drawn is the absence of one, and has none. */
 const DRAWN_STATES: DrawState[] = [
   { kind: "coherent" },
   { kind: "tied" },
   { kind: "diverged" },
   { kind: "no-vote" },
   { kind: "live", stage: "awaiting" },
+  { kind: "live", stage: "committed" },
+  { kind: "live", stage: "revealed" },
 ];
 
 describe("presentationOf", () => {
@@ -42,15 +44,30 @@ describe("presentationOf", () => {
   });
 
   it("keeps the states apart with hue removed", () => {
-    // Five attributes carry the five states: glyph, word, weight, fill and border. Not drawn
-    // has neither a glyph nor a word, which is what tells it from the other four; these four
-    // must be separable from each other without reading a colour.
+    // Glyph, word, fill and border carry the states. Not drawn has neither a glyph nor a word,
+    // which is what tells it from the rest; these must be separable from each other without
+    // reading a colour.
     const withoutHue = DRAWN_STATES.map((state) => {
-      const { glyph, word, filled } = presentationOf(state);
-      return `${glyph}|${word}|${filled}`;
+      const { glyph, word, filled, dashed } = presentationOf(state);
+      return `${glyph}|${word}|${filled}|${dashed}`;
     });
 
     expect(new Set(withoutHue).size).toBe(DRAWN_STATES.length);
+  });
+
+  it("tells every state apart by its glyph alone, which is all the compact cell draws", () => {
+    // ADR-0011. The compact cell drops the word, and until then the three live stages shared
+    // one glyph and were told apart only by the latency beside it. With the times gone, two
+    // states sharing a glyph would be two states a compact reader cannot separate.
+    const glyphs = DRAWN_STATES.map((state) => presentationOf(state).glyph);
+
+    expect(new Set(glyphs).size).toBe(DRAWN_STATES.length);
+  });
+
+  it("dashes the border of an awaiting draw, and of nothing else", () => {
+    const dashed = DRAWN_STATES.filter((state) => presentationOf(state).dashed);
+
+    expect(dashed).toEqual([{ kind: "live", stage: "awaiting" }]);
   });
 
   it("words each stage of the live family separately", () => {
@@ -59,8 +76,14 @@ describe("presentationOf", () => {
     );
 
     expect(words).toEqual(["Awaiting", "Committed", "Revealed"]);
-    // The legend's word for the family is none of them, on purpose.
-    expect(words).not.toContain("Acting");
+  });
+
+  it("marks each live stage with its own glyph", () => {
+    const glyphs = (["awaiting", "committed", "revealed"] as const).map(
+      (stage) => presentationOf({ kind: "live", stage }).glyph,
+    );
+
+    expect(glyphs).toEqual(["⋯", "◐", "●"]);
   });
 
   it("gives a missed vote the loudest treatment and the coherent cell the quietest", () => {
@@ -179,64 +202,13 @@ describe("commitFigureOf", () => {
   });
 });
 
-/**
- * Ticket 16's one figure per slot: the latency of the most recent thing the draw did.
- *
- * The rule that matters is not "reveal, else commit" — it is that a reveal, once it exists,
- * always outranks the commit, including where it is a word. These cases are the ones where
- * those two rules give different answers.
- */
-describe("slotFigureOf", () => {
-  it("shows the reveal on a draw that has revealed", () => {
-    expect(slotFigureOf(draw(), true)).toEqual({ text: "85s", tone: "value" });
+describe("voteWeightOf", () => {
+  it("says nothing for a draw that holds one vote", () => {
+    // The common case, and an annotation that is almost always the same number is noise.
+    expect(voteWeightOf(draw())).toBeNull();
   });
 
-  it("shows the commit on a draw still awaiting its reveal", () => {
-    // The only case where the commit reaches a slot: a live dispute where no reveal exists yet.
-    const live = draw({ state: { kind: "live", stage: "committed" }, revealLatencySeconds: null });
-
-    expect(slotFigureOf(live, true)).toEqual({ text: "6m 36s", tone: "value" });
-  });
-
-  it("shows the reveal of a live draw that has already revealed", () => {
-    // Disputes 164–166 sat here: every vote in, no ruling, so the reveal is real and shown
-    // while coherence is not knowable. The commit would be the older of the two facts.
-    const revealed = draw({ state: { kind: "live", stage: "revealed" } });
-
-    expect(slotFigureOf(revealed, true)).toEqual({ text: "85s", tone: "value" });
-  });
-
-  it("says a draw that never revealed missed it, rather than quoting its commit", () => {
-    // The case the "reveal, else commit" reading gets wrong. This draw committed in 6m 36s and
-    // then never voted; printing that duration would report a failure to vote as an action.
-    const missed = draw({ state: { kind: "no-vote" }, revealLatencySeconds: null });
-
-    expect(slotFigureOf(missed, true)).toEqual({ text: "Missed", tone: "missed" });
-  });
-
-  it("shows a dash in pending ink for a draw that has not committed yet", () => {
-    const awaiting = draw({
-      state: { kind: "live", stage: "awaiting" },
-      revealLatencySeconds: null,
-      commitLatencySeconds: null,
-      committed: false,
-    });
-
-    // Never a blank: a blank position on a card means the agent juror was not drawn at all.
-    expect(slotFigureOf(awaiting, true)).toEqual({ text: "—", tone: "pending" });
-  });
-
-  it("does not call a commitment unread before the log scan has answered", () => {
-    const committed = draw({
-      state: { kind: "live", stage: "committed" },
-      revealLatencySeconds: null,
-      commitLatencySeconds: null,
-      committed: true,
-    });
-
-    // The `RosterView` trap, in its third form: an absence is only a failure once there has
-    // been an answer to fall short of. Unscanned is a step not reached.
-    expect(slotFigureOf(committed, false)).toEqual({ text: "—", tone: "pending" });
-    expect(slotFigureOf(committed, true)).toEqual({ text: "Not read", tone: "unread" });
+  it("annotates a draw that holds more than one vote", () => {
+    expect(voteWeightOf(draw({ voteCount: 2 }))).toBe("×2");
   });
 });

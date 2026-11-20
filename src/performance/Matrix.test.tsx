@@ -425,14 +425,15 @@ describe("Matrix", () => {
     expect(within(column).getByText(/never drawn/i)).toBeInTheDocument();
   });
 
-  it("shows a draw's reveal latency and its coherence in a word", () => {
+  it("shows a draw's coherence in a word and no time beside it", () => {
     renderMatrix();
     const row = rowFor(163);
     if (row === null) throw new Error("no row for dispute 163");
 
-    // Every one of dispute 163's five agent jurors voted with the ruling.
+    // Every one of dispute 163's five agent jurors voted with the ruling. blaise revealed 46s
+    // after the vote period opened, and since ADR-0011 no cell says so.
     expect(within(row).getAllByText("Coherent")).toHaveLength(5);
-    expect(within(row).getByText("46s")).toBeInTheDocument();
+    expect(within(row).queryByText("46s")).not.toBeInTheDocument();
   });
 
   it("words a draw that voted against the ruling as diverged", () => {
@@ -519,22 +520,38 @@ describe("Matrix", () => {
   it("keys the legend so a first-time reader can decode a cell", () => {
     renderMatrix();
 
-    for (const word of ["Coherent", "Diverged", "No vote", "Acting", "Not drawn"]) {
+    for (const word of [
+      "Coherent",
+      "Diverged",
+      "No vote",
+      "Awaiting",
+      "Committed",
+      "Revealed",
+      "Not drawn",
+    ]) {
       expect(screen.getAllByText(word).length).toBeGreaterThan(0);
     }
   });
 
-  it("names the live family once in the legend and the stage in the cell", () => {
+  it("keys each live stage in the legend, by the glyph the cell draws it with", () => {
     renderMatrix();
 
-    // The legend's word for the family is not any cell's word for a stage: they are
-    // deliberately different, so that neither can be mistaken for the other.
-    // Scoped to the legend: a column header with a draw still in motion has an "Acting" line of
-    // its own (ADR-0009), which is the same family counted.
-    // The legend is the one outside the grid.
-    const outsideGrid = screen.getAllByText("Acting").filter((node) => !node.closest("table"));
-    expect(outsideGrid).toHaveLength(1);
-    expect(screen.getAllByText("Revealed").length).toBeGreaterThan(0);
+    // ADR-0011: the compact cell tells the three stages apart by glyph alone, so the decoder
+    // names all three where it once named the family as "Acting". The legend is the one
+    // outside the grid.
+    for (const [glyph, word] of [
+      ["⋯", "Awaiting"],
+      ["◐", "Committed"],
+      ["●", "Revealed"],
+    ] as const) {
+      const keys = screen.getAllByText(word).filter((node) => !node.closest("table"));
+      expect(keys).toHaveLength(1);
+      expect(keys[0]?.textContent).toBe(`${glyph}${word}`);
+    }
+    // Dispute 165 is revealed and unruled, so the grid draws the third stage.
+    const row = rowFor(165);
+    if (row === null) throw new Error("no row for dispute 165");
+    expect(within(row).getAllByText("●").length).toBeGreaterThan(0);
   });
 
   it("renders the states with no example in the data, from a model that says so", () => {
@@ -568,14 +585,13 @@ describe("Matrix", () => {
     });
     renderMatrix(missed);
 
-    expect(screen.getAllByText("No vote").length).toBeGreaterThan(0);
-    // The reveal figure reads as a miss, not as a number and not as a blank.
-    expect(grid().getByText("Missed")).toBeInTheDocument();
-    // And the commit that did happen is still a figure: a draw can commit and never reveal.
-    expect(grid().getByText("60s")).toBeInTheDocument();
+    expect(grid().getByText("No vote")).toBeInTheDocument();
+    expect(grid().getByText("∅")).toBeInTheDocument();
+    // The commit that did happen is not a figure here (ADR-0011): it is on the agent juror page.
+    expect(grid().queryByText("60s")).not.toBeInTheDocument();
   });
 
-  it("reads a stage that has not happened yet as a dash, never as blank", () => {
+  it("marks a committed draw with its own glyph, and no time", () => {
     const acting = build({
       disputes: [
         {
@@ -604,10 +620,49 @@ describe("Matrix", () => {
     });
     renderMatrix(acting);
 
-    expect(screen.getByText("Committed")).toBeInTheDocument();
-    expect(grid().getByText("—")).toBeInTheDocument();
-    // The reveal is the dash; the commit already has a moment, and the cell shows both.
-    expect(grid().getByText("50s")).toBeInTheDocument();
+    // Until ADR-0011 this was the ⋯ every live stage shared, told apart only by a dash or a
+    // time beside it. The stage is the glyph now, and the time is gone.
+    expect(grid().getByText("Committed")).toBeInTheDocument();
+    expect(grid().getByText("◐")).toBeInTheDocument();
+    expect(grid().queryByText("—")).not.toBeInTheDocument();
+    expect(grid().queryByText("50s")).not.toBeInTheDocument();
+  });
+
+  it("dashes the border of a draw that has done nothing yet, and solid-borders the rest", () => {
+    const awaiting = build({
+      disputes: [
+        {
+          id: "900",
+          disputeID: "900",
+          period: "commit",
+          ruled: false,
+          currentRuling: "0",
+          tied: false,
+          createdAt: "100",
+          lastPeriodChange: "200",
+          currentRoundIndex: "0",
+          rounds: [{ id: "900-0", timeline: ["100", "200", "0", "0"] }],
+        },
+      ],
+      draws: [
+        {
+          id: "900-0-0",
+          juror: { id: ROSTER[3]?.address.toLowerCase() ?? "" },
+          dispute: { disputeID: "900" },
+          round: { id: "900-0" },
+          vote: { commited: false, voted: false, choice: null, justification: null },
+        },
+      ],
+      commits: [],
+    });
+    renderMatrix(awaiting);
+    const cell = grid().getByText("Awaiting").closest("td");
+    if (cell === null) throw new Error("no cell for the awaiting draw");
+
+    expect(within(cell).getByText("⋯")).toBeInTheDocument();
+    // jsdom keeps the outline as the shorthand it was given.
+    expect(getComputedStyle(cell).outline).toMatch(/dashed/);
+    expect(getComputedStyle(cell).boxShadow).toBe("none");
   });
 
   describe("the column marginals", () => {
@@ -888,110 +943,35 @@ describe("Matrix", () => {
     });
   });
 
-  describe("the commit line", () => {
-    it("shows the commit and the reveal latency in one cell", () => {
-      renderMatrix();
-      const row = rowFor(163);
-      if (row === null) throw new Error("no row for dispute 163");
-
-      // blaise revealed 46s after the vote period opened, and committed 24s after the commit
-      // period opened. Both figures, in the same unit, in the same cell.
-      expect(within(row).getByText("46s")).toBeInTheDocument();
-      expect(within(row).getByText("24s")).toBeInTheDocument();
+  describe("no time in the cell", () => {
+    it("carries no commit or reveal latency at either density", () => {
+      // ADR-0011. 2m 06s and 53m 56s were dispute 151's commit and reveal extremes, and 46s and
+      // 24s blaise's reveal and commit in 163; none of them is on the grid.
+      for (const court of [comfortableCourt(), compactCourt()]) {
+        renderMatrix(court);
+        for (const figure of ["2m 06s", "53m 56s", "46s", "24s"]) {
+          expect(grid().queryByText(figure)).not.toBeInTheDocument();
+        }
+        expect(grid().queryByText(/latency/i)).not.toBeInTheDocument();
+        cleanup();
+      }
     });
 
-    it("names both measures for a reader who cannot see the legend", () => {
-      renderMatrix();
-      const row = rowFor(163);
-      if (row === null) throw new Error("no row for dispute 163");
-
-      // The keys beside the figures are `R` and `C` and are hidden from the accessibility
-      // tree; the words are what a screen reader gets, once per drawn cell.
-      expect(within(row).getAllByText("Reveal latency")).toHaveLength(5);
-      expect(within(row).getAllByText("Commit latency")).toHaveLength(5);
-    });
-
-    it("reproduces the range of reveal and commit latencies the court recorded", () => {
-      renderMatrix();
-
-      // 2m 06s to 53m 56s, both in dispute 151 — three orders of magnitude in one row.
-      const row = rowFor(151);
-      if (row === null) throw new Error("no row for dispute 151");
-      expect(within(row).getByText("2m 06s")).toBeInTheDocument();
-      expect(within(row).getByText("53m 56s")).toBeInTheDocument();
-    });
-  });
-
-  describe("the commit cross-check", () => {
-    it("says nothing when every commitment was found", () => {
-      renderMatrix();
-
-      expect(screen.queryByText(/could not be found on Arbitrum/i)).not.toBeInTheDocument();
-      expect(screen.queryByText(/could be read from Arbitrum/i)).not.toBeInTheDocument();
-    });
-
-    it("names the shortfall as a count when the log scan came back short", () => {
-      // What a provider capping `eth_getLogs` produces: the subgraph still reports 56
-      // commitments and only some of them have a log. The page has to say so — otherwise the
-      // missing ones read as commitments that never happened.
-      const short = build({ commits: (commitFixture as RawCommitCast[]).slice(0, 50) });
-      renderMatrix(short);
-
-      expect(screen.getByText(/6 of the 56 commitments/i)).toBeInTheDocument();
-      // The words the cells actually carry. "Unknown" until ticket 13, which reassigned that word
-      // to the unread *row* — so a notice still saying it would send a reader looking for whole
-      // rows of Unknown and let them conclude the shortfall had blanked sixteen disputes.
-      expect(screen.getByText(/those cells read "Not read"/i)).toBeInTheDocument();
-      expect(screen.getByText(/not an agent juror that failed to commit/i)).toBeInTheDocument();
-    });
-
-    it("says nothing at all while the log read is still out", () => {
-      // The load-order bug this guards: the chain answers slower than the subgraph and the
-      // matrix deliberately does not wait for it, so for the first second of every cold load
-      // no commitment is resolved. Counting that as a shortfall would put "none of the 56
-      // commitments could be read" on the public page on every single visit.
-      renderMatrix(build({ commits: null }));
-
-      expect(screen.queryByText(/could not be found on Arbitrum/i)).not.toBeInTheDocument();
-      expect(screen.queryByText(/None of the 56 commitments/i)).not.toBeInTheDocument();
-    });
-
-    it("tells a read still out from a read that came back empty", () => {
-      // Identical models but for one field, and the difference is a claim about an endpoint.
-      renderMatrix(build({ commits: [] }));
-
-      expect(screen.getByText(/None of the 56 commitments/i)).toBeInTheDocument();
-    });
-
-    it("says the whole read failed rather than counting when nothing came back at all", () => {
-      renderMatrix(build({ commits: [] }));
-
-      expect(screen.getByText(/None of the 56 commitments/i)).toBeInTheDocument();
-      expect(screen.getByText(/no commit latency below is a measurement/i)).toBeInTheDocument();
-    });
-
-    it("keeps the reveal and coherence figures when no commitment could be read", () => {
-      // The whole reason this degrades rather than blanks: an Arbitrum outage costs the commit
-      // line, and nothing else on this page is read from Arbitrum.
-      renderMatrix(build({ commits: [] }));
-      const row = rowFor(163);
-      if (row === null) throw new Error("no row for dispute 163");
-
-      expect(within(row).getAllByText("Coherent")).toHaveLength(5);
-      expect(within(row).getByText("46s")).toBeInTheDocument();
-    });
-
-    it("never blames an agent juror for a commitment it could not read", () => {
-      renderMatrix(build({ commits: [] }));
-      const row = rowFor(163);
-      if (row === null) throw new Error("no row for dispute 163");
-
-      // Five committed draws, five commit slots reading "Not read", and not one of them worded
-      // as a miss. The words were "Unknown" until ticket 13, which gave that word to the unread
-      // row and left this — a scan that came back short — saying what actually happened.
-      expect(within(row).getAllByText("Not read")).toHaveLength(5);
-      expect(within(row).queryByText("Missed")).not.toBeInTheDocument();
-      expect(within(row).queryByText("No vote")).not.toBeInTheDocument();
+    it("says nothing about the commit scan, which no cell reads", () => {
+      // The notice that counted a short scan went with the commit line: no figure on this grid
+      // comes from Arbitrum's logs, so a shortfall there changes nothing a reader is looking at.
+      // The agent juror page, which still carries each draw's moments, says it instead.
+      const short = (commitFixture as RawCommitCast[]).slice(0, 50);
+      for (const commits of [short, [], null]) {
+        renderMatrix(build({ commits }));
+        expect(screen.queryByText(/Arbitrum/)).not.toBeInTheDocument();
+        expect(screen.queryByRole("status")).not.toBeInTheDocument();
+        const row = rowFor(163);
+        if (row === null) throw new Error("no row for dispute 163");
+        expect(within(row).getAllByText("Coherent")).toHaveLength(5);
+        expect(within(row).queryByText("Not read")).not.toBeInTheDocument();
+        cleanup();
+      }
     });
   });
 
@@ -1032,14 +1012,16 @@ describe("Matrix", () => {
       return row;
     }
 
-    it("says not read in every slot where a figure belongs, never leaving one blank", () => {
+    it("says unknown in every cell and not read on the row, never leaving one blank", () => {
       const row = renderDrifted();
 
-      // Twice per cell — once for the reveal, once for the commit — plus the row header's own
-      // not-read badge. The words are what let a reader name the row a gap without consulting
-      // the legend, which is the criterion; rose alone would not.
-      expect(within(row).getAllByText("Not read")).toHaveLength(FIXTURE_ROSTER.length * 2 + 1);
+      // Every cell says Unknown, and the row header's own badge says why. The words are what
+      // let a reader name the row a gap without consulting the legend, which is the criterion;
+      // rose alone would not. The cells said "Not read" twice each too, once per latency, until
+      // ADR-0011 took the latencies off the cell.
       expect(within(row).getAllByText("Unknown")).toHaveLength(FIXTURE_ROSTER.length);
+      expect(within(row).getAllByText("?")).toHaveLength(FIXTURE_ROSTER.length + 1);
+      expect(within(row).getAllByText("Not read")).toHaveLength(1);
     });
 
     it("never draws an unread cell as not drawn", () => {
@@ -1273,19 +1255,21 @@ describe("Matrix", () => {
       expect(Number.parseFloat(short.height) * 2).toBe(Number.parseFloat(tall.height));
     });
 
-    it("drops the commit line from the cell and nothing else that carries a figure", () => {
-      renderMatrix(compactCourt());
-      const row = rowOrThrow(156);
-      const cell = within(row).getAllByRole("cell")[0] as HTMLElement;
+    it("drops the drawn word from the cell and nothing else", () => {
+      renderMatrix(comfortableCourt());
+      const wide = within(rowOrThrow(156)).getAllByRole("cell")[0] as HTMLElement;
+      const drawnWide = [...wide.querySelectorAll("span")].filter(
+        (node) => node.textContent === "Diverged",
+      );
 
-      // What survives: the reveal, said as a duration, with the state it belongs to.
-      expect(within(cell).getByText("Reveal latency", { exact: false })).toBeInTheDocument();
-      expect(within(cell).getByText(/^\d+s$/)).toBeInTheDocument();
-      // What goes: the commit figure and its key. Never rendered empty — an empty slot
-      // beside a full one reads as missing data.
-      expect(within(cell).queryByText("Commit latency")).not.toBeInTheDocument();
-      expect(within(cell).queryByText("C")).not.toBeInTheDocument();
-      expect(within(cell).queryByText("R")).not.toBeInTheDocument();
+      cleanup();
+      renderMatrix(compactCourt());
+      const narrow = within(rowOrThrow(156)).getAllByRole("cell")[0] as HTMLElement;
+
+      // The comfortable cell draws the glyph and the word; the compact one draws the glyph and
+      // says the word. Same text either way, so nothing is lost but ink.
+      expect(drawnWide).toHaveLength(1);
+      expect(narrow.textContent).toBe(wide.textContent);
     });
 
     it("keeps the coherence state in the compact cell, in a glyph and in words", () => {
@@ -1307,13 +1291,18 @@ describe("Matrix", () => {
       expect(filled.length).toBeGreaterThan(0);
     });
 
-    it("drops the vote-count annotation with the rest of the cell's second voice", () => {
+    it("keeps the vote-count annotation at both densities", () => {
+      // ADR-0011 brought it back to the compact cell: a draw holding two of a round's five
+      // votes decides more of it than one holding one, and with the times gone it is the one
+      // piece of context the cell has room for.
       renderMatrix(comfortableCourt());
-      expect(screen.getAllByText(/^×\d+$/).length).toBeGreaterThan(0);
+      const comfortable = screen.getAllByText(/^×\d+$/).length;
+      expect(comfortable).toBeGreaterThan(0);
 
       cleanup();
       renderMatrix(compactCourt());
-      expect(screen.queryByText(/^×\d+$/)).not.toBeInTheDocument();
+      // One more row than the comfortable court, so at least as many annotations.
+      expect(screen.getAllByText(/^×\d+$/).length).toBeGreaterThanOrEqual(comfortable);
     });
 
     it("draws an agent juror that was not drawn identically at both densities", () => {
@@ -1525,43 +1514,14 @@ describe("Matrix", () => {
       expect(within(compact).getByRole("link", { name: "156" })).toBeInTheDocument();
     });
 
-    it("keeps the live flag, abbreviated", () => {
+    it("keeps the live flag and its period, and drops how long the period has run", () => {
       renderMatrix(compactCourt());
 
-      // What density touches is the qualifier after the flag, which the dense artboard drops
-      // (`MatrixDense.dc.html:213`): the row still says it is live, and 175px of live pill stops
-      // eating the title.
-      expect(within(rowOrThrow(166)).getByText("Live")).toBeInTheDocument();
-      expect(screen.queryByText(/Live · appeal/i)).not.toBeInTheDocument();
-    });
-
-    it("sends nobody looking for a shortfall in cells that carry no commit figure", () => {
-      // The shortfall notice named cells reading "Not read" — true of the comfortable cell and
-      // false of the compact one, which has no commit slot at all. Since ADR-0010 no column
-      // header carries a commit median either, so the notice sends the reader to the dispute
-      // pages, where the missing figures are.
-      const short = (commitFixture as RawCommitCast[]).slice(0, 5);
-
-      renderMatrix(padTo(COMPACT_FROM_ROWS, { commits: short }));
-      expect(screen.getByRole("status")).toHaveTextContent(/those cells read "Not read"/);
-
-      cleanup();
-      renderMatrix(padTo(COMPACT_FROM_ROWS + 1, { commits: short }));
-      const notice = screen.getByRole("status");
-      expect(notice).not.toHaveTextContent(/those cells read/);
-      expect(notice).toHaveTextContent(/no commit latency is shown at this density/i);
-      expect(notice).not.toHaveTextContent(/median/i);
-    });
-
-    it("sends nobody looking below for commit figures when none could be read", () => {
-      // The same reduction for the whole scan coming back empty: "no commit latency below is
-      // a measurement" points at figures this density does not draw.
-      renderMatrix(padTo(COMPACT_FROM_ROWS + 1, { commits: [] }));
-      const notice = screen.getByRole("status");
-
-      expect(notice).toHaveTextContent(/none of the \d+ commitments/i);
-      expect(notice).toHaveTextContent(/no commit latency is shown at this density/i);
-      expect(notice).not.toHaveTextContent(/below is a measurement/i);
+      // What density touches is the elapsed time after the flag: the row still says it is live
+      // and in which period, which ADR-0011 put back because an awaiting cell is on time in one
+      // period and late in the next. The elapsed half is what kept 175px of pill eating the title.
+      expect(within(rowOrThrow(166)).getByText("Live · appeal")).toBeInTheDocument();
+      expect(within(rowOrThrow(166)).queryByText(/Live · appeal \d/)).not.toBeInTheDocument();
     });
 
     it("says not read on the row of a dispute whose draws were never read", () => {

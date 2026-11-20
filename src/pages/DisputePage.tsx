@@ -403,22 +403,16 @@ function failuresOf({
   return {
     blocking: present(
       coreFailureOf({ disputes, performance, detail }),
-      // Arbitrum serves the commit scan and the parameter history both, so an outage takes
-      // both and the worse one is the one named — the matrix's own rule, and the reason this
-      // does not list the source twice.
-      performance.commitError !== null
+      // Only the parameter history. Arbitrum serves the commit scan too, but since ADR-0011 this
+      // page shows no commit moment, so a failure of that scan changes nothing here and a banner
+      // about it would describe nothing on screen.
+      performance.parametersError !== null
         ? failureOf(
-            performance.commitError,
+            performance.parametersError,
             arbitrumSource(),
-            "The commitments could not be read from Arbitrum, so no commit latency in the columns below is a measurement.",
+            "The court's period durations could not be read from its own parameter history, so the timeline below shows how long each period ran and not what it was configured to allow.",
           )
-        : performance.parametersError !== null
-          ? failureOf(
-              performance.parametersError,
-              arbitrumSource(),
-              "The court's period durations could not be read from its own parameter history, so the timeline below shows how long each period ran and not what it was configured to allow.",
-            )
-          : null,
+        : null,
     ),
     degraded: [ensFallbackOf(roster)].filter((read) => read !== null),
     offline: disputes.isPaused || performance.isPaused || detail.isPaused,
@@ -642,11 +636,7 @@ export function DisputeView({
             </Notice>
           )}
 
-          <DisputePanel
-            reading={reading}
-            roster={roster}
-            commitScanned={performance.performance?.commitCoverage.read === true}
-          />
+          <DisputePanel reading={reading} roster={roster} />
         </>
       )}
     </View>

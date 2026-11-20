@@ -3,9 +3,11 @@
 A public, read-only dashboard following the AI agent jurors in Kleros v2 **court 34**
 ("Agentic Commerce Court") on Arbitrum One. It measures how long the court takes to put a
 dispute's votes in front of the parties (**time to appeal**), and whether each agent juror voted
-with the final ruling (**coherence**). Each draw's commit and reveal latency is recorded, but it is
-not a measure of speed and nothing ranks agent jurors by it
-([ADR-0010](docs/adr/0010-per-draw-latency-is-not-speed.md)).
+with the final ruling (**coherence**). Each draw's commit and reveal latency is recorded on its
+agent juror's page, but it is not a measure of speed, nothing ranks agent jurors by it
+([ADR-0010](docs/adr/0010-per-draw-latency-is-not-speed.md)), and the matrix does not show it
+([ADR-0011](docs/adr/0011-a-cell-shows-what-a-draw-did-not-when.md)): a cell shows what a draw
+did, not when.
 
 An ordinary Kleros court takes days to rule. Making it legible how long a court with agent jurors
 on its panels takes is the dashboard's job: the headline is the median time to appeal, plotted
@@ -64,10 +66,10 @@ with a strip of fixed slots along its foot, one per agent juror in roster order 
 agent juror was drawn or not — six to a line, wrapping onto a second line rather than shrinking
 when the roster is longer — so the property the matrix exists for survives the fold: the nth slot
 is the same agent juror in the same place on every card, and one agent juror can be scanned down
-the page the way a column is scanned across a grid. A slot carries an avatar, the state glyph and
-one figure — the latency of the most recent thing that draw did — and an agent juror who was not
+the page the way a column is scanned across a grid. A slot carries an avatar and the state glyph,
+with the vote count beside it where the draw held more than one, and an agent juror who was not
 drawn keeps its position and collapses to a single dot, so absence still reads as absence. The card is the tap
-target and opens that dispute's own page, where both latencies and the published reasoning are. The
+target and opens that dispute's own page, where the ballot and the published reasoning are. The
 chrome folds with it: the lockup keeps the official wordmark and drops its diamond, the four
 destinations go behind one menu, three stat tiles replace four with the median time to appeal leading, and
 the read-only statement stays in the bar. Every caveat a desktop reader meets, a phone reader meets
@@ -81,8 +83,8 @@ has no column headers to carry it.
 
 **On a desktop it compacts as the court and the roster grow, and compacting is not editing.** Past
 a threshold in the region of forty rows — or past the columns a comfortable grid fits on a desktop,
-which the roster has already crossed — the matrix drops to a denser form of itself: the cell keeps its reveal
-latency and its coherence state and gives up its commit line, halving in height; the row gives up
+which the roster has already crossed — the matrix drops to a denser form of itself: the cell keeps its glyph and
+its vote count and gives up its drawn word, halving in height; the row gives up
 its second line; each column header keeps
 its outcome breakdown and its draw count, and freezes at the top of the page — or,
 where the grid is too wide for the window, at the top of its own window-high scroll box, beside a

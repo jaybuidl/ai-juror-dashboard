@@ -1,6 +1,5 @@
 import { Link } from "react-router";
 import styled from "styled-components";
-import { Notice } from "../chrome/Failure";
 import { type DisputeRowSlots, Pill, rulingLabel } from "../disputes/DisputeList";
 import type { Dispute } from "../disputes/disputes";
 import { isFinalised } from "../disputes/liveness";
@@ -9,14 +8,7 @@ import type { AgentJurorIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
 import { VisuallyHidden } from "../styles/hidden";
 import { type Tone, toneInk, toneLine, toneWash } from "../styles/tones";
-import {
-  type Figure,
-  type Presentation,
-  presentationOf,
-  slotFigureOf,
-  UNREAD_FIGURE,
-  UNREAD_PRESENTATION,
-} from "./cell";
+import { type Presentation, presentationOf, UNREAD_PRESENTATION, voteWeightOf } from "./cell";
 import { SparsityNote } from "./Footnotes";
 import { Legend, StateLegend } from "./Legend";
 import { panelPillOf } from "./panel";
@@ -370,7 +362,7 @@ const SlotPortrait = styled.img`
   object-fit: cover;
 `;
 
-/* The glyph and the one figure, on one line. Baseline-aligned so a glyph and a duration sit on
+/* The glyph and the vote count, on one line. Baseline-aligned so the glyph and the digits sit on
    the same line however the digits are set. */
 const SlotFigure = styled.span`
   display: flex;
@@ -382,41 +374,31 @@ const SlotFigure = styled.span`
 const SlotGlyph = styled.span<{ $tone: Tone }>`
   flex: none;
   font: ${({ theme }) => theme.typeMonoSm};
-  font-size: 10px;
+  /* 12px, the matrix's own glyph size, where this was 10. Since ADR-0011 the glyph is the only
+     thing in a slot telling a committed draw from a revealed one, and the half-filled circle
+     drawn at 10px in a fallback font loses its outline and reads as a sliver. */
+  font-size: 12px;
   line-height: 1.2;
   color: ${({ theme, $tone }) => toneInk(theme, $tone)};
 `;
 
 /**
- * The figure, at the artboard's 9.5px.
+ * The vote count, at the artboard's 9.5px, and only where it is not one (`voteWeightOf`).
  *
- * Small, and smaller than anything on the desktop, because a 52pt slot has to hold "54m 12s"
- * beside a glyph. Nothing rests on reading it alone: the same duration is on the dispute's own
- * view one tap away, and the state it belongs to is carried by the glyph and by the slot's
- * accessible name. Ticket 18 owns the type sizes across the whole dashboard and this is one of
- * the figures it will have to weigh.
- *
- * The ink follows the *figure* where the figure is not a measurement — pending stays pending
- * and a missed or unread one stays rose — and follows the *state* where it is, which is what
- * the artboard draws: a coherent duration in heading ink, a diverged one in amber, a live one
- * in mint. `nowrap` is required rather than cosmetic: a latency reads "6m 41s", and letting it
- * wrap would break a single measurement across two lines at the space.
+ * The slot carried one latency here until ADR-0011 — the most recent thing the draw did — and
+ * this is what is left of that line: the glyph, and beside it the one piece of context worth the
+ * room. Nothing rests on reading it alone; the same count is on the dispute's own page one tap
+ * away, as "2/5 votes".
  */
-const SlotValue = styled.span<{ $tone: Figure["tone"]; $state: Tone }>`
+const SlotWeight = styled.span`
   font: ${({ theme }) => theme.typeMonoSm};
   /* TRAP: the font shorthand above just reset font-feature-settings, and with it the tabular
-     digits base.css puts on body. Without this line a strip of latencies stops lining up down
-     the page and nothing anywhere says so. */
+     digits base.css puts on body. */
   font-feature-settings: ${({ theme }) => theme.featureMono};
   font-size: 9.5px;
-  font-weight: 600;
   line-height: 1.2;
   white-space: nowrap;
-  color: ${({ theme, $tone, $state }) => {
-    if ($tone === "missed" || $tone === "unread") return theme.stateFail;
-    if ($tone === "pending") return theme.textPending;
-    return $state === "pass" ? theme.textHeading : toneInk(theme, $state);
-  }};
+  color: ${({ theme }) => theme.textPending};
 `;
 
 /* The blank position, at the size the desktop draws it. Nothing else: no avatar, no glyph, no
@@ -453,9 +435,8 @@ export function DisputeCards({
   slotsFor,
   now = Date.now(),
 }: DisputeCardsProps) {
-  const { agentJurors, rows, totals, commitCoverage } = performance;
+  const { agentJurors, rows, totals } = performance;
   const flagContext: RowFlagContext = { now };
-  const unread = commitCoverage.expected - commitCoverage.resolved;
   const identityOf = new Map(
     roster.entries.map(({ agentJuror, identity }) => [agentJuror.address, identity]),
   );
@@ -469,9 +450,9 @@ export function DisputeCards({
       <Lede>
         The same record, folded to one card per dispute. Column position is the agent juror, on
         every card: the sixth slot is the same agent juror here as on the card above it, whether or
-        not that agent juror was drawn. Each slot carries one figure — the latency of the most
-        recent thing that draw did. Tap a card for both latencies, the ballot and the published
-        reasoning.
+        not that agent juror was drawn. Each slot carries the draw's state: its outcome once the
+        dispute is ruled, how far it has got while it is live. Tap a card for the ballot and the
+        published reasoning.
       </Lede>
 
       {rows.length === 0 ? (
@@ -481,29 +462,6 @@ export function DisputeCards({
         </Empty>
       ) : (
         <>
-          {/* The same cross-check the grid states, gated the same way — until the log scan has
-              come back every commitment is unresolved, and saying so would announce a failure
-              that has not happened — but deliberately *not* in the same words.
-
-              The grid can say "those cells read Not read", because every cell there has a commit
-              slot. A card slot shows one figure and it is the commit only while a reveal is still
-              ahead, so on a court whose shortfall sits mostly in finalised disputes nothing on
-              this page reads "Not read" at all. Transcribing the grid's sentence would send a
-              reader hunting for a string that is not there — and would leave the shortfall itself
-              unstated on this layout, which is the failure the cross-check exists to prevent.
-              So it says where the affected figures live instead. */}
-          {commitCoverage.read && unread > 0 && (
-            <Notice $tone="rose" role="status">
-              {commitCoverage.resolved === 0
-                ? `None of the ${commitCoverage.expected} commitments this court recorded could be read from Arbitrum, so no commit latency is a measurement.`
-                : `${unread} of the ${commitCoverage.expected} commitments this court recorded could not be found on Arbitrum, so those commit latencies are unknown.`}{" "}
-              That is a read that came back short, not an agent juror that failed to commit. Commit
-              latency is not on a card's face at all — it is on each dispute's own page, where an
-              affected draw says so in its own words. Reveal latency and coherence come from the
-              subgraph and are unaffected.
-            </Notice>
-          )}
-
           {/* Ticket 16's open question, answered here and recorded on the ticket: the legend and
               the sparsity note reach a phone reader by being rendered inline at the head of the
               card list, always visible and never behind a control or a link.
@@ -542,7 +500,6 @@ export function DisputeCards({
                 agentJurors={agentJurors}
                 identityOf={identityOf}
                 fallenBack={fallenBack}
-                scanned={commitCoverage.read}
                 slots={slotsFor?.(row.dispute)}
                 flagContext={flagContext}
               />
@@ -569,7 +526,6 @@ function DisputeCard({
   agentJurors,
   identityOf,
   fallenBack,
-  scanned,
   slots,
   flagContext,
 }: {
@@ -577,7 +533,6 @@ function DisputeCard({
   agentJurors: readonly AgentJuror[];
   identityOf: Map<string, AgentJurorIdentity | undefined>;
   fallenBack: boolean;
-  scanned: boolean;
   slots: DisputeRowSlots | undefined;
   flagContext: RowFlagContext;
 }) {
@@ -656,7 +611,6 @@ function DisputeCard({
             draw={row.read ? (row.cells[column] ?? null) : null}
             read={row.read}
             fallenBack={fallenBack}
-            scanned={scanned}
           />
         ))}
       </Strip>
@@ -667,11 +621,11 @@ function DisputeCard({
 /**
  * One agent juror's position on one card.
  *
- * Three shapes and no more. A draw is an avatar, a glyph and one figure. No draw is a single
- * dot, in that agent juror's fixed position, carrying nothing that could be read as conduct. A
- * dispute whose draws were never read is the loudest of the three rather than the emptiest —
- * rose, a border, a glyph and a word — because the emptiest thing here already means something
- * else, and means it about an agent juror.
+ * Three shapes and no more. A draw is an avatar and a glyph, with its vote count beside the glyph
+ * where it held more than one. No draw is a single dot, in that agent juror's fixed position,
+ * carrying nothing that could be read as conduct. A dispute whose draws were never read is the
+ * loudest of the three rather than the emptiest — rose, a border and a glyph — because the
+ * emptiest thing here already means something else, and means it about an agent juror.
  *
  * The word naming the state does not fit under a 36pt avatar and is not on the slot's face. It
  * is in the slot's accessible name instead, alongside the agent juror's nickname, so no state
@@ -685,14 +639,12 @@ function Slot({
   draw,
   read,
   fallenBack,
-  scanned,
 }: {
   agentJuror: AgentJuror;
   identity: AgentJurorIdentity | undefined;
   draw: Draw | null;
   read: boolean;
   fallenBack: boolean;
-  scanned: boolean;
 }) {
   const nickname = identity?.nickname ?? agentJuror.nickname;
 
@@ -702,7 +654,7 @@ function Slot({
         agentJuror={agentJuror}
         identity={identity}
         presentation={UNREAD_PRESENTATION}
-        figure={UNREAD_FIGURE}
+        weight={null}
         fallenBack={fallenBack}
       />
     );
@@ -727,45 +679,42 @@ function Slot({
       agentJuror={agentJuror}
       identity={identity}
       presentation={presentationOf(draw.state)}
-      figure={slotFigureOf(draw, scanned)}
+      weight={voteWeightOf(draw)}
       fallenBack={fallenBack}
-      awaiting={draw.state.kind === "live" && draw.state.stage === "awaiting"}
     />
   );
 }
 
-/** A slot with something in it: the avatar, the glyph, the figure and the word behind them. */
+/** A slot with something in it: the avatar, the glyph, the vote count and the word behind them. */
 function SlotState({
   agentJuror,
   identity,
   presentation,
-  figure,
+  weight,
   fallenBack,
-  awaiting = false,
 }: {
   agentJuror: AgentJuror;
   identity: AgentJurorIdentity | undefined;
   presentation: Presentation;
-  figure: Figure;
+  weight: string | null;
   fallenBack: boolean;
-  awaiting?: boolean;
 }) {
   const nickname = identity?.nickname ?? agentJuror.nickname;
   // The live family is the one state the slot does not fill: the card carries it whole, by its
   // own border and tint, and a card of tinted slots inside a tinted card would say one thing
   // once per agent juror with nothing left for the states to say.
   const filled = presentation.filled && presentation.tone !== "live";
+  const votes = weight === null ? "" : `, ${weight.slice(1)} vote IDs`;
 
   return (
     <SlotBox $tone={presentation.tone} $filled={filled}>
-      {/* First, so a screen reader hears which agent juror and what happened before the
-          duration it happened in — and terminated, so the slots do not run together into
-          one string. The blank slot above is punctuated the same way; the two used to disagree,
-          one ending in a comma and one in nothing. */}
-      <VisuallyHidden>{`${nickname}: ${presentation.word}, `}</VisuallyHidden>
+      {/* First, so a screen reader hears which agent juror before what it did — and terminated,
+          so the slots do not run together into one string. The blank slot above is punctuated
+          the same way; the two used to disagree, one ending in a comma and one in nothing. */}
+      <VisuallyHidden>{`${nickname}: ${presentation.word}${votes}. `}</VisuallyHidden>
       <SlotAvatar
         $tone={presentation.tone}
-        $awaiting={awaiting}
+        $awaiting={presentation.dashed}
         $fallenBack={fallenBack}
         aria-hidden="true"
       >
@@ -775,13 +724,9 @@ function SlotState({
           agentJuror.nickname.slice(0, 2)
         )}
       </SlotAvatar>
-      <SlotFigure>
-        <SlotGlyph $tone={presentation.tone} aria-hidden="true">
-          {presentation.glyph}
-        </SlotGlyph>
-        <SlotValue $tone={figure.tone} $state={presentation.tone}>
-          {figure.text}
-        </SlotValue>
+      <SlotFigure aria-hidden="true">
+        <SlotGlyph $tone={presentation.tone}>{presentation.glyph}</SlotGlyph>
+        {weight !== null && <SlotWeight>{weight}</SlotWeight>}
       </SlotFigure>
     </SlotBox>
   );
