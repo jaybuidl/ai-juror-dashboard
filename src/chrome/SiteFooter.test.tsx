@@ -29,8 +29,8 @@ describe("SiteFooter", () => {
     const credit = screen.getByRole("link", { name: "jaybuidl" });
     expect(credit).toHaveAttribute("href", "https://github.com/jaybuidl");
     const line = credit.closest("p");
-    expect(line?.querySelector('[aria-hidden="true"]')?.textContent).toBe("💜");
-    expect(line?.textContent?.replace("💜", "")).toBe("Built with love by jaybuidl");
+    expect(line?.querySelector('[aria-hidden="true"]')?.textContent).toBe("🩶");
+    expect(line?.textContent?.replace("🩶", "")).toBe("Built with love by jaybuidl");
   });
 
   it("keeps the repository out of the nav named Kleros", () => {

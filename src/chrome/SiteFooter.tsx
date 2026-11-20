@@ -88,6 +88,11 @@ const ColophonLink = styled(Out)`
   padding-block: ${({ theme }) => theme.space2};
 `;
 
+/* A little air either side of the emoji, which sits tight against a word space at this size. */
+const Heart = styled.span`
+  margin-inline: 0.2em;
+`;
+
 const REPOSITORY = "https://github.com/jaybuidl/ai-juror-dashboard";
 
 /* GitHub's own mark, from Octicons (mark-github, 16px grid, MIT). Inline markup, so it reaches no
@@ -135,7 +140,7 @@ export function SiteFooter() {
       </nav>
       <Colophon>
         <p>
-          Built with <span aria-hidden="true">💜</span>
+          Built with <Heart aria-hidden="true">🩶</Heart>
           <VisuallyHidden>love</VisuallyHidden> by{" "}
           <ColophonLink href="https://github.com/jaybuidl" target="_blank" rel="noreferrer">
             jaybuidl
