@@ -15,9 +15,9 @@ cover, split by filename:
 
 - **`*.test.ts(x)`, offline** (`yarn test`). The pure core is tested against fixtures captured
   from the real court, with no network and no mocks.
-- **`*.integration.test.ts`, live** (`yarn test:integration`, `vitest.integration.config.ts`). The
+- **`*.integration.test.ts(x)`, live** (`yarn test:integration`, `vitest.integration.config.ts`). The
   I/O readers (ENS in `src/roster/`, the core subgraph in `src/disputes/` and `src/performance/`,
-  the template subgraph, the Arbitrum RPC) against the real endpoints. These are drift checks a
+  the template, comparison-court and rewards subgraphs, the Arbitrum RPC) against the real endpoints. These are drift checks a
   fixture cannot make. CI runs them daily and on demand, never on a pull request, where their
   failure mode would be network flake.
 

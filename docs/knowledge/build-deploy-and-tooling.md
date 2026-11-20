@@ -47,7 +47,8 @@ this file is the full account.
 
 ## Toolchain constraints
 
-Moved from `README.md` on 2026-11-20, when the README was rewritten for visitors.
+Moved from `README.md` on 2026-11-20, when the README was rewritten for visitors. These are
+constraints rather than traps, so `CLAUDE.md` carries no one-line form of them.
 
 - **Yarn must be 4.18 or newer, and is pinned twice.** Yarn up to 4.17.0 applies a builtin
   Plug'n'Play compatibility patch to `typescript` that expects `lib/_tsc.js`, a file TypeScript 7's
@@ -56,7 +57,8 @@ Moved from `README.md` on 2026-11-20, when the README was rewritten for visitors
   same `reduceDependency` hook with the patch applied second. Fixed in yarn 4.17.1
   ([yarnpkg/berry#7190](https://github.com/yarnpkg/berry/pull/7190)). Both pins are load-bearing:
   `packageManager` is what Netlify's corepack reads, and the `volta` key is what a local shell
-  reads, because Volta's yarn shim ignores `packageManager`.
+  reads: Volta's yarn shim ignores `packageManager`, so without the `volta` entry a
+  contributor's `yarn install` falls back to their default yarn and hits the bug again.
 - **TypeScript 7 ships `tsc` and nothing else.** No `tsserver`, no `require("typescript")`; the
   programmatic API is deferred to 7.1. Nothing here needs it (Biome is Rust, Vite and Vitest
   transpile through esbuild and rolldown), but adding typescript-eslint would be a blocker, since
