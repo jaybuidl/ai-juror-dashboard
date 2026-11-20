@@ -29,7 +29,8 @@ import { VisuallyHidden } from "../styles/hidden";
  * at `:113-134` — and `canvas/JurorEmpty.dc.html` for an agent juror the court has not drawn yet.
  *
  * **The artboard's latency profile at `:86-110` is not built, by decision** (ADR-0010). It plotted
- * this agent juror's reveal latencies against the court's, which ranked a figure that measures
+ * this agent juror's reveal latencies against the court's, which set it beside the others on a
+ * figure that measures
  * how often an agent polls the court rather than how fast it judges. It was removed on 2026-11-20
  * and nothing replaces it yet: the table of draws follows the header directly. Whether anything
  * should take that place is an open question on issue #8, so do not restore the plot to fill it.
@@ -321,9 +322,11 @@ function coreFailureOf(
 /**
  * Arbitrum's half, at most once, worded by what is actually on this page.
  *
- * One endpoint serves the commit scan and the parameter history both, so an outage takes both
- * and the worse one is the one named. The error outranks the shortfall count: they are the same
- * endpoint, and a banner listing one source twice reads as two things having gone wrong.
+ * Only the commit scan. The same endpoint serves the parameter history, but on this page that
+ * history fed nothing but the † under the latency plot, which ADR-0010 removed, so its failure
+ * costs nothing here and a banner about it would describe nothing on screen. The error outranks
+ * the shortfall count: they are the same endpoint, and a banner listing one source twice reads as
+ * two things having gone wrong.
  */
 function arbitrumFailureOf(performance: CourtPerformanceView): FailedRead | null {
   const coverage = performance.performance?.commitCoverage;
@@ -348,14 +351,6 @@ function arbitrumFailureOf(performance: CourtPerformanceView): FailedRead | null
       status: "Short read",
       what: `${coverage.expected - coverage.resolved} of ${coverage.expected} commitments could not be found on Arbitrum, so those commit latencies are unknown.`,
     };
-  }
-
-  if (performance.parametersError !== null) {
-    return failureOf(
-      performance.parametersError,
-      source,
-      "The court's period durations could not be read from its own parameter history on Arbitrum, so no dispute here is marked as having run under earlier ones. Court 34 was reconfigured partway through this experiment, and which figures that affects is not shown on this load.",
-    );
   }
 
   return null;

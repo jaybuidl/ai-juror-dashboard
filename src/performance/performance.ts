@@ -370,7 +370,7 @@ export type MatrixRow = {
 };
 
 /**
- * Whether the commit half of the speed dimension was read whole.
+ * Whether the commit half of the per-draw latency record was read whole.
  *
  * A count and not an error, because the failure it exists for throws nothing: an endpoint that
  * caps `eth_getLogs` answers with fewer logs and no complaint, and every draw it dropped then

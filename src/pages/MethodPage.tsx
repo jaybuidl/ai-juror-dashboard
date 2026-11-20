@@ -363,10 +363,10 @@ export function MethodPage() {
 
         <Body>
           Dispute 151 is the only dispute that ran under the first configuration: the change was
-          mined 48 minutes before dispute 152 was created. Its commit and reveal latencies were
-          measured against windows of 8 hours rather than 45 and 30 minutes, so they cannot be set
-          beside any later dispute's. Nothing here summarises latency across disputes, so no figure
-          mixes the two.
+          mined 48 minutes before dispute 152 was created. Its commit and vote periods ran under
+          windows of 8 hours rather than 45 and 30 minutes, so its latencies cannot be set beside
+          any later dispute's. Nothing here summarises latency across disputes, so no figure mixes
+          the two.
         </Body>
 
         <Body>
@@ -381,8 +381,10 @@ export function MethodPage() {
           The median time to appeal is the exception, because it is measured from a dispute's
           creation and so spans the evidence period too. A dispute created before 26 August sat
           through 45 minutes of evidence where one created today sits through 10, so its time to
-          appeal is not the same measurement. Where a configured window would otherwise stand beside
-          the evidence period, the dispute view gives the count of evidence submissions instead.
+          appeal is not the same measurement. The median time to appeal still counts those disputes,
+          dispute 151's 12-hour evidence period included. Where a configured window would otherwise
+          stand beside the evidence period, the dispute view gives the count of evidence submissions
+          instead.
         </Body>
 
         <Body>

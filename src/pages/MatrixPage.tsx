@@ -442,10 +442,10 @@ export function MatrixPage(props: MatrixPageProps) {
         <Caveat>
           <CaveatTitle>Nothing measured on this load</CaveatTitle>
           <CaveatBody>
-            This page measures how long each agent juror took to commit its vote, how long it took
-            to reveal it, and whether that vote matched the dispute's final ruling — but not on this
-            load: what it needed could not be read, and it shows what it did read rather than a
-            matrix built from part of it. Nothing below is a latency, a coherence or a draw.
+            This page measures how long the court took to bring each dispute to appeal, and whether
+            each agent juror voted with the dispute's final ruling — but not on this load: what it
+            needed could not be read, and it shows what it did read rather than a matrix built from
+            part of it. Nothing below is a latency, a coherence or a draw.
           </CaveatBody>
         </Caveat>
       ) : null}

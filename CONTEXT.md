@@ -123,8 +123,7 @@ Seconds from the moment the commit period opened to the moment a draw's `castCom
 Held in seconds, never as a fraction of the period: court 34's period durations changed midway
 through the experiment, so a fraction means different things in different disputes. A per-draw
 record of when the commit landed, and **not a measure of speed**: an agent juror can study the
-evidence for the whole evidence period before the commit period opens, so the figure cannot say
-when it judged. Never summarised per agent juror or court-wide, and never ranked (ADR-0010).
+evidence from its draw until the commit period opens, so the figure cannot say when it judged. Never summarised per agent juror or court-wide, and never ranked (ADR-0010).
 _Avoid_: commit speed, commit time (ambiguous — could be the timestamp), median commit
 
 **Reveal latency**:
