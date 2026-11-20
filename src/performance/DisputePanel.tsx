@@ -427,6 +427,20 @@ function PanelMember({
             <UnpublishedNote>The justification arrives with the vote.</UnpublishedNote>
           </Unpublished>
         </ColumnBody>
+      ) : draw.state.kind === "no-vote" ? (
+        /* No reveal, and the vote period has closed: there is no vote to count and no field
+           that could have been published empty, so the published-empty copy is false here too
+           (#20). The mark above already says the miss in rose; this repeats none of it. */
+        <ColumnBody>
+          <Unpublished>
+            <UnpublishedGlyph aria-hidden="true">∅</UnpublishedGlyph>
+            <UnpublishedHeading>No vote revealed</UnpublishedHeading>
+            <UnpublishedBody>
+              This agent juror did not reveal a vote before the vote period closed, so there is no
+              vote and no justification to show.
+            </UnpublishedBody>
+          </Unpublished>
+        </ColumnBody>
       ) : justification === null || justification.length === 0 ? (
         <ColumnBody>
           <Unpublished>

@@ -4,7 +4,7 @@ import { ThemeProvider } from "styled-components";
 import { describe, expect, it } from "vitest";
 import detailFixture from "../performance/dispute-156-detail.fixture.json" with { type: "json" };
 import { NO_DETAIL, type RawDisputeDetail, toDisputeDetail } from "../performance/dispute-detail";
-import type { CourtPerformance, LiveStage } from "../performance/performance";
+import type { CourtPerformance, DrawState, LiveStage } from "../performance/performance";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import type { DisputeDetailView } from "../performance/useDisputeDetail";
 import { ReadFailure, SOURCES } from "../read-failure";
@@ -509,26 +509,30 @@ describe("a draw that published nothing", () => {
   });
 });
 
+/** Dispute 156 restated, its first draws given these states in roster order. */
+function restated(...states: DrawState[]): CourtPerformanceView {
+  const performance = measured.performance as CourtPerformance;
+  return {
+    ...measured,
+    performance: {
+      ...performance,
+      rows: performance.rows.map((row) => {
+        if (row.dispute.id !== 156) return row;
+        let next = 0;
+        const cells = row.cells.map((cell) => {
+          if (cell === null || next >= states.length) return cell;
+          return { ...cell, state: states[next++] as DrawState };
+        });
+        return { ...row, cells };
+      }),
+    },
+  };
+}
+
 describe("a draw that has not revealed yet", () => {
-  /** Dispute 156 reopened, its first two draws back to before their reveal. */
+  /** Dispute 156 reopened, its first draws back to before their reveal. */
   function live(...stages: LiveStage[]): CourtPerformanceView {
-    const performance = measured.performance as CourtPerformance;
-    return {
-      ...measured,
-      performance: {
-        ...performance,
-        rows: performance.rows.map((row) => {
-          if (row.dispute.id !== 156) return row;
-          let next = 0;
-          const cells = row.cells.map((cell) => {
-            if (cell === null || next >= stages.length) return cell;
-            const stage = stages[next++] as LiveStage;
-            return { ...cell, state: { kind: "live" as const, stage } };
-          });
-          return { ...row, cells };
-        }),
-      },
-    };
+    return restated(...stages.map((stage) => ({ kind: "live" as const, stage })));
   }
 
   it("says the vote is not revealed rather than that it counts", () => {
@@ -575,6 +579,26 @@ describe("a draw that has not revealed yet", () => {
     expect(
       screen.getAllByText(/Nothing failed here, and nothing was lost in transit/).length,
     ).toBeGreaterThan(0);
+  });
+});
+
+describe("a draw that never voted", () => {
+  it("says no vote was revealed rather than that it counts", () => {
+    // A no-vote draw let the vote period close without revealing (`stateOf`). Its justification
+    // is null because there is no vote, not because the prose was left out of one (#20).
+    renderDispute({
+      performance: restated({ kind: "no-vote" }),
+      detail: read({ detail: { ...detail156, justifications: [] } }),
+    });
+    const [missed, revealed] = screen.getAllByRole("article");
+    if (missed === undefined || revealed === undefined) throw new Error("no columns rendered");
+
+    expect(within(missed).getByText("No vote revealed")).toBeInTheDocument();
+    expect(within(missed).queryByText(/counts in full/)).not.toBeInTheDocument();
+    expect(within(missed).queryByText(/Nothing failed here/)).not.toBeInTheDocument();
+    // The gate tested the other way: the next card, a vote revealed with no prose, keeps it.
+    expect(within(revealed).queryByText("No vote revealed")).not.toBeInTheDocument();
+    expect(within(revealed).getByText(/counts in full/)).toBeInTheDocument();
   });
 });
 
