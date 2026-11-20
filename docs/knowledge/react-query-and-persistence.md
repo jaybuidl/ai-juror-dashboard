@@ -33,7 +33,10 @@ this file is the full account.
   a "the read came up empty" test. Ticket 13 reintroduced the bug a third time — converting the
   commit slot to rose put "Not read" on all 56 cells for the length of every cold load — so assume
   any new emptiness test needs its own gate and write the test for both directions. Ticket 08's
-  `parameters.read` is the fourth of them.
+  `parameters.read` is the fourth of them. ADR-0012 met a fifth face of it: a re-read in flight
+  shows the *previous* answer as react-query placeholder data so a live timeline does not
+  flicker, and what that stand-in lacks is not a shortfall either — the court saw something it
+  predates. `ChainRead.answered` is that gate; a test that only covers "no data yet" misses it.
 - **`JSON.stringify` turns a `Map` into `{}`, and the query cache is persisted as JSON.** Ticket
   12 persists react-query's cache to `localStorage`, and `useDisputes`'s templates query holds a
   `Map<number, DisputeTemplate>`. Persisted, it comes back as an object with no `get` on it,

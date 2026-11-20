@@ -7,7 +7,9 @@ with the final ruling (**coherence**). Each draw's commit and reveal latency is 
 agent juror's page, but it is not a measure of speed, nothing ranks agent jurors by it
 ([ADR-0010](docs/adr/0010-per-draw-latency-is-not-speed.md)), and the matrix does not show it
 ([ADR-0011](docs/adr/0011-a-cell-shows-what-a-draw-did-not-when.md)): a cell shows what a draw
-did, not when.
+did, not when. Each dispute's page shows when, as a timeline of moments: when each period opened
+and who opened it, and when each agent juror committed and revealed
+([ADR-0012](docs/adr/0012-the-dispute-page-shows-moments-and-reads-its-own.md)).
 
 An ordinary Kleros court takes days to rule. Making it legible how long a court with agent jurors
 on its panels takes is the dashboard's job: the headline is the median time to appeal, plotted
@@ -96,11 +98,14 @@ row header and one column per agent juror stop fitting an ordinary desktop. Both
 constants with comments saying which they are, and there is no control on the page for a reader to
 set — the matrix crosses over on its own as disputes arrive and as the roster grows.
 
-Commit latency is the one figure not read from a subgraph: it comes from `CommitCast` logs on an
-Arbitrum RPC, because the subgraph records only *whether* a juror committed and never *when*. Every
-draw the subgraph calls committed is cross-checked against a matching log, and any shortfall is
-stated on each agent juror's page as a count — an endpoint that silently returns fewer logs must never render as
-an agent juror that failed to commit.
+Two things are not read from a subgraph. When a draw committed comes from `CommitCast` logs on an
+Arbitrum RPC, because the subgraph records only *whether* a juror committed and never *when*; who
+opened a period comes from the transaction behind its `NewPeriod` log. Each is read by the view that
+shows it and for nothing else (ADR-0012): the dispute page reads its own dispute for its timeline,
+and the agent juror page reads its one agent juror for its commit figures. Every draw the subgraph
+calls committed is cross-checked against a matching log, and any shortfall is stated on that page as
+a count — an endpoint that silently returns fewer logs must never render as an agent juror that
+failed to commit. Every scan is cut into windows under arb1's limit on one request (#25).
 
 Court 34's period durations changed partway through the experiment, so the windows each dispute ran
 under are read from the court's own `CourtCreated` and `CourtModified` events rather than from what
@@ -135,7 +140,7 @@ records the things that cost real time to discover. The design that this scaffol
 | --- | --- |
 | [`CONTEXT.md`](CONTEXT.md) | The glossary. Read before naming anything |
 | [`docs/knowledge/`](docs/knowledge/) | The domain knowledge base — every trap this project has hit, in full |
-| [`docs/adr/`](docs/adr/) | Eleven decisions a reader would otherwise question |
+| [`docs/adr/`](docs/adr/) | Twelve decisions a reader would otherwise question |
 | [`.scratch/juror-performance-dashboard/spec.md`](.scratch/juror-performance-dashboard/spec.md) | The spec, plus a Further Notes section of hard-won facts |
 | [`.scratch/juror-performance-dashboard/issues/`](.scratch/juror-performance-dashboard/issues/) | Twenty-six tickets, blockers first |
 | [`.scratch/juror-performance-dashboard/canvas/DESIGN_PROMPT.md`](.scratch/juror-performance-dashboard/canvas/DESIGN_PROMPT.md) | The UI brief. Answered — read the canvas rather than re-deriving it |
@@ -189,8 +194,9 @@ suite joins by filename, so nothing here has to count them. They are the drift c
 cannot perform: that each roster address still answers to the subname it claims, that the core
 subgraph still returns the court's disputes and its draws in the shape the model parses, that the
 template subgraph still resolves what those disputes are about, that Arbitrum still emits the
-`CommitCast` event this dashboard reads commit latency from — with the cross-check that every
-committed draw has a matching log run against the live reads rather than a snapshot of them — and
+`CommitCast` and `NewPeriod` events the timeline and the commit figures are read from — with the
+cross-check that every committed draw has a matching log run against the live reads rather than a
+snapshot of them — and
 that court 34 still reports the three period configurations `/method` describes in prose, so a
 fourth one fails in CI before anybody reads a stale account of the third. That check has fired
 once, on the 2026-08-26 change, and the rewrite it forced was ticket 19. It fails on *any* change

@@ -10,7 +10,7 @@ TypeScript, yarn 4, Biome, Vitest. `README.md` covers the toolchain, scripts, te
 
 Live at <https://kleros-ai-jurors.netlify.app>. Seven views under one shell: the matrix and court
 totals at `/`, a dispute index, `/disputes/:id`, `/agent-jurors`, `/agent-jurors/:nickname`,
-`/method`, and a 404. Eleven ADRs.
+`/method`, and a 404. Twelve ADRs.
 
 Ticket state is YAML frontmatter on each ticket, never here: `grep -L '^status: done'
 .scratch/juror-performance-dashboard/issues/*.md`. History is `project-history.md`, not current truth.
@@ -21,7 +21,7 @@ Ticket state is YAML frontmatter on each ticket, never here: `grep -L '^status: 
 | --- | --- |
 | `CONTEXT.md` | The glossary. Read before naming anything |
 | `docs/knowledge/` | The domain knowledge base, indexed in its own `README.md` |
-| `docs/adr/0001`–`0011` | The decisions a reader would otherwise question |
+| `docs/adr/0001`–`0012` | The decisions a reader would otherwise question |
 | `.scratch/juror-performance-dashboard/spec.md` | The spec, plus a Further Notes section of hard-won facts |
 | `.scratch/juror-performance-dashboard/issues/` | The tickets, blockers-first, `01` upward |
 | `.scratch/juror-performance-dashboard/canvas/README.md` | The design canvas: eight artboards, and which figures on them are real |
@@ -83,8 +83,8 @@ ens-and-roster, architecture, project-history. Read the topic file before workin
 - **A flag that is false while a read is in flight is not a flag that the read failed.** An absence
   becomes a failure only once there has been an answer to fall short of. Every emptiness test needs
   its own gate, tested **both** ways. Four instances so far, three of them reintroductions.
-- **The Arbitrum endpoint rate-limits per RPC *call*, counting a batch as its size**, and surfaces
-  it as `UnknownRpcError`. Before adding a chain read to a live test, ask if it needs a moment.
+- **arb1 rate-limits per RPC *call*, a batch counting as its size** (`UnknownRpcError`: ask if a live
+  test needs a chain read at all), and **refuses a log scan over 10M blocks** (100K for a topic list).
 
 ### The file you are about to write
 

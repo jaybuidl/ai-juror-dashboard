@@ -106,7 +106,8 @@ this file is the full account.
   sentence three times stops reading any of them. The half the footer keeps is the read still *in
   flight*, which is provenance for what is on screen rather than a failure. Two consequences that
   are easy to get wrong: when one endpoint serves two reads (Arbitrum serves the commit scan and
-  the parameter history) an outage takes both, so `arbitrumFailureOf` returns the **worst one**
+  the parameter history; on the dispute page since ADR-0012, that dispute's record and the history)
+  an outage takes both, so `arbitrumFailureOf` returns the **worst one**, or words both in one line,
   rather than listing the source twice — and a caveat that goes quiet under a banner is correct,
   where one that says "still being read" about a read that gave up is the `RosterView` trap again.
   Tickets 06, 09 and 10 each added a read or a view and each met this; ticket 11 still will.

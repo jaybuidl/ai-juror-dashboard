@@ -357,7 +357,8 @@ function PanelMember({
         <Measures>
           {/* No commit or reveal time (ADR-0011): they timed how soon the draw reacted to an
               opening, not how fast it judged, and side by side down a panel they read as a
-              ranking. Each draw's moments are on its agent juror's page. */}
+              ranking. Each draw's moments are on the timeline above (ADR-0012), as clock
+              readings, and its latencies on its agent juror's page. */}
           {/* Its share of the round's vote, "1/5 votes", as the agent juror page's table gives it;
               said in words, since a screen reader reads "1/5" as a date. */}
           <Votes>

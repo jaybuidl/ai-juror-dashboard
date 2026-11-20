@@ -146,6 +146,17 @@ describe("the method page", () => {
     expect(screen.queryByText(/speed and coherence/i)).not.toBeInTheDocument();
   });
 
+  it("says where the moments are shown, and that an opener off the roster is not named (ADR-0012)", () => {
+    renderAt("/method");
+
+    const section = screen.getByRole("region", { name: /speed is time to appeal/i });
+
+    expect(section).toHaveTextContent(/each dispute's page shows the moments themselves/i);
+    expect(section).toHaveTextContent(/clock times in UTC with nothing counted between them/i);
+    expect(section).toHaveTextContent(/anyone else is an account off the roster/i);
+    expect(section).not.toHaveTextContent(/each dispute's page show what a draw did, not when/i);
+  });
+
   it("says the band on the matrix page is not the quantity its marks are", () => {
     renderAt("/method");
 

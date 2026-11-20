@@ -3,6 +3,10 @@
 Decides the open option in ADR-0010 for the matrix (2026-11-20, issue #12, stage 2 of #8). Amends
 ADR-0006's live state.
 
+_Amended by [ADR-0012](0012-the-dispute-page-shows-moments-and-reads-its-own.md) (2026-11-20): the
+dispute page's moments return on its timeline, as clock readings and not latencies, and the
+commit scan now reads for one dispute or one agent juror, never for the matrix._
+
 ADR-0010 stopped summarising or ranking commit and reveal latency but left each draw's own figures
 in place, and the matrix cell was the one place they still lined up in a column per agent juror. A
 column of figures is a side-by-side comparison whatever the page calls it. At the compact density,

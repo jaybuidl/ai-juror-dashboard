@@ -9,6 +9,11 @@ timestamp.
 `CommitCast(uint256 indexed _coreDisputeID, address indexed _juror, uint256[] _voteIDs, bytes32 _commit)`
 indexes both the dispute and the juror, so the filter is narrow.
 
+_Amended by [ADR-0012](0012-the-dispute-page-shows-moments-and-reads-its-own.md) (2026-11-20): the
+source stands, and the scan is no longer unchunked or court-wide. arb1 now refuses a scan wider than
+10,000,000 blocks, so every scan is cut into windows from a block the court fixes, and each view
+reads one dispute or one agent juror. `commitCoverage` below moved off the court model with it._
+
 Reveal timestamps need none of this: `ClassicJustification.timestamp` already carries them.
 
 ## Considered Options

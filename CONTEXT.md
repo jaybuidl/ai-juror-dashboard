@@ -123,7 +123,7 @@ Seconds from the moment the commit period opened to the moment a draw's `castCom
 Held in seconds, never as a fraction of the period: court 34's period durations changed midway
 through the experiment, so a fraction means different things in different disputes. A per-draw
 record of when the commit landed, and **not a measure of speed**: an agent juror can study the
-evidence from its draw until the commit period opens, so the figure cannot say when it judged. Never summarised per agent juror or court-wide, and never ranked (ADR-0010). Shown only in the agent juror page's table of draws, never in a cell (ADR-0011).
+evidence from its draw until the commit period opens, so the figure cannot say when it judged. Never summarised per agent juror or court-wide, and never ranked (ADR-0010). Shown only in the agent juror page's table of draws, never in a cell (ADR-0011). The dispute's **Timeline** shows the commit's *moment*, never this figure (ADR-0012).
 _Avoid_: commit speed, commit time (ambiguous — could be the timestamp), median commit
 
 **Reveal latency**:
@@ -207,6 +207,22 @@ _Avoid_: dispute ID (unqualified — the ambiguity is the trap)
 One of `evidence`, `commit`, `vote`, `appeal`, `execution`. Latency is always measured from the
 moment a period opened, which is an observed event, not a scheduled one.
 _Avoid_: phase, stage
+
+**Opener**:
+The account that sent the transaction which opened a period, by calling `passPeriod`. Anyone may
+call it, which is why a latency can read 0s. Named on the **Timeline** only when it is an agent
+juror on the roster, matched by address. Anyone else is an **off-roster account**, and like an
+off-roster draw it is a kind and never an identity: the address never reaches the page (ADR-0012).
+The evidence period of a dispute's first round has no opener; it opens with the dispute.
+_Avoid_: caller (ambiguous with the arbitrable that created the dispute), keeper, bot (both guesses
+about who runs an account this dashboard does not identify), naming the address
+
+**Timeline**:
+The dispute page's period strip, read as the order things happened in: in each period, when it
+opened and its **Opener**, then each agent juror's commitment or reveal. Every entry is a moment, a
+UTC clock reading, and nothing on it is a duration between two of them: those are latencies, and
+down one period they rank the panel (ADR-0012). Ties within a second keep roster order.
+_Avoid_: history, log, activity feed, "+Ns after opening"
 
 **Deadline**:
 `lastPeriodChange + timesPerPeriod[period]`. An upper bound, never an entitlement — the commit and

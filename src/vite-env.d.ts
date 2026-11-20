@@ -27,8 +27,8 @@ interface ImportMetaEnv {
   readonly VITE_DRT_SUBGRAPH_URL?: string;
 
   /**
-   * Arbitrum One endpoint, read for the `CommitCast` logs that date every commitment and for
-   * the court's own parameter history. Optional: the default is keyless, and a host set here
+   * Arbitrum One endpoint, read for the `CommitCast` logs that date a commitment, the `NewPeriod`
+   * logs and transactions that say who opened a period, and the court's own parameter history. Optional: the default is keyless, and a host set here
    * must also appear in `connect-src` in netlify.toml or the browser blocks the request before
    * it is sent — which is not a quiet failure, since ticket 13 put this endpoint in the
    * blocking tier.
@@ -40,9 +40,11 @@ interface ImportMetaEnv {
    * - **The host of this URL is rendered on screen**, under SOURCE in the failure banner, by
    *   `arbitrumSource()`. The path is not, so a key in the path (`…/v2/<key>`) stays off the
    *   page — but a provider that encodes credentials in the *hostname* would put them on it.
-   * - ADR-0004: many commercial providers cap `eth_getLogs` at ~10,000 blocks, and these scans
-   *   run from block 0 unchunked. Such a provider does not error. It returns fewer logs, which
-   *   surfaces as a `commitCoverage` shortfall rather than as a failure.
+   * - ADR-0004 and ADR-0012: every scan is cut into windows of `LOG_RANGE_LIMIT` (ten million
+   *   blocks, arb1's cap). Many commercial providers cap `eth_getLogs` far lower, at ~10,000
+   *   blocks or fewer. Such a provider may refuse each window, which raises the Arbitrum banner,
+   *   or answer with fewer logs and no error, which surfaces as a `CommitCoverage` or timeline
+   *   shortfall rather than as a failure.
    */
   readonly VITE_ARBITRUM_RPC_URL?: string;
 }

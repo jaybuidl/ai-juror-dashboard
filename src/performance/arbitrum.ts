@@ -5,12 +5,13 @@ import type { Source } from "../read-failure";
 import type { BlockTimes } from "./block-times";
 
 /**
- * The chain this dashboard reads, and the one client both of its chain readers share.
+ * The chain this dashboard reads, and the one client its chain readers share.
  *
- * Two things come from Arbitrum rather than from a subgraph: the `CommitCast` logs that date
- * every commitment (ADR-0004, `commit-logs.ts`) and the court's parameter history (ticket 08,
- * `court-parameters.ts`). This module was the top of the first of those until the second
- * arrived; it is here so that neither reader owns the other's transport.
+ * Three things come from Arbitrum rather than from a subgraph: the `CommitCast` logs that date a
+ * commitment (ADR-0004, `commit-logs.ts`), who opened a dispute's periods (ADR-0012,
+ * `dispute-chain.ts`) and the court's parameter history (ticket 08, `court-parameters.ts`). This
+ * module was the top of the first of those until the second arrived; it is here so that no
+ * reader owns another's transport, and so the one range every scan must respect is one constant.
  */
 
 /**
@@ -18,8 +19,9 @@ import type { BlockTimes } from "./block-times";
  *
  * Overridable, but see netlify.toml: a host absent from `connect-src` is blocked by the browser
  * before the request leaves, and this one is already listed. See also ADR-0004 — many commercial
- * providers cap `eth_getLogs` at ~10,000 blocks, and substituting one here would not error. It
- * would return fewer logs, which is exactly the silent shortfall `commitCoverage` exists to name.
+ * providers cap `eth_getLogs` at ~10,000 blocks, far under `LOG_RANGE_LIMIT`, and substituting one
+ * here may not error. It may return fewer logs, which is exactly the silent shortfall
+ * `CommitCoverage` and the timeline's counts exist to name.
  */
 export const DEFAULT_ARBITRUM_RPC_URL = "https://arb1.arbitrum.io/rpc";
 

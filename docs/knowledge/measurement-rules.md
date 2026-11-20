@@ -68,7 +68,10 @@ this file is the full account.
   agent juror or court-wide; each draw keeps its own figures, and **time to appeal** is the one
   speed figure. Stage 2 of #8 (ADR-0011) took the figures out of the matrix cells, the phone
   slots and the dispute panel; only the agent juror page's table of draws still shows them.
-  Whether the `CommitCast` scan survives is stage 3 (#13).
+  Stage 3 (ADR-0012, #13) put the *moments* back on the dispute page, as a timeline of UTC clock
+  readings with no duration between any two, beside who opened each period — named only when an
+  agent juror on the roster did. The `CommitCast` scan survived, scoped to the two views that
+  show a commitment: one dispute's, or one agent juror's, never the court's.
 - **A draw belonging to a juror the roster does not hold is counted, and was silently dropped
   before ticket 25.** `draws-subgraph.ts` scopes its query by court and not by juror, so every draw
   in court 34 is in hand — but the roster is the column set, so an address outside it has no cell

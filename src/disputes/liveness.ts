@@ -17,10 +17,10 @@ import { type Dispute, type RawDispute, rulingOf } from "./disputes";
  * How often the court is re-read while anything in it is still being decided.
  *
  * From the spec. It is fast enough to watch a commit period unfold — the shortest measured
- * commit latency in this court is 14 seconds — and it is the reason the commit log scan is
- * deliberately *not* put on an interval: that read costs one RPC call per commitment against
- * an endpoint that rate-limits per call, and five-second polling of it returns HTTP 429.
- * See `useCourtPerformance`.
+ * commit latency in this court is 14 seconds — and it is the reason the Arbitrum reads are
+ * deliberately *not* put on an interval: they cost one RPC call per window and per commitment
+ * against an endpoint that rate-limits per call, and five-second polling returns HTTP 429. They
+ * are keyed on what this poll reports instead. See `useChainReads.ts`.
  */
 export const LIVE_REFETCH_MS = 5_000;
 

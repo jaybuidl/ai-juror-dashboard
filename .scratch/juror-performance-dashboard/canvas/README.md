@@ -205,3 +205,27 @@ The two new glyphs, `◐` and `●`, fall back to a system font like every other
 artboards' 11-12px they read smaller than `✓`. The implementation sets them at the same size as the
 other glyphs, so if they read too small in a browser, raise them in both places together.
 
+
+## Amended for ADR-0012: the dispute timeline
+
+Stage 3 of issue #8, 2026-11-20. `Dispute.dc.html:87-96` now draws the period strip as a timeline:
+each period keeps its window and how long it ran, and below a hairline lists its moments in the
+order they happened, a time column and a line of words. When the period opened and who opened it
+(an agent juror by name in heading ink, anyone else as "an off-roster account" in meta ink), each
+commitment under `◐` and each reveal under `●`, in the legend's own glyphs at meta ink. Times are
+UTC clock readings and nothing between them is a duration. The day is printed on the dispute's
+creation and on any moment that falls on a later day, and "All times UTC" sits under the evidence
+period's list. The appeal period's list ends with "Closed by", which is the execution period
+opening.
+
+Amended **in place, line for line**: the timeline's classes were appended to line 30, the `.mv`
+style line, and lines 88-95 were rewritten, so the file is 288 lines as before and every
+`Dispute.dc.html:NN` citation still lands where it did. The vertical dividers stretch to the
+tallest lane instead of a fixed 34px. The sampled moments agree with the panel cards' sampled
+`R` and `C` figures below them (agent007 committed at 6m 36s and revealed at 8s, and so on), and
+blaise opens the vote period in the second it committed: an agent juror opening a period itself,
+which is the case ADR-0010 cites.
+
+The implementation lays the four lanes out as on the artboard above the breakpoint and stacks them
+in one column below it, where two lanes of moments would leave a nickname a few characters a line.
+The panel cards' `R` and `C` lines on this artboard are still overruled by ADR-0011, as above.
