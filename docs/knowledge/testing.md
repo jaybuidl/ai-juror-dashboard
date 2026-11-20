@@ -8,6 +8,27 @@ are the classes of defect the suites are structurally unable to catch.
 files** on disk today (44 offline, 8 integration). Read a count here as "the suite was large and
 green", never as a figure to assert against.
 
+## The test split
+
+Moved from `README.md` on 2026-11-20. Vitest with jsdom, tests colocated beside the code they
+cover, split by filename:
+
+- **`*.test.ts(x)`, offline** (`yarn test`). The pure core is tested against fixtures captured
+  from the real court, with no network and no mocks.
+- **`*.integration.test.ts`, live** (`yarn test:integration`, `vitest.integration.config.ts`). The
+  I/O readers (ENS in `src/roster/`, the core subgraph in `src/disputes/` and `src/performance/`,
+  the template subgraph, the Arbitrum RPC) against the real endpoints. These are drift checks a
+  fixture cannot make. CI runs them daily and on demand, never on a pull request, where their
+  failure mode would be network flake.
+
+Nothing between the two is stubbed: the pure core gets fixtures, the fetchers get the real
+endpoint. That only works because **views take what they render as props**: `App.tsx` is the one
+place a hook reaches the network, so the whole dashboard renders offline against hand-built data
+through `src/test/court.tsx`'s `renderAt(path)`. A good test asserts external behaviour (given raw
+fetched data, what does the model say), never which helper computed a value.
+
+## What the suites miss
+
 Each entry below cost real effort to discover and is easy to get wrong again.
 They are facts about this codebase and the live court, verified against chain, subgraph
 or a browser at the time noted. `CLAUDE.md` § Tripwires carries a one-line form of each;

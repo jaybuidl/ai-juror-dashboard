@@ -44,3 +44,38 @@ this file is the full account.
   saying "rename this". The house pattern of a pure model beside its component (`provenance.ts` +
   `ReadStamp.tsx`) is fine because those names differ; `failure.ts` + `Failure.tsx` is not, and
   becomes `failures.ts` + `Failure.tsx`. Biome and Vite say nothing — only `yarn check-types` does.
+
+## Toolchain constraints
+
+Moved from `README.md` on 2026-11-20, when the README was rewritten for visitors.
+
+- **Yarn must be 4.18 or newer, and is pinned twice.** Yarn up to 4.17.0 applies a builtin
+  Plug'n'Play compatibility patch to `typescript` that expects `lib/_tsc.js`, a file TypeScript 7's
+  native compiler does not have, and the install aborts. The patch is pointless here
+  (`nodeLinker: node-modules`) and nothing skips it: `resolutions` cannot, because both run in the
+  same `reduceDependency` hook with the patch applied second. Fixed in yarn 4.17.1
+  ([yarnpkg/berry#7190](https://github.com/yarnpkg/berry/pull/7190)). Both pins are load-bearing:
+  `packageManager` is what Netlify's corepack reads, and the `volta` key is what a local shell
+  reads, because Volta's yarn shim ignores `packageManager`.
+- **TypeScript 7 ships `tsc` and nothing else.** No `tsserver`, no `require("typescript")`; the
+  programmatic API is deferred to 7.1. Nothing here needs it (Biome is Rust, Vite and Vitest
+  transpile through esbuild and rolldown), but adding typescript-eslint would be a blocker, since
+  its peer range still excludes 7. Editor diagnostics are LSP-based under 7.
+- **Dependency floors are caret ranges, not exact pins.** The maintainer's global Yarn config sets
+  `npmMinimalAgeGate`, quarantining versions published in roughly the last two days. A caret lets
+  Yarn pick the newest release that clears the gate; an exact pin on a fresh release fails the
+  install.
+- **`yarn build` type-checks first on purpose.** Vite strips types without checking them and Biome
+  does no type checking, so nothing else in the pipeline would catch a type error.
+- **Type-checking is two programs.** `tsconfig.json` covers `src/` with `"types": []`, so
+  `process`, `Buffer` and `__dirname` are errors in browser code; `tsconfig.node.json` covers the
+  Vite and Vitest configs with the Node globals. Without the split a stray `process.env`
+  type-checks, bundles, and throws on a public page, which is a live hazard because agentkit's
+  `getSubgraphUrl` reads `process.env` and ADR-0003 moves metric code between the repos.
+- **Biome's 100-column width matches `@kleros/agentkit`**, so metric logic extracted there
+  reformats to a zero-line diff (ADR-0003).
+- **`src/styles/kleros-ai/` is excluded from Biome**, like `.scratch`, because the formatter
+  rewrites the vendored files (`0.10` becomes `0.1`, gradients explode). The exclusion keeps a
+  re-copy of the design system a whitespace-free diff.
+- **If a Netlify build ever fails with the Yarn 1 shim's "Corepack must currently be enabled"**,
+  change the build command to `corepack enable && yarn install --immutable && yarn build:ci`.

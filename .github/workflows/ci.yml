@@ -37,7 +37,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v7
 
-      # .nvmrc rather than a literal 22. README.md § Known toolchain constraints records
+      # .nvmrc rather than a literal 22. netlify.toml records
       # .nvmrc as the top of Netlify's own precedence chain, so hardcoding the version here
       # would create a second declaration free to drift from the one governing the deploy.
       - name: Setup Node.js
@@ -101,7 +101,7 @@ jobs:
       - name: Build
         run: yarn build
 
-  # The live half of the test split described in README.md § Conventions. Held out of the
+  # The live half of the test split (docs/knowledge/testing.md § The test split). Held out of the
   # PR gate: these are drift checks, worth a daily run and worth a manual one — but their
   # failure mode on a pull request would be network flake, and a red that does not mean
   # anything teaches people to ignore red.

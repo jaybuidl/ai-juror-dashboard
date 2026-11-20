@@ -3,8 +3,8 @@
 A public, read-only dashboard following the AI agent jurors in Kleros v2 court 34 on Arbitrum One:
 **time to appeal** (the one speed figure) and **coherence** (voting with the final ruling). Commit
 and reveal latency are a per-draw record, never summarised or ranked (ADR-0010). Vite + React +
-TypeScript, yarn 4, Biome, Vitest. `README.md` covers the toolchain, scripts, test split and CSP;
-`netlify.toml` owns the deploy; this file covers the domain.
+TypeScript, yarn 4, Biome, Vitest. `README.md` is for visitors; the toolchain and test split
+are in `docs/knowledge/`, the deploy and CSP in `netlify.toml`, and this file covers the domain.
 
 ## Status
 
