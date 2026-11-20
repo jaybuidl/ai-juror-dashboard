@@ -35,6 +35,7 @@ function read(overrides: Partial<DisputeDetailView> = {}): DisputeDetailView {
     isPaused: false,
     readAt: READ_AT,
     retry: () => {},
+    isBehindReveals: false,
     ...overrides,
   };
 }
@@ -599,6 +600,30 @@ describe("a draw that never voted", () => {
     // The gate tested the other way: the next card, a vote revealed with no prose, keeps it.
     expect(within(revealed).queryByText("No vote revealed")).not.toBeInTheDocument();
     expect(within(revealed).getByText(/counts in full/)).toBeInTheDocument();
+  });
+});
+
+describe("a draw revealed after the dispute was last read", () => {
+  it("says its justification is not read yet rather than published empty", () => {
+    // #21: the court read has seen a reveal this dispute's read predates.
+    renderDispute({
+      detail: read({ detail: { ...detail156, justifications: [] }, isBehindReveals: true }),
+    });
+    const card = screen.getAllByRole("article")[0];
+    if (card === undefined) throw new Error("no columns rendered");
+
+    expect(within(card).getByText("Justification not read yet")).toBeInTheDocument();
+    expect(within(card).queryByText(/counts in full/)).not.toBeInTheDocument();
+    expect(within(card).queryByText(/Nothing failed here/)).not.toBeInTheDocument();
+  });
+
+  it("keeps the published-empty copy once the read has caught up", () => {
+    renderDispute({ detail: read({ detail: { ...detail156, justifications: [] } }) });
+    const card = screen.getAllByRole("article")[0];
+    if (card === undefined) throw new Error("no columns rendered");
+
+    expect(within(card).queryByText("Justification not read yet")).not.toBeInTheDocument();
+    expect(within(card).getByText(/counts in full/)).toBeInTheDocument();
   });
 });
 

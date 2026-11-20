@@ -5,7 +5,7 @@ import {
 } from "../disputes/dispute-templates";
 import type { Dispute, DisputeRound } from "../disputes/disputes";
 import { type Justification, toJustification } from "./justifications";
-import type { Draw, MatrixRow } from "./performance";
+import type { Draw, DrawState, MatrixRow } from "./performance";
 import type { PeriodWindows } from "./windows";
 
 /**
@@ -431,7 +431,33 @@ export type PanelColumn = {
    * the draw's state before it reads `null` as a field left empty (#17, #20).
    */
   justification: Justification | null;
+  /**
+   * Whether `null` above may only mean this dispute's read predates the reveal (#21).
+   *
+   * The court read polls and this one does not keep pace with it, so for up to one re-read a
+   * draw can say `revealed` beside a justification read before it existed. Which revealed draw
+   * the read missed is not knowable from a count, so every revealed draw with no justification
+   * is held here until the read catches up: "not read yet" is said of prose that turns out to
+   * be absent, rather than "published empty" of prose that was published.
+   */
+  justificationUnread: boolean;
 };
+
+/** Whether a draw has revealed, and so is one that may have published a justification. */
+export function hasRevealed(state: DrawState): boolean {
+  if (state.kind === "live") return state.stage === "revealed";
+  return state.kind !== "no-vote";
+}
+
+/**
+ * How many of this row's agent juror draws have revealed, which is what the dispute's own read
+ * is keyed against: when it rises past the count that read saw, the read is behind (#21).
+ * `null` where the court read holds no row for the dispute, so nothing is known to have moved.
+ */
+export function revealedCountOf(row: MatrixRow | undefined): number | null {
+  if (row === undefined) return null;
+  return row.cells.filter((cell) => cell !== null && hasRevealed(cell.state)).length;
+}
 
 /** One dispute, as the view renders it. Every figure on the page is one of these fields. */
 export type DisputeReading = {
@@ -508,10 +534,13 @@ export function buildDisputeReading({
   row,
   detail,
   template,
+  detailBehind = false,
 }: {
   row: MatrixRow;
   detail: DisputeDetail;
   template: DisputeTemplate | undefined;
+  /** Whether the court read has seen a reveal this dispute's read has not. See `PanelColumn`. */
+  detailBehind?: boolean;
 }): DisputeReading {
   const dispute = row.dispute;
   // The current round, by index rather than by position: The Graph orders `id`
@@ -527,13 +556,17 @@ export function buildDisputeReading({
     template: template ?? null,
     columns: row.cells
       .filter((cell): cell is Draw => cell !== null)
-      .map((draw) => ({
-        draw,
-        justification:
+      .map((draw) => {
+        const justification =
           detail.justifications.find(
             (published) => published.juror === draw.agentJuror.address.toLowerCase(),
-          )?.justification ?? null,
-      })),
+          )?.justification ?? null;
+        return {
+          draw,
+          justification,
+          justificationUnread: detailBehind && justification === null && hasRevealed(draw.state),
+        };
+      }),
     panelSize: row.panelSize,
     tally: detail.ballot.map((entry) => ({
       ...entry,
