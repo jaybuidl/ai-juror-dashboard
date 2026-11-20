@@ -253,8 +253,8 @@ export function windowsFor(
  *
  * **That court is this one.** On 2026-08-26 court 34 moved its evidence period from 45 minutes
  * to 10 and left everything else alone, so its second and third configurations differ and this
- * returns true across them — which is what keeps dispute 152 out of `changedWindows` while being older than a
- * change the court has since made. `MethodPage`'s window section owes a reader that sentence,
+ * returns true across them — which is what keeps dispute 152 from `underEarlierWindows` while
+ * being older than a change the court has since made. `MethodPage`'s window section owes a reader that sentence,
  * because no marker on the page says it (the row marker that once could was removed on
  * 2026-09-24).
  */

@@ -1,7 +1,6 @@
 import { isFinalised } from "../disputes/liveness";
 import type { AgentJuror } from "../roster/agent-jurors";
 import type { MatrixRow } from "./performance";
-import type { PeriodWindows } from "./windows";
 
 /**
  * The aggregates: what the stat tiles, the time-to-appeal strip and the matrix's column headers
@@ -37,18 +36,15 @@ export type LatencySummary = {
 };
 
 /**
- * One dispute's time to appeal, and the windows it ran under.
+ * One dispute's time to appeal.
  *
- * The windows ride along because every one of the evidence, commit and vote periods lies inside
- * this duration, so a dispute that ran under since-changed windows was answering a different
- * question from one that did not. Nothing renders them: the tile carries no † (removed with the
- * rest on 2026-09-24, maintainer's ruling), and `/method#window` says it in prose instead.
+ * It carried the period windows the dispute ran under until 2026-11-20, for a † on the tile
+ * removed on 2026-09-24 (maintainer's ruling). `/method#window` says in prose that a dispute
+ * created before 26 August ran a longer evidence period inside this duration.
  */
 export type DisputeTimeToAppeal = {
   dispute: number;
   seconds: number;
-  /** `MatrixRow.windows`: `null` while the parameter history is unread or cannot place it. */
-  windows: PeriodWindows | null;
 };
 
 /**
@@ -132,37 +128,10 @@ export type CourtTotals = {
    * the matrix and the phone's card list are two renderings of one record, and a caveat about the
    * court must not be able to differ between them.
    *
-   * Over the rows that were **read**, like `lonePanelDisputes` and unlike `changedWindows`. An
+   * Over the rows that were **read**, like `lonePanelDisputes`. An
    * unread row's panel size is 0 because nobody asked, so it can fall short of nothing.
    */
   offRoster: OffRoster;
-  /**
-   * Disputes that ran under period durations the court has since changed, grouped by the
-   * durations they ran under.
-   *
-   * Grouped rather than listed flat because the window footnote, while it existed, had to name
-   * what the difference *was* — "an 8h commit window against 45m now" — and one list of ids
-   * could not say that if two different sets of measured windows were ever superseded at once. Court 34 has been
-   * reconfigured twice and there is still only one such group: the 2026-08-26 change moved the
-   * evidence period alone, and nothing here is measured from it. Empty until the parameter
-   * history has been read, and empty is not a claim: `CourtParameters.read` is what says
-   * whether it was looked for.
-   *
-   * **No view reads this since 2026-09-24**, when the row marker and the window footnote were
-   * removed (maintainer's ruling), and ADR-0010 took the last latency aggregate that disclosed
-   * it. It is still computed and tested; whether to drop it is a separate decision.
-   */
-  changedWindows: readonly WindowChange[];
-  /**
-   * Disputes the court's parameter history could not place, by id.
-   *
-   * Distinct from `changedWindows` being empty, and the distinction is the whole point: no
-   * marked dispute can mean every dispute ran under the current windows, or it can mean the
-   * history is too short to say. Only this count tells them apart, and without it a short scan
-   * would render as a clean bill of health. Like `changedWindows`, read by no view since
-   * 2026-09-24.
-   */
-  unplacedDisputes: readonly number[];
   /**
    * Disputes whose draws were never read, by id — see `MatrixRow.read`.
    *
@@ -248,26 +217,6 @@ export type Sparsity = {
    * yet" rather than leaving a reader to multiply two numbers.
    */
   undrawnPositions: number;
-};
-
-/**
- * The two windows every figure on this dashboard is measured from.
- *
- * Narrower than `PeriodWindows` on purpose. A group below is keyed on exactly these two, so
- * every dispute in it agrees about them — and about nothing else. Carrying the whole
- * `PeriodWindows` here would report one arbitrary member's evidence and appeal windows as
- * though they applied to the group, which is a wrong figure waiting for a caller.
- */
-export type MeasuredWindows = Pick<PeriodWindows, "commitSeconds" | "voteSeconds">;
-
-/** One group of disputes that share a superseded pair of windows. */
-export type WindowChange = {
-  /** Ascending. The ids the row marker sat on until 2026-09-24. */
-  disputes: readonly number[];
-  /** What those disputes ran under. Compare against `CourtParameters.current`. */
-  windows: MeasuredWindows;
-  // How many of those draws revealed and committed was counted here for the † on the latency
-  // medians and the agent juror plot. Both went with ADR-0010, and the counts with them.
 };
 
 /**
@@ -445,61 +394,6 @@ function summaryOf(seconds: number[]): LatencySummary | null {
 }
 
 /**
- * The marked disputes, gathered under the windows they ran under.
- *
- * Keyed on the commit and vote windows and not on all four, because those are the two the
- * marker is about: they are the periods the figures are measured from, and grouping on a
- * difference no figure reflects would split one footnote into two saying the same thing.
- */
-function changedWindowsOf(rows: readonly MatrixRow[]): WindowChange[] {
-  const groups = new Map<string, WindowChange & { disputes: number[] }>();
-
-  for (const row of rows) {
-    if (!row.underEarlierWindows || row.windows === null) continue;
-
-    const { commitSeconds, voteSeconds } = row.windows;
-    const key = `${commitSeconds}/${voteSeconds}`;
-    const group = groups.get(key);
-    if (group === undefined) {
-      groups.set(key, {
-        disputes: [row.dispute.id],
-        windows: { commitSeconds, voteSeconds },
-      });
-    } else {
-      group.disputes.push(row.dispute.id);
-    }
-  }
-
-  // Rows arrive newest first, and a footnote naming "disputes 151 and 152" reads forwards — so
-  // the ids inside a group are sorted, and so are the groups themselves. Insertion order here
-  // is row order, which would print the *newer* superseded configuration first and read as a
-  // history running backwards.
-  const changes = [...groups.values()];
-  for (const group of changes) group.disputes.sort((a, b) => a - b);
-  return changes.sort((a, b) => (a.disputes[0] ?? 0) - (b.disputes[0] ?? 0));
-}
-
-/**
- * Disputes the parameter history could not place, by id.
- *
- * The absence that would otherwise pass for a finding. A row whose windows are `null` is one
- * the court's history says nothing about — a scan that dropped the oldest `CourtCreated`, say,
- * which is exactly what a provider capping `eth_getLogs` produces (ADR-0004). It is *not*
- * marked, because nothing is known to compare it against, and without this count the page would
- * fold it in with the rows that genuinely ran under the current windows and state as much.
- *
- * Every row is here while the history is unread, which is why the view gates on
- * `CourtParameters.current` before saying anything: an unread history is already announced, and
- * saying it twice in different words is worse than saying it once.
- */
-function unplacedDisputesOf(rows: readonly MatrixRow[]): number[] {
-  return rows
-    .filter((row) => row.windows === null)
-    .map((row) => row.dispute.id)
-    .sort((a, b) => a - b);
-}
-
-/**
  * Time to appeal over the rows read. See `TimeToAppeal`.
  *
  * A dispute counts once its round 0 has an observed appeal-period opening — the index is read
@@ -520,7 +414,6 @@ export function timeToAppealOf(rows: readonly MatrixRow[]): TimeToAppeal {
     disputes.push({
       dispute: row.dispute.id,
       seconds: opened - row.dispute.createdAt,
-      windows: row.windows,
     });
   }
 
@@ -576,13 +469,6 @@ export function courtTotalsOf(
     // panel to have fallen short of, and counting one would turn a gap in this dashboard into a
     // claim about who the court drew.
     offRoster: offRosterOf(rows),
-    // Deliberately *not* filtered on `read`, unlike the panel above, because these two are
-    // facts about the dispute rather than about its draws. Which windows a dispute ran under
-    // comes from its own timeline and the court's parameter history — both read from sources
-    // that have nothing to do with the draw query — so an unread row still ran under what it
-    // ran under.
-    changedWindows: changedWindowsOf(rows),
-    unplacedDisputes: unplacedDisputesOf(rows),
     sparsity: sparsityOf(rows, agentJurors),
   };
 }
@@ -718,7 +604,7 @@ export function agentJurorMarginalsOf(
       draws,
       votes,
       // Ascending, because rows arrive newest first and a list of ids reads forwards — the same
-      // reason `changedWindowsOf` sorts the ids inside a group.
+      // reason every other list of ids in this file is sorted.
       coherence: {
         coherent,
         tied,

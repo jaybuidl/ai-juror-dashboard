@@ -58,8 +58,6 @@ function totalsOf(timeToAppeal: TimeToAppeal): CourtTotals {
     agentJurors: 6,
     timeToAppeal,
     lonePanelDisputes: [],
-    changedWindows: [],
-    unplacedDisputes: [],
     unreadDisputes: [],
     // Nor this one, and for the same reason: the off-roster count is a footnote's, not a tile's.
     offRoster: { draws: 0, disputes: [] },

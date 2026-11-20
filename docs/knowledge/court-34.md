@@ -10,9 +10,10 @@ that as *that* reconfiguration.
 
 **Both counts are load-bearing and they are not the same count**, which is the trap ticket 19 spent
 most of its effort on. Three configurations is what `/method` and the live tripwire state. *One*
-superseded set of **measured** windows is what `changedWindows` (read by no view since the row
-marker was removed on 2026-09-24) and every "the court has been reconfigured once" comment are about — because the 2026-08-26 change moved the evidence
-period alone, and no latency here is measured from it. (One figure *does* span it: the headline
+superseded set of **measured** windows is what `MatrixRow.underEarlierWindows` (read by no view
+since the row marker was removed on 2026-09-24; the live tripwire asserts on it) and every "the
+court has been reconfigured once" comment are about — because the 2026-08-26 change moved the
+evidence period alone, and no latency here is measured from it. (One figure *does* span it: the headline
 median time to appeal runs from creation, so disputes created before 26 August ran a longer
 evidence period inside it. No † marks that: `markedAppealWindows`, which this file once named,
 never shipped in code, and the last † on the site, the agent juror plot's, went with ADR-0010.

@@ -21,9 +21,10 @@ that prints it. Ticket 06 added the second, in the same file: `agentJurorMargina
 `CourtPerformance.marginals`, the same aggregates sliced by column, which the matrix's column
 headers print and `totals.test.ts` pins as summing back to the court-wide ones. It also moved the
 caption's `finalised`/`live` count out of `Matrix.tsx` and onto `CourtTotals`, which is where the
-rule always said it belonged. Any aggregate over latency has to disclose the window change the way
-any aggregate over coherence has to disclose a panel of one — `changedWindows` and
-`lonePanelDisputes` are carried per column for exactly that. Ticket 13 added the seam's first input
+rule always said it belonged. Any aggregate over latency had to disclose the window change the way
+any aggregate over coherence has to disclose a panel of one — `lonePanelDisputes` is carried per
+column for exactly that. (`changedWindows` was its latency twin; ADR-0010 left no latency
+aggregate to disclose it on, and it was removed on 2026-11-20.) Ticket 13 added the seam's first input
 that is about a *read* rather than about the court — `RawCourtData.drawsReadAt`, the moment the
 draws on screen were fetched — because whether a row's draws were read at all is a derivation and
 not a rendering decision. It still consults no clock: the moment arrives as data, exactly as the
