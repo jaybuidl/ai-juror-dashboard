@@ -2,6 +2,7 @@ import { fireEvent, render, screen, within } from "@testing-library/react";
 import { MemoryRouter } from "react-router";
 import { ThemeProvider } from "styled-components";
 import { describe, expect, it } from "vitest";
+import { arbitrumSource } from "../performance/arbitrum";
 import detailFixture from "../performance/dispute-156-detail.fixture.json" with { type: "json" };
 import { NO_DETAIL, type RawDisputeDetail, toDisputeDetail } from "../performance/dispute-detail";
 import type { CourtPerformance, DrawState, LiveStage } from "../performance/performance";
@@ -969,7 +970,9 @@ describe("what could not be read", () => {
 
     const banner = screen.getByRole("alert");
     expect(banner).toHaveTextContent(/Neither the court's parameter history nor this dispute's/);
-    expect(within(banner).getAllByText("arb1.arbitrum.io")).toHaveLength(1);
+    // The host the build is configured to read, never a literal: a deploy that overrides
+    // `VITE_ARBITRUM_RPC_URL` names its own host here, and a literal failed the deploy preview.
+    expect(within(banner).getAllByText(arbitrumSource().name)).toHaveLength(1);
   });
 
   it("counts what an answered read did not find, as a count", () => {
