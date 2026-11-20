@@ -22,8 +22,8 @@ per-user, unversioned, and subagents never see it.
 | [`contrast-and-theme.md`](contrast-and-theme.md) | The measured palette, and how a figure computed from a token differs from the ink on the page. Ratio tables are in [`../contrast.md`](../contrast.md) |
 | [`a11y-and-focus.md`](a11y-and-focus.md) | What a clean axe run does not cover, how accessible names are computed here, and the two focus-ordering rules. Ticket 18's sweep is in [`../accessibility.md`](../accessibility.md) |
 | [`prose-and-caveats.md`](prose-and-caveats.md) | One record, three renderings — the model is shared by construction, the prose by hand, and the prose is where they fork |
-| [`testing.md`](testing.md) | What the offline and live suites are structurally unable to prove |
-| [`build-deploy-and-tooling.md`](build-deploy-and-tooling.md) | The gaps between a local run and the Netlify deploy; CSP; toolchain errors that surface nowhere near their cause |
+| [`testing.md`](testing.md) | The offline/live test split, and what the offline and live suites are structurally unable to prove |
+| [`build-deploy-and-tooling.md`](build-deploy-and-tooling.md) | The gaps between a local run and the Netlify deploy; CSP; toolchain errors that surface nowhere near their cause; toolchain constraints (yarn floor, TypeScript 7, Biome) |
 | [`merging-and-branches.md`](merging-and-branches.md) | What auto-merge produces from parallel ticket branches, and why it passes lint, types and tests |
 | [`ens-and-roster.md`](ens-and-roster.md) | How the agent jurors are named and resolved, and the rule for when one enters the roster |
 | [`project-history.md`](project-history.md) | Ticket-by-ticket account, and which elements later passes removed |
