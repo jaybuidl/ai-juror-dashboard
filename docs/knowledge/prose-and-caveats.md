@@ -111,5 +111,5 @@ this file is the full account.
   Ticket 10 is the one that tested the rule on a **shared** endpoint from the subgraph side: its
   payouts come from the same Goldsky deployment as the disputes and the draws, so `coreFailureOf`
   now collapses four reads into one line the way `arbitrumFailureOf` collapses two, and it ranks
-  last because it costs the least — two of six figures in a column header, against the matrix.
+  last because it costs the least — the two reward sums in a column header, against the matrix.
 

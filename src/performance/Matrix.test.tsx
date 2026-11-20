@@ -688,7 +688,7 @@ describe("Matrix", () => {
       expect(header("007").getAllByText("—").length).toBeGreaterThanOrEqual(2);
     });
 
-    it("leaves every commit median a dash until the log scan has come back", () => {
+    it("does not call a commit not read while the log scan is still in flight", () => {
       // The trap this repository has now hit four times: a flag that is false while a read is
       // in flight is not a flag that the read failed. Six columns reading "Not read" for the
       // length of every cold load is a failure announced before it has happened.

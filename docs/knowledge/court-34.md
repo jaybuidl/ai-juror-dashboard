@@ -10,11 +10,13 @@ that as *that* reconfiguration.
 
 **Both counts are load-bearing and they are not the same count**, which is the trap ticket 19 spent
 most of its effort on. Three configurations is what `/method` and the live tripwire state. *One*
-superseded set of **measured** windows is what the marker, `changedWindows` and every "the court
-has been reconfigured once" comment are about — because the 2026-08-26 change moved the evidence
-period alone, and no latency here is measured from it. (One figure *is*, since 2026-09-24: the
-headline median time to appeal runs from creation, so its † — `markedAppealWindows`, not
-`markedWindows` — counts every dispute created before 26 August. The row marker still does not.) A sentence counting one of these is almost
+superseded set of **measured** windows is what `changedWindows` (read by no view since the row
+marker was removed on 2026-09-24) and every "the court has been reconfigured once" comment are about — because the 2026-08-26 change moved the evidence
+period alone, and no latency here is measured from it. (One figure *does* span it: the headline
+median time to appeal runs from creation, so disputes created before 26 August ran a longer
+evidence period inside it. No † marks that: `markedAppealWindows`, which this file once named,
+never shipped in code, and the last † on the site, the agent juror plot's, went with ADR-0010.
+`/method#window` says it in prose.) A sentence counting one of these is almost
 never improved by being made to count the other, and a global replace across the repo gets it
 wrong in both directions.
 
@@ -106,7 +108,8 @@ Court 34 is not a static experiment. Its period durations get changed on chain t
 being demonstrated: on **2026-08-26 the evidence period went 45 minutes to 10 minutes** — the
 court's third configuration, its *second* `CourtModified`, at 13:14:01 UTC (unix 1787750041) in
 block 498587731 — so a live demo in front of an audience would not spend three quarters of an hour
-waiting for a panel to be drawn. **Expect more of these.**
+waiting for the vote to start. (The panel is drawn *during* the evidence period, usually within
+minutes of creation; what the 45 minutes held back was the commit period.) **Expect more of these.**
 
 This is why any hard-coded parameter list goes stale on its own, and why the two-event account
 that stood for the whole of tickets 08–18 is no longer current. Ticket 19 took the third

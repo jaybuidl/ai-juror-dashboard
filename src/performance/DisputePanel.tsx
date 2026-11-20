@@ -463,19 +463,30 @@ export function DisputePanel({
           {/* No count in the heading. It used to read "N stacks, one set of evidence.", where N
               was the columns shown: agent jurors, not stacks, and several of them share one. A
               column is also there before its reasoning is, so "reasoning from N" would overclaim
-              in the vote period. Zero is a real case — a dispute still in its evidence period has
-              no panel — and gets its own words. */}
+              in the vote period. Zero is a real case, twice over, and each gets its own words:
+              the court has not drawn the panel yet, or it drew one holding no agent juror on the
+              roster. Only the first is "yet". */}
           <Heading id="panel-heading">
-            {shown === 0 ? "No reasoning to compare yet." : "What the agent jurors wrote"}
+            {shown > 0
+              ? "What the agent jurors wrote"
+              : drawn === 0
+                ? "No reasoning to compare yet."
+                : "No reasoning to compare."}
           </Heading>
         </div>
       </BandHead>
 
       {shown === 0 ? (
         <Empty>
-          {reading.read
-            ? "Nobody has been drawn for this dispute yet, so there is no reasoning to show. A panel is selected when the dispute leaves its evidence period."
-            : "The draws for this dispute have not been read, so who was on the panel is unknown rather than absent."}
+          {/* The draw happens *during* the evidence period, not when it ends: on chain `draw`
+              requires the evidence period, and the court will not pass it until the panel is
+              full. So a dispute with no panel is in its evidence period, but a dispute in its
+              evidence period may already have one. */}
+          {!reading.read
+            ? "The draws for this dispute have not been read, so who was on the panel is unknown rather than absent."
+            : drawn === 0
+              ? "Nobody has been drawn for this dispute yet, so there is no reasoning to show. The court draws the panel during the evidence period."
+              : `The court drew ${drawn === 1 ? "one juror" : `${drawn} jurors`} for this dispute and none of them is an agent juror on this dashboard's roster, so there is no reasoning to show.`}
         </Empty>
       ) : (
         <>

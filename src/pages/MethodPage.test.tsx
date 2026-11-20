@@ -5,13 +5,22 @@ import { renderAt } from "../test/court";
 /**
  * The method page.
  *
- * Its fragment identifiers are linked to from elsewhere — the matrix's window footnote goes to
- * `#window` — so they are pinned here. A renamed anchor still resolves to a page, just not to
+ * Its fragment identifiers are linked to from elsewhere — the failure banner goes to `#partial`,
+ * and outside citations may name any of them — so they are pinned here. A renamed anchor still resolves to a page, just not to
  * the part that answers the question, which is the kind of breakage nothing reports.
  */
 
 /** The anchors this page promises to keep. */
-const ANCHORS = ["unit", "latency", "comparison", "coherence", "window", "caveats", "sources"];
+const ANCHORS = [
+  "unit",
+  "latency",
+  "comparison",
+  "coherence",
+  "window",
+  "caveats",
+  "partial",
+  "sources",
+];
 
 describe("the method page", () => {
   it("is reachable by URL and says what it is", () => {

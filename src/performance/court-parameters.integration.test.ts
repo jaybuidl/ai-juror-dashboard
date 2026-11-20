@@ -141,8 +141,8 @@ describe("fetchCourtParameters", () => {
   it("has moved no commit or vote window, which would make latencies either side incomparable", () => {
     // Case 2, and the assertion this file exists for. The commit and vote windows are the two
     // reveal and commit latency are measured from, so a change to either splits the court into
-    // stretches whose figures cannot be read against each other and puts a marker on rows that
-    // carried none.
+    // stretches whose figures cannot be read against each other, and no marker on the page
+    // says which rows fall either side (the row marker was removed on 2026-09-24).
     //
     // Over the whole history and not the last two configurations, which is what ticket 19 left
     // and what ticket 20 replaced: `measuredRegimes` folds away every configuration that left
@@ -151,7 +151,7 @@ describe("fetchCourtParameters", () => {
     // comparing 2026-08-20 against 2026-08-26 for ever.
     expect(
       measuredRegimes(toRegimes(history)),
-      "A window this dashboard measures from has moved. Every latency either side of it is measured against a different allowance, so the two are not comparable and the matrix's marker now falls on a different set of rows: check CourtTotals.changedWindows and the footnote before recapturing anything.",
+      "A window this dashboard measures from has moved. Every latency either side of it is measured against a different allowance, so the two are not comparable: update court-34.md and /method#window before recapturing anything.",
     ).toEqual([
       { from: 1_786_444_490, commitSeconds: 28_800, voteSeconds: 28_800 },
       { from: 1_787_230_320, commitSeconds: 2_700, voteSeconds: 1_800 },

@@ -94,8 +94,8 @@ const Content = styled.div`
 /**
  * What a hash in the URL does.
  *
- * `/method#window` is a real destination — the matrix's window footnote links exactly there —
- * and a router that only swapped the component would leave the reader at the top of a long
+ * `/method#partial` is a real destination — the failure banner links exactly there — and a
+ * router that only swapped the component would leave the reader at the top of a long
  * page wondering which part was meant. On a plain route change the page returns to the top,
  * because a visitor arriving at the method page from halfway down the matrix should not land
  * halfway down the method page.
@@ -121,12 +121,12 @@ function useScrollForLocation(): void {
       /*
        * And focus the section, not just scroll to it.
        *
-       * These are not exotic links: `/method#window` from the stat tiles, the matrix's window
-       * footnote and every marked marginal figure; `/method#caveats` from the lone-panel marks;
-       * `/method#partial` from the failure banner. Every one changes the route, which unmounts
-       * the link that was activated — so an early return here, before the focus move below,
-       * dropped the reader on `<body>`: the exact defect this effect was extended to fix,
-       * reintroduced on the links most likely to be followed by someone reading carefully.
+       * These are not exotic links: `/method#caveats` from the ‡ on a lone-panel draw in the
+       * agent juror draws table, `/method#partial` from the failure banner. Each changes the
+       * route, which unmounts the link that was activated — so an early return here, before the
+       * focus move below, dropped the reader on `<body>`: the exact defect this effect was
+       * extended to fix, reintroduced on the links most likely to be followed by someone reading
+       * carefully.
        *
        * The target rather than `<main>`, because a hash names a part of a page and scrolling
        * there while reading from the top is the same mismatch one step along. `tabindex="-1"`
