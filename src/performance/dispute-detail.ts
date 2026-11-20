@@ -426,8 +426,9 @@ export type PanelColumn = {
    * What this agent juror published, or `null` where it published nothing at all.
    *
    * `null` and a justification of length zero are different facts and the column words them
-   * differently. Both are the field being empty rather than a read having failed, which is why
-   * neither is drawn in the failure vocabulary.
+   * differently. Neither is a read having failed. `null` is also what a draw that has not
+   * revealed carries, live or no-vote, because there is no vote to carry prose; the column asks
+   * the draw's state before it reads `null` as a field left empty (#17, #20).
    */
   justification: Justification | null;
 };

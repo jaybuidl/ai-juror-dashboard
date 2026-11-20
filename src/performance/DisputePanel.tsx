@@ -215,10 +215,11 @@ const ColumnBody = styled.div`
   padding: ${({ theme }) => theme.space6};
 `;
 
-/* The empty state, and it must not read as a failure. Centred, quiet, and drawn in the
-   system's absent-data vocabulary rather than in the failure vocabulary: nothing went wrong
-   here and nothing was lost in transit — the field was published empty, or, on a live draw,
-   the reveal that carries it has not happened yet. */
+/* The empty state, drawn in the system's absent-data vocabulary rather than the failure one.
+   It holds three absences: a field published empty, where nothing went wrong and nothing was
+   lost in transit; a live draw whose reveal has not happened yet; and a no-vote draw, which
+   is a miss, but one the rose mark in the header already says, so this block does not repeat
+   it in the failure ink. None of the three is a read that failed. */
 const Unpublished = styled.div`
   display: flex;
   flex: 1;
@@ -382,6 +383,20 @@ function PanelMember({
             <UnpublishedGlyph aria-hidden="true">⋯</UnpublishedGlyph>
             <UnpublishedHeading>Not revealed yet</UnpublishedHeading>
             <UnpublishedNote>The justification arrives with the vote.</UnpublishedNote>
+          </Unpublished>
+        </ColumnBody>
+      ) : draw.state.kind === "no-vote" ? (
+        /* No reveal, and the vote period has closed: there is no vote to count and no field
+           that could have been published empty, so the published-empty copy is false here too
+           (#20). The mark above already says the miss in rose; this repeats none of it. */
+        <ColumnBody>
+          <Unpublished>
+            <UnpublishedGlyph aria-hidden="true">∅</UnpublishedGlyph>
+            <UnpublishedHeading>No vote revealed</UnpublishedHeading>
+            <UnpublishedBody>
+              This agent juror did not reveal a vote before the vote period closed, so there is no
+              vote and no justification to show.
+            </UnpublishedBody>
           </Unpublished>
         </ColumnBody>
       ) : justification === null || justification.length === 0 ? (
