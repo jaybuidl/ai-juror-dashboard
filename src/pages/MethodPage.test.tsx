@@ -5,13 +5,22 @@ import { renderAt } from "../test/court";
 /**
  * The method page.
  *
- * Its fragment identifiers are linked to from elsewhere — the matrix's window footnote goes to
- * `#window` — so they are pinned here. A renamed anchor still resolves to a page, just not to
+ * Its fragment identifiers are linked to from elsewhere — the failure banner goes to `#partial`,
+ * and outside citations may name any of them — so they are pinned here. A renamed anchor still resolves to a page, just not to
  * the part that answers the question, which is the kind of breakage nothing reports.
  */
 
 /** The anchors this page promises to keep. */
-const ANCHORS = ["unit", "latency", "comparison", "coherence", "window", "caveats", "sources"];
+const ANCHORS = [
+  "unit",
+  "latency",
+  "comparison",
+  "coherence",
+  "window",
+  "caveats",
+  "partial",
+  "sources",
+];
 
 describe("the method page", () => {
   it("is reachable by URL and says what it is", () => {
@@ -64,7 +73,7 @@ describe("the method page", () => {
   });
 
   it("names all three configurations as absolute durations", () => {
-    // The account the † marker's link exists to reach. Every regime, in the units the court
+    // The account the † marker's link used to reach, until 2026-09-24. Every regime, in the units the court
     // was configured in, and no ratio anywhere between them — ADR-0005.
     renderAt("/method");
 
@@ -98,7 +107,7 @@ describe("the method page", () => {
   it("says the evidence change does reach the median time to appeal, and why", () => {
     // 2026-09-24: the headline became a time to appeal, measured from a dispute's creation. The
     // sentence "nothing on this dashboard is measured from the evidence period at all" stood
-    // here until then and would have been false beside the tile's own †.
+    // here until then and would have been false about the tile's own figure.
     renderAt("/method");
 
     const section = screen.getByRole("region", { name: /the window/i });

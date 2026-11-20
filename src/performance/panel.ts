@@ -50,9 +50,10 @@ export function panelPillOf(row: MatrixRow): PanelPill | null {
   // drawing nobody — and the two absences must not collapse into one sentence.
   if (!row.read) return { text: "Draws not read", tone: "fail" };
 
-  // The panel has not been selected yet. The court draws when a dispute leaves its evidence
-  // period, so this is a stage rather than a shortfall, and the blank cells beside it mean the
-  // draw has not happened rather than that these agent jurors were not selected.
+  // The panel has not been selected yet. The court draws during a dispute's evidence period and
+  // cannot pass it until the panel is full, so this is a stage rather than a shortfall, and the
+  // blank cells beside it mean the draw has not happened rather than that these agent jurors
+  // were not selected.
   if (row.panelSize === 0) return { text: "No panel yet" };
 
   // A panel the reader can see. Nothing: the cells are the count. Both callers drop an absent

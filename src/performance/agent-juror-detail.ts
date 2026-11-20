@@ -32,7 +32,7 @@ export type AgentJurorDraw = {
 
 export type AgentJurorReading = {
   agentJuror: AgentJuror;
-  /** The six figures this view's stat card prints, computed by the seam. See `totals.ts`. */
+  /** The figures this view's stat card prints, computed by the seam. See `totals.ts`. */
   marginals: AgentJurorMarginals;
   /**
    * The disputes this agent juror was drawn in, newest first.

@@ -94,8 +94,9 @@ this file is the full account.
 - **The headline is time to appeal, not median reveal** (maintainer's ruling, 2026-09-24). Seconds
   from a dispute's creation to its **round 0** `appealOpenedAt`, one value per dispute, over the
   disputes that have reached it; the rest are `TimeToAppeal.notYetAtAppeal` and counted on the
-  strip. It spans the evidence period, so the 2026-08-26 evidence-only change — which marks no
-  latency — does qualify it: the tile's † is `markedAppealWindows` (evidence, commit and vote)
-  and counts disputes, not draws. The strip's violet band is still court 29's **time to ruling**,
+  strip. It spans the evidence period, so the 2026-08-26 evidence-only change, which moved no
+  latency, does qualify it: disputes created before 26 August ran a longer evidence period inside
+  it. Nothing on the tile marks them (there is no †, and `markedAppealWindows` never shipped);
+  `/method#window` says it in prose. The strip's violet band is still court 29's **time to ruling**,
   a longer quantity; it was deliberately not re-read as a time to appeal, and `/method#comparison`
   says the two differ.

@@ -51,11 +51,12 @@ export function listOf(ids: readonly number[]): string {
  * **Two absences, separated by ticket 17, because one sentence was true of one of them.** A blank
  * in a dispute with a panel means this agent juror was not selected — random sparsity, the normal
  * state of this record. A blank in a dispute with *no* panel means no selection has happened yet:
- * the court draws when a dispute leaves its evidence period, and 167, 168 and 169 sat in theirs
- * on the day this was written, contributing 18 blanks this card was calling sparsity. Same words,
- * different fact, on a page that may be cited. Ticket 09 worded the same state on the per-dispute
- * view — "a panel is selected when the dispute leaves its evidence period" — and this is the same
- * fact at the grain of a record rather than of one dispute.
+ * the court draws during a dispute's evidence period and cannot pass it until the panel is full,
+ * and 167, 168 and 169 were in theirs, undrawn, on the day this was written, contributing 18
+ * blanks this card was calling sparsity. Same words, different fact, on a page that may be cited.
+ * The per-dispute view words the same state — "the court draws the panel during the evidence
+ * period" — and this is the same fact at the grain of a record rather than of one
+ * dispute.
  *
  * A third absence is *not* here and is counted out of every figure above: a dispute whose draws
  * were never read is a gap in this dashboard rather than a fact about the court, and ticket 13
@@ -105,8 +106,8 @@ export function SparsityNote({
                 {sparsity.undrawnPositions} of those blanks are a different absence:{" "}
                 {undrawn.length === 1 ? "dispute" : "disputes"} {listOf(undrawn)}{" "}
                 {undrawn.length === 1 ? "has" : "have"} no panel at all yet, so there the draw has
-                not happened rather than an agent juror not having been selected. A panel is drawn
-                when a dispute leaves its evidence period.
+                not happened rather than an agent juror not having been selected. The court draws a
+                dispute's panel during its evidence period.
               </>
             )}
           </>

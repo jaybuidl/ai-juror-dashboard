@@ -569,6 +569,33 @@ describe("a dispute with no panel yet", () => {
     expect(screen.getByText("No reasoning to compare yet.")).toBeInTheDocument();
   });
 
+  it("does not call a panel drawn entirely off the roster nobody", () => {
+    // The other zero. `columns` holds roster agent jurors only, so a panel of three jurors none
+    // of whom is on the roster shows no column either, and "nobody has been drawn yet" would
+    // be false about a dispute the court has already drawn for.
+    const performance = withNoPanel();
+    const first = performance.performance?.rows[0];
+    if (performance.performance === null || first === undefined) {
+      throw new Error("the captured court holds no rows");
+    }
+    const offRoster: CourtPerformanceView = {
+      ...performance,
+      performance: {
+        ...performance.performance,
+        rows: [
+          { ...first, dispute: { ...first.dispute, period: "vote" }, panelSize: 3 },
+          ...performance.performance.rows.slice(1),
+        ],
+      },
+    };
+
+    renderDispute({ performance: offRoster, pathId: String(first.dispute.id) });
+
+    expect(screen.getByText(/The court has drawn 3 jurors for this dispute/)).toBeInTheDocument();
+    expect(screen.queryByText(/Nobody has been drawn/)).not.toBeInTheDocument();
+    expect(screen.getByText("No reasoning to compare.")).toBeInTheDocument();
+  });
+
   it("does not claim a panel size for a dispute nobody has been drawn for", () => {
     const performance = withNoPanel();
     const id = performance.performance?.rows[0]?.dispute.id;

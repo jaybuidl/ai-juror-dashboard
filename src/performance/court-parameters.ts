@@ -32,7 +32,8 @@ export const KLEROS_CORE = "0x991d2df165670b9cac3B022f4B68D65b664222ea";
  * rather than from the contract sources: `KlerosCore.sol` has since gained an `_eligibility`
  * argument on both, and a signature with it hashes to a different topic. A mismatched topic
  * matches no log, returns `[]`, and reports a court that has never been configured — which
- * would blank the marker rather than fail.
+ * would quietly blank every reading of the history (the dispute view's configured windows)
+ * rather than fail.
  */
 export const COURT_CREATED = parseAbiItem(
   "event CourtCreated(uint96 indexed _courtID, uint96 indexed _parent, bool _hiddenVotes, uint256 _minStake, uint256 _alpha, uint256 _feeForJuror, uint256 _jurorsForCourtJump, uint256[4] _timesPerPeriod, uint256[] _supportedDisputeKits)",

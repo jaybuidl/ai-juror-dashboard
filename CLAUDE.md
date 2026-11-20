@@ -63,7 +63,8 @@ placement, not brevity. One test admits a line here:
   point: "agent" is an avoided term there, and the central term here.
 - **CI (`.github/workflows/ci.yml`) is toolchain upkeep, not a ticket.** Do not propose it.
 - **The roster grows, so its length is `ROSTER.length` and never a literal.** A hard-coded six drops
-  a column or a slot in silence. Not every six is the roster: the six *figures* stay six.
+  a column or a slot in silence. Not every six is the roster (the lockup's six letters are not), so
+  read what a six counts before changing it.
 
 ## Tripwires
 

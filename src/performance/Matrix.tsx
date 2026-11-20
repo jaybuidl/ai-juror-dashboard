@@ -353,8 +353,8 @@ const AgentNames = styled.span`
 /* A link to that agent juror's own view, and no `aria-label` on it. The name of a
    `columnheader` is built from its content, so labelling the link would rename the column and
    with it every cell that answers to it — the same trap `DisputeRow` records against the
-   dispute id. The text is the name; the destination is where the six figures below it are
-   printed at length. Keyed on the roster nickname while it displays the resolved one. */
+   dispute id. The text is the name; the destination is where the figures below it are printed
+   at length. Keyed on the roster nickname while it displays the resolved one. */
 const AgentNickname = styled(Link)<{ $drawn: boolean }>`
   font: ${({ theme }) => theme.typeTitle3};
   letter-spacing: ${({ theme }) => theme.trackingTitle};
@@ -397,7 +397,7 @@ const AgentStack = styled.span`
   /* Two lines held whether this one needs them or not, because the slot carries two different
      kinds of string: a stack name for an agent juror the court has drawn, and the words "never
      drawn" for one it has not. The longer of those wraps at this column width and the shorter
-     does not, which put Baskerville's six figures 13px below the five columns beside it — one
+     does not, which put Baskerville's figures 13px below the five columns beside it — one
      measure at two heights across a header whose whole purpose is to be read across. Reserving
      the taller case makes that baseline a property of the layout rather than of whichever
      strings the roster happens to hold, so a longer stack name cannot reintroduce it either.
@@ -430,10 +430,11 @@ const AgentStack = styled.span`
  *
  * **The two answer different questions**, which the artboard is careful about and it would be
  * easy to collapse. Its `bg` is mint exactly when the dispute is live; its `mark` is the colour
- * of whichever flag the row is wearing — amber for a lone panel or a changed window, mint for
- * live. So a lone panel that is still being decided has an amber rail over a mint tint, and a
- * finalised lone panel has the rail with no tint at all. Painting the rail from liveness instead
- * would leave the highest-precedence flag on the row marked in the colour of a lower one.
+ * of whichever flag the row is wearing — the fail tone for an unread row, mint for live. So an
+ * unread dispute that is still being decided has a fail-toned rail over a mint tint. Painting
+ * the rail from liveness instead would leave the highest-precedence flag on the row marked in
+ * the colour of a lower one. (Until 2026-09-24 there were amber flags too, for a lone panel and
+ * a changed window; `row-flags.ts` says what went.)
  *
  * The rail is an inset shadow rather than a border because a border on one row and not another
  * shifts that row's contents two pixels sideways, which reads as a rendering fault in a grid
@@ -739,7 +740,8 @@ function UnreadCell({
  * border that keep the five states apart with hue removed (ADR-0006).
  *
  * The `R` key goes because one latency needs no key to name it. The commit figure is not lost
- * with it — the dispute row carries the median over that row's draws, per the corner cell.
+ * with it: each draw's commit latency is on that dispute's own view. (The dispute row carried
+ * the median over its draws until 2026-11-02, maintainer's ruling: clutter.)
  */
 function DrawCell({
   draw,

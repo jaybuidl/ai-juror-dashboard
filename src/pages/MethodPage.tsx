@@ -15,27 +15,29 @@ import { REFERENCE_COURT_ID } from "../performance/reference";
  * slightly different definition of the same words.
  *
  * The sections carry stable fragment identifiers. They are linked to from elsewhere — the
- * matrix's window footnote goes to `#window` — so renaming one silently breaks a link that
- * still resolves to a page, just not to the part that answers the question.
+ * failure banner goes to `#partial`, the agent juror draws table's ‡ to `#caveats` — and may be
+ * cited from outside, so renaming one silently breaks a link that still resolves to a page, just
+ * not to the part that answers the question. `#window` and `#latency` keep their ids for that
+ * reason, though nothing on the site links to `#window` any more.
  *
- * `#window` is prose, and deliberately not read from the model the matrix is built from. It is
- * the destination of the † marker's link, so it has to answer on a cold load, and a section
- * that waited on an Arbitrum read would show a reader arriving from that link the very absence
- * they came to have explained. What it states is history — court 34's first configuration is
- * a fact from August 2026 and cannot change retroactively — and the guard against it drifting
- * is `court-parameters.integration.test.ts`, which reads the same three configurations from
- * chain nightly and fails if the court is ever reconfigured again. The *marker*, and the
- * durations quoted beside the matrix, do come from that read.
+ * `#window` is prose, and deliberately not read from the model the matrix is built from. It was
+ * the destination of the † marker's link until the marker was removed on 2026-09-24 (maintainer's
+ * ruling), and it still must not wait on an Arbitrum read, because what it states is history: a
+ * page that showed nothing there until a chain read landed would be withholding a settled fact
+ * behind a request that can fail. Court 34's first configuration is a fact from August 2026 and
+ * cannot change retroactively, and the guard against it drifting is
+ * `court-parameters.integration.test.ts`, which reads the same three configurations from chain
+ * nightly and fails if the court is ever reconfigured again.
  *
  * **That guard has fired once, and rewriting this section was ticket 19.** Court 34 is a live
  * demo instrument and its periods get retimed to suit a demo, so expect it again. Two things
  * to hold on to when it does. The prose here counts *configurations*, which is not the count
  * of changes that moved a latency — the third moved the evidence period alone and moved no
  * latency. And the section has to keep saying so: a reader who knows the court was reconfigured
- * on 26 August and meets an unmarked dispute 152 is owed the reason, and it is not one the
- * marker can give them. **It does move one figure since 2026-09-24**: the headline median time
- * to appeal runs from a dispute's creation, so the evidence window is inside it and its † counts
- * the disputes created before 26 August too. The section says both halves.
+ * on 26 August is owed the reason dispute 152's latencies still compare with today's. **It does
+ * move one figure**: the headline median time to appeal runs from a dispute's creation, so the
+ * evidence window is inside it, and nothing on the matrix marks the disputes created before
+ * 26 August. The section says both halves, and it is the only place either is said.
  */
 
 const Header = styled.header`

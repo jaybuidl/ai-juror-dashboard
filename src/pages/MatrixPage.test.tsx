@@ -439,7 +439,7 @@ describe("the matrix view's reads", () => {
 
     it("keeps the payout failure below every failure that costs more than it does", () => {
       // Precedence, and the reason it is worst-first: a failed dispute read leaves the whole
-      // page stale, where a failed payout read costs two of the six figures in each column
+      // page stale, where a failed payout read costs the two reward sums in each column
       // header. A reader counting sources in a banner is working out how bad it is.
       renderAt("/", {
         performance: { ...rewardsFailed, error: new Error("The core subgraph returned HTTP 503") },
@@ -497,19 +497,17 @@ describe("the matrix view's reads", () => {
       expect(screen.getAllByText(/partial/i).length).toBeGreaterThan(0);
     });
 
-    it("names the window history in the banner when it is the only Arbitrum read that failed", () => {
-      // One source gets one line: `arbitrumFailed` carries both Arbitrum errors, because one
-      // endpoint serving both reads is one outage, and a banner listing it twice reads as two
-      // faults. So the parameter history's own sentence is the one that shows when the commit
-      // scan is fine — which also pins the precedence, since the commit failure outranks it.
+    it("raises no banner when the window history is the only Arbitrum read that failed", () => {
+      // On this page the parameter history fed only the † row marker, removed on 2026-09-24, so
+      // its failure costs no figure here. A banner saying "no dispute below is marked" would
+      // describe a marker no row has carried since. The dispute view still names it, because its
+      // timeline shows the configured windows.
       renderAt("/", {
         performance: { ...arbitrumPending, parametersError: new Error("UnknownRpcError") },
       });
 
-      expect(
-        screen.getByText(/the court's period durations could not be read/i),
-      ).toBeInTheDocument();
-      expect(screen.queryByText(/period durations are still being read/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/period durations could not be read/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     });
 
     it("names a failed commitment read in the banner", () => {

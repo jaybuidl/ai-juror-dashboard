@@ -283,7 +283,7 @@ _Avoid_: tile, square (both name something drawn — a blank cell is still a cel
 How tightly the matrix is drawn. **Comfortable** is the two-line cell and the two-line row;
 **compact** is what the matrix becomes past either of the grid's two axes — `COMPACT_FROM_ROWS`
 rows, or `COMPACT_FROM_COLUMNS` agent jurors — and it drops the cell's commit line and halves it,
-drops the row's second line, and keeps three of the column header's six figures and freezes them.
+drops the row's second line, and drops the column header's two reward sums and freezes the rest.
 The row threshold is a heuristic about screen height; the column one is arithmetic, the count at
 which a comfortable grid stops fitting an ordinary desktop. Either crossing is sufficient. Density is a legibility change and never
 an edit to the record: no dispute leaves the page, no column moves, nothing is filtered, paginated,

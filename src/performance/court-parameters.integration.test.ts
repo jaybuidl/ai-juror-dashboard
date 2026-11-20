@@ -36,10 +36,10 @@ import {
  *    one. `has changed no reward parameter…` fires when it changed what a coherent draw earns or
  *    a wrong one risks, and the damage is quieter — every cumulative ETH and net PNK figure on
  *    the page is summed over the court's whole life, so each would silently span two reward
- *    regimes and report as one quantity what is two. The † deliberately does *not* ride those
- *    sums, on the ground that a reward depends on no window; that ground holds only while one
- *    fee has been in force throughout, so the sums would then be the figures on the page
- *    carrying no marker and needing one. Ticket 21 defers the display question to the day this
+ *    regimes and report as one quantity what is two. The † deliberately did *not* ride those
+ *    sums while it existed (removed 2026-09-24), on the ground that a reward depends on no
+ *    window; that ground holds only while one fee has been in force throughout, so the sums
+ *    would then be figures on the page needing a caveat and carrying none. Ticket 21 defers the display question to the day this
  *    goes red, which makes this assertion the thing that says the day has come. Either failure
  *    also leaves the fixture behind the offline suite a snapshot of a court that no longer
  *    exists.
@@ -141,8 +141,8 @@ describe("fetchCourtParameters", () => {
   it("has moved no commit or vote window, which would make latencies either side incomparable", () => {
     // Case 2, and the assertion this file exists for. The commit and vote windows are the two
     // reveal and commit latency are measured from, so a change to either splits the court into
-    // stretches whose figures cannot be read against each other and puts a marker on rows that
-    // carried none.
+    // stretches whose figures cannot be read against each other, and no marker on the page
+    // says which rows fall either side (the row marker was removed on 2026-09-24).
     //
     // Over the whole history and not the last two configurations, which is what ticket 19 left
     // and what ticket 20 replaced: `measuredRegimes` folds away every configuration that left
@@ -151,7 +151,7 @@ describe("fetchCourtParameters", () => {
     // comparing 2026-08-20 against 2026-08-26 for ever.
     expect(
       measuredRegimes(toRegimes(history)),
-      "A window this dashboard measures from has moved. Every latency either side of it is measured against a different allowance, so the two are not comparable and the matrix's marker now falls on a different set of rows: check CourtTotals.changedWindows and the footnote before recapturing anything.",
+      "A window this dashboard measures from has moved. Every latency either side of it is measured against a different allowance, so the two are not comparable: update court-34.md and /method#window before recapturing anything.",
     ).toEqual([
       { from: 1_786_444_490, commitSeconds: 28_800, voteSeconds: 28_800 },
       { from: 1_787_230_320, commitSeconds: 2_700, voteSeconds: 1_800 },
@@ -174,8 +174,8 @@ describe("fetchCourtParameters", () => {
   });
 
   it("still holds the three configurations the fixture and /method describe, in full", () => {
-    // Case 3. `MethodPage`'s window section states these in prose, in words, as the
-    // destination of the † marker's link, and this is the assertion that keeps the page and
+    // Case 3. `MethodPage`'s window section states these in prose, in words (it was the
+    // destination of the † marker's link until 2026-09-24), and this is the assertion that keeps the page and
     // the chain one account. It fires on any change at all — including the evidence-only kind
     // the court has already made once, which reaches no figure on the page.
     expect(

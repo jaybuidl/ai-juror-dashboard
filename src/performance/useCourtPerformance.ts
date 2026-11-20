@@ -39,9 +39,10 @@ export type CourtPerformanceView = {
   /**
    * Why the court's parameter history could not be read, on the same terms.
    *
-   * Non-blocking for the same reason: a history that never arrives costs the † marker and the
-   * windows on each row, and nothing else. Every latency and every coherence on the page is
-   * still true — what is missing is the note saying which of them are not comparable with which.
+   * Non-blocking for the same reason: a history that never arrives costs the configured windows
+   * on the dispute view's timeline, and nothing else. Every latency and every coherence on the
+   * page is still true. (It used to cost a † marker too: the matrix's went on 2026-09-24 and
+   * the agent juror plot's with ADR-0010, so neither of those views raises a banner for it now.)
    *
    * A history that arrives *malformed* is a different path and does block, exactly as a
    * malformed commit payload does: `buildCourtPerformance` refuses a payload it cannot believe
@@ -52,7 +53,7 @@ export type CourtPerformanceView = {
   /**
    * Why the court's payouts could not be read, on the same terms again.
    *
-   * Non-blocking for the reason the other two are: cumulative ETH and PNK are two of the six
+   * Non-blocking for the reason the other two are: cumulative ETH and PNK are the last two
    * figures in a column header and nothing else on the page reads them, so blanking a matrix of
    * true latencies over them would be the worse lie.
    *
@@ -255,8 +256,8 @@ export function useCourtPerformance(
    * not a cross-check against anything: it is the court's own configuration, three logs deep,
    * and it answers the same way whichever disputes have been read beside it.
    *
-   * Not waited on, exactly like the commitments. An unread history costs the marker saying
-   * which rows are not comparable with which — worth stating, never worth a blank page.
+   * Not waited on, exactly like the commitments. An unread history costs the dispute view's
+   * configured windows — worth stating there, never worth a blank page.
    */
   const parametersQuery = useQuery({
     queryKey: ["courtParameters", COURT_ID],
@@ -288,8 +289,8 @@ export function useCourtPerformance(
    * half again to this endpoint's load to catch a number that moves twice a day. It refetches
    * on mount and holds the same minute of staleness as everything else.
    *
-   * Not waited on, exactly like the two Arbitrum reads. What an unread payout costs is two of
-   * the six figures in each column header, and the header says which.
+   * Not waited on, exactly like the two Arbitrum reads. What an unread payout costs is the two
+   * reward sums in each column header, and the header says which.
    */
   const rewardsQuery = useQuery({
     queryKey: ["courtRewards", COURT_ID],

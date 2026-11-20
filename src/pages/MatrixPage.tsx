@@ -150,7 +150,7 @@ function coreFailureOf(
 
   // Ticket 10's payouts, read from this same deployment — so an outage takes all four reads and
   // listing them separately would report one source as four faults. It ranks below every branch
-  // above because it costs the least of them: two of the six figures in each column header,
+  // above because it costs the least of them: the two reward sums in each column header,
   // where those cost the matrix itself. It costs less still on the two renderings that carry
   // neither of those figures — the phone's card list and, since ticket 17, the compact density —
   // so the ordering holds a fortiori rather than needing a case of its own.
@@ -256,7 +256,7 @@ function coreFailureOf(
 function arbitrumFailureOf(performance: CourtPerformanceView): FailedRead | null {
   const measured = performance.performance;
   const coverage = measured?.commitCoverage;
-  // Once, for all three branches: they are the same endpoint, and the name is derived from the
+  // Once, for both branches: they are the same endpoint, and the name is derived from the
   // URL in use rather than being a constant. See `arbitrumSource`.
   const source = arbitrumSource();
 
@@ -281,19 +281,10 @@ function arbitrumFailureOf(performance: CourtPerformanceView): FailedRead | null
     };
   }
 
-  // Last, and only when the two above are silent: ticket 08's parameter history is read from the
-  // same endpoint, so an outage usually takes both and listing them separately would report one
-  // source as two faults. It ranks below them because it costs no figure — what a reader loses is
-  // the note saying which figures are not comparable with which, which is why the sentence says
-  // that rather than naming a measurement.
-  if (performance.parametersError !== null) {
-    return failureOf(
-      performance.parametersError,
-      source,
-      "The court's period durations could not be read from its own parameter history on Arbitrum, so no dispute below is marked as having run under earlier ones. Court 34 was reconfigured partway through this experiment, and which rows that affects is not shown on this load.",
-    );
-  }
-
+  // Not the parameter history, though the same endpoint serves it. On this page it fed only the
+  // † row marker, removed on 2026-09-24 (maintainer's ruling), so its failure costs nothing here
+  // and a banner about it would describe nothing on screen — the agent juror view's rule since
+  // ADR-0010. The dispute view still raises it, because its timeline shows the configured windows.
   return null;
 }
 

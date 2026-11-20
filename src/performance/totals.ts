@@ -41,7 +41,8 @@ export type LatencySummary = {
  *
  * The windows ride along because every one of the evidence, commit and vote periods lies inside
  * this duration, so a dispute that ran under since-changed windows was answering a different
- * question from one that did not — and the tile's † has to be able to say how many did.
+ * question from one that did not. Nothing renders them: the tile carries no † (removed with the
+ * rest on 2026-09-24, maintainer's ruling), and `/method#window` says it in prose instead.
  */
 export type DisputeTimeToAppeal = {
   dispute: number;
@@ -139,16 +140,17 @@ export type CourtTotals = {
    * Disputes that ran under period durations the court has since changed, grouped by the
    * durations they ran under.
    *
-   * Grouped rather than listed flat because the footnote has to name what the difference *was*
-   * — "an 8h commit window against 45m now" — and one list of ids could not say that if two
-   * different sets of measured windows were ever superseded at once. Court 34 has been
+   * Grouped rather than listed flat because the window footnote, while it existed, had to name
+   * what the difference *was* — "an 8h commit window against 45m now" — and one list of ids
+   * could not say that if two different sets of measured windows were ever superseded at once. Court 34 has been
    * reconfigured twice and there is still only one such group: the 2026-08-26 change moved the
    * evidence period alone, and nothing here is measured from it. Empty until the parameter
    * history has been read, and empty is not a claim: `CourtParameters.read` is what says
    * whether it was looked for.
    *
-   * Carried here for the same reason `lonePanelDisputes` is: any aggregate over latency has to
-   * disclose them, and ticket 06's marginals are the first figures that will.
+   * **No view reads this since 2026-09-24**, when the row marker and the window footnote were
+   * removed (maintainer's ruling), and ADR-0010 took the last latency aggregate that disclosed
+   * it. It is still computed and tested; whether to drop it is a separate decision.
    */
   changedWindows: readonly WindowChange[];
   /**
@@ -157,7 +159,8 @@ export type CourtTotals = {
    * Distinct from `changedWindows` being empty, and the distinction is the whole point: no
    * marked dispute can mean every dispute ran under the current windows, or it can mean the
    * history is too short to say. Only this count tells them apart, and without it a short scan
-   * renders as a clean bill of health.
+   * would render as a clean bill of health. Like `changedWindows`, read by no view since
+   * 2026-09-24.
    */
   unplacedDisputes: readonly number[];
   /**
@@ -224,8 +227,9 @@ export type Sparsity = {
    * between two sentences a reader could act on. A blank position in a dispute with a panel means
    * *this agent juror was not selected*, which is the random sparsity the note beside the grid
    * exists to explain. A blank in a dispute with no panel means *no selection has happened yet* —
-   * the court draws when a dispute leaves its evidence period, and 167, 168 and 169 were sitting
-   * in theirs on the day this was written, contributing 18 blanks the note was calling sparsity.
+   * the court draws during a dispute's evidence period and cannot pass it until the panel is
+   * full, and 167, 168 and 169 were in theirs, undrawn, on the day this was written,
+   * contributing 18 blanks the note was calling sparsity.
    *
    * Counted here rather than beside the note for the reason every figure in this file is: the
    * matrix and the phone's card list are two renderings of one record, and each has to say the
@@ -258,7 +262,7 @@ export type MeasuredWindows = Pick<PeriodWindows, "commitSeconds" | "voteSeconds
 
 /** One group of disputes that share a superseded pair of windows. */
 export type WindowChange = {
-  /** Ascending. The ids the marker sits on. */
+  /** Ascending. The ids the row marker sat on until 2026-09-24. */
   disputes: readonly number[];
   /** What those disputes ran under. Compare against `CourtParameters.current`. */
   windows: MeasuredWindows;
@@ -339,7 +343,7 @@ export type OffRoster = {
  * different things and only the view can tell them apart: the reward read has not come back,
  * this agent juror has never been drawn, or every dispute it was drawn in is still unexecuted.
  * `CourtPerformance.rewards.read` and `draws` are the two flags that separate them, exactly as
- * `commitCoverage.read` and `commitments` separate the three absences of a commit median.
+ * `commitCoverage.read` separates a commit latency still being read from one that is missing.
  *
  * A `bigint` because a PNK penalty in this court is 1.87e20 wei. See `rewards.ts`.
  */
@@ -386,8 +390,9 @@ export type AgentJurorMarginals = {
   /**
    * Cumulative ETH and net PNK for this column, or `null` where nothing has been paid.
    *
-   * **The † does not ride these two, and that is a measured fact rather than an assumption.**
-   * The marker is about the commit and vote windows, and a reward depends on none of them: it
+   * **No window caveat applies to these two, and that is a measured fact rather than an
+   * assumption.** (The † never rode them while it existed.) A window change is about the commit
+   * and vote windows, and a reward depends on none of them: it
    * is `feeForJuror` per coherent **vote ID** and `minStake × alpha / 10000` (187 PNK) at risk
    * per vote ID — not per draw, which is why nine of the 44 shifts are fractions of a fee and
    * nothing here may assume a payout divides evenly. Both of court 34's reconfigurations —
@@ -668,7 +673,7 @@ export function agentJurorMarginalsOf(
       votes += cell.voteCount;
 
       // Summed over the cells rather than over the shifts themselves, so that these two figures
-      // are over exactly the draws the five figures beside them are over. An unread row
+      // are over exactly the draws the figures beside them are over. An unread row
       // contributes nothing here for the same reason it contributes no draws — and in practice
       // the two readings coincide, because a dispute new enough to be unread is far too new to
       // have been executed.

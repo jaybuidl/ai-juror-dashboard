@@ -2,7 +2,8 @@
 
 The Kleros v2 core subgraph records `ClassicVote.commited` as a boolean. Nothing anywhere in the
 schema records *when* a commitment was published, so half the speed dimension has no subgraph
-source. We recover it by reading `CommitCast` logs from an Arbitrum RPC and taking the block
+source. (Written when commit latency was half of speed; ADR-0010 has since ruled that per-draw
+latency is not speed. The source decision below stands.) We recover it by reading `CommitCast` logs from an Arbitrum RPC and taking the block
 timestamp.
 
 `CommitCast(uint256 indexed _coreDisputeID, address indexed _juror, uint256[] _voteIDs, bytes32 _commit)`

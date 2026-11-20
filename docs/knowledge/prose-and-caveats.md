@@ -17,8 +17,9 @@ this file is the full account.
   /method's as-of date). Do not bring them back as banners, inline notes or /method prose without a
   new ruling. What survives is the read range and time, as `ReadStamp` at the top of each view
   (`Provenance` is now `{ read, readAt }`). Caveats stay visible through the failure banner, the
-  degraded (ENS) panel, the †/§/‡ markers, the footnotes under the grid, the phone's sparsity card
-  and /method. The entries below that mention the footer are history: their rules still hold for
+  degraded (ENS) panel, the ‡ on a lone-panel draw in the agent juror draws table, the phone's
+  sparsity card and /method. (The † and § markers and the footnotes under the grid went the same
+  day.) The entries below that mention the footer are history: their rules still hold for
   any sentence, but the footer they were learned on no longer exists.
 - **Two layouts share their model by construction and their *prose* by hand, and the prose is
   where they drift.** Ticket 16 gave the matrix a second rendering; `cell.ts`, `row-flags.ts`,
@@ -44,8 +45,9 @@ this file is the full account.
   phone's list of things to gate**, and the gate is `!narrow` in `provenanceOf`, tested in both
   directions because a caveat that is absent for the wrong reason tests nothing. `MatrixPage`'s
   phone describe block carries those four. **Ticket 17 made it three renderings rather than two**,
-  and the third is not a width: past `COMPACT_FROM_ROWS` the column header keeps three of its six
-  figures, so the same sentences that were false on a phone are false on a long matrix. The gate is
+  and the third is not a width: past `COMPACT_FROM_ROWS` the column header drops its two reward
+  sums (in ticket 17's day it kept three of six figures), so the same sentences that were false on
+  a phone are false on a long matrix. The gate is
   now `provenanceOf(props, narrow, dense)` with `payoutsShown = !narrow && !dense` — one predicate
   named for what it actually asks — and the caveat card has a third branch. The next reduction adds
   a fourth: the question to ask of any sentence here is not "which layout" but "is the figure this
@@ -111,5 +113,5 @@ this file is the full account.
   Ticket 10 is the one that tested the rule on a **shared** endpoint from the subgraph side: its
   payouts come from the same Goldsky deployment as the disputes and the draws, so `coreFailureOf`
   now collapses four reads into one line the way `arbitrumFailureOf` collapses two, and it ranks
-  last because it costs the least — two of six figures in a column header, against the matrix.
+  last because it costs the least — the two reward sums in a column header, against the matrix.
 

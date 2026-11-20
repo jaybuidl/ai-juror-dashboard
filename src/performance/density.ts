@@ -3,7 +3,7 @@
  *
  * Ticket 17, against `canvas/MatrixDense.dc.html:45-122` and `canvas/Cell.dc.html:199-218`. Past
  * a row count the matrix compacts: the cell drops its commit line and halves in height, the row
- * drops its second line, the column header keeps three of its six figures and freezes. Nothing
+ * drops its second line, the column header drops its two reward sums and freezes. Nothing
  * else changes — density is a legibility change and not a licence to edit the record, so no
  * dispute leaves the page, no column moves and no caveat is dropped.
  *

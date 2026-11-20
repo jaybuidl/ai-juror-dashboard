@@ -38,9 +38,8 @@ import { ROSTER } from "../roster/agent-jurors";
  * three tickets and a review to find, because the tell is a clipped title and a clipped title is
  * exactly what a title is supposed to look like when it does not fit.
  *
- * What the row header holds is why: an id, a dispute question, a flag, a panel pill and — at the
- * compact density — the row's own commit median. Every one of those is a fixed width except the
- * question, so every pixel taken from here comes out of the question and nothing else. Ticket 25
+ * What the row header holds is why: an id, a dispute question, a flag and a panel pill. Every
+ * one of those is a fixed width except the question, so every pixel taken from here comes out of the question and nothing else. Ticket 25
  * needed room for nine columns and took none of it from here; the density switch is where the
  * room comes from (`density.ts`).
  */

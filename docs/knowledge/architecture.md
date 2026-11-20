@@ -35,7 +35,8 @@ rule stated once more: the matrix and the phone's card list are two renderings o
 a figure or a ranking reduced inside either of them is two chances for a desktop and a phone to
 disagree about one court.
 Ticket 17 added the fifth and sixth, and made that rule count to **three**: `rowCommitLatencyOf` in
-`totals.ts` — the median commit over one dispute's own draws, which the compact row prints — and
+`totals.ts` — the median commit over one dispute's own draws, which the compact row printed until
+2026-11-02, when it and the function were removed (maintainer's ruling: clutter) — and
 `Sparsity.undrawnDisputes`/`undrawnPositions`, the blanks that mean the court has not drawn yet
 rather than that an agent juror was not selected. It also lifted `panel.ts` beside `cell.ts` and
 `row-flags.ts` for the same reason ticket 16 lifted those: the panel slot's three states were
@@ -61,7 +62,7 @@ page. Ticket 11 then added the **third model**, `buildAgentJurorReading` in
 *join* — which column of the matrix a nickname names — and it lives below the seam for one reason,
 which is that the join is on an array index. `marginals` and every row's `cells` are both in roster
 order, so an off-by-one shows one agent juror's draws under another's avatar with every figure on
-the page internally consistent, no error and nothing in the console. It also lifted the six figure
+the page internally consistent, no error and nothing in the console. It also lifted the figure
 *readings* out of `Marginals.tsx` into `marginal-figures.ts`, so the matrix's column header and the
 agent juror's stat card are two renderings of one reading rather than two sets of judgements about
 what an absent commit log means — ticket 16's rule applied one level down.
