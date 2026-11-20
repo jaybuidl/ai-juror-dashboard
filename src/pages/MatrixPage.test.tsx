@@ -813,7 +813,7 @@ describe("the matrix view on a phone", () => {
     expect(screen.queryByText(/it never votes, stakes, or holds a key/i)).not.toBeInTheDocument();
 
     // The strip goes; its headline figure is the median time to appeal, which the tiles lead
-    // with, and its comparison band is drawn at every width on the agent juror view.
+    // with. Its comparison band goes with it, and since ADR-0010 is drawn nowhere else.
     expect(screen.queryByRole("heading", { name: /time to appeal ·/i })).not.toBeInTheDocument();
 
     // The figure did not leave the page with the strip: it is the tile that leads it.
@@ -932,6 +932,19 @@ describe("the matrix view on a phone", () => {
  * short. Each of those is said, and none is drawn as a band at a default.
  */
 describe("the comparison band's read", () => {
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("raises no banner over the band's read on a phone, where no band is drawn", () => {
+    // The strip is absent below the breakpoint, and the agent juror view's latency plot that
+    // also drew the band went with ADR-0010. A banner here would describe nothing on screen.
+    stubViewportWidth(PHONE_WIDTH);
+    renderAt("/", { performance: referenceFailed });
+
+    expect(screen.queryByText(/comparison court's disputes/i)).not.toBeInTheDocument();
+  });
+
   it("draws the band's place as being read while the read is out, and raises no alarm", () => {
     renderAt("/", { performance: referencePending });
 

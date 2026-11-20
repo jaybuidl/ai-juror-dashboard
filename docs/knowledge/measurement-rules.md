@@ -47,8 +47,8 @@ this file is the full account.
   appeal period runs ~18h — and it is none of the three the cell design first named: not coherent
   or diverged (no ruling to compare against), not a missed vote (it voted), not awaiting or
   committed (it revealed). The matrix words it `REVEALED`, a third stage of the live family. Any
-  aggregate must exclude these draws from coherence while still counting their latency, or it will
-  either undercount speed or invent a coherence figure out of a prediction.
+  aggregate must exclude these draws from coherence, or it will invent a coherence figure out of a
+  prediction; their latencies are still shown on the draw.
 - **The matrix is sparse** — it was 44% empty over the first thirteen disputes, and the newest
   column is emptier than that: an agent juror joins the roster before the court has drawn it, so
   `grokleros` held 3 of 46 rows on 2026-09-04. A design that assumes a full grid will look broken.
@@ -57,6 +57,17 @@ this file is the full account.
   either side of dispute 152, and a percentage is false the moment it is quoted away from the page.
   ADR-0005. Where the window matters it appears *beside* how long the period actually ran, as two absolute
   durations.
+- **Per-draw latency is not speed, and nothing summarises it** (2026-11-20, ADR-0010, issue #8).
+  Commit latency cannot see deliberation: the evidence is public from creation and the panel is
+  drawn in the evidence period, so an agent juror can reason before the commit period opens.
+  Reveal latency involves no judgment, the vote being fixed at commit. And both start on whoever
+  called `passPeriod`: Intendant (`0xC05e…f539`) calls it itself and reveals in the next
+  transaction of the same block, so it reads 0s, which is a true reading of a definition that
+  measures reaction to an opening. Re-timing only the self-openers (#5, #6, #7, closed unmerged)
+  would have put two clocks in one column. So there is no median, plot or ranking of either, per
+  agent juror or court-wide; each draw keeps its own figures, and **time to appeal** is the one
+  speed figure. Whether cells keep their per-draw figures is stage 2 of #8, and whether the
+  `CommitCast` scan survives is stage 3.
 - **A draw belonging to a juror the roster does not hold is counted, and was silently dropped
   before ticket 25.** `draws-subgraph.ts` scopes its query by court and not by juror, so every draw
   in court 34 is in hand — but the roster is the column set, so an address outside it has no cell

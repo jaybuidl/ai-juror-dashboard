@@ -102,7 +102,7 @@ describe("buildAgentJurorReading", () => {
 
     expect(reading?.draws).toEqual([]);
     expect(reading?.marginals.draws).toBe(0);
-    expect(reading?.marginals.revealLatency).toBeNull();
+    expect(reading?.marginals.rewards).toBeNull();
   });
 
   it("leaves a dispute whose draws were never read out of the list entirely", () => {

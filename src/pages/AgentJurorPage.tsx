@@ -1,7 +1,6 @@
 import { Link, useParams } from "react-router";
 import styled from "styled-components";
 import { Breadcrumb } from "../chrome/Breadcrumb";
-import { comparisonFailureOf } from "../chrome/comparison";
 import { Notice } from "../chrome/Failure";
 import { type Failures, olderOf, present } from "../chrome/failures";
 import { useDocumentTitle } from "../chrome/title";
@@ -11,11 +10,9 @@ import type { Dispute } from "../disputes/disputes";
 import type { DisputesView } from "../disputes/useDisputes";
 import { AgentJurorDraws } from "../performance/AgentJurorDraws";
 import { AgentJurorEmpty } from "../performance/AgentJurorEmpty";
-import { AgentJurorLatency } from "../performance/AgentJurorLatency";
 import { AgentJurorSummary } from "../performance/AgentJurorSummary";
 import { buildAgentJurorReading } from "../performance/agent-juror-detail";
 import { arbitrumSource } from "../performance/arbitrum";
-import { comparisonOf } from "../performance/reference";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type FailedRead, failureOf, SOURCES } from "../read-failure";
 import { ensNameOf, handleUrlOf, pathSegmentOf, stackLabelOf } from "../roster/agent-jurors";
@@ -28,9 +25,14 @@ import { VisuallyHidden } from "../styles/hidden";
 /**
  * One agent juror on its own: what it runs, what it has done, and what it has been paid.
  *
- * Built against `canvas/Juror.dc.html` — identity and stat card at `:53-83`, the latency
- * profile at `:86-110`, the drawn-in table at `:113-134` — and `canvas/JurorEmpty.dc.html` for
- * an agent juror the court has not drawn yet.
+ * Built against `canvas/Juror.dc.html` — identity and stat card at `:53-83`, the drawn-in table
+ * at `:113-134` — and `canvas/JurorEmpty.dc.html` for an agent juror the court has not drawn yet.
+ *
+ * **The artboard's latency profile at `:86-110` is not built, by decision** (ADR-0010). It plotted
+ * this agent juror's reveal latencies against the court's, which ranked a figure that measures
+ * how often an agent polls the court rather than how fast it judges. It was removed on 2026-11-20
+ * and nothing replaces it yet: the table of draws follows the header directly. Whether anything
+ * should take that place is an open question on issue #8, so do not restore the plot to fill it.
  *
  * **It reads nothing of its own.** Ticket 06 built `CourtPerformance.marginals` for exactly this
  * page and ticket 10 filled its last two figures, so every number here is one the matrix already
@@ -44,8 +46,8 @@ import { VisuallyHidden } from "../styles/hidden";
  * It is also where the two reward sums reach a phone reader. The matrix's card layout drops the
  * column headers whole, so below the breakpoint cumulative ETH and net PNK are legible here and
  * nowhere else — which is the open question ticket 16 left for this ticket, answered by giving
- * this view no reduced form: the stat card, the latency profile and the disputes all render at
- * 390pt, the last of them as cards rather than as a seven-column table.
+ * this view no reduced form: the stat card and the disputes both render at 390pt, the second of
+ * them as cards rather than as a seven-column table.
  */
 
 const Header = styled.header`
@@ -243,9 +245,10 @@ function shortAddress(address: string): string {
  *
  * Five of this dashboard's reads come from one Goldsky deployment, so an outage there takes all
  * five and listing them separately would report one source as five faults. The ordering is by
- * what each costs *this* page: the disputes and the draws cost every figure on it, the payouts
- * cost two of the six on the card, and ticket 23's comparison court costs where the band on the
- * latency plot begins.
+ * what each costs *this* page: the disputes and the draws cost every figure on it, and the
+ * payouts cost the two sums on the card. Ticket 23's comparison court is not among them: its band
+ * was drawn here only on the latency plot, which ADR-0010 removed, so a failure of that read costs
+ * this page nothing and a banner about it would describe something the reader cannot see.
  */
 function coreFailureOf(
   nickname: string,
@@ -312,9 +315,7 @@ function coreFailureOf(
     };
   }
 
-  // Last, as on the matrix view and in the same words, because it is the same band read by the
-  // same query. The plot says it is missing in the band's own place, so this is the second voice.
-  return comparisonFailureOf(performance.reference, performance.referenceError);
+  return null;
 }
 
 /**
@@ -609,10 +610,10 @@ export function AgentJurorView({
           </Identified>
 
           {/* Only where there is something to summarise. An agent juror the court has never
-              drawn gets the empty state below instead, which carries the same six figures as
-              three dashes, a real zero and two more dashes — and the sentence saying what a dash
-              means. Two blocks of six would print each of them twice on the one page whose whole
-              subject is that there is nothing to print. */}
+              drawn gets the empty state below instead, which carries the same figures as a real
+              zero and dashes — and the sentence saying what a dash means. Two blocks of them
+              would print each figure twice on the one page whose whole subject is that there is
+              nothing to print. */}
           {measured !== null && reading !== null && reading.draws.length > 0 && (
             <AgentJurorSummary reading={reading} performance={measured} />
           )}
@@ -632,33 +633,23 @@ export function AgentJurorView({
           // state a defect in this dashboard as a finding about an agent juror.
           <Notice $tone="rose" role="status">
             The court's record could not be built from what was read, so nothing on this page is a
-            measurement of {agentJuror.nickname}. Whether it has been drawn, how quickly it acted
-            and what it has been paid are all unknown on this load rather than absent.
+            measurement of {agentJuror.nickname}. Whether it has been drawn, how it voted and what
+            it has been paid are all unknown on this load rather than absent.
           </Notice>
         )
       ) : reading.draws.length === 0 ? (
         <AgentJurorEmpty reading={reading} performance={measured} />
       ) : (
-        <>
-          <AgentJurorLatency
-            nickname={agentJuror.nickname}
-            own={reading.marginals.revealLatency}
-            court={measured.totals.revealLatency}
-            changedWindows={reading.marginals.changedWindows}
-            current={measured.parameters.current}
-            comparison={comparisonOf(performance.reference, performance.referenceError)}
-          />
-          <AgentJurorDraws
-            nickname={agentJuror.nickname}
-            draws={reading.draws}
-            scanned={measured.commitCoverage.read}
-            // The clock reaches a flag here and never the seam, which reads none: `MatrixRow` is
-            // built by a pure function, and `now` is threaded from the view for exactly that.
-            flagContext={{ now }}
-            titleFor={(dispute: Dispute) => disputes.templateFor?.(dispute)?.title ?? null}
-            answersFor={(dispute: Dispute) => disputes.templateFor?.(dispute)?.answers ?? []}
-          />
-        </>
+        <AgentJurorDraws
+          nickname={agentJuror.nickname}
+          draws={reading.draws}
+          scanned={measured.commitCoverage.read}
+          // The clock reaches a flag here and never the seam, which reads none: `MatrixRow` is
+          // built by a pure function, and `now` is threaded from the view for exactly that.
+          flagContext={{ now }}
+          titleFor={(dispute: Dispute) => disputes.templateFor?.(dispute)?.title ?? null}
+          answersFor={(dispute: Dispute) => disputes.templateFor?.(dispute)?.answers ?? []}
+        />
       )}
     </View>
   );

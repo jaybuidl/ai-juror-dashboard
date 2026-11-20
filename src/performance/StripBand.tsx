@@ -30,14 +30,14 @@ import { stripFraction } from "./strip";
  * words or overflow the plot. Hard against the band's own edge it reads as annotating the line,
  * and it has the whole left of the axis to lay out in.
  *
- * **And below the median's own value, which is why it is not at the top of the plot.** Both
- * plots print their median as text at `top: 0`, and both were drawn at 1440 where that text
- * ends around a third of the way across and this label's ink begins at three quarters. At 390pt
- * the agent juror plot is 300px wide: the median value ran 95→211 and this label's first line
- * 103→256, so the two overprinted — one figure that is measured, illegible under one that is
- * not. Dropping the label a line clears it on both plots at every width, and the marks cannot
- * reach it, because they stack up from the axis and the tallest stack the live court has is
- * less than half the plot's height.
+ * **And below the median's own value, which is why it is not at the top of the plot.** The plot
+ * prints its median as text at `top: 0`. When there were two plots (the agent juror's went with
+ * ADR-0010), both were drawn at 1440 where that text ends around a third of the way across and
+ * this label's ink begins at three quarters. At 390pt the agent juror plot was 300px wide: the
+ * median value ran 95→211 and this label's first line 103→256, so the two overprinted — one
+ * figure that is measured, illegible under one that is not. Dropping the label a line clears it
+ * at every width, and the marks cannot reach it, because they stack up from the axis and the
+ * tallest stack the live court has is less than half the plot's height.
  *
  * jsdom lays nothing out, so none of the above is a test: it was measured in a browser at both
  * widths, and the collision it fixes was invisible to 862 passing tests.

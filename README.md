@@ -1,12 +1,15 @@
 # AI Juror Dashboard
 
-A public, read-only dashboard measuring the AI agent jurors in Kleros v2 **court 34**
-("Agentic Commerce Court") on Arbitrum One, on two dimensions: **speed** (commit and reveal
-latency) and **coherence** (voting with the final ruling).
+A public, read-only dashboard following the AI agent jurors in Kleros v2 **court 34**
+("Agentic Commerce Court") on Arbitrum One. It measures how long the court takes to put a
+dispute's votes in front of the parties (**time to appeal**), and whether each agent juror voted
+with the final ruling (**coherence**). Each draw's commit and reveal latency is recorded, but it is
+not a measure of speed and nothing ranks agent jurors by it
+([ADR-0010](docs/adr/0010-per-draw-latency-is-not-speed.md)).
 
-In an ordinary Kleros court, a voting period runs for days. These agent jurors act in seconds —
-the median reveal lands 85 seconds after the period opens. Making that contrast legible is the
-dashboard's job.
+An ordinary Kleros court takes days to rule. Making it legible how long a court with agent jurors
+on its panels takes is the dashboard's job: the headline is the median time to appeal, plotted
+against an ordinary court's time to ruling.
 
 ## Status
 
@@ -18,9 +21,9 @@ reveal latency and whether it voted with the dispute's final ruling — plus the
 its time-to-appeal distribution above it, a dispute index at `/disputes`, one dispute read whole at
 `/disputes/:id`, every agent juror at `/agent-jurors`, one of them on its own at
 `/agent-jurors/:nickname`, how everything is measured at `/method`, and a 404 view
-behind them. Every column header carries that agent juror's own summary of the same three
-measures — median reveal, median commit, coherence as a count and how many times it was drawn —
-and, beneath them, what that column has been paid: cumulative ETH and net PNK, summed over every
+behind them. Every column header carries that agent juror's own summary — how many times it was
+drawn and what those draws came to (coherent, tied, diverged or missed) — and, beneath them, what
+that column has been paid: cumulative ETH and net PNK, summed over every
 dispute the court has executed. Those two are context beside the measures and not a dimension
 anyone is ranked on; nothing here orders by them, and a net loss carries its sign as a character
 in the value rather than only as a colour. Every view carries the same nav and, where it rests on
@@ -43,13 +46,9 @@ drawn as a failed read.
 in the matrix's column header or in the roster index — opens that agent juror at its own linkable
 URL, keyed on the nickname this repository holds rather than the one ENS resolves, so a display
 name an operator can change from a wallet can never move a page. It carries the stack it runs, its
-ENS name and address, and the six figures the column header prints in 148px shown at length: median
-reveal, median commit, coherence as a count, draws beside the vote IDs they hold, and cumulative
-ETH and net PNK. Its reveal latencies are plotted against every reveal the court recorded, on the
-same logarithmic axis the court's own distribution uses. Commit latency is excluded from that
-comparison rather than normalised into it, and the chart says why: the two are measured from
-different periods, so pooling them would compare durations against different clocks. Below the plot
-is every dispute it was drawn in, newest first, each linking to that dispute's own page, with the
+ENS name and address, and the figures the column header prints in 148px shown at length: how many
+times it was drawn, what those draws came to, and cumulative ETH and net PNK. Below them is every
+dispute it was drawn in, newest first, each linking to that dispute's own page, with the
 panel size beside every coherence mark — because coherence in a panel of one is tautological and a
 mark without its panel size cannot be read. **An agent juror the court has not drawn yet gets an
 honest empty state, not an error** — the state every agent juror occupies between joining the
@@ -75,8 +74,8 @@ the read-only statement stays in the bar. Every caveat a desktop reader meets, a
 too — the legend and the note that sparsity is normal are rendered inline above the first card
 rather than behind a control, because a reader who does not know a blank means "not drawn" will not
 go looking for the sentence that says so. The agent juror's own page is the exception that proves
-the rule: it drops no figure at all below the breakpoint — the stat card, the plot and the disputes
-all render, the last as one block per dispute rather than a seven-column table — which makes it the
+the rule: it drops no figure at all below the breakpoint — the stat card and the disputes both
+render, the second as one block per dispute rather than a seven-column table — which makes it the
 one place a phone reader can see what an agent juror has been paid, since the matrix's card layout
 has no column headers to carry it.
 
@@ -85,7 +84,7 @@ a threshold in the region of forty rows — or past the columns a comfortable gr
 which the roster has already crossed — the matrix drops to a denser form of itself: the cell keeps its reveal
 latency and its coherence state and gives up its commit line, halving in height; the row gives up
 its second line; each column header keeps
-its median reveal, its coherence count and its draw count, and freezes at the top of the page — or,
+its outcome breakdown and its draw count, and freezes at the top of the page — or,
 where the grid is too wide for the window, at the top of its own window-high scroll box, beside a
 pinned dispute column — so a reader hundreds of rows down still knows which agent juror each
 column is. Nothing leaves: every dispute the court has held is still a row, every column is where it was, and no figure is
@@ -104,8 +103,9 @@ an agent juror that failed to commit.
 Court 34's period durations changed partway through the experiment, so the windows each dispute ran
 under are read from the court's own `CourtCreated` and `CourtModified` events rather than from what
 it is configured with now. Dispute 151 ran an 8-hour commit window against the 45 minutes configured
-from dispute 152 onward, and it carries a marker wherever its figures are counted. No latency
-anywhere is divided by a window — see [ADR-0005](docs/adr/0005-latency-is-never-shown-as-a-fraction-of-a-window.md).
+from dispute 152 onward, so its latencies cannot be set beside a later dispute's; nothing here
+summarises latency across disputes. No latency anywhere is divided by a window — see
+[ADR-0005](docs/adr/0005-latency-is-never-shown-as-a-fraction-of-a-window.md).
 
 **The page also moves.** While the court holds a dispute it has not ruled on, the disputes and the
 draws are re-read every five seconds, and those rows say so without being read: a mint rail down
@@ -133,7 +133,7 @@ records the things that cost real time to discover. The design that this scaffol
 | --- | --- |
 | [`CONTEXT.md`](CONTEXT.md) | The glossary. Read before naming anything |
 | [`docs/knowledge/`](docs/knowledge/) | The domain knowledge base — every trap this project has hit, in full |
-| [`docs/adr/`](docs/adr/) | Seven decisions a reader would otherwise question |
+| [`docs/adr/`](docs/adr/) | Ten decisions a reader would otherwise question |
 | [`.scratch/juror-performance-dashboard/spec.md`](.scratch/juror-performance-dashboard/spec.md) | The spec, plus a Further Notes section of hard-won facts |
 | [`.scratch/juror-performance-dashboard/issues/`](.scratch/juror-performance-dashboard/issues/) | Twenty-six tickets, blockers first |
 | [`.scratch/juror-performance-dashboard/canvas/DESIGN_PROMPT.md`](.scratch/juror-performance-dashboard/canvas/DESIGN_PROMPT.md) | The UI brief. Answered — read the canvas rather than re-deriving it |

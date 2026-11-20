@@ -121,18 +121,24 @@ _Avoid_: abstained (nothing was cast), diverged
 **Commit latency**:
 Seconds from the moment the commit period opened to the moment a draw's `castCommit` was mined.
 Held in seconds, never as a fraction of the period: court 34's period durations changed midway
-through the experiment, so a fraction means different things in different disputes.
-_Avoid_: commit speed, commit time (ambiguous — could be the timestamp)
+through the experiment, so a fraction means different things in different disputes. A per-draw
+record of when the commit landed, and **not a measure of speed**: an agent juror can study the
+evidence for the whole evidence period before the commit period opens, so the figure cannot say
+when it judged. Never summarised per agent juror or court-wide, and never ranked (ADR-0010).
+_Avoid_: commit speed, commit time (ambiguous — could be the timestamp), median commit
 
 **Reveal latency**:
-The same measure for `castVote`, from the moment the vote period opened.
-_Avoid_: reveal speed, vote latency
+The same measure for `castVote`, from the moment the vote period opened, under the same rule
+(ADR-0010). It involves no judgment at all, since the vote was fixed at commit, and an agent juror
+that opens the vote period itself and reveals in the same block reads 0s.
+_Avoid_: reveal speed, vote latency, median reveal
 
 **Time to appeal**:
 Seconds from a dispute's creation to the moment its **first** round's appeal period opened — when
 that round's votes were all in. Per dispute, never per draw, and round 0 only whatever rounds
-follow. It spans the evidence, commit and vote periods, so it is not a latency: it is measured from
-creation rather than from a period, and a change to the evidence window changes it. The headline
+follow. The one speed figure on this dashboard (ADR-0010). It spans the evidence, commit and vote
+periods, so it is not a latency: it is measured from creation rather than from a period, and a
+change to the evidence window changes it. The headline
 figure on the matrix page since 2026-09-24, replacing the median reveal. A dispute not yet at its
 appeal period has none, and is counted rather than dropped.
 _Avoid_: time to decision, time to vote (the ruling comes after the appeal period)
@@ -144,9 +150,9 @@ read from (ticket 23), over single-round disputes only.
 _Avoid_: dispute duration, resolution time (both blur whether appeals are in)
 
 **Comparison band**:
-The violet region on both strip plots (the matrix page's time to appeal, an agent juror's reveal
-latency) marking where an ordinary Kleros court sits: it begins at court 29's median time to
-ruling, and stays a time to ruling on both. A reading, not an illustration, since ticket 23;
+The violet region on the matrix page's time-to-appeal strip marking where an ordinary Kleros court
+sits: it begins at court 29's median time to ruling, and stays a time to ruling. The agent juror
+reveal latency plot carried it too, until ADR-0010 removed that plot. A reading, not an illustration, since ticket 23;
 `/method#comparison` describes it. Never a denominator (ADR-0005).
 _Avoid_: benchmark, baseline (both suggest a latency is scored against it)
 
@@ -247,8 +253,8 @@ sparsity is the normal state, not missing data.
 _Avoid_: grid where it implies every cell is filled, table, heatmap
 
 **Marginal**:
-A per-agent-juror summary computed down one column of the matrix — median latencies, coherence as a
-count, draws, cumulative rewards. Marginals in the statistical sense: they summarise a margin of the
+A per-agent-juror summary computed down one column of the matrix — draws, their breakdown by outcome,
+cumulative rewards. Never a latency median (ADR-0010). Marginals in the statistical sense: they summarise a margin of the
 matrix and rank nobody. They live in the column header rather than a column of their own, because
 agent jurors are the columns.
 _Avoid_: summary column, leaderboard, score

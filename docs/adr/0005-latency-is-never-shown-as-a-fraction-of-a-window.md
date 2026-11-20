@@ -1,5 +1,7 @@
 # Latency is never shown as a fraction of a window
 
+_Superseded in part by [ADR-0010](0010-per-draw-latency-is-not-speed.md) (2026-11-20): the display rule stands, but the agent juror latency profile described below was removed._
+
 ADR-0001 chose absolute seconds as the stored form and deliberately left the display question open:
 it treats "any fraction as a display detail computed on top" (`:4-5`) and closes with "Display units
 are not covered by this decision." (`:32`). The design canvas closed it. No latency is divided by a

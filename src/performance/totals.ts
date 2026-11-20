@@ -1,6 +1,6 @@
 import { isFinalised } from "../disputes/liveness";
 import type { AgentJuror } from "../roster/agent-jurors";
-import type { Draw, MatrixRow } from "./performance";
+import type { MatrixRow } from "./performance";
 import type { PeriodWindows } from "./windows";
 
 /**
@@ -17,15 +17,15 @@ import type { PeriodWindows } from "./windows";
  */
 
 /**
- * Every latency measured, and the three durations quoted from it.
+ * A distribution of durations, and the three quoted from it.
  *
  * `seconds` is the whole distribution, ascending — the strip plots one mark per entry, and the
  * median line and the three summary figures are read from this same array, so the plot and the
- * numbers beside it can never become two separately derived accounts of one set of draws.
+ * numbers beside it can never become two separately derived accounts of one set of disputes.
  *
- * Used for both measures. They are never pooled into one summary: a reveal is measured from the
- * vote period and a commit from the commit period, and an aggregate over both would be ADR-0005's
- * mistake in another form. Two summaries, and each says which it is at the field that holds it.
+ * Time to appeal is the only distribution summarised. Commit and reveal latency were summarised
+ * here too, per agent juror and court-wide, until ADR-0010 stopped presenting them as speed: they
+ * are a per-draw record now, and nothing reduces them to a median.
  */
 export type LatencySummary = {
   /** Ascending. One entry per draw that recorded this measure; the rest have no latency. */
@@ -100,12 +100,6 @@ export type CourtTotals = {
   agentJurorsDrawn: number;
   /** The roster's size, so the drawn count reads as a count against it. */
   agentJurors: number;
-  /**
-   * Reveal latency across every draw that has revealed, or `null` when none has.
-   *
-   * `null` rather than zeros: a `0` here would be a claim about the court that nobody measured.
-   */
-  revealLatency: LatencySummary | null;
   /**
    * Time to appeal across every dispute whose first round has reached its appeal period, and
    * the disputes that have not. The headline tile and the strip under it are figures of this.
@@ -380,9 +374,9 @@ export type AgentJurorRewards = {
  * One agent juror's column, summarised: the marginals in the matrix's column header.
  *
  * The same rows as `CourtTotals`, sliced down one column, so a marginal and the total above it
- * can never become two accounts of one set of draws — `totals.test.ts` pins that they sum. Six
- * figures are designed for and six are now filled: ticket 10 added cumulative ETH and net PNK
- * to the four ticket 06 built the block to hold.
+ * can never become two accounts of one set of draws — `totals.test.ts` pins that they sum. What
+ * is left is the draw count, its breakdown by outcome (ADR-0009) and the two reward sums ticket 10
+ * added; the two latency medians ticket 06 built the block around went with ADR-0010.
  *
  * Every figure that cannot be measured is `null` rather than `0`, because the view draws it as
  * an em dash and a zero would be a measurement nobody took (`canvas/JurorEmpty.dc.html:66-76`).
@@ -401,34 +395,10 @@ export type AgentJurorMarginals = {
   draws: number;
   /** The vote IDs those draws hold. Larger than `draws`, which is why both are printed. */
   votes: number;
-  /** Reveal latency across this column's revealed draws, or `null` when none has revealed. */
-  revealLatency: LatencySummary | null;
-  /**
-   * Commit latency across this column's dated commitments, or `null` when none is dated.
-   *
-   * `null` on every load until the log scan comes back, which is not the same as a column with
-   * nothing to measure — the view tells them apart with `commitCoverage.read`, exactly as the
-   * cell does with `commitFigureOf`'s `scanned`.
-   */
-  commitLatency: LatencySummary | null;
-  /**
-   * How many of this column's draws the subgraph records as having committed, whatever the log
-   * scan found on chain.
-   *
-   * Kept beside the latency for the reason `Draw.committed` is: the difference between the two
-   * is what a missing commit median means. No commitments and no median is an agent juror that
-   * has not committed; commitments with no median is a read of Arbitrum that came back short,
-   * and wording that as the first would blame an agent juror that committed on time.
-   */
-  commitments: number;
+  // No commit or reveal latency median, and that is a decision rather than an omission
+  // (ADR-0010): per-draw latency is not a measure of speed, so it is never summarised per agent
+  // juror. The † that rode those medians went with them.
   coherence: Coherence;
-  /**
-   * The window changes that touch *this* column's draws — the †.
-   *
-   * Sliced rather than shared: the marker is a claim about the draws behind this number, and a
-   * column never drawn under the earlier windows is comparable with the court as it stands.
-   */
-  changedWindows: readonly WindowChange[];
   /**
    * Cumulative ETH and net PNK for this column, or `null` where nothing has been paid.
    *
@@ -491,21 +461,14 @@ function summaryOf(seconds: number[]): LatencySummary | null {
  * Keyed on the commit and vote windows and not on all four, because those are the two the
  * marker is about: they are the periods the figures are measured from, and grouping on a
  * difference no figure reflects would split one footnote into two saying the same thing.
- *
- * `drawsOf` is how one column takes its own slice. The default is the whole row, which is the
- * court-wide reading; a marginal passes the one cell that is its own, so that a column never
- * drawn in dispute 151 carries no marker rather than inheriting the court's.
  */
-function changedWindowsOf(
-  rows: readonly MatrixRow[],
-  drawsOf: (row: MatrixRow) => readonly (Draw | null)[] = (row) => row.cells,
-): WindowChange[] {
+function changedWindowsOf(rows: readonly MatrixRow[]): WindowChange[] {
   const groups = new Map<string, WindowChange & { disputes: number[] }>();
 
   for (const row of rows) {
     if (!row.underEarlierWindows || row.windows === null) continue;
 
-    const draws = drawsOf(row);
+    const draws = row.cells;
     const revealed = draws.filter(
       (cell) => cell !== null && cell.revealLatencySeconds !== null,
     ).length;
@@ -560,42 +523,6 @@ function unplacedDisputesOf(rows: readonly MatrixRow[]): number[] {
 }
 
 /**
- * Which superseded windows actually qualify one median, and how many draws they cost it.
- *
- * The filter the agent juror view's latency caption `†` passes. The same filter once marked the
- * column medians, the court-wide tile and the row flag; those marks were removed on 2026-09-24
- * (maintainer's ruling).
- *
- * **A change only marks the median the window it names governs.** A reveal is measured from the
- * vote period and a commit from the commit period, so a group whose vote window matches what the
- * court holds now says nothing about a reveal median, however different its commit window is.
- * Court 34 changed both at once and every group qualifies both today, which is exactly why this
- * had to be written down rather than left to hold by coincidence: a reconfiguration that moved
- * one window alone would otherwise print "ran under a vote window of 30m, which the court has
- * since changed" against a court whose vote window is 30m. **The court has since reconfigured
- * without touching either** — 2026-08-26, the evidence period alone — which is the same lesson
- * arriving from the other side: a change can be real and reach no figure here at all.
- *
- * An unread parameter history is `current === null`, and everything qualifies: nothing is known
- * to compare against, and the view says the history is unread in its own words.
- */
-export function markedWindows(
-  changes: readonly WindowChange[],
-  current: PeriodWindows | null,
-  measure: "reveal" | "commit",
-): { changes: readonly WindowChange[]; draws: number } {
-  const window = measure === "reveal" ? "voteSeconds" : "commitSeconds";
-  const counted = measure === "reveal" ? "revealedDraws" : "committedDraws";
-
-  const marked = changes.filter(
-    (change) =>
-      change[counted] > 0 && (current === null || change.windows[window] !== current[window]),
-  );
-
-  return { changes: marked, draws: marked.reduce((total, change) => total + change[counted], 0) };
-}
-
-/**
  * Time to appeal over the rows read. See `TimeToAppeal`.
  *
  * A dispute counts once its round 0 has an observed appeal-period opening — the index is read
@@ -639,7 +566,6 @@ export function courtTotalsOf(
 ): CourtTotals {
   let draws = 0;
   let votes = 0;
-  const seconds: number[] = [];
   const drawn = new Set<string>();
 
   for (const row of rows) {
@@ -648,7 +574,6 @@ export function courtTotalsOf(
       draws += 1;
       votes += cell.voteCount;
       drawn.add(cell.agentJuror.address);
-      if (cell.revealLatencySeconds !== null) seconds.push(cell.revealLatencySeconds);
     }
   }
 
@@ -662,7 +587,6 @@ export function courtTotalsOf(
     votes,
     agentJurorsDrawn: drawn.size,
     agentJurors: agentJurors.length,
-    revealLatency: summaryOf(seconds),
     timeToAppeal: timeToAppealOf(rows),
     // A panel of one is a fact about a dispute that *was* read, so an unread row is not counted
     // among them — its panel size is 0 because nobody asked, not because the court drew one
@@ -753,7 +677,6 @@ export function agentJurorMarginalsOf(
   return agentJurors.map((agentJuror, column) => {
     let draws = 0;
     let votes = 0;
-    let commitments = 0;
     let coherent = 0;
     let tied = 0;
     let diverged = 0;
@@ -761,8 +684,6 @@ export function agentJurorMarginalsOf(
     let acting = 0;
     let resolved = 0;
     const lonePanelDisputes: number[] = [];
-    const revealSeconds: number[] = [];
-    const commitSeconds: number[] = [];
     let ethWei = 0n;
     let pnkWei = 0n;
     let paidDraws = 0;
@@ -774,7 +695,6 @@ export function agentJurorMarginalsOf(
 
       draws += 1;
       votes += cell.voteCount;
-      if (cell.committed) commitments += 1;
 
       // Summed over the cells rather than over the shifts themselves, so that these two figures
       // are over exactly the draws the five figures beside them are over. An unread row
@@ -787,8 +707,6 @@ export function agentJurorMarginalsOf(
         paidDraws += 1;
         if (cell.reward.inFeeToken) feeTokenDraws += 1;
       }
-      if (cell.revealLatencySeconds !== null) revealSeconds.push(cell.revealLatencySeconds);
-      if (cell.commitLatencySeconds !== null) commitSeconds.push(cell.commitLatencySeconds);
 
       // Every draw lands in exactly one, by its state — so the breakdown sums to `draws`.
       switch (cell.state.kind) {
@@ -823,9 +741,6 @@ export function agentJurorMarginalsOf(
       agentJuror,
       draws,
       votes,
-      revealLatency: summaryOf(revealSeconds),
-      commitLatency: summaryOf(commitSeconds),
-      commitments,
       // Ascending, because rows arrive newest first and a list of ids reads forwards — the same
       // reason `changedWindowsOf` sorts the ids inside a group.
       coherence: {
@@ -837,14 +752,6 @@ export function agentJurorMarginalsOf(
         resolved,
         lonePanelDisputes: lonePanelDisputes.sort((a, b) => a - b),
       },
-      // Over the rows this agent juror was actually drawn in, and not over every marked row.
-      // Court-wide the group is a fact about the disputes and an unread row belongs in it with
-      // a count of zero; here it is a claim about *this* number, and a column never drawn in
-      // dispute 151 would otherwise carry a marker over a median that dispute did not touch.
-      changedWindows: changedWindowsOf(
-        rows.filter((row) => row.cells[column] != null),
-        (row) => [row.cells[column] ?? null],
-      ),
       // `null` and not a pair of zeros: a zero here is a measurement — "drawn, and paid
       // nothing" — and this is its absence. The view is what turns the absence into either a
       // real zero or a dash, because only it knows whether the read has happened.

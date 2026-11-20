@@ -33,7 +33,7 @@ import type { CourtPerformance } from "./performance";
  * because the two things it must not be mistaken for are a zero and a failed read — and a failed
  * read is loud, rose and looks nothing like this (ticket 13).
  *
- * It takes a **reading** and not a nickname, so its six figures come from the same join the rest
+ * It takes a **reading** and not a nickname, so its figures come from the same join the rest
  * of the page uses. Looking the column up again here would be a second answer to "which agent
  * juror is this", which is the one question `agent-juror-detail.ts` exists to answer once.
  *
@@ -148,10 +148,7 @@ export function AgentJurorEmpty({
   const drawnDisputes = sparsity.disputes - sparsity.undrawnDisputes.length;
 
   const groups = cardGroupsOf(
-    marginalFiguresOf(reading.marginals, {
-      scanned: performance.commitCoverage.read,
-      payouts: performance.rewards,
-    }),
+    marginalFiguresOf(reading.marginals, { payouts: performance.rewards }),
   );
 
   return (
@@ -230,10 +227,8 @@ export function AgentJurorEmpty({
         <ComingLabel id="first-draw-heading">What appears here on its first draw</ComingLabel>
         <ComingList>
           <div>
-            <ComingKey>Commit and reveal latency</ComingKey>
-            <ComingBody>
-              Both in seconds, each measured from the moment its own period opened.
-            </ComingBody>
+            <ComingKey>When it committed and revealed</ComingKey>
+            <ComingBody>Per draw, in seconds from the moment each period opened.</ComingBody>
           </div>
           <div>
             <ComingKey>Coherence, once ruled</ComingKey>

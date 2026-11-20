@@ -121,10 +121,10 @@ function renderMatrix(
 /**
  * The grid itself, without the column headers.
  *
- * The headers carry figures of their own since ticket 06 — a median reveal, a median commit and
- * a coherence count per column — and those are drawn from the same draws the cells are, so a
- * duration asserted page-wide now matches in two places. A cell assertion has to say it means a
- * cell, or it passes on the marginal that summarises it.
+ * The headers carry figures of their own since ticket 06 — an outcome breakdown and a draw count
+ * per column, and until ADR-0010 a median reveal and a median commit — drawn from the same draws
+ * the cells are, so a figure asserted page-wide can match in two places. A cell assertion has to
+ * say it means a cell, or it passes on the marginal that summarises it.
  */
 function grid() {
   const [, body] = screen.getAllByRole("rowgroup");
@@ -621,11 +621,11 @@ describe("Matrix", () => {
     it("puts each agent juror's summary inside that agent juror's own column", () => {
       renderMatrix();
 
-      // 007's own draws, not the court's: ten draws, a median reveal of 48s against the court's
-      // 85s, and seven of its ten draws coherent — printed as the share, 70%, with the draw
-      // count beneath it as the base (ADR-0009, 2026-11-02) rather than "7/8".
+      // 007's own draws, not the court's: ten draws, seven of them coherent — printed as the
+      // share, 70%, with the draw count beneath it as the base (ADR-0009, 2026-11-02) rather
+      // than "7/8". Its median reveal of 48s is gone with ADR-0010.
       expect(header("007").getByText("10")).toBeInTheDocument();
-      expect(header("007").getByText("48s")).toBeInTheDocument();
+      expect(header("007").queryByText("48s")).not.toBeInTheDocument();
       expect(header("007").getByText("70%")).toBeInTheDocument();
       expect(header("007").queryByText("7/8")).not.toBeInTheDocument();
     });
@@ -649,8 +649,9 @@ describe("Matrix", () => {
       // Five dashes since ticket 10 and not three: an agent juror the court has not drawn has
       // not been paid nothing, it has not been in a position to be paid at all, and `0.0000`
       // would state the first.
-      // Eight since ADR-0009 broke coherence down into four outcome counts.
-      expect(header("Baskerville").getAllByText("—")).toHaveLength(8);
+      // Eight since ADR-0009 broke coherence down into four outcome counts, and six since
+      // ADR-0010 took the two latency medians out.
+      expect(header("Baskerville").getAllByText("—")).toHaveLength(6);
       expect(header("Baskerville").getByText("0")).toBeInTheDocument();
     });
 
@@ -888,7 +889,7 @@ describe("Matrix", () => {
   });
 
   describe("the commit line", () => {
-    it("shows both halves of the speed dimension in one cell", () => {
+    it("shows the commit and the reveal latency in one cell", () => {
       renderMatrix();
       const row = rowFor(163);
       if (row === null) throw new Error("no row for dispute 163");
@@ -1333,9 +1334,9 @@ describe("Matrix", () => {
     });
 
     it("carries no commit figure on the row or in its cells", () => {
-      // The row's median commit left on 2026-11-02 (maintainer's ruling: clutter). At this
-      // density a dispute's commit latency is on its own page; each column header keeps the
-      // agent juror's median commit.
+      // The row's median commit left on 2026-11-02 (maintainer's ruling: clutter), and the
+      // column header's with ADR-0010. At this density a dispute's commit latency is on its own
+      // page.
       renderMatrix(compactCourt());
       const row = rowOrThrow(156);
 
@@ -1356,12 +1357,10 @@ describe("Matrix", () => {
       expect(within(row).queryByText("Not read")).not.toBeInTheDocument();
     });
 
-    it("keeps the medians, the outcome breakdown and the draw count, and drops the payouts", () => {
+    it("keeps the outcome breakdown and the draw count, and drops the payouts", () => {
       renderMatrix(compactCourt());
 
       for (const kept of [
-        "Median commit latency",
-        "Median reveal latency",
         "Coherent draws: voted with a ruling that did not tie",
         "Tied draws: voted in a dispute whose ruling is a tie, and paid as coherent",
         "Diverged draws: voted against a ruling that did not tie",
@@ -1370,7 +1369,12 @@ describe("Matrix", () => {
       ]) {
         expect(screen.getAllByText(kept)).toHaveLength(FIXTURE_ROSTER.length);
       }
-      for (const dropped of ["Cumulative ETH earned", "Net PNK gained or lost"]) {
+      for (const dropped of [
+        "Cumulative ETH earned",
+        "Net PNK gained or lost",
+        "Median commit latency",
+        "Median reveal latency",
+      ]) {
         expect(screen.queryByText(dropped)).not.toBeInTheDocument();
       }
     });
@@ -1533,8 +1537,9 @@ describe("Matrix", () => {
 
     it("sends nobody looking for a shortfall in cells that carry no commit figure", () => {
       // The shortfall notice named cells reading "Not read" — true of the comfortable cell and
-      // false of the compact one, which has no commit slot at all. At this density a partial
-      // shortfall shrinks each column's median instead, silently, so the notice has to say that.
+      // false of the compact one, which has no commit slot at all. Since ADR-0010 no column
+      // header carries a commit median either, so the notice sends the reader to the dispute
+      // pages, where the missing figures are.
       const short = (commitFixture as RawCommitCast[]).slice(0, 5);
 
       renderMatrix(padTo(COMPACT_FROM_ROWS, { commits: short }));
@@ -1544,7 +1549,8 @@ describe("Matrix", () => {
       renderMatrix(padTo(COMPACT_FROM_ROWS + 1, { commits: short }));
       const notice = screen.getByRole("status");
       expect(notice).not.toHaveTextContent(/those cells read/);
-      expect(notice).toHaveTextContent(/each column's median commit is taken over fewer draws/);
+      expect(notice).toHaveTextContent(/no commit latency is shown at this density/i);
+      expect(notice).not.toHaveTextContent(/median/i);
     });
 
     it("says not read on the row of a dispute whose draws were never read", () => {

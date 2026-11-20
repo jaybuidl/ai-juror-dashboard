@@ -9,18 +9,17 @@ import type { CourtPerformance } from "./performance";
  * One agent juror's figures, in the stat card at `canvas/Juror.dc.html:70-82`.
  *
  * The same figures the matrix's column header prints, read by the same `marginalFiguresOf` —
- * the two medians and the draw count across the top, what those draws came to (coherent, tied,
- * diverged, missed: ADR-0009) beneath a hairline, then the two sums. `cardGroupsOf` groups them
- * by key. This
+ * the draw count across the top, what those draws came to (coherent, tied, diverged, missed:
+ * ADR-0009) beneath a hairline, then the two sums. `cardGroupsOf` groups them by key. The two
+ * latency medians the artboard draws beside the draw count are gone by decision (ADR-0010). This
  * decides how they are laid out and reads none of them: the arithmetic is in `totals.ts` and the
  * gates and absences are in `marginal-figures.ts`. The caveat marks that rode these figures, and
  * the reasons listed under the card, were removed on 2026-09-24 (maintainer's ruling).
  *
  * Beside the model rather than inside the page, exactly as `DisputePanel` sits beside
- * `DisputePage`: a view composes, and a block with six figures in it is a
- * component. It renders at every width — this card is the one place below the breakpoint where
- * cumulative ETH and net PNK are legible at all, since the matrix's card layout has no column
- * headers to carry them.
+ * `DisputePage`: a view composes, and a block of figures is a component. It renders at every
+ * width — this card is the one place below the breakpoint where cumulative ETH and net PNK are
+ * legible at all, since the matrix's card layout has no column headers to carry them.
  */
 
 const Card = styled.section`
@@ -55,8 +54,8 @@ export const Metrics = styled.dl`
  * on top — so the order is reversed in the arrangement rather than in the markup. Through
  * `order` on the value and not through column-reverse: reversing lays the column out from the
  * bottom, so an item whose key wraps to two lines pushes its own number a line higher than the
- * two beside it, and the three stop sharing a baseline. That is exactly what happens at 390pt,
- * where "Median reveal" wraps and "Coherent" does not.
+ * two beside it, and the three stop sharing a baseline. That is what happened at 390pt when
+ * "Median reveal" sat in the top row (until ADR-0010) and wrapped where "Coherent" did not.
  */
 export const Item = styled.div`
   display: flex;
@@ -122,10 +121,7 @@ export function AgentJurorSummary({
   performance: CourtPerformance;
 }) {
   const nickname = reading.agentJuror.nickname;
-  const figures = marginalFiguresOf(reading.marginals, {
-    scanned: performance.commitCoverage.read,
-    payouts: performance.rewards,
-  });
+  const figures = marginalFiguresOf(reading.marginals, { payouts: performance.rewards });
   const { metrics, outcomes, payouts } = cardGroupsOf(figures);
 
   return (

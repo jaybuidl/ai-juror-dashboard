@@ -22,16 +22,18 @@ import type { AgentJurorMarginals } from "./totals";
  * Every figure comes from `AgentJurorMarginals`, which the seam computed over the same rows the
  * grid below is drawn from. This module decides how they are *laid out* and reads none of them:
  * the arithmetic is in `totals.ts` and the gates and absences are in
- * `marginal-figures.ts`, which ticket 11's agent juror view renders the same six figures from.
+ * `marginal-figures.ts`, which ticket 11's agent juror view renders the same figures from.
  * That split is why no `marginals.ts` exists beside this file to collide with it on a
  * case-insensitive filesystem (`CLAUDE.md`, TS1149).
  *
  * Ticket 17 then gave this block a second *density*, which is a third rendering of those same
- * six readings rather than a second set of them: the compact header keeps the four figures
- * `MarginalFigure.dense` marks and drops the other two, and it drops nothing else. Which four
+ * readings rather than a second set of them: the compact header keeps the figures
+ * `MarginalFigure.dense` marks and drops the two reward sums, and it drops nothing else. Which
  * survive is decided in `marginal-figures.ts` beside the figures themselves, so the order and
  * the arithmetic stay one thing and a compact header is the comfortable header with two lines
  * removed — never a second block that happens to agree with it.
+ *
+ * No commit or reveal median, by decision (ADR-0010): `marginal-figures.ts` says why.
  */
 
 /* The hairline the artboard puts between the identity block and the figures under it. */
@@ -61,8 +63,8 @@ const Key = styled.span`
 const Value = styled.span<{ $tone: Figure["tone"]; $loss?: boolean }>`
   font: ${({ theme }) => theme.typeMonoSm};
   /* TRAP: the font shorthand above just reset font-feature-settings, and with it the tabular
-     digits base.css puts on the body. Six of these sit one under another down a column and
-     another six sit beside them in the next; without this line they stop aligning and nothing
+     digits base.css puts on the body. These sit one under another down a column and another
+     column of them sits beside them in the next; without this line they stop aligning and nothing
      anywhere reports it. */
   font-feature-settings: ${({ theme }) => theme.featureMono};
   font-weight: 600;
@@ -81,25 +83,23 @@ const Value = styled.span<{ $tone: Figure["tone"]; $loss?: boolean }>`
 
 export type MarginalsProps = {
   marginals: AgentJurorMarginals;
-  /** See `MarginalContext.scanned`. */
-  scanned: boolean;
   /** See `MarginalContext.payouts`. */
   payouts: RewardCoverage;
   /**
    * How tightly the matrix around this header is drawn — `densityOf(rows.length)`.
    *
    * The same flag the cell and the dispute row read, so the three cannot come to disagree about
-   * which density the reader is in. At the compact density this block keeps four of its six
-   * figures.
+   * which density the reader is in. At the compact density this block drops the two reward
+   * sums.
    */
   density: Density;
 };
 
-export function Marginals({ marginals, scanned, payouts, density }: MarginalsProps) {
-  const context: MarginalContext = { scanned, payouts };
+export function Marginals({ marginals, payouts, density }: MarginalsProps) {
+  const context: MarginalContext = { payouts };
   const compact = density === "compact";
   /* Built at either density and filtered, rather than branched on inside `marginalFiguresOf`:
-     the agent juror view takes all six and this header takes four of them, and both are reading
+     the agent juror view takes every figure and this header may drop two, and both are reading
      one list in one order. */
   const slots = marginalFiguresOf(marginals, context).filter((slot) => !compact || slot.dense);
 

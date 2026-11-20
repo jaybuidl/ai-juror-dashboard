@@ -891,16 +891,16 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                   latencies — an absence indistinguishable from a fact. */}
               {/* Where the missing figures actually are, which the density moved. At the
                   comfortable density every draw has a commit slot and the short ones say so in
-                  words; past the threshold no cell or row carries a commit figure at all (the
-                  row's median left on 2026-11-02, maintainer's ruling), and a column header's
-                  median goes quietly short instead — it is taken over the commitments that were
-                  dated. Sending a
-                  reader to look for cells that read "Not read" on a grid whose cells have no
-                  commit line is ticket 16's own review finding, one reduction later. */}
+                  words; past the threshold no cell, row or column header carries a commit figure
+                  at all (the row's median left on 2026-11-02, maintainer's ruling, and the
+                  column's with ADR-0010), so the missing figures are on each dispute's own page
+                  and the sentence sends the reader there. Sending a reader to look for cells
+                  that read "Not read" on a grid whose cells have no commit line is ticket 16's
+                  own review finding, one reduction later. */}
               {commitCoverage.resolved === 0
                 ? `None of the ${commitCoverage.expected} commitments this court recorded could be read from Arbitrum, so no commit latency below is a measurement.`
                 : compact
-                  ? `${unread} of the ${commitCoverage.expected} commitments this court recorded could not be found on Arbitrum, so each column's median commit is taken over fewer draws than that agent juror holds.`
+                  ? `${unread} of the ${commitCoverage.expected} commitments this court recorded could not be found on Arbitrum. No commit latency is shown at this density; on each dispute's own page those read "Not read".`
                   : `${unread} of the ${commitCoverage.expected} commitments this court recorded could not be found on Arbitrum, and those cells read "Not read".`}{" "}
               That is a read that came back short, not an agent juror that failed to commit. Reveal
               latency and coherence come from the subgraph and are unaffected.
@@ -1032,12 +1032,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                             same order these headers are — the seam guarantees one entry per
                             agent juror, drawn or not. */}
                         {marginal && (
-                          <Marginals
-                            marginals={marginal}
-                            scanned={commitCoverage.read}
-                            payouts={rewards}
-                            density={density}
-                          />
+                          <Marginals marginals={marginal} payouts={rewards} density={density} />
                         )}
                       </AgentColumn>
                     );

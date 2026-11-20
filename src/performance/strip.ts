@@ -13,13 +13,11 @@
  * Nothing here converts a latency into a fraction of a *window* — ADR-0005. The axis is
  * absolute time, and the band is drawn against absolute time too.
  *
- * **One scale, two plots.** `TimeToAppealStrip` draws the court's time to appeal, one mark per
- * dispute, and `AgentJurorLatency` draws one agent juror's reveal latencies against the court's,
- * and both read the axis from here so that a duration lands in the same place on both pages and
- * the comparison band begins at the same x on each. Everything a plot needs to
- * say about the axis in words is here too, for the reason ticket 22 found: the agent juror view
- * printed its range as a copied string and would have gone on printing "1s to 1d" over an axis
- * that runs to a month.
+ * **One plot reads it now.** `TimeToAppealStrip` draws the court's time to appeal, one mark per
+ * dispute. The agent juror view's reveal latency plot read the same axis until ADR-0010 removed
+ * it on 2026-11-20; per-draw latency is no longer plotted against anything. A second plot that
+ * comes back should read the axis from here, so that a duration lands in the same place on both
+ * pages and the comparison band begins at the same x on each.
  */
 
 const SECOND = 1;
@@ -68,21 +66,12 @@ export const STRIP_TICKS: readonly { seconds: number; label: string }[] = [
 ];
 
 /**
- * The axis's range in words, for a plot that states it beside the picture.
- *
- * Built from the axis's own ends rather than transcribed from them. The agent juror view carried
- * "Log scale · 1s to 1d" as a literal and would have gone on carrying it over an axis running to
- * a month — a sentence contradicting the plot directly beneath it, which is the failure ticket
- * 22 names in its own criteria.
- */
-export const STRIP_RANGE_LABEL = `${STRIP_TICKS[0]?.label} to ${AXIS_MAX_TICK.label}`;
-
-/**
  * Where the time-to-appeal axis starts: ten minutes (ruled 2026-09-24).
  *
  * No dispute can reach its appeal period in seconds, since the evidence, commit and vote periods
  * all come first, so an axis from one second spent half its width on times nothing can take.
- * The agent juror latency plot keeps the one-second origin: a reveal can take seconds.
+ * The shared axis keeps its one-second origin, which the agent juror latency plot needed until
+ * ADR-0010 removed it.
  */
 export const APPEAL_AXIS_MIN_SECONDS: number = 10 * MINUTE;
 
