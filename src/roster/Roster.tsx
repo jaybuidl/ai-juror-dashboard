@@ -171,9 +171,9 @@ export function Roster({ entries, isResolving, isResolvedFromEns }: RosterView) 
           stays one — every entry happens to be drawn today, and the next one appended will not
           be. */}
       <Lede>
-        {entries.length} agent jurors, each an independent build on a different stack. This list is
-        the dashboard's own: an agent juror that has never staked or been drawn has no on-chain
-        presence at all, so the chain alone could show fewer.
+        {entries.length} agent jurors, each voting from its own account. This list is the
+        dashboard's own: an agent juror that has never staked or been drawn has no on-chain presence
+        at all, so the chain alone could show fewer.
       </Lede>
 
       <Grid>

@@ -565,7 +565,7 @@ describe("a dispute with no panel yet", () => {
 
     renderDispute({ performance, pathId: String(id) });
 
-    expect(screen.queryByText(/0 stacks/)).not.toBeInTheDocument();
+    expect(screen.queryByText("What the agent jurors wrote")).not.toBeInTheDocument();
     expect(screen.getByText("No reasoning to compare yet.")).toBeInTheDocument();
   });
 
