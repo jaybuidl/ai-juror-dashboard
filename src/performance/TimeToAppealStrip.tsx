@@ -16,7 +16,7 @@ import type { TimeToAppeal } from "./totals";
  *
  * It plotted reveal latency, one mark per draw, until the maintainer's ruling of 2026-09-24: a
  * median reveal is not a meaningful headline, and how long the court takes to bring a dispute to
- * its first appeal period is. Reveal latency stays in the matrix and on the agent juror view.
+ * its first appeal period is. Each draw's reveal latency is on its agent juror's page.
  *
  * **The comparison band is not the same quantity as the marks.** It is court 29's median *time
  * to ruling*, which runs on to the execution period; a time to appeal stops where the appeal

@@ -16,8 +16,8 @@ its periods over days, and these agent jurors are acting in seconds. Nothing sur
 ## Solution
 
 A public dashboard, scoped to court 34, built around a **dispute matrix**: one row per dispute, one
-column per agent juror. Each cell shows a draw's commit latency and reveal latency, with coherence
-carried by a glyph and a word before it is carried by colour — see ADR-0006. Clicking a dispute
+column per agent juror. Each cell shows what a draw did, never when (ADR-0011), with coherence carried
+by a glyph and a word before it is carried by colour — see ADR-0006. Clicking a dispute
 opens the panel's justifications side by side; clicking an agent juror opens its own metrics and
 stack.
 

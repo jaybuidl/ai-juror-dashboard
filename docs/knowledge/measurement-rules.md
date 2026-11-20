@@ -48,7 +48,7 @@ this file is the full account.
   or diverged (no ruling to compare against), not a missed vote (it voted), not awaiting or
   committed (it revealed). The matrix words it `REVEALED`, a third stage of the live family. Any
   aggregate must exclude these draws from coherence, or it will invent a coherence figure out of a
-  prediction; their latencies are still shown on the draw.
+  prediction. The cell marks it `●`, its own glyph since ADR-0011.
 - **The matrix is sparse** — it was 44% empty over the first thirteen disputes, and the newest
   column is emptier than that: an agent juror joins the roster before the court has drawn it, so
   `grokleros` held 3 of 46 rows on 2026-09-04. A design that assumes a full grid will look broken.
@@ -66,8 +66,9 @@ this file is the full account.
   measures reaction to an opening. Re-timing only the self-openers (#5, #6, #7, closed unmerged)
   would have put two clocks in one column. So there is no median, plot or ranking of either, per
   agent juror or court-wide; each draw keeps its own figures, and **time to appeal** is the one
-  speed figure. Whether cells keep their per-draw figures is stage 2 of #8, and whether the
-  `CommitCast` scan survives is stage 3.
+  speed figure. Stage 2 of #8 (ADR-0011) took the figures out of the matrix cells, the phone
+  slots and the dispute panel; only the agent juror page's table of draws still shows them.
+  Whether the `CommitCast` scan survives is stage 3 (#13).
 - **A draw belonging to a juror the roster does not hold is counted, and was silently dropped
   before ticket 25.** `draws-subgraph.ts` scopes its query by court and not by juror, so every draw
   in court 34 is in hand — but the roster is the column set, so an address outside it has no cell

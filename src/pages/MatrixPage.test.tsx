@@ -27,6 +27,7 @@ import {
   renderAt,
   resolvingRoster,
   rewardsFailed,
+  rewardsPending,
   rewardsShort,
   staleDraws,
   unmeasured,
@@ -402,25 +403,14 @@ describe("the matrix view's reads", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("says the read failed once it has failed, rather than that it is still going", () => {
-      // The trap `CLAUDE.md` records against `RosterView`, in its second home: `read` is false
-      // in both states, and a caveat that announces "still being read" about a read that gave
-      // up minutes ago is a caveat a reader learns to ignore.
-      //
-      // A read that failed is a failure and belongs to the banner, which names the endpoint.
-      // (The in-flight half was a footer line, removed with the footer on 2026-09-24.)
+    it("does not name the Arbitrum endpoint once both of its reads have failed", () => {
+      // The in-flight caveat went with the footer on 2026-09-24, and the failed one with the
+      // Arbitrum banner, which ADR-0011 left with nothing on this page to describe. The dispute
+      // view still names the endpoint for the window history, and `DisputePage.test.tsx` pins it.
       renderAt("/", { performance: arbitrumFailed });
 
-      expect(screen.queryByText(/period durations are still being read/i)).not.toBeInTheDocument();
-      // Asked of `arbitrumSource()` rather than of the literal `arb1.arbitrum.io`, because the
-      // banner names the endpoint *in use* and these tests run in whatever environment builds
-      // them. `yarn build:ci` runs this suite on Netlify with the deploy's own
-      // VITE_ARBITRUM_RPC_URL set, where the literal is the wrong answer — it failed there and
-      // passed on every developer machine. What the default derives to is pinned once, in
-      // `performance/arbitrum.test.ts`, which is where that belongs.
-      expect(
-        within(screen.getByRole("alert")).getByText(arbitrumSource().name),
-      ).toBeInTheDocument();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.queryByText(arbitrumSource().name)).not.toBeInTheDocument();
     });
 
     it("names the payouts in the banner, and says so once rather than beside the disputes", () => {
@@ -510,9 +500,15 @@ describe("the matrix view's reads", () => {
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     });
 
-    it("names a failed commitment read in the banner", () => {
+    it("raises nothing when both Arbitrum reads fail", () => {
+      // ADR-0011: no cell, card or column header carries a commit time, so a failed commit scan
+      // changes nothing on this page, and the window history has had nothing here to feed since
+      // 2026-09-24. The agent juror page, which still carries each draw's moments, raises the scan.
       renderAt("/", { performance: arbitrumFailed });
-      expect(screen.getByText(/the commitments could not be read/i)).toBeInTheDocument();
+
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      expect(screen.queryByText(/the commitments could not be/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/commit latency/i)).not.toBeInTheDocument();
     });
   });
 });
@@ -614,17 +610,18 @@ describe("the failure banner", () => {
   });
 
   it("never invents a status for a failure that arrived without one", () => {
+    // A bare Error, the shape a client library's own bug throws. The payout read, because since
+    // ADR-0011 the Arbitrum reads this test used to fail raise no banner on this page.
     renderAt("/", {
       performance: {
-        ...measured,
-        commitError: new Error("Cannot read properties of undefined (reading 'error')"),
+        ...rewardsPending,
+        rewardsError: new Error("Cannot read properties of undefined (reading 'error')"),
       },
     });
 
     const banner = screen.getByRole("alert");
 
-    // The endpoint in use, not the default one — as above.
-    expect(within(banner).getByText(arbitrumSource().name)).toBeInTheDocument();
+    expect(within(banner).getByText(SOURCES.core.name)).toBeInTheDocument();
     expect(within(banner).getByText("No response")).toBeInTheDocument();
     expect(within(banner).queryByText(/HTTP 0/)).not.toBeInTheDocument();
   });
@@ -707,31 +704,16 @@ describe("the failure banner", () => {
     expect(screen.queryByRole("heading", { name: /· partial/i })).not.toBeInTheDocument();
   });
 
-  it("does not call a commit column measured a minute ago unmeasured", () => {
-    // react-query keeps the commitments it holds when a refetch fails, so an Arbitrum outage
-    // usually arrives over a full column of real figures — and CLAUDE.md says arb1 rate-limits
-    // and surfaces it as exactly this kind of opaque error. Saying "no commit latency below is a
-    // measurement" there is false about every one of them.
-    renderAt("/", {
-      performance: { ...measured, commitError: new Error("UnknownRpcError") },
-    });
-
-    const banner = screen.getByRole("alert");
-
-    expect(within(banner).getByText(/could not be re-read from arbitrum/i)).toBeInTheDocument();
-    expect(
-      within(banner).queryByText(/no commit latency below is a measurement/i),
-    ).not.toBeInTheDocument();
-  });
-
-  it("still says nothing is a measurement when the commit scan never landed", () => {
-    renderAt("/", {
-      performance: { ...arbitrumPending, commitError: new Error("UnknownRpcError") },
-    });
-
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      /no commit latency below is a measurement/i,
-    );
+  it("raises nothing over a commit scan that failed, landed or not", () => {
+    // These two used to word the commit banner by whether earlier figures were on screen. Since
+    // ADR-0011 none are, at any density or width, so neither case raises it.
+    for (const performance of [measured, arbitrumPending]) {
+      const view = renderAt("/", {
+        performance: { ...performance, commitError: new Error("UnknownRpcError") },
+      });
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+      view.unmount();
+    }
   });
 
   it("keeps the banner off the views that carry no figure of their own", () => {

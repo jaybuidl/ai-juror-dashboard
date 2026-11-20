@@ -106,7 +106,7 @@ Text ramp, on the three solid surfaces:
 | `--text-5` | `#3d3952` | 1.83 | 1.75 | 1.68 — **exempt, see below** |
 
 The two dim steps on each accent wash over a card, which is the worst family of surfaces in the
-app and where the phone's live slot puts a pending em dash:
+app:
 
 | Ink | cyan | mint | amber | rose |
 | --- | --- | --- | --- | --- |

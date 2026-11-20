@@ -257,7 +257,7 @@ const EMPTY_REWARDS: AgentJurorRewards = {
  *   has nothing on chain to have earned from. Asked *before* the shortfall below, because a
  *   column with no draws has nothing that could have been read short.
  * - **The read came back short.** Ticket 13's Unknown — rose, and the word "Not read" beside it,
- *   exactly as a cell's commit figure states the same thing. This is the case the whole
+ *   exactly as a draw's commit figure on the agent juror page states the same thing. This is the case the whole
  *   `short` flag exists for: without it a reindexing subgraph's `[]` renders as every column
  *   reading `0.0000`, and a wrong figure is worse than an absent one on a page that may be cited.
  * - **Drawn, read whole, and paid nothing.** A real zero, because that is a measurement: the

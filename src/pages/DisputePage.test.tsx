@@ -271,7 +271,7 @@ describe("the justification band", () => {
     expect(screen.getByText("4 of 4 shown")).toBeInTheDocument();
   });
 
-  it("carries each draw's identity, outcome and both latencies", () => {
+  it("carries each draw's identity and outcome, and no time", () => {
     renderDispute();
     const column = screen.getAllByRole("article")[0];
     if (column === undefined) throw new Error("no columns rendered");
@@ -285,11 +285,11 @@ describe("the justification band", () => {
     expect(within(column).getByText("Diverged")).toBeInTheDocument();
     // The vote by name, not by number: 007 voted choice 0 (2026-11-02).
     expect(within(column).getByText("Refuse to arbitrate")).toBeInTheDocument();
-    // The phrases, not the tooltips. Ticket 18 moved these off `title` — a tooltip on a
-    // non-focusable span reaches a pointer and nothing else — so what to assert is the text a
-    // reader is actually given, which is also what the matrix's own keys have always carried.
-    expect(within(column).getByText("Reveal latency")).toBeInTheDocument();
-    expect(within(column).getByText("Commit latency")).toBeInTheDocument();
+    // Its share of the round's vote stays; the commit and reveal times left with ADR-0011, which
+    // keeps them on the agent juror's page.
+    expect(within(column).getByText(/^\d+\/\d+ votes?$/)).toBeInTheDocument();
+    expect(within(column).queryByText(/latency/i)).not.toBeInTheDocument();
+    expect(within(column).queryByText(/^\d+s$|^\d+m \d{2}s$/)).not.toBeInTheDocument();
   });
 
   it("renders Markdown with GitHub-flavoured extensions", () => {
@@ -637,6 +637,26 @@ describe("what could not be read", () => {
     renderDispute({ pathId: "latency", detail: read({ isUnknownDispute: false }) });
 
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("That is not a dispute");
+  });
+
+  it("raises nothing over a commit scan that failed, since this page shows no commit moment", () => {
+    // ADR-0011 took each draw's commit and reveal times off the panel, so the scan feeds nothing
+    // here. The agent juror page, which still shows them, is where its failure is raised.
+    renderDispute({
+      performance: { ...measured, commitError: new Error("UnknownRpcError") },
+    });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("still raises the window history, which the timeline is drawn against", () => {
+    // The other direction of the gate above, on the same endpoint: the parameter history does
+    // feed this page, so losing it is a failure a reader has to be told about.
+    renderDispute({
+      performance: { ...measured, parametersError: new Error("UnknownRpcError") },
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/period durations could not be read/i);
   });
 
   it("falls back to roster names without raising a banner when ENS is down", () => {
