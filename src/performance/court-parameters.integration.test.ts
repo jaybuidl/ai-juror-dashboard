@@ -36,10 +36,10 @@ import {
  *    one. `has changed no reward parameter…` fires when it changed what a coherent draw earns or
  *    a wrong one risks, and the damage is quieter — every cumulative ETH and net PNK figure on
  *    the page is summed over the court's whole life, so each would silently span two reward
- *    regimes and report as one quantity what is two. The † deliberately does *not* ride those
- *    sums, on the ground that a reward depends on no window; that ground holds only while one
- *    fee has been in force throughout, so the sums would then be the figures on the page
- *    carrying no marker and needing one. Ticket 21 defers the display question to the day this
+ *    regimes and report as one quantity what is two. The † deliberately did *not* ride those
+ *    sums while it existed (removed 2026-09-24), on the ground that a reward depends on no
+ *    window; that ground holds only while one fee has been in force throughout, so the sums
+ *    would then be figures on the page needing a caveat and carrying none. Ticket 21 defers the display question to the day this
  *    goes red, which makes this assertion the thing that says the day has come. Either failure
  *    also leaves the fixture behind the offline suite a snapshot of a court that no longer
  *    exists.
@@ -174,8 +174,8 @@ describe("fetchCourtParameters", () => {
   });
 
   it("still holds the three configurations the fixture and /method describe, in full", () => {
-    // Case 3. `MethodPage`'s window section states these in prose, in words, as the
-    // destination of the † marker's link, and this is the assertion that keeps the page and
+    // Case 3. `MethodPage`'s window section states these in prose, in words (it was the
+    // destination of the † marker's link until 2026-09-24), and this is the assertion that keeps the page and
     // the chain one account. It fires on any change at all — including the evidence-only kind
     // the court has already made once, which reaches no figure on the page.
     expect(

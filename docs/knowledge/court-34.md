@@ -71,8 +71,9 @@ this file is the full account.
   `jurorsForCourtJump` (7) are byte-identical; only `timesPerPeriod` moved. The blocks are
   493394990, 496518927 and 498587731. Stake at risk per vote ID is `minStake × alpha / 10000` =
   **187 PNK** — the divisor is the part that gets dropped, and `src/performance/rewards.ts` states
-  the product without it. So the `†` window marker must **not** ride cumulative ETH or PNK — it
-  would be a marker a reader can see is misplaced, and one they stop reading. Decoded from the logs
+  the product without it. So the `†` window marker, while it existed (until 2026-09-24), did
+  **not** ride cumulative ETH or PNK — it would have been a marker a reader can see is misplaced,
+  and one they stop reading. Any future window caveat should follow the same rule. Decoded from the logs
   rather than assumed, because "the court was reconfigured" reads as though everything about it
   changed.
   Ticket 21 put the four reward parameters on `RawCourtParameters` and into the captured fixture,

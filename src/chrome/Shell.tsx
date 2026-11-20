@@ -149,8 +149,8 @@ function useScrollForLocation(): void {
     // Only on an actual move forward between views. On first render the visitor is already
     // where they asked to be, and on a `POP` — back or forward — the browser is restoring the
     // position they left, which is the one thing this must not undo: a reader who followed the
-    // matrix's window footnote to /method and pressed Back wants the footnote, not the top of
-    // a long grid.
+    // failure banner's link to /method and pressed Back wants the banner, not the top of a long
+    // grid.
     if (previous.current === pathname || navigationType === "POP") {
       previous.current = pathname;
       return;

@@ -256,8 +256,8 @@ export function useCourtPerformance(
    * not a cross-check against anything: it is the court's own configuration, three logs deep,
    * and it answers the same way whichever disputes have been read beside it.
    *
-   * Not waited on, exactly like the commitments. An unread history costs the marker saying
-   * which rows are not comparable with which — worth stating, never worth a blank page.
+   * Not waited on, exactly like the commitments. An unread history costs the dispute view's
+   * configured windows — worth stating there, never worth a blank page.
    */
   const parametersQuery = useQuery({
     queryKey: ["courtParameters", COURT_ID],

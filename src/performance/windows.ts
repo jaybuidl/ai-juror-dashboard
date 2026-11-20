@@ -253,9 +253,10 @@ export function windowsFor(
  *
  * **That court is this one.** On 2026-08-26 court 34 moved its evidence period from 45 minutes
  * to 10 and left everything else alone, so its second and third configurations differ and this
- * returns true across them — which is what keeps dispute 152 unmarked while being older than a
+ * returns true across them — which is what keeps dispute 152 out of `changedWindows` while being older than a
  * change the court has since made. `MethodPage`'s window section owes a reader that sentence,
- * because the marker cannot say it.
+ * because no marker on the page says it (the row marker that once could was removed on
+ * 2026-09-24).
  */
 export function sameMeasuredWindows(a: PeriodWindows, b: PeriodWindows): boolean {
   return a.commitSeconds === b.commitSeconds && a.voteSeconds === b.voteSeconds;
@@ -374,7 +375,7 @@ export type RewardParameterChange = {
  * `feeForJuror` and `jurorsForCourtJump` are byte-identical across all three configurations and
  * only `timesPerPeriod` has ever moved. That claim is load-bearing rather
  * than incidental. `CourtTotals` sums cumulative ETH and net PNK across the court's whole life
- * and the † window marker deliberately does **not** ride either of them, on the grounds that a
+ * and the † window marker, while there was one, deliberately did **not** ride either, on the grounds that a
  * reward depends on no window — which is only true while one fee has been in force throughout.
  * `totals.test.ts` pins the arithmetic that follows: total ETH equals `feeForJuror` times the
  * vote-ID count over the executed disputes, exact only under a single fee.

@@ -464,12 +464,13 @@ export function DisputePanel({
               was the columns shown: agent jurors, not stacks, and several of them share one. A
               column is also there before its reasoning is, so "reasoning from N" would overclaim
               in the vote period. Zero is a real case, twice over, and each gets its own words:
-              the court has not drawn the panel yet, or it drew one holding no agent juror on the
-              roster. Only the first is "yet". */}
+              the court has not drawn the panel yet, or every juror it has drawn is off the
+              roster. Only the first is "yet": "has drawn" in the second stays true while a panel
+              is still being drawn in parts, and claims no more than that. */}
           <Heading id="panel-heading">
             {shown > 0
               ? "What the agent jurors wrote"
-              : drawn === 0
+              : reading.read && drawn === 0
                 ? "No reasoning to compare yet."
                 : "No reasoning to compare."}
           </Heading>
@@ -486,7 +487,7 @@ export function DisputePanel({
             ? "The draws for this dispute have not been read, so who was on the panel is unknown rather than absent."
             : drawn === 0
               ? "Nobody has been drawn for this dispute yet, so there is no reasoning to show. The court draws the panel during the evidence period."
-              : `The court drew ${drawn === 1 ? "one juror" : `${drawn} jurors`} for this dispute and none of them is an agent juror on this dashboard's roster, so there is no reasoning to show.`}
+              : `The court has drawn ${drawn === 1 ? "one juror" : `${drawn} jurors`} for this dispute and none of them is on this dashboard's roster, so there is no reasoning to show.`}
         </Empty>
       ) : (
         <>
@@ -507,8 +508,8 @@ export function DisputePanel({
                 gap in what is shown, and a gap must not read as a complete panel. */}
             {drawn > shown && (
               <CaptionText>
-                {drawn - shown} of the {drawn} drawn are not agent jurors on this dashboard's
-                roster, so they have no card here.
+                {drawn - shown} of the {drawn} drawn are not on this dashboard's roster, so they
+                have no card here.
               </CaptionText>
             )}
             <CaptionCount>

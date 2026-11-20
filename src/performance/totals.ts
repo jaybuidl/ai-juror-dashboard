@@ -262,7 +262,7 @@ export type MeasuredWindows = Pick<PeriodWindows, "commitSeconds" | "voteSeconds
 
 /** One group of disputes that share a superseded pair of windows. */
 export type WindowChange = {
-  /** Ascending. The ids the marker sits on. */
+  /** Ascending. The ids the row marker sat on until 2026-09-24. */
   disputes: readonly number[];
   /** What those disputes ran under. Compare against `CourtParameters.current`. */
   windows: MeasuredWindows;
@@ -390,8 +390,9 @@ export type AgentJurorMarginals = {
   /**
    * Cumulative ETH and net PNK for this column, or `null` where nothing has been paid.
    *
-   * **The † does not ride these two, and that is a measured fact rather than an assumption.**
-   * The marker is about the commit and vote windows, and a reward depends on none of them: it
+   * **No window caveat applies to these two, and that is a measured fact rather than an
+   * assumption.** (The † never rode them while it existed.) A window change is about the commit
+   * and vote windows, and a reward depends on none of them: it
    * is `feeForJuror` per coherent **vote ID** and `minStake × alpha / 10000` (187 PNK) at risk
    * per vote ID — not per draw, which is why nine of the 44 shifts are fractions of a fee and
    * nothing here may assume a payout divides evenly. Both of court 34's reconfigurations —
@@ -672,7 +673,7 @@ export function agentJurorMarginalsOf(
       votes += cell.voteCount;
 
       // Summed over the cells rather than over the shifts themselves, so that these two figures
-      // are over exactly the draws the five figures beside them are over. An unread row
+      // are over exactly the draws the figures beside them are over. An unread row
       // contributes nothing here for the same reason it contributes no draws — and in practice
       // the two readings coincide, because a dispute new enough to be unread is far too new to
       // have been executed.

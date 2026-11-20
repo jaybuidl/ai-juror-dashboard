@@ -591,7 +591,7 @@ describe("a dispute with no panel yet", () => {
 
     renderDispute({ performance: offRoster, pathId: String(first.dispute.id) });
 
-    expect(screen.getByText(/The court drew 3 jurors for this dispute/)).toBeInTheDocument();
+    expect(screen.getByText(/The court has drawn 3 jurors for this dispute/)).toBeInTheDocument();
     expect(screen.queryByText(/Nobody has been drawn/)).not.toBeInTheDocument();
     expect(screen.getByText("No reasoning to compare.")).toBeInTheDocument();
   });

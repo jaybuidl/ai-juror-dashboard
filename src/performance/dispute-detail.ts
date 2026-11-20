@@ -463,7 +463,7 @@ export type DisputeReading = {
   transactionHash: string | null;
   periods: readonly PeriodRun[];
   windows: PeriodWindows | null;
-  /** Whether this dispute ran under period durations the court has since changed — the † marker. */
+  /** Whether this dispute ran under period durations the court has since changed. No view reads it. */
   underEarlierWindows: boolean;
   /** Whether the draws on screen could have seen this dispute at all. See `MatrixRow.read`. */
   read: boolean;

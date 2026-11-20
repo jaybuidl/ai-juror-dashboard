@@ -54,8 +54,8 @@ export function listOf(ids: readonly number[]): string {
  * the court draws during a dispute's evidence period and cannot pass it until the panel is full,
  * and 167, 168 and 169 were in theirs, undrawn, on the day this was written, contributing 18
  * blanks this card was calling sparsity. Same words, different fact, on a page that may be cited.
- * Ticket 09 worded the same state on the per-dispute view — "the court draws the panel during the
- * evidence period" — and this is the same fact at the grain of a record rather than of one
+ * The per-dispute view words the same state — "the court draws the panel during the evidence
+ * period" — and this is the same fact at the grain of a record rather than of one
  * dispute.
  *
  * A third absence is *not* here and is counted out of every figure above: a dispute whose draws

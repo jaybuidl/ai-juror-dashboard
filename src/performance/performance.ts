@@ -349,7 +349,8 @@ export type MatrixRow = {
   /**
    * Whether this dispute's commit and vote windows differ from the ones the court holds now.
    *
-   * The † marker. It is a fact about comparability rather than about the dispute: the figures
+   * What the † row marker showed until 2026-09-24; no view reads it now. It is a fact about
+   * comparability rather than about the dispute: the figures
    * in this row were measured against different windows from the rows above it, so a reader
    * scanning the column is not comparing like with like. False while the history is unread —
    * an unknown is not a denial.
@@ -400,9 +401,9 @@ export type CommitCoverage = {
 /**
  * What the court configured, and when.
  *
- * Carried on the model rather than looked up by whatever needs it, so the marker on a row, the
- * footnote under the matrix and the account on the method page are three readings of one
- * history instead of three chances to quote a different one.
+ * Carried on the model rather than looked up by whatever needs it, so every reading of it (the
+ * dispute view's configured windows today; the row marker and the matrix footnote until
+ * 2026-09-24) is one history instead of several chances to quote a different one.
  */
 export type CourtParameters = {
   /**
