@@ -216,10 +216,11 @@ const ColumnBody = styled.div`
 `;
 
 /* The empty state, drawn in the system's absent-data vocabulary rather than the failure one.
-   It holds three absences: a field published empty, where nothing went wrong and nothing was
-   lost in transit; a live draw whose reveal has not happened yet; and a no-vote draw, which
-   is a miss, but one the rose mark in the header already says, so this block does not repeat
-   it in the failure ink. None of the three is a read that failed. */
+   It holds four absences: a field published empty, where nothing went wrong and nothing was
+   lost in transit; a live draw whose reveal has not happened yet; a no-vote draw, which is a
+   miss, but one the rose mark in the header already says, so this block does not repeat it in
+   the failure ink; and a reveal newer than this dispute's last read, which is being re-read.
+   None of the four is a read that failed. */
 const Unpublished = styled.div`
   display: flex;
   flex: 1;
@@ -397,6 +398,18 @@ function PanelMember({
               This agent juror did not reveal a vote before the vote period closed, so there is no
               vote and no justification to show.
             </UnpublishedBody>
+          </Unpublished>
+        </ColumnBody>
+      ) : column.justificationUnread ? (
+        /* Revealed after this dispute's prose was last read, which is being read again (#21).
+           Saying "published empty" here would state the stale read as a fact about the vote. */
+        <ColumnBody>
+          <Unpublished>
+            <UnpublishedGlyph aria-hidden="true">⋯</UnpublishedGlyph>
+            <UnpublishedHeading>Justification not read yet</UnpublishedHeading>
+            <UnpublishedNote>
+              This vote was revealed after the page last read the justifications.
+            </UnpublishedNote>
           </Unpublished>
         </ColumnBody>
       ) : justification === null || justification.length === 0 ? (

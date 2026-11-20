@@ -8,14 +8,22 @@ import parameterFixture from "./court-34-parameters.fixture.json" with { type: "
 import detailFixture from "./dispute-156-detail.fixture.json" with { type: "json" };
 import {
   buildDisputeReading,
+  hasRevealed,
   NO_DETAIL,
   namesADispute,
   periodsOf,
   type RawDisputeDetail,
   REFUSE_TO_ARBITRATE,
+  revealedCountOf,
   toDisputeDetail,
 } from "./dispute-detail";
-import { buildCourtPerformance, type CourtPerformance, type RawDraw } from "./performance";
+import {
+  buildCourtPerformance,
+  type CourtPerformance,
+  type DrawState,
+  type MatrixRow,
+  type RawDraw,
+} from "./performance";
 import type { RawCourtParameters } from "./windows";
 
 /**
@@ -523,5 +531,67 @@ describe("buildDisputeReading", () => {
     expect(unread.tally).toEqual([]);
     expect(unread.evidenceCount).toBeNull();
     expect(unread.columns.every((column) => column.justification === null)).toBe(true);
+  });
+});
+
+describe("a dispute read that predates a reveal (#21)", () => {
+  const row = rowFor(156);
+  const silent = { ...toDisputeDetail(raw156), justifications: [] };
+  const states: DrawState[] = [
+    { kind: "live", stage: "revealed" },
+    { kind: "live", stage: "committed" },
+    { kind: "no-vote" },
+    { kind: "coherent" },
+  ];
+  const restated: MatrixRow = {
+    ...row,
+    cells: row.cells.map((cell, index) =>
+      cell === null ? null : { ...cell, state: states[index % states.length] as DrawState },
+    ),
+  };
+
+  it("holds every revealed draw with no justification as not read yet", () => {
+    const reading = buildDisputeReading({
+      row: restated,
+      detail: silent,
+      template: TEMPLATE,
+      detailBehind: true,
+    });
+
+    for (const column of reading.columns) {
+      expect(column.justificationUnread).toBe(hasRevealed(column.draw.state));
+    }
+    expect(reading.columns.some((column) => column.justificationUnread)).toBe(true);
+  });
+
+  it("says nothing is unread once the read has caught up", () => {
+    const reading = buildDisputeReading({ row: restated, detail: silent, template: TEMPLATE });
+
+    expect(reading.columns.every((column) => !column.justificationUnread)).toBe(true);
+  });
+
+  it("never holds back prose that has arrived", () => {
+    const reading = buildDisputeReading({
+      row: restated,
+      detail: toDisputeDetail(raw156),
+      template: TEMPLATE,
+      detailBehind: true,
+    });
+
+    for (const column of reading.columns) {
+      if (column.justification !== null) expect(column.justificationUnread).toBe(false);
+    }
+  });
+
+  it("counts reveals the way the gate reads them", () => {
+    expect(hasRevealed({ kind: "live", stage: "revealed" })).toBe(true);
+    expect(hasRevealed({ kind: "live", stage: "committed" })).toBe(false);
+    expect(hasRevealed({ kind: "live", stage: "awaiting" })).toBe(false);
+    expect(hasRevealed({ kind: "no-vote" })).toBe(false);
+    expect(hasRevealed({ kind: "tied" })).toBe(true);
+    expect(revealedCountOf(undefined)).toBeNull();
+    expect(revealedCountOf(restated)).toBe(
+      restated.cells.filter((cell) => cell !== null && hasRevealed(cell.state)).length,
+    );
   });
 });

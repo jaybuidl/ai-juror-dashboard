@@ -13,6 +13,7 @@ import {
   buildDisputeReading,
   type DisputeReading,
   type PeriodRun,
+  revealedCountOf,
 } from "../performance/dispute-detail";
 import { formatElapsedSeconds, formatWindowSeconds } from "../performance/latency";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
@@ -466,7 +467,13 @@ export function DisputePage(props: DisputePageProps) {
   // The id as it was typed, so an address naming nothing still titles the tab with what was
   // asked for rather than with a name this view has just refused to give it.
   useDocumentTitle(`Dispute ${pathId ?? ""}`.trim());
-  const detail = useDisputeDetail(disputeIdOf(pathId));
+  const disputeId = disputeIdOf(pathId);
+  const detail = useDisputeDetail(
+    disputeId,
+    revealedCountOf(
+      props.performance.performance?.rows.find((row) => row.dispute.id === disputeId),
+    ),
+  );
 
   return <DisputeView {...props} pathId={pathId} detail={detail} />;
 }
@@ -524,6 +531,7 @@ export function DisputeView({
           row,
           detail: detail.detail,
           template: disputes.templateFor(row.dispute),
+          detailBehind: detail.isBehindReveals,
         });
 
   // **Known wrong ordering, deliberately left.** A failure is loud because it costs a figure, so

@@ -1,4 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
+import { useEffect, useRef } from "react";
 import { type DisputeDetail, NO_DETAIL, namesADispute, toDisputeDetail } from "./dispute-detail";
 import { fetchDisputeDetail } from "./dispute-detail-subgraph";
 
@@ -50,12 +51,32 @@ export type DisputeDetailView = {
   readAt: number | null;
   /** Read it again, for the banner's retry. */
   retry: () => void;
+  /**
+   * Whether the court read has since seen more reveals than this read did, so a revealed
+   * draw's missing justification may be one this read predates. A re-read is already asked
+   * for whenever this is true. See `PanelColumn.justificationUnread` (#21).
+   */
+  isBehindReveals: boolean;
 };
 
-export function useDisputeDetail(disputeId: number | null): DisputeDetailView {
+/**
+ * @param revealed How many of the dispute's agent juror draws the court read says have revealed
+ *   (`revealedCountOf`), or `null` before it says. The court read polls and this one does not,
+ *   so a rise in this count is what tells this read a justification may have appeared since it
+ *   landed (#21). It is recorded beside the payload rather than put in the key, because a new key
+ *   would blank the page for the length of the re-read.
+ */
+export function useDisputeDetail(
+  disputeId: number | null,
+  revealed: number | null,
+): DisputeDetailView {
   const detail = useQuery({
     queryKey: ["disputeDetail", disputeId],
-    queryFn: async ({ signal }) => fetchDisputeDetail({ disputeId: disputeId as number, signal }),
+    queryFn: async ({ signal }) => ({
+      // Captured as the read starts, so a reveal landing mid-read still counts as unseen.
+      revealed,
+      raw: await fetchDisputeDetail({ disputeId: disputeId as number, signal }),
+    }),
     // Nothing to ask for until the URL names a dispute. A path segment that is not a number is
     // not a dispute that could not be read — it is an address that names nothing, and asking
     // the endpoint about it would turn a bad URL into a network round trip and a banner.
@@ -66,6 +87,25 @@ export function useDisputeDetail(disputeId: number | null): DisputeDetailView {
     staleTime: 60 * 1000,
   });
 
+  // A read that predates the court's own does not know what the court has since seen revealed.
+  // Behind whenever the counts differ, not only when the court's is higher: a read that started
+  // before the court read landed recorded `null` and knows nothing (a cold deep link, which costs
+  // one extra read), and an appeal round restarts the count from zero.
+  const seen = detail.data === undefined ? undefined : detail.data.revealed;
+  const isBehindReveals = revealed !== null && seen !== undefined && revealed !== seen;
+  // One re-read per count, and never a second for the same one: a re-read that fails keeps the
+  // old payload and so stays behind, and asking again the moment it settles would loop against
+  // a failing endpoint. Recovery from that is the banner's retry, or the next reveal.
+  // Keyed by dispute too, so a count asked for on one dispute never stands in for another's.
+  const asked = useRef<string | null>(null);
+  const { refetch, isFetching } = detail;
+  useEffect(() => {
+    const ask = `${disputeId}:${revealed}`;
+    if (!isBehindReveals || isFetching || asked.current === ask) return;
+    asked.current = ask;
+    void refetch();
+  }, [isBehindReveals, isFetching, disputeId, revealed, refetch]);
+
   return {
     // `toDisputeDetail` is applied here rather than inside the query function, which is the
     // opposite of what `useDisputes` does — and for the reason that made `useDisputes` do it
@@ -74,8 +114,8 @@ export function useDisputeDetail(disputeId: number | null): DisputeDetailView {
     // tolerant by construction: every malformed field degrades to an absence, so there is
     // nothing to catch, and keeping the raw payload in the cache means `namesADispute` can
     // still tell "no such dispute" from "not read yet".
-    detail: detail.data === undefined ? NO_DETAIL : toDisputeDetail(detail.data),
-    isUnknownDispute: detail.data !== undefined && !namesADispute(detail.data),
+    detail: detail.data === undefined ? NO_DETAIL : toDisputeDetail(detail.data.raw),
+    isUnknownDispute: detail.data !== undefined && !namesADispute(detail.data.raw),
     // `fetchStatus` is what tells a query that has not answered from one that was never asked:
     // it is `"idle"` for a disabled query and `"fetching"` for one in flight. `isPending` is
     // true for both.
@@ -88,5 +128,6 @@ export function useDisputeDetail(disputeId: number | null): DisputeDetailView {
     retry: () => {
       void detail.refetch();
     },
+    isBehindReveals,
   };
 }
