@@ -1,12 +1,18 @@
 import { Link } from "react-router";
 import styled from "styled-components";
 import { narrow } from "../styles/breakpoints";
+import { VisuallyHidden } from "../styles/hidden";
 import { Lockup } from "./Lockup";
 
 /**
  * The site footer, after the one on ai.kleros.io (maintainer's request, 2026-09-24): the lockup,
  * one line saying what Kleros AI is for, and a row of links. Three columns on a desktop, stacked
  * on a phone. It carries no caveat and no figure: those live where the figure is, or on /method.
+ *
+ * A colophon row under the three columns credits the dashboard's maintainer and links its source
+ * (maintainer's request, 2026-11-20). It sits apart from the Kleros links on purpose: that nav is
+ * named "Kleros", and the repository is not a Kleros destination. Crediting who built the
+ * *dashboard* does not touch the rule against naming who built an agent juror.
  */
 
 const Bar = styled.footer`
@@ -59,6 +65,41 @@ const Out = styled.a`
   }
 `;
 
+const Colophon = styled.div`
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.space5};
+  font: ${({ theme }) => theme.typeBodySm};
+  color: ${({ theme }) => theme.textMeta};
+
+  p {
+    margin: 0;
+  }
+`;
+
+/* Inside a sentence, so underlined permanently: colour alone would not mark it (WCAG 1.4.1).
+   The block padding lifts the target to at least 24px tall (WCAG 2.5.8). */
+const Credit = styled.a`
+  display: inline-block;
+  padding-block: ${({ theme }) => theme.space2};
+  color: inherit;
+  text-decoration: underline;
+
+  &:hover,
+  &:focus-visible {
+    color: ${({ theme }) => theme.textBody};
+  }
+`;
+
+const Source = styled(Out)`
+  display: inline-block;
+  padding-block: ${({ theme }) => theme.space2};
+`;
+
+const REPOSITORY = "https://github.com/jaybuidl/ai-juror-dashboard";
+
 const LINKS: readonly { label: string; href: string }[] = [
   { label: "Kleros", href: "https://kleros.io/" },
   { label: "Kleros AI", href: "https://ai.kleros.io/" },
@@ -84,6 +125,18 @@ export function SiteFooter() {
           ))}
         </Links>
       </nav>
+      <Colophon>
+        <p>
+          Built with <span aria-hidden="true">💜</span>
+          <VisuallyHidden>love</VisuallyHidden> by{" "}
+          <Credit href="https://github.com/jaybuidl" target="_blank" rel="noreferrer">
+            jaybuidl
+          </Credit>
+        </p>
+        <Source href={REPOSITORY} target="_blank" rel="noreferrer">
+          Source on GitHub
+        </Source>
+      </Colophon>
     </Bar>
   );
 }
