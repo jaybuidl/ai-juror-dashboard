@@ -17,9 +17,10 @@ import { KLEROS_CORE } from "./court-parameters";
  *
  * Scoped to one dispute and to its own block range, which is what keeps this one or two
  * `eth_getLogs` windows and a handful of block and transaction reads, however large the court
- * grows. The range comes from the subgraph (`DisputeDetail.blockRange`): from the block its
- * current round's panel was drawn in, since `passPeriod` cannot leave evidence until every vote
- * ID is drawn, to the block its execution period opened once it has, and to the head until then.
+ * grows. The range comes from the subgraph (`DisputeDetail.blockRange`): from the block anyone in
+ * it was first drawn in, since `passPeriod` cannot leave evidence until every vote ID is drawn, to
+ * the block its execution period opened once it has, and to the head until then. That holds every
+ * round's openings, so the timeline picks a round's by its place in order (`openingOf`).
  */
 
 /**
@@ -81,7 +82,7 @@ export async function fetchDisputeChain({
     ),
     fetchCommitCasts({
       client,
-      filter: { _coreDisputeID: BigInt(disputeId) },
+      disputeId,
       fromBlock: range.fromBlock,
       toBlock: range.toBlock,
       blockTimes,

@@ -40,9 +40,6 @@ describe("shouldPersistQuery", () => {
   it("persists the reads that are expensive and cannot change once finalised", () => {
     expect(shouldPersistQuery(["courtDisputes", "34"])).toBe(true);
     expect(shouldPersistQuery(["courtDraws", "34"])).toBe(true);
-    expect(
-      shouldPersistQuery(["commitCasts", "0xc05e109f24cbe59301272fe8e7a908f67a1af539", 12]),
-    ).toBe(true);
     // Ticket 08's read, admitted when the two branches were merged. Plain numbers all the way
     // down, and a court's parameter history is the least changeable thing this app reads.
     expect(shouldPersistQuery(["courtParameters", "34"])).toBe(true);
@@ -53,6 +50,10 @@ describe("shouldPersistQuery", () => {
     // Ticket 23's comparison court. Strings and arrays only, and the median is taken above the
     // cache on every render, so what is stored is the court's record and never the figure.
     expect(shouldPersistQuery(["referenceCourt", "29"])).toBe(true);
+  });
+
+  it("no longer persists the court-wide commit scan, which ADR-0012 retired", () => {
+    expect(shouldPersistQuery(["commitCasts", "34", [], 76])).toBe(false);
   });
 
   it("keeps a dispute's own reads out of storage", () => {

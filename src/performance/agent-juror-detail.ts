@@ -1,11 +1,4 @@
 import type { AgentJuror } from "../roster/agent-jurors";
-import {
-  type CommitCoverage,
-  commitAt,
-  commitKey,
-  commitsByDraw,
-  type RawCommitCast,
-} from "./commitments";
 import type { CourtPerformance, Draw, MatrixRow } from "./performance";
 import type { AgentJurorMarginals } from "./totals";
 
@@ -24,10 +17,10 @@ import type { AgentJurorMarginals } from "./totals";
  * the shape of defect this repository keeps below the seam and out of components, so this is
  * pure, testable and asked for by name.
  *
- * It reads no clock and no network, like the two models beside it. It joins one read the matrix
- * does not make: this agent juror's own commitments, from Arbitrum, which are the moments behind
- * the table's commit figures. Until ADR-0012 the matrix scanned every agent juror's on every page
- * and this view borrowed the result; now the view reads its own, for one agent juror.
+ * It reads no clock and no network, like the models beside it, and the view it feeds makes no
+ * read of its own: every figure on that page is one the matrix already computed. The table's
+ * commit and reveal figures went with ADR-0012, which put each dispute's time to appeal in their
+ * place, so this page no longer reads Arbitrum at all.
  */
 
 /** One dispute this agent juror was drawn in, and the draw it took there. */
@@ -37,13 +30,16 @@ export type AgentJurorDraw = {
   /** This agent juror's own cell in it. Never `null` — a row with none is not in the list. */
   draw: Draw;
   /**
-   * Seconds from the moment this draw's commit period opened to the moment its commitment was
-   * mined, per ADR-0001 — a per-draw record and not a speed (ADR-0010). `null` where no log
-   * matched this draw's round: the commitments are not read yet, the draw has not committed, or
-   * the log was not found, which `AgentJurorReading.commitCoverage` counts. Never negative, and
-   * never a fraction of a window (ADR-0005).
+   * Seconds from the dispute's creation to the moment its first round's appeal period opened, or
+   * `null` where it has not reached it — `CourtTotals.timeToAppeal`, the one speed figure
+   * (ADR-0010), looked up rather than recomputed so the column and the matrix's headline are one
+   * definition.
+   *
+   * **The dispute's figure, not this agent juror's.** It is the same for everyone on the panel,
+   * and the table that shows it says so; nothing may read it as how fast this agent juror acted.
+   * It replaced the draw's commit and reveal latency on this page (ADR-0012).
    */
-  commitLatencySeconds: number | null;
+  timeToAppealSeconds: number | null;
 };
 
 export type AgentJurorReading = {
@@ -64,8 +60,6 @@ export type AgentJurorReading = {
    * again here would be a second definition of a court-wide fact.
    */
   draws: readonly AgentJurorDraw[];
-  /** Whether every commitment the subgraph reports for these draws was found on chain. */
-  commitCoverage: CommitCoverage;
 };
 
 /**
@@ -88,14 +82,6 @@ export type AgentJurorReading = {
 export function buildAgentJurorReading(
   performance: CourtPerformance,
   nickname: string,
-  /** This agent juror's commitments, or `null` where that read has not landed. Never `[]` for that. */
-  commits: readonly RawCommitCast[] | null,
-  /**
-   * Whether `commits` answers for the draws as the court now reports them, rather than standing
-   * in from an earlier read while the court has seen a commitment since (`ChainRead.answered`).
-   * The moments are used either way; only an answered read can have fallen short.
-   */
-  answered = commits !== null,
 ): AgentJurorReading | null {
   const column = performance.agentJurors.findIndex((candidate) => candidate.nickname === nickname);
   const agentJuror = performance.agentJurors[column];
@@ -106,56 +92,16 @@ export function buildAgentJurorReading(
   // get right.
   if (agentJuror === undefined || marginals === undefined) return null;
 
-  const byDraw = commitsByDraw(commits ?? []);
-  // The cross-check ADR-0004 requires, over the draws this view shows: every one the subgraph
-  // says committed should have a log.
-  let expected = 0;
-  let resolved = 0;
+  const timeToAppeal = new Map(
+    performance.totals.timeToAppeal.disputes.map((entry) => [entry.dispute, entry.seconds]),
+  );
 
   const draws: AgentJurorDraw[] = [];
   for (const row of performance.rows) {
     const draw = row.cells[column];
     if (draw === undefined || draw === null) continue;
-
-    // Against the draw's own round, which is the one its commit period opened in.
-    const round = row.dispute.rounds.find((candidate) => candidate.index === draw.roundIndex);
-    const committedAt = commitAt(byDraw.get(commitKey(row.dispute.id, agentJuror.address)), round);
-    const commitLatencySeconds =
-      committedAt === null || round === undefined || round.commitOpenedAt === null
-        ? null
-        : committedAt - round.commitOpenedAt;
-
-    if (draw.committed) {
-      expected += 1;
-      if (commitLatencySeconds !== null) resolved += 1;
-    }
-    draws.push({ row, draw, commitLatencySeconds });
+    draws.push({ row, draw, timeToAppealSeconds: timeToAppeal.get(row.dispute.id) ?? null });
   }
 
-  return {
-    agentJuror,
-    marginals,
-    draws,
-    commitCoverage: { read: commits !== null && answered, expected, resolved },
-  };
-}
-
-/**
- * How many of one agent juror's draws the court read says have committed, or `null` where the
- * roster holds no such nickname.
- *
- * What its commit read is keyed on (`useAgentJurorCommits`): a rise is a commitment the read has
- * not seen. Here rather than in the route because it is the same column join as the reading's,
- * on the same index, and a second copy of that join is the off-by-one this module exists to keep
- * in one place.
- */
-export function committedCountOf(performance: CourtPerformance, nickname: string): number | null {
-  const column = performance.agentJurors.findIndex((candidate) => candidate.nickname === nickname);
-  if (column < 0) return null;
-
-  let committed = 0;
-  for (const row of performance.rows) {
-    if (row.cells[column]?.committed === true) committed += 1;
-  }
-  return committed;
+  return { agentJuror, marginals, draws };
 }

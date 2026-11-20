@@ -6,13 +6,7 @@ import { useIsNarrow } from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
 import { type Tone, toneInk, toneLine } from "../styles/tones";
 import type { AgentJurorDraw } from "./agent-juror-detail";
-import {
-  commitFigureOf,
-  type Figure,
-  type Presentation,
-  presentationOf,
-  revealFigureOf,
-} from "./cell";
+import { type Figure, type Presentation, presentationOf, timeToAppealFigureOf } from "./cell";
 import { Legend, StateLegend } from "./Legend";
 import { type RowFlagContext, rowFlagOf } from "./row-flags";
 
@@ -26,10 +20,15 @@ import { type RowFlagContext, rowFlagOf } from "./row-flags";
  * scrolled sideways is the shape ticket 16 rejected for the matrix. Only one of the two is ever
  * in the DOM.
  *
- * Every figure is read by a function the matrix already reads it with: `revealFigureOf` and
- * `commitFigureOf` for the two latencies, `presentationOf` for the state, `rowFlagOf` for the
- * one flag a dispute wears. A second reading here would be a second set of judgements about
- * what an absent commit log means, on a page where the agent juror is named at the top.
+ * Every figure is read by a function the rest of the dashboard already reads it with:
+ * `presentationOf` for the state, `rowFlagOf` for the one flag a dispute wears, and the dispute's
+ * time to appeal from `CourtTotals`, the figure the matrix's headline is the median of.
+ *
+ * **No commit or reveal latency** (ADR-0012), though `Juror.dc.html` drew both until it was
+ * amended to match. A column of one agent juror's latencies, on the page named after it, reads as
+ * its speed whatever the prose says, and ADR-0010 makes time to appeal the one speed figure. The
+ * draw's own moments are on each dispute's timeline, which every row links to. The time to appeal
+ * in their place is the *dispute's*, the same for its whole panel, and the caption says so.
  */
 
 const Section = styled.section`
@@ -58,7 +57,7 @@ const Table = styled.table`
 `;
 
 /* Pinned to the top of the viewport while its rows scroll by, so a reader ninety disputes down
-   can still tell the reveal from the commit. Sticky on the cells rather than the thead, which is
+   can still tell one column from another. Sticky on the cells rather than the thead, which is
    what every engine honours; given the page's own background, since a transparent cell shows the
    rows through it, and top padding, so it does not sit flush against the window's edge. Nothing
    between it and the document scrolls — `Shell.tsx` says why that has to stay true. The nav is
@@ -140,7 +139,7 @@ const Untitled = styled(Title)`
 const Value = styled.span<{ $tone: Figure["tone"] }>`
   font: ${({ theme }) => theme.typeMono};
   /* The shorthand above resets the tabular figures base.css puts on body, and a column of
-     latencies that stops lining up reports nothing anywhere. */
+     figures that stops lining up reports nothing anywhere. */
   font-feature-settings: ${({ theme }) => theme.featureMono};
   color: ${({ theme, $tone }) => {
     if ($tone === "missed" || $tone === "unread") return theme.stateFail;
@@ -151,7 +150,7 @@ const Value = styled.span<{ $tone: Figure["tone"] }>`
 `;
 
 /* A choice's name may run to several words — "Refuse to arbitrate" — so it wraps inside its
-   column rather than holding one line the way a latency does. */
+   column rather than holding one line the way a figure does. */
 const ChoiceValue = styled(Value)`
   white-space: normal;
   overflow-wrap: anywhere;
@@ -281,8 +280,8 @@ type DrawLine = {
   lonePanel: boolean;
   /** What this draw voted, or the em dash for a draw that has not revealed. */
   choice: Figure;
-  reveal: Figure;
-  commit: Figure;
+  /** The dispute's time to appeal, which is the same on every panel member's line. */
+  timeToAppeal: Figure;
   state: Presentation;
   flag: { glyph: string; label: string; tone: Tone } | undefined;
 };
@@ -309,12 +308,11 @@ function choiceOf(choices: readonly number[], answers: readonly ChoiceLabel[]): 
 
 function linesOf(
   draws: readonly AgentJurorDraw[],
-  scanned: boolean,
   flagContext: RowFlagContext,
   titleFor: (dispute: Dispute) => string | null,
   answersFor: (dispute: Dispute) => readonly ChoiceLabel[],
 ): DrawLine[] {
-  return draws.map(({ row, draw, commitLatencySeconds }) => {
+  return draws.map(({ row, draw, timeToAppealSeconds }) => {
     const flag = rowFlagOf(row, flagContext);
 
     return {
@@ -324,8 +322,7 @@ function linesOf(
       roundVotes: draw.roundVoteCount,
       lonePanel: row.panelSize === 1,
       choice: choiceOf(draw.choices, answersFor(row.dispute)),
-      reveal: revealFigureOf(draw),
-      commit: commitFigureOf(draw, commitLatencySeconds, scanned),
+      timeToAppeal: timeToAppealFigureOf(timeToAppealSeconds),
       state: presentationOf(draw.state),
       flag:
         flag === undefined
@@ -338,8 +335,6 @@ function linesOf(
 export type AgentJurorDrawsProps = {
   nickname: string;
   draws: readonly AgentJurorDraw[];
-  /** `commitCoverage.read` — see `commitFigureOf`. */
-  scanned: boolean;
   flagContext: RowFlagContext;
   /** The dispute's subject, or `null` where the template subgraph gave none. */
   titleFor: (dispute: Dispute) => string | null;
@@ -350,13 +345,12 @@ export type AgentJurorDrawsProps = {
 export function AgentJurorDraws({
   nickname,
   draws,
-  scanned,
   flagContext,
   titleFor,
   answersFor,
 }: AgentJurorDrawsProps) {
   const isNarrow = useIsNarrow();
-  const lines = linesOf(draws, scanned, flagContext, titleFor, answersFor);
+  const lines = linesOf(draws, flagContext, titleFor, answersFor);
 
   return (
     <Section aria-labelledby="draws-heading">
@@ -394,8 +388,9 @@ function DrawTable({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
           claimed both. */}
       <caption>
         <VisuallyHidden>
-          Every dispute {nickname} was drawn in, newest first, with its panel size, what it voted,
-          how long it took to commit and to reveal, and whether that vote matched the ruling.
+          Every dispute {nickname} was drawn in, newest first, with its share of the vote, what it
+          voted, how long the dispute took to reach its appeal period, which is the same for the
+          whole panel, and whether the vote matched the ruling.
         </VisuallyHidden>
       </caption>
       <colgroup>
@@ -403,8 +398,7 @@ function DrawTable({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
         <col />
         <col style={{ width: "92px" }} />
         <col style={{ width: "180px" }} />
-        <col style={{ width: "120px" }} />
-        <col style={{ width: "120px" }} />
+        <col style={{ width: "150px" }} />
         <col style={{ width: "150px" }} />
       </colgroup>
       <thead>
@@ -413,8 +407,7 @@ function DrawTable({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
           <HeaderCell scope="col">Dispute</HeaderCell>
           <HeaderCell scope="col">Votes</HeaderCell>
           <HeaderCell scope="col">Choice</HeaderCell>
-          <HeaderCell scope="col">Reveal</HeaderCell>
-          <HeaderCell scope="col">Commit</HeaderCell>
+          <HeaderCell scope="col">Time to appeal</HeaderCell>
           <LastHeaderCell scope="col">Coherence</LastHeaderCell>
         </tr>
       </thead>
@@ -446,10 +439,7 @@ function DrawTable({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
               <ChoiceValue $tone={line.choice.tone}>{line.choice.text}</ChoiceValue>
             </BodyCell>
             <BodyCell>
-              <Value $tone={line.reveal.tone}>{line.reveal.text}</Value>
-            </BodyCell>
-            <BodyCell>
-              <Value $tone={line.commit.tone}>{line.commit.text}</Value>
+              <Value $tone={line.timeToAppeal.tone}>{line.timeToAppeal.text}</Value>
             </BodyCell>
             <LastBodyCell>
               <StateMark line={line} nickname={nickname} />
@@ -497,15 +487,9 @@ function DrawCards({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
               </FigureValue>
             </div>
             <div>
-              <FigureKey>Reveal</FigureKey>
+              <FigureKey>Time to appeal</FigureKey>
               <FigureValue>
-                <Value $tone={line.reveal.tone}>{line.reveal.text}</Value>
-              </FigureValue>
-            </div>
-            <div>
-              <FigureKey>Commit</FigureKey>
-              <FigureValue>
-                <Value $tone={line.commit.tone}>{line.commit.text}</Value>
+                <Value $tone={line.timeToAppeal.tone}>{line.timeToAppeal.text}</Value>
               </FigureValue>
             </div>
           </CardFigures>

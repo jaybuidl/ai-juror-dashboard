@@ -124,8 +124,8 @@ export type DisputeDetail = {
   /** What each agent juror published. Absent from this list means no justification was found. */
   justifications: readonly DrawJustification[];
   /**
-   * The blocks that hold this dispute's current round on chain, for the timeline's Arbitrum read
-   * (ADR-0012), or `null` where they cannot be known. See `blockRangeOf`.
+   * The blocks that hold this dispute's record on chain, every round of it, for the timeline's
+   * Arbitrum read (ADR-0012), or `null` where they cannot be known yet. See `blockRangeOf`.
    */
   blockRange: DisputeBlockRange | null;
 };

@@ -43,8 +43,8 @@ interface ImportMetaEnv {
    * - ADR-0004 and ADR-0012: every scan is cut into windows of `LOG_RANGE_LIMIT` (ten million
    *   blocks, arb1's cap). Many commercial providers cap `eth_getLogs` far lower, at ~10,000
    *   blocks or fewer. Such a provider may refuse each window, which raises the Arbitrum banner,
-   *   or answer with fewer logs and no error, which surfaces as a `CommitCoverage` or timeline
-   *   shortfall rather than as a failure.
+   *   or answer with fewer logs and no error, which surfaces as the timeline's shortfall count
+   *   rather than as a failure.
    */
   readonly VITE_ARBITRUM_RPC_URL?: string;
 }

@@ -11,10 +11,7 @@ import type { DisputesView } from "../disputes/useDisputes";
 import { AgentJurorDraws } from "../performance/AgentJurorDraws";
 import { AgentJurorEmpty } from "../performance/AgentJurorEmpty";
 import { AgentJurorSummary } from "../performance/AgentJurorSummary";
-import { buildAgentJurorReading, committedCountOf } from "../performance/agent-juror-detail";
-import { arbitrumSource } from "../performance/arbitrum";
-import type { CommitCoverage, RawCommitCast } from "../performance/commitments";
-import { type ChainRead, useAgentJurorCommits } from "../performance/useChainReads";
+import { buildAgentJurorReading } from "../performance/agent-juror-detail";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type FailedRead, failureOf, SOURCES } from "../read-failure";
 import { ensNameOf, handleUrlOf, pathSegmentOf, stackLabelOf } from "../roster/agent-jurors";
@@ -37,13 +34,16 @@ import { VisuallyHidden } from "../styles/hidden";
  * and nothing replaces it yet: the table of draws follows the header directly. Whether anything
  * should take that place is an open question on issue #8, so do not restore the plot to fill it.
  *
- * **It reads one thing of its own: this agent juror's commitments**, from Arbitrum, for the
- * table's commit figures (ADR-0012). Everything else is a number the matrix already computed —
- * ticket 06 built `CourtPerformance.marginals` for exactly this page and ticket 10 filled its
- * last two figures — sliced down one column by `buildAgentJurorReading`. The read is the route's
- * (`AgentJurorPage`), and the view takes it as a prop, so every decision below stays testable
- * offline. The roster is local, so an address naming nothing is decidable with no read at all,
- * and the read is not even asked for then: `useAgentJurorCommits` is disabled without an address.
+ * **It reads nothing of its own.** Ticket 06 built `CourtPerformance.marginals` for exactly this
+ * page and ticket 10 filled its last two figures, so every number here is one the matrix already
+ * computed, sliced down one column by `buildAgentJurorReading`. That is why this route is not
+ * split around a hook the way `DisputePage` is: there is no query for a nickname to name. The
+ * only thing the path segment decides is which column, and the roster is local — so an address
+ * naming nothing is decidable with no read at all.
+ *
+ * Nor does it read Arbitrum. The table's commit and reveal columns, the last figures here that
+ * needed the commit scan, gave way to each dispute's time to appeal (ADR-0012), so the page raises
+ * no Arbitrum banner either.
  *
  * It is also where the two reward sums reach a phone reader. The matrix's card layout drops the
  * column headers whole, so below the breakpoint cumulative ETH and net PNK are legible here and
@@ -320,61 +320,13 @@ function coreFailureOf(
   return null;
 }
 
-/**
- * Arbitrum's half, at most once, worded by what is actually on this page.
- *
- * Only this agent juror's commitments. The same endpoint serves the parameter history, but on
- * this page that history fed nothing but the † under the latency plot, which ADR-0010 removed, so
- * its failure costs nothing here and a banner about it would describe nothing on screen. The error
- * outranks the shortfall count: they are the same endpoint, and a banner listing one source twice
- * reads as two things having gone wrong.
- */
-function arbitrumFailureOf(
-  commits: ChainRead<readonly RawCommitCast[]>,
-  coverage: CommitCoverage | undefined,
-): FailedRead | null {
-  const source = arbitrumSource();
-
-  if (commits.error !== null) {
-    return failureOf(
-      commits.error,
-      source,
-      commits.data !== null
-        ? "The commitments could not be re-read from Arbitrum, so every commit latency here comes from an earlier read and none of them accounts for a commitment made since."
-        : "The commitments could not be read from Arbitrum, so no commit latency here is a measurement.",
-    );
-  }
-
-  // `read` gates this and not just the count: until the scan comes back every commitment is
-  // unresolved, and a banner keyed on the count alone would announce that all of them failed on
-  // every cold load, before they had.
-  if (coverage?.read === true && coverage.expected > coverage.resolved) {
-    return {
-      source,
-      status: "Short read",
-      what: `${coverage.expected - coverage.resolved} of ${coverage.expected} commitments could not be found on Arbitrum, so those commit latencies are unknown.`,
-    };
-  }
-
-  return null;
-}
-
 function failuresOf(
   nickname: string,
   {
     roster,
     disputes,
     performance,
-    commits,
-    coverage,
-  }: {
-    roster: RosterView;
-    disputes: DisputesView;
-    performance: CourtPerformanceView;
-    commits: ChainRead<readonly RawCommitCast[]>;
-    /** `AgentJurorReading.commitCoverage`, or `undefined` where there is no reading. */
-    coverage: CommitCoverage | undefined;
-  },
+  }: { roster: RosterView; disputes: DisputesView; performance: CourtPerformanceView },
 ): Failures {
   const titles = disputes.titles;
   const missingTitles =
@@ -390,22 +342,16 @@ function failuresOf(
             what: `${missingTitles} of ${titles?.expected} dispute subjects could not be read, so those disputes are identified by their ID alone.`,
           }
         : null,
-      arbitrumFailureOf(commits, coverage),
     ),
     // This view shows a nickname and an avatar, so it falls back exactly as the roster index and
     // the matrix's column headers do, and has to say so in the same words. ENS is the one
     // documented exception and raises no banner: it costs a label and never a figure.
     degraded: [ensFallbackOf(roster)].filter((read) => read !== null),
-    offline: disputes.isPaused || performance.isPaused || commits.isPaused,
+    offline: disputes.isPaused || performance.isPaused,
     // The older of the two, because the page was last whole when the staler of them landed.
-    // `null` if either has never landed: it has then never been complete. The commitments are not
-    // counted, as they were not when the matrix read them: the page renders without them and says
-    // for itself, figure by figure, when they are not in.
+    // `null` if either has never landed: it has then never been complete.
     lastCompleteRead: olderOf(disputes.readAt, performance.readAt),
-    retry: () => {
-      performance.retry();
-      commits.retry();
-    },
+    retry: performance.retry,
   };
 }
 
@@ -418,8 +364,6 @@ export type AgentJurorPageProps = {
 export type AgentJurorViewProps = AgentJurorPageProps & {
   /** The path segment exactly as it was typed, for the breadcrumb and the wrong-address case. */
   pathNickname: string | undefined;
-  /** This agent juror's commitments, read by the route. See `useAgentJurorCommits`. */
-  commits: ChainRead<readonly RawCommitCast[]>;
   /** Render time, in epoch milliseconds — the live flag counts elapsed time from it. */
   now: number;
 };
@@ -427,9 +371,9 @@ export type AgentJurorViewProps = AgentJurorPageProps & {
 /**
  * The route.
  *
- * Thin: it takes the path segment and the clock, and starts the one read this view makes of its
- * own. The clock arrives as a prop for the reason the seam takes `drawsReadAt` as data — every
- * derivation below stays testable without stubbing time — and the read does for the same reason.
+ * Thin, and thinner than `DisputePage`: there is no read to start here, so all this does is
+ * take the path segment and the clock. The clock arrives as a prop for the reason the seam
+ * takes `drawsReadAt` as data — every derivation below stays testable without stubbing time.
  */
 /**
  * The roster entry a path segment names, case-insensitively.
@@ -450,20 +394,14 @@ function entryNamedBy(entries: RosterView["entries"], pathNickname: string | und
 
 export function AgentJurorPage(props: AgentJurorPageProps) {
   const { nickname } = useParams();
-  const agentJuror = entryNamedBy(props.roster.entries, nickname)?.agentJuror;
   // The roster's own spelling, not the path's, for the reason `DisputePage` titles with the raw
   // id: the tab should name what the page names. They part only on a lowercase legacy link, and
   // there the roster is right and the URL is merely old. An address naming nothing has no roster
   // spelling to use, and titles itself with the segment as typed.
-  useDocumentTitle(agentJuror?.nickname ?? nickname ?? "Agent juror");
-  const measured = props.performance.performance;
-  const commits = useAgentJurorCommits(
-    agentJuror?.address ?? null,
-    agentJuror === undefined || measured === null
-      ? null
-      : committedCountOf(measured, agentJuror.nickname),
+  useDocumentTitle(
+    entryNamedBy(props.roster.entries, nickname)?.agentJuror.nickname ?? nickname ?? "Agent juror",
   );
-  return <AgentJurorView {...props} pathNickname={nickname} now={Date.now()} commits={commits} />;
+  return <AgentJurorView {...props} pathNickname={nickname} now={Date.now()} />;
 }
 
 export function AgentJurorView({
@@ -472,7 +410,6 @@ export function AgentJurorView({
   performance,
   pathNickname,
   now,
-  commits,
 }: AgentJurorViewProps) {
   // The roster is this repository's own list and needs no read, so an address that names nothing
   // is decidable here and now. `/agent-jurors/nope` is not a 404 — the route table matched it —
@@ -509,18 +446,9 @@ export function AgentJurorView({
 
   const { agentJuror, identity } = entry;
   const measured = performance.performance;
-  const reading =
-    measured === null
-      ? null
-      : buildAgentJurorReading(measured, agentJuror.nickname, commits.data, commits.answered);
+  const reading = measured === null ? null : buildAgentJurorReading(measured, agentJuror.nickname);
 
-  const failures = failuresOf(agentJuror.nickname, {
-    roster,
-    disputes,
-    performance,
-    commits,
-    coverage: reading?.commitCoverage,
-  });
+  const failures = failuresOf(agentJuror.nickname, { roster, disputes, performance });
 
   // `isResolving` as well as `isResolvedFromEns`: the second is false while the mainnet lookup
   // is still out *and* after it fails, so a mark keyed on it alone claims a failure for the
@@ -673,7 +601,6 @@ export function AgentJurorView({
         <AgentJurorDraws
           nickname={agentJuror.nickname}
           draws={reading.draws}
-          scanned={reading.commitCoverage.read}
           // The clock reaches a flag here and never the seam, which reads none: `MatrixRow` is
           // built by a pure function, and `now` is threaded from the view for exactly that.
           flagContext={{ now }}

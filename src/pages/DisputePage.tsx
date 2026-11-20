@@ -300,7 +300,7 @@ function coreFailureOf({
     return failureOf(
       detail.error,
       SOURCES.core,
-      "This dispute's ballot, evidence count and published reasoning could not be read, so the ruling card and every column below are missing what they would have said.",
+      "This dispute's ballot, evidence count and published reasoning could not be read, so the ruling card and every column below are missing what they would have said, and the timeline cannot say who opened each period or when each agent juror committed.",
     );
   }
 
@@ -333,7 +333,9 @@ function arbitrumFailureOf(
     return failureOf(
       chain.error,
       source,
-      "Neither the court's parameter history nor this dispute's record could be read from Arbitrum, so the timeline below shows when each period opened and how long it ran, but not what it was configured to allow, who opened it, or when any agent juror committed.",
+      chain.data !== null
+        ? "Neither the court's parameter history nor this dispute's record could be read from Arbitrum, so the timeline below does not say what each period was configured to allow, and who opened each period and when each agent juror committed come from an earlier read, which accounts for nothing since."
+        : "Neither the court's parameter history nor this dispute's record could be read from Arbitrum, so the timeline below shows when each period opened and how long it ran, but not what it was configured to allow, who opened it, or when any agent juror committed.",
     );
   }
 
@@ -360,14 +362,21 @@ function arbitrumFailureOf(
   if (missing === undefined || expected === undefined) return null;
   if (missing.commits === 0 && missing.openings === 0) return null;
 
+  // Worded by what each half costs, which is not the same thing: a commitment that was not found
+  // is a moment the timeline cannot place, while an opening that was not found still has its
+  // moment, from the subgraph, and loses only who opened it.
   const parts = [
-    missing.commits > 0 ? `${missing.commits} of ${expected.commits} commitments` : null,
-    missing.openings > 0 ? `${missing.openings} of ${expected.openings} period openings` : null,
+    missing.commits > 0
+      ? `${missing.commits} of ${expected.commits} commitments could not be found on Arbitrum, so when those agent jurors committed is unknown`
+      : null,
+    missing.openings > 0
+      ? `${missing.openings} of ${expected.openings} period openings could not be found on Arbitrum, so who opened those periods is unknown`
+      : null,
   ].filter((part) => part !== null);
   return {
     source,
     status: "Short read",
-    what: `${parts.join(" and ")} in this dispute could not be found on Arbitrum, so those moments are unknown.`,
+    what: `In this dispute, ${parts.join(", and ")}.`,
   };
 }
 

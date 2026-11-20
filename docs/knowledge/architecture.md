@@ -70,12 +70,13 @@ what an absent commit log means — ticket 16's rule applied one level down.
 
 ADR-0012 (stage 3 of #8) took `commits` back **out** of `RawCourtData`, the first input ever
 removed from the seam. The court model shows no commit moment, so it reads none: the `CommitCast`
-join and `CommitCoverage` moved to `commitments.ts`, and the two views that show a commitment join
-their own read through it — `buildAgentJurorReading` takes one agent juror's commitments, and the
-**fourth model**, `buildDisputeTimeline` in `dispute-timeline.ts`, takes one dispute's openings and
-commitments beside its `DisputeReading`. Both reads are the view's own (`useChainReads.ts`), keyed
-on what the court read reports rather than on a clock, and both views take them as props so every
-decision stays testable offline. A figure that needs a chain read only one view shows belongs in
+join moved to `commitments.ts`, and the one view that shows a commitment joins its own read
+through it — the **fourth model**, `buildDisputeTimeline` in `dispute-timeline.ts`, takes one
+dispute's openings and commitments beside its `DisputeReading`. `CommitCoverage` went: the agent
+juror page, the other view that used it, now shows each dispute's time to appeal, looked up from
+`CourtTotals` by `buildAgentJurorReading`. The read is the dispute page's own (`useChainReads.ts`),
+keyed on what the court read reports rather than on a clock, and the view takes it as a prop so
+every decision stays testable offline. A figure that needs a chain read only one view shows belongs in
 that view's model, not in the court's.
 Every ticket from `03` up carries a `**Design:**` line naming what it is built against — an artboard
 and its line range, or, for ticket 14, the design system itself.

@@ -377,8 +377,8 @@ export type CourtParameters = {
 /**
  * Whether the court's payouts were read, and what the figures built from them cover.
  *
- * Deliberately **not** the shape `CommitCoverage` has (`commitments.ts`), and the difference is the
- * point. That one compares a read against a known set — every draw the subgraph says committed — because a log
+ * Deliberately **not** the shape the commit scan's `CommitCoverage` had (retired with ADR-0012), and
+ * the difference is the point. That one compared a read against a known set — every draw the subgraph says committed — because a log
  * scan that comes back short is indistinguishable from a court that never committed. This one
  * has no such set to compare against: a draw with no shift is most often a dispute the court has
  * ruled and not yet executed, which is an ordinary state lasting hours. Counting those as a
@@ -417,7 +417,7 @@ export type RewardCoverage = {
    * ink of a measurement: a public statement that every named agent juror has earned nothing.
    *
    * Two tests, and both are deliberately **all-or-nothing** rather than the per-draw
-   * `expected`/`resolved` cross-check `CommitCoverage` runs. That shape is unusable here,
+   * `expected`/`resolved` cross-check `CommitCoverage` ran. That shape is unusable here,
    * because a dispute the court has ruled and not yet executed legitimately has no payout, and
    * a check counting those as missing would cry shortfall over an ordinary state lasting hours:
    *

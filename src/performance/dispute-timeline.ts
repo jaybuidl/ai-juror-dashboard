@@ -75,32 +75,37 @@ const PERIOD_VALUE = { commit: "1", vote: "2", appeal: "3", execution: "4" } as 
 const CANONICAL_DECIMAL = /^(0|[1-9]\d*)$/;
 
 /**
- * The opening of one period in the current round: the last one the read holds.
+ * The opening of one period in one round: the round's place among that period's openings, in
+ * the order they happened.
  *
- * The read runs from the current round's first draw, so an earlier round's openings are not in
- * it. Taking the last rather than the first is the second guard: a later round opens later.
- * By block and then by log index, since one block can hold two openings.
+ * The read runs from the dispute's first draw of any round (`blockRangeOf`), so it holds every
+ * round's openings, and a period opens once per round, in round order. Round 1's commit period
+ * is the second commit opening, never "the latest": a read that has not yet caught round 1's
+ * would hand back round 0's, and print the wrong opener as a finding rather than as pending.
+ * Fewer openings than the round needs is an opening not found. By block and then by log index,
+ * since one block can hold two openings.
  */
 function openingOf(
   openings: readonly RawPeriodOpening[],
   period: string,
+  roundIndex: number,
 ): RawPeriodOpening | undefined {
-  let latest: RawPeriodOpening | undefined;
-  for (const opening of openings) {
-    if (opening.period !== period) continue;
-    if (!CANONICAL_DECIMAL.test(opening.blockNumber) || !CANONICAL_DECIMAL.test(opening.logIndex)) {
-      continue;
-    }
-    if (latest === undefined || isLater(opening, latest)) latest = opening;
-  }
-  return latest;
+  const inOrder = openings
+    .filter(
+      (opening) =>
+        opening.period === period &&
+        CANONICAL_DECIMAL.test(opening.blockNumber) &&
+        CANONICAL_DECIMAL.test(opening.logIndex),
+    )
+    .sort(chainOrder);
+  return inOrder[roundIndex];
 }
 
-function isLater(a: RawPeriodOpening, b: RawPeriodOpening): boolean {
+function chainOrder(a: RawPeriodOpening, b: RawPeriodOpening): number {
   const blockA = BigInt(a.blockNumber);
   const blockB = BigInt(b.blockNumber);
-  if (blockA !== blockB) return blockA > blockB;
-  return Number(a.logIndex) > Number(b.logIndex);
+  if (blockA !== blockB) return blockA < blockB ? -1 : 1;
+  return Number(a.logIndex) - Number(b.logIndex);
 }
 
 /**
@@ -201,7 +206,7 @@ export function buildDisputeTimeline({
 
   const opener = (period: keyof typeof PERIOD_VALUE): Opener => {
     expected.openings += 1;
-    const by = openerOf(openingOf(openings, PERIOD_VALUE[period]), roster, settled);
+    const by = openerOf(openingOf(openings, PERIOD_VALUE[period], round.index), roster, settled);
     if (by.kind === "not-found") missing.openings += 1;
     return by;
   };
@@ -269,9 +274,14 @@ export function buildDisputeTimeline({
 
 /**
  * What the court read says a dispute has reached, as far as its chain record can change: its
- * period, and how many of its agent juror draws have committed. The chain read is keyed on it
- * (`useDisputeChain`), so a new opening or a new commitment is read when the subgraph reports it,
- * and not on a clock.
+ * round, its period, and how many of its agent juror draws have committed. The chain read is keyed
+ * on it (`useDisputeChain`), so a new opening or a new commitment is read when the subgraph
+ * reports it, and not on a clock.
+ *
+ * The round is part of it because a period and a count recur on appeal. Without it, round 1's
+ * commit period would land on a key round 0 already filled, and react-query would serve that
+ * earlier read as a current answer: a commitment of round 1 counted missing, before the read that
+ * could find it had run.
  *
  * `null` where the court read holds no row for the dispute, which is also what keeps the chain
  * read from running for an address that names nothing here, such as another court's dispute.
@@ -279,5 +289,5 @@ export function buildDisputeTimeline({
 export function progressOf(row: MatrixRow | undefined): string | null {
   if (row === undefined) return null;
   const committed = row.cells.filter((cell) => cell?.committed === true).length;
-  return `${row.dispute.period}:${committed}`;
+  return `${row.dispute.rounds.length}:${row.dispute.period}:${committed}`;
 }

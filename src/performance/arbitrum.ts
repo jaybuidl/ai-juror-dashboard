@@ -20,8 +20,8 @@ import type { BlockTimes } from "./block-times";
  * Overridable, but see netlify.toml: a host absent from `connect-src` is blocked by the browser
  * before the request leaves, and this one is already listed. See also ADR-0004 — many commercial
  * providers cap `eth_getLogs` at ~10,000 blocks, far under `LOG_RANGE_LIMIT`, and substituting one
- * here may not error. It may return fewer logs, which is exactly the silent shortfall
- * `CommitCoverage` and the timeline's counts exist to name.
+ * here may not error. It may return fewer logs, which is exactly the silent shortfall the
+ * timeline's counts exist to name.
  */
 export const DEFAULT_ARBITRUM_RPC_URL = "https://arb1.arbitrum.io/rpc";
 
@@ -199,7 +199,7 @@ export async function blockTimestamps(
     const timestamp = blockTimes.get(blockNumber);
     // A block the cache still does not know is one whose read failed, and it is left out
     // rather than defaulted: the seam drops a commitment with no moment, which is the
-    // shortfall `commitCoverage` counts. A zero here would date it to 1970 instead.
+    // shortfall the timeline counts. A zero here would date it to 1970 instead.
     if (timestamp !== undefined) timestampOf.set(blockNumber, timestamp);
   }
 

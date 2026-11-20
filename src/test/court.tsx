@@ -11,9 +11,7 @@ import {
 } from "../disputes/dispute-templates";
 import { type RawDispute, toDisputes } from "../disputes/disputes";
 import type { DisputesView } from "../disputes/useDisputes";
-import type { RawCommitCast } from "../performance/commitments";
 import referenceFixture from "../performance/court-29-reference.fixture.json" with { type: "json" };
-import commitFixture from "../performance/court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "../performance/court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "../performance/court-34-parameters.fixture.json" with {
   type: "json",
@@ -647,16 +645,6 @@ export function failed<T>(data: T | null = null): ChainRead<T> {
     isPaused: false,
     retry: () => {},
   };
-}
-
-/**
- * One agent juror's commitments, from the captured scan: what `useAgentJurorCommits` returns
- * for it. Filtered by address exactly as the chain filters the topic.
- */
-export function commitsOf(address: string): readonly RawCommitCast[] {
-  return (commitFixture as RawCommitCast[]).filter(
-    (commit) => commit.juror.toLowerCase() === address.toLowerCase(),
-  );
 }
 
 /**

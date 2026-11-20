@@ -46,8 +46,7 @@ export const COURT_MODIFIED = parseAbiItem(
 
 /**
  * The block court 34 was created in: its `CourtCreated` log, and so the first block anything
- * this dashboard reads about the court can sit in. Shared with the commit scan, which starts
- * an agent juror's record here.
+ * this dashboard reads about the court can sit in.
  *
  * Until 2026-11-20 this read ran from block 0 and argued against holding a block at all: one
  * more number to keep true, and getting it wrong would drop the court's *first* configuration,

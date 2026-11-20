@@ -5,14 +5,14 @@ import type { DisputeRound } from "../disputes/disputes";
  *
  * `ClassicVote.commited` is a boolean and nothing in the core subgraph records *when* a
  * commitment was published, so the moment is the timestamp of the block its `CommitCast` log
- * sits in (ADR-0004). That read is Arbitrum's, and since ADR-0012 it is scoped to the view that
- * shows the moment: one dispute on its own page, one agent juror on its own. The court model
- * reads none of it, so nothing here is in `buildCourtPerformance`. What is here is the join both
- * views share, pure and below the seam like every other derivation.
+ * sits in (ADR-0004). That read is Arbitrum's, and since ADR-0012 it is made for one dispute, by
+ * the page that shows its timeline; the court model reads none of it, so nothing here is in
+ * `buildCourtPerformance`. What is here is the join, pure and below the seam like every other
+ * derivation, apart from the timeline that uses it so it can be tested on its own.
  *
  * Tolerant where the court seam is strict, and deliberately: a commitment that cannot be read
  * costs one moment, never a page. An entry this cannot believe is dropped, and the draw it
- * belonged to then counts as unresolved in `CommitCoverage`, which is how a view says so.
+ * belonged to then counts as not found in the timeline's shortfall, which is how the page says so.
  */
 
 /**
@@ -28,29 +28,6 @@ export type RawCommitCast = {
   juror: string;
   /** Unix seconds, from the block the commitment was mined in. */
   timestamp: string;
-};
-
-/**
- * Whether the commitments a view shows were read whole.
- *
- * A count and not an error, because the failure it exists for throws nothing: an endpoint that
- * caps `eth_getLogs` answers with fewer logs and no complaint, and every draw it dropped then
- * renders as a commitment that never happened (ADR-0004). Comparing what came back against the
- * known set — every draw the subgraph reports as committed, in the view's scope — turns that
- * silence into a number.
- */
-export type CommitCoverage = {
-  /**
-   * Whether the log read has happened at all.
-   *
-   * False means the answer is not in yet, and nothing may be concluded from `resolved` — least
-   * of all out loud. A shortfall is only a shortfall once there is a read to have fallen short.
-   */
-  read: boolean;
-  /** Draws the subgraph reports as committed — what a whole read would account for. */
-  expected: number;
-  /** How many of those a log was found for. Equal to `expected` when the scan was whole. */
-  resolved: number;
 };
 
 /** Same canonical-decimal guard as the rest of the model, and for the same reason. */
@@ -89,11 +66,16 @@ export function commitsByDraw(commits: readonly RawCommitCast[]): Map<string, nu
 /**
  * When a draw committed, out of every commitment its agent juror published in the dispute.
  *
- * The earliest one at or after this round's commit period opened. A juror commits at most once
- * per round and a later round opens later, so that is this round's commitment and no other —
- * and choosing this way makes a negative latency structurally impossible rather than something
- * to detect afterwards. A commitment that predates the round is an earlier round's, which is
- * why this returns null rather than failing.
+ * The earliest one at or after this round's commit period opened. A later round opens later, so
+ * that is this round's first commitment and no earlier round's — and choosing this way makes a
+ * negative latency structurally impossible rather than something to detect afterwards. A
+ * commitment that predates the round is an earlier round's, which is why this returns null
+ * rather than failing.
+ *
+ * The *first*, which is the moment the cell's `◐` stage begins. The deployed kit does not stop a
+ * juror committing again in the same period (`_castCommit` overwrites), nor committing two vote
+ * IDs in two transactions; either would leave a later log this does not show. Neither has
+ * happened in court 34, and the subgraph's own `commited` flag turns on at the first.
  */
 export function commitAt(
   moments: readonly number[] | undefined,

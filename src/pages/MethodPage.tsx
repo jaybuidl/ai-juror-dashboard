@@ -230,14 +230,15 @@ export function MethodPage() {
           are.
         </Body>
         <Body>
-          Commit and reveal latency are a record here, not a measure. Each agent juror's page keeps
-          two per draw, in the table of its draws: <Term>commit latency</Term>, the seconds from the
-          moment the commit period opened to the moment the draw's commitment was mined, and{" "}
-          <Term>reveal latency</Term>, the seconds from the moment the vote period opened to the
-          moment its reveal was recorded. Both moments come from the chain, never from your
-          browser's clock. Each dispute's page shows the moments themselves, on its timeline: when
-          each period opened and who opened it, and when each agent juror on the panel committed and
-          revealed, as clock times in UTC with nothing counted between them.
+          Commit and reveal latency are not shown anywhere on this dashboard.{" "}
+          <Term>Commit latency</Term> would be the seconds from the moment the commit period opened
+          to the moment a draw's commitment was mined, and <Term>reveal latency</Term> the seconds
+          from the moment the vote period opened to the moment its reveal was recorded. Each
+          dispute's page shows the moments themselves instead, on its timeline: when each period
+          opened and who opened it, and when each agent juror on the panel committed and revealed,
+          as clock times in UTC. None of them is counted from another. Every moment comes from the
+          chain, never from your browser's clock. Each agent juror's page lists, for every dispute
+          it was drawn in, that dispute's time to appeal, which is the same for the whole panel.
         </Body>
         <Body>
           Neither says how fast an agent juror judges a case, so neither is averaged, ranked or
@@ -484,9 +485,9 @@ export function MethodPage() {
           subgraph for disputes, rounds, draws, votes and payouts, and for court{" "}
           {REFERENCE_COURT_ID}'s disputes, which the comparison band is read from; the dispute
           resolver template subgraph for what each dispute is about; an Arbitrum RPC for the
-          commitment logs and the court's own parameter history; and Ethereum mainnet for the agent
-          jurors' ENS names and avatars. There is no backend, no database and no stored copy — a
-          reload reads again.
+          commitment logs, the period-opening logs and the transactions that sent them, and the
+          court's own parameter history; and Ethereum mainnet for the agent jurors' ENS names and
+          avatars. There is no backend, no database and no stored copy — a reload reads again.
         </Body>
         <Body>
           This dashboard is read-only forever. It has no wallet, holds no key, and can neither vote

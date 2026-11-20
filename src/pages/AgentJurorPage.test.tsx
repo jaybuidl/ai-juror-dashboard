@@ -1,22 +1,11 @@
-import { render, screen, within } from "@testing-library/react";
-import { MemoryRouter } from "react-router";
-import { ThemeProvider } from "styled-components";
+import { screen, within } from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import type { RawCommitCast } from "../performance/commitments";
-import type { ChainRead } from "../performance/useChainReads";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { ROSTER } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
-import { theme } from "../styles/theme";
 import {
-  answered,
-  commitsOf,
-  disputes,
-  failed,
   measured,
-  pending,
-  READ_AT,
   referenceFailed,
   renderAt,
   resolvedRoster,
@@ -29,7 +18,6 @@ import {
   waitingCourt,
 } from "../test/court";
 import { PHONE_WIDTH, stubViewportWidth } from "../test/viewport";
-import { AgentJurorView } from "./AgentJurorPage";
 
 /**
  * One agent juror on its own.
@@ -391,7 +379,8 @@ describe("the agent juror the court has never drawn", () => {
     renderAt("/agent-jurors/Baskerville");
     const coming = screen.getByRole("region", { name: /what appears here on its first draw/i });
 
-    expect(within(coming).getByText(/when it committed and revealed/i)).toBeVisible();
+    expect(within(coming).getByText(/time to appeal/i)).toBeVisible();
+    expect(within(coming).getByText(/the same for its whole panel/i)).toBeVisible();
     expect(within(coming).getByText(/coherence, once ruled/i)).toBeVisible();
     expect(
       within(coming).getByText(/undefined until the appeal period closes and a ruling exists/i),
@@ -618,12 +607,14 @@ describe("one agent juror's own view on a phone", () => {
     expect(screen.getByRole("table")).toBeInTheDocument();
   });
 
-  it("loses no figure with the table: votes, choice and both latencies stay on each block", () => {
+  it("loses no figure with the table: votes, choice and time to appeal stay on each block", () => {
     stubViewportWidth(PHONE_WIDTH);
     renderAt("/agent-jurors/Columbo");
 
-    const labels = screen.getAllByText(/^(Votes|Choice|Reveal|Commit)$/).map((n) => n.textContent);
-    expect(new Set(labels)).toEqual(new Set(["Votes", "Choice", "Reveal", "Commit"]));
+    const labels = screen
+      .getAllByText(/^(Votes|Choice|Time to appeal|Reveal|Commit)$/)
+      .map((n) => n.textContent);
+    expect(new Set(labels)).toEqual(new Set(["Votes", "Choice", "Time to appeal"]));
   });
 });
 
@@ -669,84 +660,49 @@ describe("an agent juror's own account", () => {
   });
 });
 
-/**
- * The view with its own commit read handed over, as the route hands it.
- *
- * Through `AgentJurorView` rather than the route: the route reads Columbo's commitments from
- * Arbitrum itself (ADR-0012), and `yarn test` reaches no network, so through `renderAt` that read
- * never runs and the page draws what it draws before the chain answers.
- */
-const COLUMBO_ADDRESS = "0x70239816581Afff150814B46C831e2e5F9E3bF4C";
-
-function renderColumbo(commits: ChainRead<readonly RawCommitCast[]>) {
-  return render(
-    <ThemeProvider theme={theme}>
-      <MemoryRouter>
-        <AgentJurorView
-          roster={resolvedRoster}
-          disputes={disputes}
-          performance={measured}
-          pathNickname="Columbo"
-          now={READ_AT}
-          commits={commits}
-        />
-      </MemoryRouter>
-    </ThemeProvider>,
-  );
-}
-
-/** The commit figure on one dispute's line of the table. */
-function commitOn(disputeId: number): string {
+/** The figure in one column of one dispute's line of the table. */
+function cellOn(disputeId: number, column: string): string {
   const row = screen.getByRole("link", { name: String(disputeId) }).closest("tr");
   if (row === null) throw new Error(`No row for dispute ${disputeId}`);
   const cells = within(row).getAllByRole("cell");
   const header = screen.getAllByRole("columnheader").map((cell) => cell.textContent);
-  return cells[header.indexOf("Commit")]?.textContent ?? "";
+  return cells[header.indexOf(column)]?.textContent ?? "";
 }
 
-describe("its commitments, read for this agent juror alone (ADR-0012)", () => {
-  it("dates each commitment from its own read", () => {
-    // 2m 06s is Columbo's commitment in dispute 151, the low end of the range the canvas quotes.
-    renderColumbo(answered(commitsOf(COLUMBO_ADDRESS)));
+describe("each dispute's time to appeal, in place of the draw's latencies (ADR-0012)", () => {
+  it("shows the dispute's time to appeal and no commit or reveal column", () => {
+    // Dispute 151 reached its appeal period 48,050s after it was created: 801 minutes, in the
+    // unit the matrix's headline uses for the same figure.
+    renderAt("/agent-jurors/Columbo");
 
-    expect(commitOn(151)).toBe("2m 06s");
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(cellOn(151, "Time to appeal")).toBe("801m");
+    const headers = screen.getAllByRole("columnheader").map((cell) => cell.textContent);
+    expect(headers).not.toContain("Reveal");
+    expect(headers).not.toContain("Commit");
   });
 
-  it("draws a commitment not yet read as a dash, and raises nothing", () => {
-    // Every cold load: the chain answers after the subgraph, and nothing has failed.
-    renderColumbo(pending());
+  it("says in the table's name that the figure is the dispute's, the same for its whole panel", () => {
+    renderAt("/agent-jurors/Columbo");
 
-    expect(commitOn(151)).toBe("—");
-    expect(screen.queryByText("Not read")).not.toBeInTheDocument();
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  });
-
-  it("raises the read when it failed, and says no commit latency is a measurement", () => {
-    renderColumbo(failed());
-
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      /commitments could not be read from Arbitrum, so no commit latency here is a measurement/i,
+    expect(screen.getByRole("table")).toHaveAccessibleName(
+      /how long the dispute took to reach its appeal period, which is the same for the whole panel/,
     );
   });
 
-  it("counts what an answered read did not find, and marks each such draw", () => {
-    const short = commitsOf(COLUMBO_ADDRESS).filter((commit) => commit.disputeID !== "151");
-    renderColumbo(answered(short));
+  it("gives two agent juror pages the same figure for a dispute they shared", () => {
+    // Dispute 151's panel was Columbo and Daemonhill.
+    const { unmount } = renderAt("/agent-jurors/Columbo");
+    const columbo = cellOn(151, "Time to appeal");
+    unmount();
+    renderAt("/agent-jurors/Daemonhill");
 
-    expect(commitOn(151)).toBe("Not read");
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      /1 of \d+ commitments could not be found on Arbitrum/,
-    );
+    expect(cellOn(151, "Time to appeal")).toBe(columbo);
   });
 
-  it("counts nothing missing from a read standing in while the court has moved past it", () => {
-    // The court saw a commitment this read predates, and the re-read is in flight: the moments
-    // it has are shown, and what it lacks is a dash rather than a finding.
-    const short = commitsOf(COLUMBO_ADDRESS).filter((commit) => commit.disputeID !== "151");
-    renderColumbo({ ...answered(short), answered: false });
+  it("reads Arbitrum for nothing, so raises no Arbitrum banner", () => {
+    renderAt("/agent-jurors/Columbo");
 
-    expect(commitOn(151)).toBe("—");
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText(/arbitrum/i)).not.toBeInTheDocument();
   });
 });

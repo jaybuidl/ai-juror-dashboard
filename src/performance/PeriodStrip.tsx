@@ -180,15 +180,16 @@ function hasReached(reading: DisputeReading, period: PeriodRun["period"]): boole
 /**
  * The clock reading, with the day above it where the day is not the one the dispute was created
  * on — an appeal period runs into the next one. The creation itself always carries its day, so
- * the strip says once which day the times are on.
+ * the strip says once which day the times are on; a later round's strip has no creation entry,
+ * so there every moment carries its day.
  */
-function MomentCell({ at, createdAt }: { at: Moment; createdAt: number }) {
+function MomentCell({ at, dayAnchor }: { at: Moment; dayAnchor: number | null }) {
   switch (at.kind) {
     case "at":
       return (
         <When $ink="meta">
           <time dateTime={isoOf(at.seconds)}>
-            {!sameDay(at.seconds, createdAt) && (
+            {(dayAnchor === null || !sameDay(at.seconds, dayAnchor)) && (
               <>
                 {dayOf(at.seconds)} <br />
               </>
@@ -240,11 +241,12 @@ function By({ by, nameOf }: { by: Opener; nameOf: (agentJuror: AgentJuror) => st
 
 function EntryRow({
   entry,
-  createdAt,
+  dayAnchor,
   nameOf,
 }: {
   entry: TimelineEntry;
-  createdAt: number;
+  /** The day the creation's entry states, or `null` where the strip has no creation entry. */
+  dayAnchor: number | null;
   nameOf: (agentJuror: AgentJuror) => string;
 }) {
   switch (entry.kind) {
@@ -264,7 +266,7 @@ function EntryRow({
     case "closed":
       return (
         <Entry>
-          <MomentCell at={{ kind: "at", seconds: entry.at }} createdAt={createdAt} />{" "}
+          <MomentCell at={{ kind: "at", seconds: entry.at }} dayAnchor={dayAnchor} />{" "}
           <What $ink={entry.by.kind === "not-found" ? "unread" : undefined}>
             {entry.kind === "opened" ? "Opened" : "Closed"} by <By by={entry.by} nameOf={nameOf} />
           </What>
@@ -274,7 +276,7 @@ function EntryRow({
     case "revealed":
       return (
         <Entry>
-          <MomentCell at={entry.at} createdAt={createdAt} />{" "}
+          <MomentCell at={entry.at} dayAnchor={dayAnchor} />{" "}
           <What>
             <Glyph aria-hidden="true">{entry.kind === "committed" ? "◐" : "●"}</Glyph>{" "}
             <Name>{nameOf(entry.agentJuror)}</Name> {entry.kind}
@@ -298,7 +300,10 @@ export function PeriodStrip({
   const nameOf = (agentJuror: AgentJuror) =>
     roster.entries.find((entry) => entry.agentJuror.address === agentJuror.address)?.identity
       .nickname ?? agentJuror.nickname;
-  const createdAt = reading.dispute.createdAt;
+  // The day the strip's times are on, said once by the creation's entry. A later round has no
+  // creation in its strip, so every moment there carries its day instead (`null`).
+  const dayOf0 =
+    reading.round === undefined || reading.round.index === 0 ? reading.dispute.createdAt : null;
 
   return (
     <Strip aria-label="Timeline">
@@ -313,12 +318,7 @@ export function PeriodStrip({
             {entries.length > 0 && (
               <Lane aria-label={PERIOD_NAMES[run.period]}>
                 {entries.map((entry) => (
-                  <EntryRow
-                    key={keyOf(entry)}
-                    entry={entry}
-                    createdAt={createdAt}
-                    nameOf={nameOf}
-                  />
+                  <EntryRow key={keyOf(entry)} entry={entry} dayAnchor={dayOf0} nameOf={nameOf} />
                 ))}
               </Lane>
             )}

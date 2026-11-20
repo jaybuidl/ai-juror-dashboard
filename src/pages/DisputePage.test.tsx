@@ -898,6 +898,32 @@ describe("what could not be read", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(/could not be re-read/i);
   });
 
+  it("says both failed reads cost what an earlier read cannot cover, when one is held", () => {
+    renderDispute({
+      performance: { ...measured, parametersError: new Error("UnknownRpcError") },
+      chain: failed(DISPUTE_156_CHAIN),
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/come from an earlier read/);
+  });
+
+  it("says a failed dispute read costs the timeline its openers and commitments too", () => {
+    renderDispute({
+      detail: read({
+        error: new ReadFailure("The core subgraph returned HTTP 503 Service Unavailable", {
+          source: SOURCES.core,
+          status: "HTTP 503",
+        }),
+        detail: NO_DETAIL,
+      }),
+      chain: pending(),
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /the timeline cannot say who opened each period or when each agent juror committed/,
+    );
+  });
+
   it("states both Arbitrum failures in one line, since they share an endpoint", () => {
     // One source gets one banner line: listed twice it would read as two things having gone
     // wrong.
@@ -921,8 +947,14 @@ describe("what could not be read", () => {
       }),
     });
 
-    expect(screen.getByRole("alert")).toHaveTextContent(
-      /2 of 4 commitments and 1 of 4 period openings in this dispute could not be found/,
+    const banner = screen.getByRole("alert");
+    expect(banner).toHaveTextContent(
+      /2 of 4 commitments could not be found on Arbitrum, so when those agent jurors committed is unknown/,
+    );
+    // An opening that was not found keeps its moment, which is the subgraph's: only who opened
+    // it is lost, and the banner says that rather than that the moment is unknown.
+    expect(banner).toHaveTextContent(
+      /1 of 4 period openings could not be found on Arbitrum, so who opened those periods is unknown/,
     );
   });
 

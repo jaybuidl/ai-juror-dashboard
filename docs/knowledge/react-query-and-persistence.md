@@ -27,8 +27,8 @@ this file is the full account.
   `isResolving` is the other half and both are required. This bit three call sites on ticket 15,
   including one pre-dating it in `Roster.tsx`, and the fixture hid it by hard-coding
   `isResolving: false` for a state whose own comment said it covered both. It applies to every
-  caveat any ticket writes from here on. It is the **same shape** as `commitCoverage.read` and as
-  `commitFigureOf`'s `scanned` argument: an absence only becomes a failure once there has been an
+  caveat any ticket writes from here on. It is the **same shape** as `commitCoverage.read` and
+  `commitFigureOf`'s `scanned` argument were, until ADR-0012 retired both: an absence only becomes a failure once there has been an
   answer to fall short of, and every one of these three is a "the read has happened" flag guarding
   a "the read came up empty" test. Ticket 13 reintroduced the bug a third time — converting the
   commit slot to rose put "Not read" on all 56 cells for the length of every cold load — so assume

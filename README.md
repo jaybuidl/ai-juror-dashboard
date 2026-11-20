@@ -3,12 +3,13 @@
 A public, read-only dashboard following the AI agent jurors in Kleros v2 **court 34**
 ("Agentic Commerce Court") on Arbitrum One. It measures how long the court takes to put a
 dispute's votes in front of the parties (**time to appeal**), and whether each agent juror voted
-with the final ruling (**coherence**). Each draw's commit and reveal latency is recorded on its
-agent juror's page, but it is not a measure of speed, nothing ranks agent jurors by it
-([ADR-0010](docs/adr/0010-per-draw-latency-is-not-speed.md)), and the matrix does not show it
-([ADR-0011](docs/adr/0011-a-cell-shows-what-a-draw-did-not-when.md)): a cell shows what a draw
-did, not when. Each dispute's page shows when, as a timeline of moments: when each period opened
-and who opened it, and when each agent juror committed and revealed
+with the final ruling (**coherence**). A draw's commit and reveal latency is not a measure of
+speed, and nothing ranks agent jurors by it
+([ADR-0010](docs/adr/0010-per-draw-latency-is-not-speed.md)); no page shows it as a figure. A
+matrix cell shows what a draw did, not when
+([ADR-0011](docs/adr/0011-a-cell-shows-what-a-draw-did-not-when.md)). Each dispute's page shows
+when, as a timeline of moments: when each period opened and who opened it, and when each agent
+juror committed and revealed
 ([ADR-0012](docs/adr/0012-the-dispute-page-shows-moments-and-reads-its-own.md)).
 
 An ordinary Kleros court takes days to rule. Making it legible how long a court with agent jurors
@@ -98,14 +99,14 @@ row header and one column per agent juror stop fitting an ordinary desktop. Both
 constants with comments saying which they are, and there is no control on the page for a reader to
 set — the matrix crosses over on its own as disputes arrive and as the roster grows.
 
-Two things are not read from a subgraph. When a draw committed comes from `CommitCast` logs on an
-Arbitrum RPC, because the subgraph records only *whether* a juror committed and never *when*; who
-opened a period comes from the transaction behind its `NewPeriod` log. Each is read by the view that
-shows it and for nothing else (ADR-0012): the dispute page reads its own dispute for its timeline,
-and the agent juror page reads its one agent juror for its commit figures. Every draw the subgraph
-calls committed is cross-checked against a matching log, and any shortfall is stated on that page as
-a count — an endpoint that silently returns fewer logs must never render as an agent juror that
-failed to commit. Every scan is cut into windows under arb1's limit on one request (#25).
+Two things the dispute timeline shows are in no subgraph. When a draw committed comes from
+`CommitCast` logs on an Arbitrum RPC, because the subgraph records only *whether* a juror committed
+and never *when*; who opened a period comes from the transaction behind its `NewPeriod` log. Both
+are read by the dispute page for its own dispute and by nothing else (ADR-0012). Every draw the
+subgraph calls committed, and every period it says opened, is cross-checked against a matching log,
+and any shortfall is stated on that page as a count — an endpoint that silently returns fewer logs
+must never render as an agent juror that failed to commit. Every scan is cut into windows under
+arb1's limit on one request (#25).
 
 Court 34's period durations changed partway through the experiment, so the windows each dispute ran
 under are read from the court's own `CourtCreated` and `CourtModified` events rather than from what
@@ -194,7 +195,7 @@ suite joins by filename, so nothing here has to count them. They are the drift c
 cannot perform: that each roster address still answers to the subname it claims, that the core
 subgraph still returns the court's disputes and its draws in the shape the model parses, that the
 template subgraph still resolves what those disputes are about, that Arbitrum still emits the
-`CommitCast` and `NewPeriod` events the timeline and the commit figures are read from — with the
+`CommitCast` and `NewPeriod` events the dispute timeline is read from — with the
 cross-check that every committed draw has a matching log run against the live reads rather than a
 snapshot of them — and
 that court 34 still reports the three period configurations `/method` describes in prose, so a

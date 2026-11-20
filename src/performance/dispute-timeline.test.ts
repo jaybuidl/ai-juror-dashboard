@@ -75,6 +75,32 @@ function line(entry: TimelineEntry): string {
 
 const BLAISE = "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea";
 
+/**
+ * Dispute 156 as if appealed into round `index`, with that round's commit period open and its
+ * panel the same agent jurors. No dispute in court 34 has been appealed; this is the shape the
+ * first one will have.
+ */
+function rowOfRound(index: number): MatrixRow {
+  const [first] = row156.dispute.rounds;
+  if (first === undefined) throw new Error("dispute 156 has no round");
+  const later = {
+    ...first,
+    index,
+    voteOpenedAt: null,
+    appealOpenedAt: null,
+    executionOpenedAt: null,
+  };
+  return {
+    ...row156,
+    dispute: { ...row156.dispute, rounds: [first, later] },
+    cells: row156.cells.map((cell) => (cell === null ? null : { ...cell, roundIndex: index })),
+  };
+}
+
+function appealedTo(index: number): DisputeReading {
+  return reading(rowOfRound(index));
+}
+
 describe("buildDisputeTimeline", () => {
   it("puts each moment in the lane of the period it happened in, in the order it happened", () => {
     const { lanes } = timeline();
@@ -187,21 +213,33 @@ describe("buildDisputeTimeline", () => {
     expect(lanes.commit[1]).toMatchObject({ at: { kind: "at", seconds: 1787298252 } });
   });
 
-  it("takes the latest opening of a period, which is the current round's", () => {
-    const earlier = { period: "1", from: BLAISE, blockNumber: "496700000", logIndex: "3" };
-    const { lanes } = timeline({ ...chain156, openings: [...chain156.openings, earlier] });
+  it("takes round 0's opening of a period in round 0, whatever later rounds opened", () => {
+    const later = { period: "1", from: BLAISE, blockNumber: "497100000", logIndex: "3" };
+    const { lanes } = timeline({ ...chain156, openings: [...chain156.openings, later] });
 
     expect(lanes.commit[0]).toMatchObject({ by: { kind: "off-roster" } });
   });
 
   it("orders two openings in one block by log index", () => {
+    // Two commit openings in one block, the later one Blaise's: round 1's is the second.
     const [commit] = chain156.openings;
     if (commit === undefined) throw new Error("no opening in the fixture");
     const later = { ...commit, from: BLAISE, logIndex: String(Number(commit.logIndex) + 1) };
+    const appealed = appealedTo(1);
 
     expect(
-      timeline({ ...chain156, openings: [...chain156.openings, later] }).lanes.commit[0],
+      timeline({ ...chain156, openings: [later, ...chain156.openings] }, true, appealed).lanes
+        .commit[0],
     ).toMatchObject({ by: { kind: "agent-juror", agentJuror: { nickname: "Blaise" } } });
+  });
+
+  it("never names an earlier round's opener for a round whose opening has not been read", () => {
+    // Round 1's commit period has opened by the subgraph's account and the read holds only
+    // round 0's opening. That opening is not round 1's, so the opener is not found — and counted.
+    const { lanes, missing } = timeline(chain156, true, appealedTo(1));
+
+    expect(lanes.commit[0]).toMatchObject({ kind: "opened", by: { kind: "not-found" } });
+    expect(missing.openings).toBeGreaterThan(0);
   });
 
   it("shows a commitment on chain the subgraph has not caught up with", () => {
@@ -271,8 +309,14 @@ describe("buildDisputeTimeline", () => {
 });
 
 describe("progressOf", () => {
-  it("is the period and how many agent jurors have committed", () => {
-    expect(progressOf(row156)).toBe("execution:4");
+  it("is the round, the period and how many agent jurors have committed", () => {
+    expect(progressOf(row156)).toBe("1:execution:4");
+  });
+
+  it("differs between two rounds that reach the same period with the same count", () => {
+    expect(progressOf(appealedTo(1).dispute === undefined ? row156 : rowOfRound(1))).not.toBe(
+      progressOf(row156),
+    );
   });
 
   it("is nothing for a dispute the court read holds no row for", () => {

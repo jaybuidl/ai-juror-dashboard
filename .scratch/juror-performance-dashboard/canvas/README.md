@@ -229,3 +229,20 @@ which is the case ADR-0010 cites.
 The implementation lays the four lanes out as on the artboard above the breakpoint and stacks them
 in one column below it, where two lanes of moments would leave a nickname a few characters a line.
 The panel cards' `R` and `C` lines on this artboard are still overruled by ADR-0011, as above.
+
+## Amended for ADR-0012: the agent juror table's time to appeal
+
+The same decision took commit and reveal latency off the agent juror page's table of draws (the
+maintainer's call, 2026-11-20): a column of one agent juror's latencies reads as its speed, which
+ADR-0010 says it is not. `Juror.dc.html:113-134` now draws one **Time to appeal** column where
+`Reveal` and `Commit` were. It holds the *dispute's* time to appeal in whole minutes, the same for
+its whole panel, which the implementation's table caption says. Amended in place, line for line:
+the grid's track list at `:116` lost a 150px track, the `Commit` header at `:122` and its cell at
+`:131` are blank lines, `:121` and `:130` carry the new header and cell, and each sampled row in the
+script gained a `t:` in seconds (sampled, like every per-draw figure here). The file is 198 lines as
+before. Its median reveal and commit at `:72-73` and the latency plot at `:86-110` are still
+overruled by ADR-0010, as above.
+
+`JurorEmpty.dc.html:83-84`, the first item under "What appears here on its first draw", now names
+the time to appeal rather than "Commit and reveal latency". Same line count (107). Its two median
+tiles at `:67-68` are still overruled by ADR-0010.

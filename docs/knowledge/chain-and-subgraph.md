@@ -46,8 +46,8 @@ this file is the full account.
   passed alone, and fixed it by not scanning — liveness is read from the ruling and the round
   timeline, so it never needed the commitments. Before adding a commit scan to a live test, ask
   whether the test actually needs a moment, and run the whole suite rather than the one file.
-  Since ADR-0012 the commit scan reads one agent juror or one dispute, never the roster, so a cold
-  load costs that agent juror's commitments rather than the court's.
+  Since ADR-0012 the commit scan reads one dispute, for its timeline, never the roster, so a cold
+  load costs a panel's few commitments rather than the court's.
 - **arb1 refuses an `eth_getLogs` wider than 10,000,000 blocks, and a hundredth of that when a
   topic is a list.** Found 2026-11-20 (#25), when every scan here still ran from block 0 and all of
   them failed at once: `-32602 query spans 525839422 blocks (0 to 525839421), but only 10000000 are
@@ -56,8 +56,8 @@ this file is the full account.
   about 29 days. Measured the same day: one juror over 9.9M blocks answers in ~150ms, two jurors
   over 200K blocks is refused. So no scan puts a list in a topic, and every scan starts at a block
   something fixes and is cut into windows (`scanBlocks`, `LOG_RANGE_LIMIT` in `arbitrum.ts`): court
-  34's creation block 493394990 for anything over the court's life, which is four windows today and
-  one more a month, and the dispute's own first draw for one dispute, which is one. ADR-0012.
+  34's creation block 493394990 for the parameter history, which is four windows today and one
+  more a month, and the dispute's own first draw for one dispute, which is one. ADR-0012.
   Production overrides the endpoint to Alchemy, and on the same day every one of its block-0 scans
   came back with no response at all, with no CORS headers to read a reason through. A first-time
   visitor saw both Arbitrum banners; a returning one still saw the configured windows, restored from

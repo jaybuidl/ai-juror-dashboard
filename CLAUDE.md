@@ -82,7 +82,7 @@ ens-and-roster, architecture, project-history. Read the topic file before workin
   returned against asked-for and report the shortfall as a count.
 - **A flag that is false while a read is in flight is not a flag that the read failed.** An absence
   becomes a failure only once there has been an answer to fall short of. Every emptiness test needs
-  its own gate, tested **both** ways. Four instances so far, three of them reintroductions.
+  its own gate, tested **both** ways. Five instances so far, three of them reintroductions.
 - **arb1 rate-limits per RPC *call*, a batch counting as its size** (`UnknownRpcError`: ask if a live
   test needs a chain read at all), and **refuses a log scan over 10M blocks** (100K for a topic list).
 

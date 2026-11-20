@@ -11,8 +11,9 @@ indexes both the dispute and the juror, so the filter is narrow.
 
 _Amended by [ADR-0012](0012-the-dispute-page-shows-moments-and-reads-its-own.md) (2026-11-20): the
 source stands, and the scan is no longer unchunked or court-wide. arb1 now refuses a scan wider than
-10,000,000 blocks, so every scan is cut into windows from a block the court fixes, and each view
-reads one dispute or one agent juror. `commitCoverage` below moved off the court model with it._
+10,000,000 blocks, so every scan is cut into windows from a block the subgraph fixes, and the only
+view that reads commitments, the dispute timeline, reads one dispute. `commitCoverage` below was
+retired with the court-wide scan; the timeline counts its own shortfall._
 
 Reveal timestamps need none of this: `ClassicJustification.timestamp` already carries them.
 

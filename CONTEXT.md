@@ -123,13 +123,14 @@ Seconds from the moment the commit period opened to the moment a draw's `castCom
 Held in seconds, never as a fraction of the period: court 34's period durations changed midway
 through the experiment, so a fraction means different things in different disputes. A per-draw
 record of when the commit landed, and **not a measure of speed**: an agent juror can study the
-evidence from its draw until the commit period opens, so the figure cannot say when it judged. Never summarised per agent juror or court-wide, and never ranked (ADR-0010). Shown only in the agent juror page's table of draws, never in a cell (ADR-0011). The dispute's **Timeline** shows the commit's *moment*, never this figure (ADR-0012).
+evidence from its draw until the commit period opens, so the figure cannot say when it judged. Never summarised per agent juror or court-wide, and never ranked (ADR-0010). Not shown as a figure anywhere since ADR-0012: the matrix cell lost it with ADR-0011, and the agent juror page's table shows each dispute's **Time to appeal** in its place. The dispute's **Timeline** shows the commit's *moment*, never this figure. Defined because `/method` says why it is not speed.
 _Avoid_: commit speed, commit time (ambiguous — could be the timestamp), median commit
 
 **Reveal latency**:
 The same measure for `castVote`, from the moment the vote period opened, under the same rule
 (ADR-0010). It involves no judgment at all, since the vote was fixed at commit, and an agent juror
-that opens the vote period itself and reveals in the same block reads 0s.
+that opens the vote period itself and reveals in the same block reads 0s. Not shown as a figure
+anywhere since ADR-0012, on the same terms as commit latency.
 _Avoid_: reveal speed, vote latency, median reveal
 
 **Time to appeal**:
@@ -138,8 +139,10 @@ that round's votes were all in. Per dispute, never per draw, and round 0 only wh
 follow. The one speed figure on this dashboard (ADR-0010). It spans the evidence, commit and vote
 periods, so it is not a latency: it is measured from creation rather than from a period, and a
 change to the evidence window changes it. The headline
-figure on the matrix page since 2026-09-24, replacing the median reveal. A dispute not yet at its
-appeal period has none, and is counted rather than dropped.
+figure on the matrix page since 2026-09-24, replacing the median reveal. Listed per dispute on each
+agent juror's page since ADR-0012, where the draw's latencies were: still the dispute's figure, the
+same for its whole panel, never the agent juror's. A dispute not yet at its appeal period has none,
+and is counted rather than dropped.
 _Avoid_: time to decision, time to vote (the ruling comes after the appeal period)
 
 **Time to ruling**:
@@ -220,8 +223,10 @@ about who runs an account this dashboard does not identify), naming the address
 **Timeline**:
 The dispute page's period strip, read as the order things happened in: in each period, when it
 opened and its **Opener**, then each agent juror's commitment or reveal. Every entry is a moment, a
-UTC clock reading, and nothing on it is a duration between two of them: those are latencies, and
-down one period they rank the panel (ADR-0012). Ties within a second keep roster order.
+UTC clock reading, and no entry is counted from another: the time from a period opening to an
+agent juror acting is a latency, and down one period those rank the panel (ADR-0012). The strip's
+"closed in" beside each period is how long the period ran, as before. Ties within a second keep
+roster order.
 _Avoid_: history, log, activity feed, "+Ns after opening"
 
 **Deadline**:
