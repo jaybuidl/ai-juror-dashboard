@@ -413,7 +413,19 @@ function PanelMember({
         </Measures>
       </ColumnHead>
 
-      {justification === null || justification.length === 0 ? (
+      {/* The draw's state comes before the justification. A live draw that has not revealed
+          has a null justification only because the reveal has not happened: there is no vote
+          yet, nothing counts, and nothing was published empty, so none of the copy below it
+          may be said of it (#17). */}
+      {draw.state.kind === "live" && draw.state.stage !== "revealed" ? (
+        <ColumnBody>
+          <Unpublished>
+            <UnpublishedGlyph aria-hidden="true">⋯</UnpublishedGlyph>
+            <UnpublishedHeading>Not revealed yet</UnpublishedHeading>
+            <UnpublishedNote>The justification arrives with the vote.</UnpublishedNote>
+          </Unpublished>
+        </ColumnBody>
+      ) : justification === null || justification.length === 0 ? (
         <ColumnBody>
           <Unpublished>
             <UnpublishedGlyph aria-hidden="true">∅</UnpublishedGlyph>

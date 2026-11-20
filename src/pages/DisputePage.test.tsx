@@ -4,6 +4,7 @@ import { ThemeProvider } from "styled-components";
 import { describe, expect, it } from "vitest";
 import detailFixture from "../performance/dispute-156-detail.fixture.json" with { type: "json" };
 import { NO_DETAIL, type RawDisputeDetail, toDisputeDetail } from "../performance/dispute-detail";
+import type { CourtPerformance, LiveStage } from "../performance/performance";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import type { DisputeDetailView } from "../performance/useDisputeDetail";
 import { ReadFailure, SOURCES } from "../read-failure";
@@ -504,6 +505,56 @@ describe("a draw that published nothing", () => {
 
     expect(
       screen.getAllByText(/This agent juror published no justification with its vote/).length,
+    ).toBeGreaterThan(0);
+  });
+});
+
+describe("a draw that has not revealed yet", () => {
+  /** Dispute 156 reopened, its first two draws back to before their reveal. */
+  function live(...stages: LiveStage[]): CourtPerformanceView {
+    const performance = measured.performance as CourtPerformance;
+    return {
+      ...measured,
+      performance: {
+        ...performance,
+        rows: performance.rows.map((row) => {
+          if (row.dispute.id !== 156) return row;
+          let next = 0;
+          const cells = row.cells.map((cell) => {
+            if (cell === null || next >= stages.length) return cell;
+            const stage = stages[next++] as LiveStage;
+            return { ...cell, state: { kind: "live" as const, stage } };
+          });
+          return { ...row, cells };
+        }),
+      },
+    };
+  }
+
+  it("says the vote is not revealed rather than that it counts", () => {
+    renderDispute({
+      performance: live("awaiting", "committed"),
+      detail: read({ detail: { ...detail156, justifications: [] } }),
+    });
+
+    expect(screen.getAllByText("Not revealed yet")).toHaveLength(2);
+    expect(screen.getAllByText("The justification arrives with the vote.")).toHaveLength(2);
+  });
+
+  it("keeps the published-empty copy for a draw that has revealed", () => {
+    // The gate tested the other way: a live draw that *has* revealed, with no justification,
+    // is a vote on chain whose prose is absent, and says so.
+    renderDispute({
+      performance: live("revealed", "revealed"),
+      detail: read({ detail: { ...detail156, justifications: [] } }),
+    });
+
+    expect(screen.queryByText("Not revealed yet")).not.toBeInTheDocument();
+    expect(
+      screen.getAllByText(/This agent juror published no justification with its vote/).length,
+    ).toBeGreaterThan(0);
+    expect(
+      screen.getAllByText(/Nothing failed here, and nothing was lost in transit/).length,
     ).toBeGreaterThan(0);
   });
 });
