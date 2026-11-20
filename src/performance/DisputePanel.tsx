@@ -243,7 +243,8 @@ const ColumnBody = styled.div`
 
 /* The empty state, and it must not read as a failure. Centred, quiet, and drawn in the
    system's absent-data vocabulary rather than in the failure vocabulary: nothing went wrong
-   here and nothing was lost in transit — the field was published empty. */
+   here and nothing was lost in transit — the field was published empty, or, on a live draw,
+   the reveal that carries it has not happened yet. */
 const Unpublished = styled.div`
   display: flex;
   flex: 1;
@@ -413,11 +414,12 @@ function PanelMember({
         </Measures>
       </ColumnHead>
 
-      {/* The draw's state comes before the justification. A live draw that has not revealed
-          has a null justification only because the reveal has not happened: there is no vote
-          yet, nothing counts, and nothing was published empty, so none of the copy below it
-          may be said of it (#17). */}
-      {draw.state.kind === "live" && draw.state.stage !== "revealed" ? (
+      {/* The draw's state comes before the justification's absence. A live draw that has not
+          revealed has a null justification only because the reveal has not happened: there is
+          no vote yet, nothing counts, and nothing was published empty, so none of the copy
+          below may be said of it (#17). Prose that has arrived is shown whatever the state
+          says, since the court read and this dispute's read can disagree for a poll. */}
+      {justification === null && draw.state.kind === "live" && draw.state.stage !== "revealed" ? (
         <ColumnBody>
           <Unpublished>
             <UnpublishedGlyph aria-hidden="true">⋯</UnpublishedGlyph>

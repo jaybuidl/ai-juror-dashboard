@@ -537,8 +537,27 @@ describe("a draw that has not revealed yet", () => {
       detail: read({ detail: { ...detail156, justifications: [] } }),
     });
 
-    expect(screen.getAllByText("Not revealed yet")).toHaveLength(2);
-    expect(screen.getAllByText("The justification arrives with the vote.")).toHaveLength(2);
+    const [awaiting, committed] = screen.getAllByRole("article");
+    for (const card of [awaiting, committed]) {
+      if (card === undefined) throw new Error("no columns rendered");
+      expect(within(card).getByText("Not revealed yet")).toBeInTheDocument();
+      expect(
+        within(card).getByText("The justification arrives with the vote."),
+      ).toBeInTheDocument();
+      expect(within(card).queryByText(/counts in full/)).not.toBeInTheDocument();
+      expect(within(card).queryByText(/Nothing failed here/)).not.toBeInTheDocument();
+    }
+  });
+
+  it("shows prose that has arrived, whatever the court read still says", () => {
+    // The two reads disagree for up to a poll after a reveal: the justification is in, the
+    // court read still says committed. The prose wins.
+    renderDispute({ performance: live("committed") });
+    const card = screen.getAllByRole("article")[0];
+    if (card === undefined) throw new Error("no columns rendered");
+
+    expect(within(card).queryByText("Not revealed yet")).not.toBeInTheDocument();
+    expect(within(card).queryByText("No justification published")).not.toBeInTheDocument();
   });
 
   it("keeps the published-empty copy for a draw that has revealed", () => {
