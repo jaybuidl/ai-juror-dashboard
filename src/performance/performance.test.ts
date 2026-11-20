@@ -325,6 +325,36 @@ describe("buildCourtPerformance", () => {
       expect(cellFor(163, "Blaise", built(raw))?.revealLatencySeconds).toBe(42);
     });
 
+    it("dates a reveal by its earliest justification, not by the first vote ID it meets", () => {
+      // The subgraph returns vote IDs in id order, which is not time order. A draw whose vote
+      // IDs were revealed in two transactions must be dated by the first of them.
+      const raw = courtData({
+        disputes: [rawDispute({ rounds: [{ id: "163-0", timeline: ["1", "100", "500", "900"] }] })],
+        draws: [
+          rawDraw({
+            id: "163-0-0",
+            vote: {
+              commited: true,
+              voted: true,
+              choice: "2",
+              justification: { timestamp: "190", choice: "2" },
+            },
+          }),
+          rawDraw({
+            id: "163-0-1",
+            vote: {
+              commited: true,
+              voted: true,
+              choice: "2",
+              justification: { timestamp: "130", choice: "2" },
+            },
+          }),
+        ],
+      });
+
+      expect(cellFor(163, "Blaise", built(raw))?.revealLatencySeconds).toBe(30);
+    });
+
     it("never measures one round's reveal against another round's clock", () => {
       // Appeal rounds are out of scope, and one cell per agent juror per dispute is the whole
       // shape of the matrix, so an appealed dispute has to pick a round. Picking wrongly is not

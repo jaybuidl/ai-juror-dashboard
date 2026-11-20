@@ -595,14 +595,24 @@ function choicesOf(votes: readonly RawVote[]): number[] {
   return [...choices];
 }
 
-/** The moment the reveal was recorded, from the one entity that carries it. */
+/**
+ * The moment the reveal was recorded: the earliest justification across the draw's vote IDs.
+ *
+ * The earliest and not the first one met, because the votes arrive in subgraph order, which is
+ * by id and says nothing about time. The classic kit reveals a draw's vote IDs in one
+ * transaction, so today every justification on a draw carries the same moment — but a draw
+ * revealed over two transactions would otherwise be dated by whichever vote ID sorted first,
+ * and a latency is the time until the agent juror first acted.
+ */
 function revealedAt(votes: readonly RawVote[]): number | null {
+  let earliest: number | null = null;
   for (const vote of votes) {
-    const timestamp = vote.justification?.timestamp;
-    if (timestamp !== undefined)
-      return toNumber(timestamp, "Justification carries a bad timestamp");
+    const raw = vote.justification?.timestamp;
+    if (raw === undefined) continue;
+    const timestamp = toNumber(raw, "Justification carries a bad timestamp");
+    if (earliest === null || timestamp < earliest) earliest = timestamp;
   }
-  return null;
+  return earliest;
 }
 
 /**
