@@ -24,9 +24,12 @@ import { ROSTER } from "../roster/agent-jurors";
  * of what the columns declare, a breakpoint below where the grid stops fitting, and column
  * shares summing to 110%. None of the three throws (ticket 24).
  *
- * The two per-column figures are measurements, not preferences: `COMPACT_COLUMN_PX` is about
- * what a compact cell needs before its durations spill into the column beside them, and
- * `COMFORTABLE_COLUMN_PX` is what `canvas/Main.dc.html` draws.
+ * The two per-column figures are measurements, not preferences: `COMPACT_COLUMN_PX` was what a
+ * compact cell needed before its durations spilled into the column beside them, and
+ * `COMFORTABLE_COLUMN_PX` is what `canvas/Main.dc.html` draws. Since ADR-0011 the cell holds no
+ * duration, only a glyph and a ×2, so the cell no longer sets the compact width; the column
+ * header's nickname still does (Daemonhill is 83.20px of an 86.98px slot, `Matrix.tsx`).
+ * Narrowing it is a decision about the header, not one the cell can make on its own.
  */
 /**
  * The row header, and the one width in this file that is not for sale.

@@ -26,10 +26,10 @@ export type CourtPerformanceView = {
    * Why the commit log read failed, separately from `error`.
    *
    * Separate because `error` is the failure that leaves `performance` null, and this one must
-   * never do that: commit latency is read from Arbitrum and everything else in the matrix is
-   * not, so folding an outage there into the blocking channel would blank sixteen rows of
-   * subgraph measurements that are entirely true. The matrix already states the shortfall in
-   * words; this is the reason behind it, for the banner ticket 13 builds.
+   * never do that: commit latency is read from Arbitrum and nothing in the matrix is, so folding
+   * an outage there into the blocking channel would blank every row of subgraph measurements that
+   * are entirely true. Since ADR-0011 only the agent juror page shows a figure read from it, and
+   * that page states the shortfall and raises this as its banner.
    *
    * It is also the half that tells a read still in flight from one that failed. Both leave
    * `commitCoverage.read` false, and a page that keyed its wording on that flag alone would
@@ -60,7 +60,7 @@ export type CourtPerformanceView = {
    * It is read from the **core subgraph**, unlike the two above — the same deployment that
    * serves the disputes and the draws. So an outage there raises this alongside `error`, and
    * `MatrixPage` has to state one failure once: `coreFailureOf` ranks this last and returns a
-   * single entry, exactly as `arbitrumFailureOf` does for the two reads that share Arbitrum.
+   * single entry, as the dispute and agent juror views do for the two reads that share Arbitrum.
    */
   rewardsError: Error | null;
   /**
@@ -205,10 +205,10 @@ export function useCourtPerformance(
   /**
    * The commitments, read from Arbitrum rather than from the subgraph (ADR-0004).
    *
-   * A separate query on purpose, and one the matrix does not wait on: reveal latency and
-   * coherence come from the subgraph and are unaffected by an Arbitrum outage, so a failure
-   * here costs the commit line and nothing else. Blanking sixteen rows of true measurements
-   * over an endpoint that carries half of one of them would be the worse lie.
+   * A separate query on purpose, and one the matrix does not wait on: draw state, reveal latency
+   * and coherence come from the subgraph and are unaffected by an Arbitrum outage, so a failure
+   * here costs each draw's commit figure on the agent juror page and nothing else. Blanking the
+   * matrix over an endpoint that carries none of it would be the worse lie.
    *
    * Keyed on the draws it has to explain, which is what keeps the cross-check honest. The count
    * compares two reads, so it is only meaningful when both have seen the same court: were this
@@ -367,8 +367,8 @@ export function useCourtPerformance(
   return {
     performance: result?.success === true ? result.data : null,
     // Both Arbitrum reads are deliberately absent from `isLoading`: the matrix renders as soon
-    // as the subgraph answers, and says separately that the commit column and the window
-    // marker are not in yet.
+    // as the subgraph answers. Neither read feeds the matrix (ADR-0011); the agent juror page
+    // and the dispute page say for themselves when the one they show is not in yet.
     isLoading: query.isPending || disputes.isLoading,
     error:
       query.error ??

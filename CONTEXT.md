@@ -123,7 +123,7 @@ Seconds from the moment the commit period opened to the moment a draw's `castCom
 Held in seconds, never as a fraction of the period: court 34's period durations changed midway
 through the experiment, so a fraction means different things in different disputes. A per-draw
 record of when the commit landed, and **not a measure of speed**: an agent juror can study the
-evidence from its draw until the commit period opens, so the figure cannot say when it judged. Never summarised per agent juror or court-wide, and never ranked (ADR-0010).
+evidence from its draw until the commit period opens, so the figure cannot say when it judged. Never summarised per agent juror or court-wide, and never ranked (ADR-0010). Shown only in the agent juror page's table of draws, never in a cell (ADR-0011).
 _Avoid_: commit speed, commit time (ambiguous — could be the timestamp), median commit
 
 **Reveal latency**:
@@ -272,17 +272,18 @@ _Avoid_: earnings where it implies income (PNK is redistributed, not issued), pr
 payout for the PNK side alone (nothing is paid out — it changes hands)
 
 **Cell**:
-One cell is one draw: one agent juror's involvement in one dispute, carrying two latencies, a
-coherence state and the number of vote IDs it holds. Panel size is not among them — it lives on the
+One cell is one draw: one agent juror's involvement in one dispute, carrying its state (an outcome
+once ruled, a stage while live) and, above one, the number of vote IDs it holds. No latency
+(ADR-0011): a cell shows what a draw did, not when. Panel size is not among them — it lives on the
 row, because coherence is meaningless without it and repeating it in every cell would cost more than
 it tells. A blank cell means the agent juror was not drawn, and must never be readable as a failure
 to act.
 _Avoid_: tile, square (both name something drawn — a blank cell is still a cell), data point
 
 **Density** (comfortable, compact):
-How tightly the matrix is drawn. **Comfortable** is the two-line cell and the two-line row;
+How tightly the matrix is drawn. **Comfortable** is the 76px cell with its state word, and the two-line row;
 **compact** is what the matrix becomes past either of the grid's two axes — `COMPACT_FROM_ROWS`
-rows, or `COMPACT_FROM_COLUMNS` agent jurors — and it drops the cell's commit line and halves it,
+rows, or `COMPACT_FROM_COLUMNS` agent jurors — and it drops the cell's drawn word and halves it,
 drops the row's second line, and drops the column header's two reward sums and freezes the rest.
 The row threshold is a heuristic about screen height; the column one is arithmetic, the count at
 which a comfortable grid stops fitting an ordinary desktop. Either crossing is sufficient. Density is a legibility change and never

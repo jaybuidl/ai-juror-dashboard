@@ -3,9 +3,11 @@
 A public, read-only dashboard following the AI agent jurors in Kleros v2 **court 34**
 ("Agentic Commerce Court") on Arbitrum One. It measures how long the court takes to put a
 dispute's votes in front of the parties (**time to appeal**), and whether each agent juror voted
-with the final ruling (**coherence**). Each draw's commit and reveal latency is recorded, but it is
-not a measure of speed and nothing ranks agent jurors by it
-([ADR-0010](docs/adr/0010-per-draw-latency-is-not-speed.md)).
+with the final ruling (**coherence**). Each draw's commit and reveal latency is recorded on its
+agent juror's page, but it is not a measure of speed, nothing ranks agent jurors by it
+([ADR-0010](docs/adr/0010-per-draw-latency-is-not-speed.md)), and the matrix does not show it
+([ADR-0011](docs/adr/0011-a-cell-shows-what-a-draw-did-not-when.md)): a cell shows what a draw
+did, not when.
 
 An ordinary Kleros court takes days to rule. Making it legible how long a court with agent jurors
 on its panels takes is the dashboard's job: the headline is the median time to appeal, plotted
@@ -16,8 +18,8 @@ against an ordinary court's time to ruling.
 **The matrix is live, and it now has a dashboard around it.** This repository contains the
 application shell, the deployment pipeline, the Kleros ×AI visual system, and seven routes under
 one piece of chrome: the matrix at `/` — one row per dispute, headed by what that dispute is
-actually about, one column per agent juror, each cell carrying that draw's commit latency, its
-reveal latency and whether it voted with the dispute's final ruling — plus the court's totals and
+actually about, one column per agent juror, each cell carrying that draw's state: its outcome
+once the dispute is ruled, its stage while it is live — plus the court's totals and
 its time-to-appeal distribution above it, a dispute index at `/disputes`, one dispute read whole at
 `/disputes/:id`, every agent juror at `/agent-jurors`, one of them on its own at
 `/agent-jurors/:nickname`, how everything is measured at `/method`, and a 404 view
@@ -64,10 +66,10 @@ with a strip of fixed slots along its foot, one per agent juror in roster order 
 agent juror was drawn or not — six to a line, wrapping onto a second line rather than shrinking
 when the roster is longer — so the property the matrix exists for survives the fold: the nth slot
 is the same agent juror in the same place on every card, and one agent juror can be scanned down
-the page the way a column is scanned across a grid. A slot carries an avatar, the state glyph and
-one figure — the latency of the most recent thing that draw did — and an agent juror who was not
+the page the way a column is scanned across a grid. A slot carries an avatar and the state glyph,
+with the vote count beside it where the draw held more than one, and an agent juror who was not
 drawn keeps its position and collapses to a single dot, so absence still reads as absence. The card is the tap
-target and opens that dispute's own page, where both latencies and the published reasoning are. The
+target and opens that dispute's own page, where the ballot and the published reasoning are. The
 chrome folds with it: the lockup keeps the official wordmark and drops its diamond, the four
 destinations go behind one menu, three stat tiles replace four with the median time to appeal leading, and
 the read-only statement stays in the bar. Every caveat a desktop reader meets, a phone reader meets
@@ -81,8 +83,8 @@ has no column headers to carry it.
 
 **On a desktop it compacts as the court and the roster grow, and compacting is not editing.** Past
 a threshold in the region of forty rows — or past the columns a comfortable grid fits on a desktop,
-which the roster has already crossed — the matrix drops to a denser form of itself: the cell keeps its reveal
-latency and its coherence state and gives up its commit line, halving in height; the row gives up
+which the roster has already crossed — the matrix drops to a denser form of itself: the cell keeps its glyph and
+its vote count and gives up its drawn word, halving in height; the row gives up
 its second line; each column header keeps
 its outcome breakdown and its draw count, and freezes at the top of the page — or,
 where the grid is too wide for the window, at the top of its own window-high scroll box, beside a
@@ -97,7 +99,7 @@ set — the matrix crosses over on its own as disputes arrive and as the roster 
 Commit latency is the one figure not read from a subgraph: it comes from `CommitCast` logs on an
 Arbitrum RPC, because the subgraph records only *whether* a juror committed and never *when*. Every
 draw the subgraph calls committed is cross-checked against a matching log, and any shortfall is
-stated on the page as a count — an endpoint that silently returns fewer logs must never render as
+stated on each agent juror's page as a count — an endpoint that silently returns fewer logs must never render as
 an agent juror that failed to commit.
 
 Court 34's period durations changed partway through the experiment, so the windows each dispute ran
@@ -121,8 +123,8 @@ whole, with a retry beside it — and says so a second time in the place where t
 would have been. A read that costs only a label is quiet and local: ENS is the one documented
 exception, so an unreachable mainnet falls back to the checked-in roster nicknames in a
 degraded-not-broken panel and raises nothing, because no measurement depends on it. A dispute whose
-draws could not be read at all is drawn as Unknown across its whole row — `?` and the words "not
-read" in every slot — which is deliberately not what an empty cell means. An empty cell means the
+draws could not be read at all is drawn as Unknown across its whole row — `?` in every cell and a
+"Not read" flag on the row — which is deliberately not what an empty cell means. An empty cell means the
 agent juror was not drawn, and the difference between a gap in the record and a fact about the
 court is the one this dashboard exists to keep.
 
@@ -133,7 +135,7 @@ records the things that cost real time to discover. The design that this scaffol
 | --- | --- |
 | [`CONTEXT.md`](CONTEXT.md) | The glossary. Read before naming anything |
 | [`docs/knowledge/`](docs/knowledge/) | The domain knowledge base — every trap this project has hit, in full |
-| [`docs/adr/`](docs/adr/) | Ten decisions a reader would otherwise question |
+| [`docs/adr/`](docs/adr/) | Eleven decisions a reader would otherwise question |
 | [`.scratch/juror-performance-dashboard/spec.md`](.scratch/juror-performance-dashboard/spec.md) | The spec, plus a Further Notes section of hard-won facts |
 | [`.scratch/juror-performance-dashboard/issues/`](.scratch/juror-performance-dashboard/issues/) | Twenty-six tickets, blockers first |
 | [`.scratch/juror-performance-dashboard/canvas/DESIGN_PROMPT.md`](.scratch/juror-performance-dashboard/canvas/DESIGN_PROMPT.md) | The UI brief. Answered — read the canvas rather than re-deriving it |

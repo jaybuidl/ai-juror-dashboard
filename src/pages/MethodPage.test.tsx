@@ -88,19 +88,21 @@ describe("the method page", () => {
     expect(section).toHaveTextContent(/Evidence 10m · commit 45m · vote 30m · appeal 36h/);
   });
 
-  it("says the third change moved the evidence period and reached no latency", () => {
+  it("says the third change moved the evidence period and no commit or vote window", () => {
     // Ticket 19. The court was reconfigured on 26 August and dispute 152 is older than that
-    // change, and its latencies are still comparable with today's, which is a contradiction to
-    // anyone who has not been told that only the commit and vote windows matter to a latency.
-    // This is where they are told.
+    // change, and its draws' times were still taken against today's windows, which is a
+    // contradiction to anyone who has not been told that only the commit and vote windows matter
+    // to them. This is where they are told.
     renderAt("/method");
 
     const section = screen.getByRole("region", { name: /the window/i });
 
     expect(section).toHaveTextContent(/moved the evidence period alone, from 45 minutes to 10/i);
-    expect(section).toHaveTextContent(/The second reconfiguration reaches no latency/i);
     expect(section).toHaveTextContent(
-      /dispute 152 ran under a configuration the court has since replaced, and still the windows its latencies were measured against are the windows the court holds now/i,
+      /The second reconfiguration left the commit and vote windows exactly where they were/i,
+    );
+    expect(section).toHaveTextContent(
+      /dispute 152 ran under a configuration the court has since replaced, and still its draws' commit and reveal times were taken against the windows the court holds now/i,
     );
   });
 
@@ -121,7 +123,7 @@ describe("the method page", () => {
     );
   });
 
-  it("defines time to appeal where latency is defined, per dispute and round 0 only", () => {
+  it("defines time to appeal, per dispute and round 0 only", () => {
     renderAt("/method");
 
     const section = screen.getByRole("region", { name: /speed is time to appeal/i });
@@ -139,6 +141,7 @@ describe("the method page", () => {
     expect(section).toHaveTextContent(/it is the one figure here that measures speed/i);
     expect(section).toHaveTextContent(/neither is averaged, ranked or plotted here/i);
     expect(section).toHaveTextContent(/reveals in the same block reads 0 seconds/i);
+    expect(section).toHaveTextContent(/a record here, not a measure/i);
     // The framing this replaced, on the page a citing reader goes to for definitions.
     expect(screen.queryByText(/speed and coherence/i)).not.toBeInTheDocument();
   });
@@ -165,12 +168,10 @@ describe("the method page", () => {
     expect(section).toHaveTextContent(/never from what the court is configured with today/i);
   });
 
-  it("never turns a latency into a fraction of a window, and says so", () => {
+  it("never turns a duration into a fraction of a window, and says so", () => {
     renderAt("/method");
 
-    expect(
-      screen.getByText(/a latency is never divided by one, in a cell, in a total/i),
-    ).toBeInTheDocument();
+    expect(screen.getByText(/no duration is ever divided by one/i)).toBeInTheDocument();
   });
 
   it("stamps no read, carrying no figure of its own", () => {

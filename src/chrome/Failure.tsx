@@ -13,8 +13,8 @@ import type { Failures } from "./failures";
  * added by a ticket that never met the others. They said the same thing three ways.
  *
  * One deliberate departure from the artboard: the banner's badge is a rose dot and not the
- * glyph drawn at `:45`. That glyph is the one Cell.dc.html:140 reserves for a draw that failed
- * to act and says is used nowhere else, so copying it here would put the loudest cell state's
+ * glyph drawn at `:45`. That glyph marks the draw that failed to act, which Cell.dc.html:153
+ * calls the only loud state, so copying it here would put the loudest cell state's
  * mark on a banner about a network. Recorded in canvas/README.md § Known defects; the unread
  * cell's own mark is correct as drawn and is used as drawn.
  */

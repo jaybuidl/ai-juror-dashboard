@@ -8,7 +8,6 @@ import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import { DisputeList } from "../disputes/DisputeList";
 import type { DisputesView } from "../disputes/useDisputes";
-import { arbitrumSource } from "../performance/arbitrum";
 import { CourtAnnouncer } from "../performance/CourtAnnouncer";
 import { DisputeCards } from "../performance/DisputeCards";
 import { Matrix } from "../performance/Matrix";
@@ -142,7 +141,7 @@ function coreFailureOf(
         performance.error,
         SOURCES.core,
         measured === null
-          ? "The draws could not be read, so no latency and no coherence on this page was measured on this load."
+          ? "The draws could not be read, so no draw and no coherence on this page was measured on this load."
           : "The draws could not be re-read, so the matrix below joins the disputes just read to an earlier read of the draws.",
       ),
     );
@@ -240,61 +239,12 @@ function coreFailureOf(
 }
 
 /**
- * What is wrong with the commit half — at most one thing, worded by what is actually on screen.
- *
- * Two states, and the wording has to keep them apart because the difference is whether the commit
- * column below can be quoted. react-query keeps the commitments it already holds when a refetch
- * fails — the key does not change across one — so an Arbitrum outage very often arrives over a
- * full column of real, earlier-read figures. Announcing "no commit latency below is a measurement"
- * there is false about every one of them, and it is the likely case rather than the exotic one:
- * `CLAUDE.md` records that arb1 rate-limits per call and surfaces it as an `UnknownRpcError`.
- *
- * The error outranks the shortfall count when both are present. They are the same endpoint, and a
- * banner listing one source twice reads as two things having gone wrong; the count is still stated
- * in full beside the grid, which is the "twice" the criterion asks for.
- */
-function arbitrumFailureOf(performance: CourtPerformanceView): FailedRead | null {
-  const measured = performance.performance;
-  const coverage = measured?.commitCoverage;
-  // Once, for both branches: they are the same endpoint, and the name is derived from the
-  // URL in use rather than being a constant. See `arbitrumSource`.
-  const source = arbitrumSource();
-
-  if (performance.commitError !== null) {
-    return failureOf(
-      performance.commitError,
-      source,
-      coverage?.read === true
-        ? "The commitments could not be re-read from Arbitrum, so every commit latency below comes from an earlier read and none of them accounts for a commitment made since."
-        : "The commitments could not be read from Arbitrum, so no commit latency below is a measurement.",
-    );
-  }
-
-  // `read` gates this and not just the count, for the reason ticket 07 found by review: until the
-  // scan comes back every commitment is unresolved, and a banner keyed on the count alone would
-  // announce that all 56 failed on every cold load, before they had.
-  if (coverage?.read === true && coverage.expected > coverage.resolved) {
-    return {
-      source: source,
-      status: "Short read",
-      what: `${coverage.expected - coverage.resolved} of ${coverage.expected} commitments could not be found on Arbitrum, so those commit latencies are unknown.`,
-    };
-  }
-
-  // Not the parameter history, though the same endpoint serves it. On this page it fed only the
-  // † row marker, removed on 2026-09-24 (maintainer's ruling), so its failure costs nothing here
-  // and a banner about it would describe nothing on screen — the agent juror view's rule since
-  // ADR-0010. The dispute view still raises it, because its timeline shows the configured windows.
-  return null;
-}
-
-/**
  * What could not be read on this view, in the two tiers ticket 13 defines.
  *
  * The rule, from the ticket and from `Errors.dc.html`'s own rule panel: a failure that changes a
  * number is loud, a failure that changes only a label is quiet, and ENS is the single documented
- * exception. That puts the core subgraph, the template subgraph and Arbitrum in `blocking` and
- * the mainnet endpoint in `degraded`.
+ * exception. That puts the core subgraph and the template subgraph in `blocking` and the mainnet
+ * endpoint in `degraded`. Arbitrum was loud here too until nothing on this page read from it.
  *
  * The template subgraph is the one worth arguing about, and it is loud here because the ticket
  * and the canvas both say so outright — the ticket names ENS as "the one documented exception",
@@ -322,7 +272,10 @@ function failuresOf(
             what: `${missingTitles} of ${titles?.expected} dispute subjects could not be read, so those rows are identified by their dispute ID alone.`,
           }
         : null,
-      arbitrumFailureOf(performance),
+      // Nothing from Arbitrum, though this page used to raise both of its reads. The parameter
+      // history fed only the † row marker, removed on 2026-09-24; the commit scan fed the cells'
+      // commit figures, removed by ADR-0011. A banner about either would describe nothing on
+      // screen. The agent juror view still raises the scan, and the dispute view the history.
     ),
     // The matrix's column headers carry the same nicknames and the same avatars the roster does —
     // one of each per entry, counted off `ROSTER.length` and never written down — so this view
@@ -436,7 +389,7 @@ export function MatrixPage(props: MatrixPageProps) {
             This page measures how long the court took to bring each dispute to appeal, and whether
             each agent juror voted with the dispute's final ruling — but not on this load: what it
             needed could not be read, and it shows what it did read rather than a matrix built from
-            part of it. Nothing below is a latency, a coherence or a draw.
+            part of it. Nothing below is a time to appeal, a coherence or a draw.
           </CaveatBody>
         </Caveat>
       ) : null}
@@ -474,8 +427,8 @@ export function MatrixPage(props: MatrixPageProps) {
             // the dispute read failed, and when the seam rejected the payload it was given.
             <Notice $tone="rose" role="status">
               The matrix could not be built from what was read, so it is not shown. Below is the
-              record of which disputes the court has held — no latency, coherence or draw has been
-              measured from it.
+              record of which disputes the court has held — no time to appeal, coherence or draw has
+              been measured from it.
             </Notice>
           )}
           <DisputeList {...disputes} />

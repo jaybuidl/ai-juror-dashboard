@@ -2,7 +2,10 @@ import { formatLatencySeconds } from "./latency";
 import type { Draw, DrawState, LiveStage } from "./performance";
 
 /**
- * One measurement as a cell states it: a duration, or a word saying why there is not one.
+ * One measurement as a draw's row states it: a duration, or a word saying why there is not one.
+ *
+ * The matrix cell carried two of these until ADR-0011; the agent juror page's table of draws is
+ * where they are read now.
  *
  * `value` is a figure; `missed` is an agent juror that did not act while it could; `pending` is
  * a step not yet reached; `unread` is a moment this dashboard could not read. The two measures
@@ -23,7 +26,7 @@ export type Figure = {
  * What a cell says, before any of it is drawn.
  *
  * Separate from `Matrix.tsx` because it is the part of the design that has to be checked rather
- * than looked at: ADR-0006 requires the five states to stay apart with hue removed, which is a
+ * than looked at: ADR-0006 requires every state to stay apart from every other with hue removed, which is a
  * property of this table and not of the stylesheet. Keeping it out of the component module also
  * keeps that module exporting components only, which is what React Fast Refresh needs.
  */
@@ -38,20 +41,27 @@ export type Presentation = {
   tone: Tone;
   /** Whether the cell carries a tint and a border of its own. */
   filled: boolean;
+  /**
+   * Whether that border is dashed: a draw the court is still waiting on, which has done nothing
+   * yet. The one live stage drawn as an outline of what is to come rather than a mark of what
+   * happened, so it stays apart from the other two with hue and glyph both removed.
+   */
+  dashed: boolean;
 };
 
 /**
- * The live family, worded for the point a draw has reached.
+ * The live family, one glyph and one word per point a draw has reached (ADR-0011).
  *
- * The legend names this family once, as `Acting`; the cell is what says which stage. `Revealed`
- * is a draw whose vote is in and whose dispute has no ruling yet — every draw in disputes
- * 164–166 on the day this was built. Its latency is real and shown; its coherence is not
- * knowable, and the cell says which.
+ * The glyph is what tells the three apart, because the compact cell draws nothing else: until
+ * ADR-0011 all three shared `⋯` and the only thing separating them there was the latency beside
+ * it — a dash or a time. With the times gone each stage needs its own mark. `Revealed` is a draw
+ * whose vote is in and whose dispute has no ruling yet; its coherence is not knowable, and the
+ * glyph says how far it got rather than guessing which way it went (ADR-0007).
  */
-const LIVE_WORDS: Record<LiveStage, string> = {
-  awaiting: "Awaiting",
-  committed: "Committed",
-  revealed: "Revealed",
+const LIVE: Record<LiveStage, { glyph: string; word: string }> = {
+  awaiting: { glyph: "⋯", word: "Awaiting" },
+  committed: { glyph: "◐", word: "Committed" },
+  revealed: { glyph: "●", word: "Revealed" },
 };
 
 /**
@@ -66,36 +76,42 @@ export function presentationOf(state: DrawState): Presentation {
     // The common case, and the quiet one: no fill, no border, so the exceptions are what the
     // eye lands on across a page of forty-odd cells.
     case "coherent":
-      return { glyph: "✓", word: "Coherent", tone: "pass", filled: false };
+      return { glyph: "✓", word: "Coherent", tone: "pass", filled: false, dashed: false };
     // Paid like a coherent vote, so in its ink — but outlined, where coherent is bare, and with
     // a glyph and a word of its own (ADR-0009). Six disputes in 166 tied, and a reader has to be
     // able to find them: a tie is how the court decided, and every voter in one was paid for it.
     case "tied":
-      return { glyph: "=", word: "Tied", tone: "pass", filled: true };
+      return { glyph: "=", word: "Tied", tone: "pass", filled: true, dashed: false };
     // Amber and not rose. Voting in the minority is a legitimate outcome that costs the agent
     // juror PNK; it is not a malfunction and must not look like one.
     case "diverged":
-      return { glyph: "✕", word: "Diverged", tone: "work", filled: true };
+      return { glyph: "✕", word: "Diverged", tone: "work", filled: true, dashed: false };
     // The loudest state on the page: drawn, the period closed, and nothing arrived.
     case "no-vote":
-      return { glyph: "∅", word: "No vote", tone: "fail", filled: true };
+      return { glyph: "∅", word: "No vote", tone: "fail", filled: true, dashed: false };
     case "live":
-      return { glyph: "⋯", word: LIVE_WORDS[state.stage], tone: "live", filled: true };
+      return {
+        ...LIVE[state.stage],
+        tone: "live",
+        filled: true,
+        dashed: state.stage === "awaiting",
+      };
   }
 }
 
 /**
  * The sixth state, and the only one that belongs to no draw.
  *
- * Ticket 13 and `canvas/Errors.dc.html:100-112`. A dispute whose draws were never read has six
- * cells that look exactly like six cells nobody was drawn for, and the difference between those
- * two is the difference between a gap in this dashboard and a fact about the court. It is drawn
- * as far from "not drawn" as the vocabulary allows — a fill, a border, a glyph, a word and rose,
- * against the emptiest thing on the page.
+ * Ticket 13 and `canvas/Errors.dc.html:100-112`, less the R and C lines that artboard still prints
+ * in each cell (ADR-0011). A dispute whose draws were never read has six cells that look exactly
+ * like six cells nobody was drawn for, and the difference between those two is the difference
+ * between a gap in this dashboard and a fact about the court. It is drawn as far from "not drawn"
+ * as the vocabulary allows — a fill, a border, a glyph, a word and rose, against the emptiest
+ * thing on the page.
  *
  * It shares rose with `no-vote` and is told apart from it by glyph and word alone, which is what
- * ADR-0006 says rose costs: `?` against `∅`, "Unknown" against "No vote". The words in the slots
- * carry the rest, so a reader can name which rows are evidence and which are a gap without
+ * ADR-0006 says rose costs: `?` against `∅`, "Unknown" against "No vote". The row's own "Not read"
+ * pill carries the rest, so a reader can name which rows are evidence and which are a gap without
  * consulting the legend.
  *
  * Not a member of `DrawState` on purpose. That union describes a draw, and the whole point of
@@ -106,10 +122,27 @@ export const UNREAD_PRESENTATION: Presentation = {
   word: "Unknown",
   tone: "fail",
   filled: true,
+  dashed: false,
 };
 
-/** What every slot of an unread cell reads. The words are the signal; the rose is the second one. */
+/**
+ * What a figure reads where its read came back short. The words are the signal; the rose is the
+ * second one. The cell no longer carries a figure (ADR-0011); the column header's payouts and the
+ * agent juror page's draws table still do.
+ */
 export const UNREAD_FIGURE: Figure = { text: "Not read", tone: "unread" };
+
+/**
+ * The draw's share of its round's votes, as the cell annotates it: `×2`, or nothing at all.
+ *
+ * Absent whenever it would say ×1, which most draws are: an annotation that is almost always the
+ * same number is noise on a page of cells. Kept at every density since ADR-0011, because a draw
+ * holding two of a round's five votes decides more of it than one holding one, and with the
+ * times gone it is the one piece of context the cell has room for.
+ */
+export function voteWeightOf(draw: Draw): string | null {
+  return draw.voteCount > 1 ? `×${draw.voteCount}` : null;
+}
 
 /**
  * What the reveal slot reads, and why it never goes blank.
@@ -117,7 +150,7 @@ export const UNREAD_FIGURE: Figure = { text: "Not read", tone: "unread" };
  * Three absences that must not be confused: a reveal that will not come (`Missed`), one that
  * has not come yet (`—`), and one that came without leaving a moment behind (`Not dated` — the
  * timestamp lives only on the justification, so a reveal with none cannot be dated). Blank is
- * reserved for a cell with no draw in it at all.
+ * reserved for a draw that is not there at all.
  *
  * `Not dated` was `Unknown` until ticket 13, and the rename is the substantive half of that
  * ticket's instruction to decide which of three Unknowns keeps the word. This one is the record
@@ -147,13 +180,13 @@ export function revealFigureOf(draw: Draw): Figure {
  * That last case is the whole reason ADR-0004 asks for a cross-check. A provider that caps
  * `eth_getLogs` returns fewer logs and no error, so the draw arrives committed with no moment —
  * and wording it `Missed` would blame an agent juror that committed on time. `commitCoverage`
- * counts these; this is what one of them looks like in the cell it lands in.
+ * counts these; this is what one of them looks like in the row it lands in.
  *
  * Ticket 07 wrote it `Unknown` in pending ink and flagged it as the strongest candidate to
  * convert, which ticket 13 did: this *is* a read that came back short, so it takes the same
  * words and the same rose as the unread row — `Not read`, ADR-0006's second meaning for rose.
- * Nothing is lost by the ink being loud here. The cross-check counts exactly these cells, and
- * the notice above the grid explains them; a reader who spots one has somewhere to go.
+ * Nothing is lost by the ink being loud here. The cross-check counts exactly these draws, and
+ * that page's Arbitrum banner explains them; a reader who spots one has somewhere to go.
  *
  * `scanned` is what keeps that loudness honest, and it is the same distinction `commitCoverage.read`
  * exists for one level up. The chain answers slower than the subgraph and this page deliberately
@@ -172,29 +205,4 @@ export function commitFigureOf(draw: Draw, scanned: boolean): Figure {
   }
   if (draw.state.kind === "no-vote") return { text: "Missed", tone: "missed" };
   return { text: "—", tone: "pending" };
-}
-
-/**
- * The one figure a phone's slot has room for: the latency of the most recent thing the draw did.
- *
- * A desktop cell shows both measures, one above the other. A 52pt slot shows one, so ticket 16
- * has to choose which — and the choice is not "the reveal, falling back to the commit". It is
- * the *last* thing that happened, which is the reveal wherever there is one and the commit only
- * while the reveal is still ahead. On a finalised card the reveal always wins, including where
- * it is a word rather than a duration: `Missed` is what a draw that never revealed did, and
- * showing its commit latency instead would report an agent juror that failed to vote as one
- * that acted in 41 seconds.
- *
- * Commit latency is not lost, only off the face: the card opens that dispute's own view, where
- * ticket 09 prints both. ADR-0005 records the same move being made once already, on the agent
- * juror's latency profile (itself removed since, by ADR-0010), and for the same reason —
- * dispute 151's 8-hour commit window makes the commit the least comparable figure on the page.
- *
- * `scanned` is `commitCoverage.read`, and it matters here for the same reason it matters in the
- * cell: between the subgraph's answer and Arbitrum's, every committed draw has no log yet, and
- * a slot that read "Not read" on every cold load would announce a failure before it happened.
- */
-export function slotFigureOf(draw: Draw, scanned: boolean): Figure {
-  const awaitingReveal = draw.state.kind === "live" && draw.state.stage !== "revealed";
-  return awaitingReveal ? commitFigureOf(draw, scanned) : revealFigureOf(draw);
 }
