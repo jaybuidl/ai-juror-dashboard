@@ -612,9 +612,9 @@ describe("one agent juror's own view on a phone", () => {
     renderAt("/agent-jurors/Columbo");
 
     const labels = screen
-      .getAllByText(/^(Votes|Choice|Time to appeal|Reveal|Commit)$/)
+      .getAllByText(/^(Votes|Choice|Dispute's time to appeal|Reveal|Commit)$/)
       .map((n) => n.textContent);
-    expect(new Set(labels)).toEqual(new Set(["Votes", "Choice", "Time to appeal"]));
+    expect(new Set(labels)).toEqual(new Set(["Votes", "Choice", "Dispute's time to appeal"]));
   });
 });
 
@@ -675,14 +675,18 @@ describe("each dispute's time to appeal, in place of the draw's latencies (ADR-0
     // unit the matrix's headline uses for the same figure.
     renderAt("/agent-jurors/Columbo");
 
-    expect(cellOn(151, "Time to appeal")).toBe("801m");
+    expect(cellOn(151, "Dispute's time to appeal")).toBe("801m");
     const headers = screen.getAllByRole("columnheader").map((cell) => cell.textContent);
     expect(headers).not.toContain("Reveal");
     expect(headers).not.toContain("Commit");
   });
 
-  it("says in the table's name that the figure is the dispute's, the same for its whole panel", () => {
+  it("says the figure is the dispute's, visibly and in the table's name", () => {
+    // Visibly because the page is named after one agent juror: a bare "Time to appeal" would read
+    // as its own speed to anyone who never hears the caption.
     renderAt("/agent-jurors/Columbo");
+
+    expect(screen.getByRole("columnheader", { name: "Dispute's time to appeal" })).toBeVisible();
 
     expect(screen.getByRole("table")).toHaveAccessibleName(
       /how long the dispute took to reach its appeal period, which is the same for the whole panel/,
@@ -692,11 +696,11 @@ describe("each dispute's time to appeal, in place of the draw's latencies (ADR-0
   it("gives two agent juror pages the same figure for a dispute they shared", () => {
     // Dispute 151's panel was Columbo and Daemonhill.
     const { unmount } = renderAt("/agent-jurors/Columbo");
-    const columbo = cellOn(151, "Time to appeal");
+    const columbo = cellOn(151, "Dispute's time to appeal");
     unmount();
     renderAt("/agent-jurors/Daemonhill");
 
-    expect(cellOn(151, "Time to appeal")).toBe(columbo);
+    expect(cellOn(151, "Dispute's time to appeal")).toBe(columbo);
   });
 
   it("reads Arbitrum for nothing, so raises no Arbitrum banner", () => {

@@ -42,7 +42,7 @@ export type Moment =
   | { kind: "pending" }
   /** The chain read answered and has no commitment for a draw the subgraph says committed. */
   | { kind: "not-found" }
-  /** Revealed, and the reveal carries no justification to date it — `revealFigureOf`'s "Not dated". */
+  /** Revealed, and the reveal carries no justification to date it: "Not dated". */
   | { kind: "undated" };
 
 export type TimelineEntry =
@@ -76,7 +76,7 @@ const CANONICAL_DECIMAL = /^(0|[1-9]\d*)$/;
 
 /**
  * The opening of one period in one round: the round's place among that period's openings, in
- * the order they happened.
+ * the order they happened (the caller passes 0 for execution, which opens once per dispute).
  *
  * The read runs from the dispute's first draw of any round (`blockRangeOf`), so it holds every
  * round's openings, and a period opens once per round, in round order. Round 1's commit period
@@ -206,7 +206,11 @@ export function buildDisputeTimeline({
 
   const opener = (period: keyof typeof PERIOD_VALUE): Opener => {
     expected.openings += 1;
-    const by = openerOf(openingOf(openings, PERIOD_VALUE[period], round.index), roster, settled);
+    // Commit, vote and appeal open once per round; execution opens once per dispute, because
+    // an appeal sends the dispute back to evidence from the appeal period and a round that is
+    // appealed never reaches execution. So the execution opening is the only one there is.
+    const nth = period === "execution" ? 0 : round.index;
+    const by = openerOf(openingOf(openings, PERIOD_VALUE[period], nth), roster, settled);
     if (by.kind === "not-found") missing.openings += 1;
     return by;
   };

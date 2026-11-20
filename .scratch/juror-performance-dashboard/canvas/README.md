@@ -234,10 +234,11 @@ The panel cards' `R` and `C` lines on this artboard are still overruled by ADR-0
 
 The same decision took commit and reveal latency off the agent juror page's table of draws (the
 maintainer's call, 2026-11-20): a column of one agent juror's latencies reads as its speed, which
-ADR-0010 says it is not. `Juror.dc.html:113-134` now draws one **Time to appeal** column where
-`Reveal` and `Commit` were. It holds the *dispute's* time to appeal in whole minutes, the same for
-its whole panel, which the implementation's table caption says. Amended in place, line for line:
-the grid's track list at `:116` lost a 150px track, the `Commit` header at `:122` and its cell at
+ADR-0010 says it is not. `Juror.dc.html:113-134` now draws one **Dispute's time to appeal** column
+where `Reveal` and `Commit` were. It holds the *dispute's* time to appeal in whole minutes, the same
+for its whole panel, and the header says "Dispute's" so that the page named after one agent juror
+does not present it as that agent juror's. Amended in place, line for line: the grid's track list
+at `:116` lost a 150px track and widened another to 200px, the `Commit` header at `:122` and its cell at
 `:131` are blank lines, `:121` and `:130` carry the new header and cell, and each sampled row in the
 script gained a `t:` in seconds (sampled, like every per-draw figure here). The file is 198 lines as
 before. Its median reveal and commit at `:72-73` and the latency plot at `:86-110` are still

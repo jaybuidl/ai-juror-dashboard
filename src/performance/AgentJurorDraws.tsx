@@ -398,7 +398,7 @@ function DrawTable({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
         <col />
         <col style={{ width: "92px" }} />
         <col style={{ width: "180px" }} />
-        <col style={{ width: "150px" }} />
+        <col style={{ width: "200px" }} />
         <col style={{ width: "150px" }} />
       </colgroup>
       <thead>
@@ -407,7 +407,10 @@ function DrawTable({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
           <HeaderCell scope="col">Dispute</HeaderCell>
           <HeaderCell scope="col">Votes</HeaderCell>
           <HeaderCell scope="col">Choice</HeaderCell>
-          <HeaderCell scope="col">Time to appeal</HeaderCell>
+          {/* "Dispute's", visibly, on a page named after one agent juror: the figure is the same
+              for the whole panel, and a bare "Time to appeal" here would read as this agent
+              juror's own speed. */}
+          <HeaderCell scope="col">Dispute's time to appeal</HeaderCell>
           <LastHeaderCell scope="col">Coherence</LastHeaderCell>
         </tr>
       </thead>
@@ -487,7 +490,7 @@ function DrawCards({ lines, nickname }: { lines: readonly DrawLine[]; nickname: 
               </FigureValue>
             </div>
             <div>
-              <FigureKey>Time to appeal</FigureKey>
+              <FigureKey>Dispute's time to appeal</FigureKey>
               <FigureValue>
                 <Value $tone={line.timeToAppeal.tone}>{line.timeToAppeal.text}</Value>
               </FigureValue>

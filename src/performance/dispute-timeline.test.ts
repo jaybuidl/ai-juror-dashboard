@@ -233,6 +233,50 @@ describe("buildDisputeTimeline", () => {
     ).toMatchObject({ by: { kind: "agent-juror", agentJuror: { nickname: "Blaise" } } });
   });
 
+  it("finds the one execution opening for an appealed dispute that reached it", () => {
+    // Execution opens once per dispute: round 0 was appealed from its appeal period and never
+    // executed. A whole read of a two-round dispute holds round 0's commit, vote and appeal
+    // openings, round 1's, and a single execution opening — all found, nothing missing.
+    const [commit, vote, appeal, execution] = chain156.openings;
+    if (
+      commit === undefined ||
+      vote === undefined ||
+      appeal === undefined ||
+      execution === undefined
+    ) {
+      throw new Error("the fixture holds four openings");
+    }
+    const later = (opening: typeof commit, blockNumber: string) => ({ ...opening, blockNumber });
+    const twoRounds = {
+      ...chain156,
+      openings: [
+        commit,
+        vote,
+        appeal,
+        later(commit, "497100000"),
+        later(vote, "497100100"),
+        later(appeal, "497100200"),
+        later(execution, "497200000"),
+      ],
+    };
+    const [first] = row156.dispute.rounds;
+    if (first === undefined) throw new Error("dispute 156 has no round");
+    const executed: MatrixRow = {
+      ...rowOfRound(1),
+      dispute: {
+        ...row156.dispute,
+        rounds: [
+          { ...first, executionOpenedAt: null },
+          { ...first, index: 1 },
+        ],
+      },
+    };
+    const { lanes, missing } = timeline(twoRounds, true, reading(executed));
+
+    expect(missing.openings).toBe(0);
+    expect(lanes.appeal.at(-1)).toMatchObject({ kind: "closed", by: { kind: "off-roster" } });
+  });
+
   it("never names an earlier round's opener for a round whose opening has not been read", () => {
     // Round 1's commit period has opened by the subgraph's account and the read holds only
     // round 0's opening. That opening is not round 1's, so the opener is not found — and counted.

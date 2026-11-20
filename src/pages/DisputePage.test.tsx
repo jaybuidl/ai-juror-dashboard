@@ -915,6 +915,7 @@ describe("what could not be read", () => {
           status: "HTTP 503",
         }),
         detail: NO_DETAIL,
+        readAt: null,
       }),
       chain: pending(),
     });
@@ -922,6 +923,23 @@ describe("what could not be read", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(
       /the timeline cannot say who opened each period or when each agent juror committed/,
     );
+  });
+
+  it("does not say so when only a re-read failed, since the timeline still has what it needs", () => {
+    // A failed re-read keeps the earlier payload, block range and all, so the chain read runs and
+    // the timeline is drawn: a banner saying it cannot be would describe something not on screen.
+    renderDispute({
+      detail: read({
+        error: new ReadFailure("The core subgraph returned HTTP 503 Service Unavailable", {
+          source: SOURCES.core,
+          status: "HTTP 503",
+        }),
+      }),
+    });
+
+    const banner = screen.getByRole("alert");
+    expect(banner).toHaveTextContent(/show what an earlier read said/);
+    expect(banner).not.toHaveTextContent(/the timeline cannot say/);
   });
 
   it("states both Arbitrum failures in one line, since they share an endpoint", () => {

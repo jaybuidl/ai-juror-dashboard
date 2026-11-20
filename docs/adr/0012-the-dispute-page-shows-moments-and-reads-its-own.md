@@ -40,9 +40,10 @@ kind or a count, never who.
 table of draws had kept each draw's commit and reveal latency as the per-draw record ADR-0011
 decided. A column of one agent juror's latencies, on the page named after it, reads as that agent
 juror's speed whatever the prose beside it says, and ADR-0010 makes time to appeal the one speed
-figure (the maintainer's call, 2026-11-20). So the table shows one **Time to appeal** column: the
-dispute's figure, in whole minutes, looked up from `CourtTotals` so it is the same definition as
-the matrix's headline. It is the same for everyone on the panel, and the table's caption says so.
+figure (the maintainer's call, 2026-11-20). So the table shows one **Dispute's time to appeal**
+column: the dispute's figure, in whole minutes, looked up from `CourtTotals` so it is the same
+definition as the matrix's headline. It is the same for everyone on the panel, and the header says
+"Dispute's" visibly, on the table and the phone's cards alike, as well as the caption.
 No page shows commit or reveal latency as a figure any more; the moments are on each dispute's
 timeline, which every row links to.
 
