@@ -191,14 +191,22 @@ export function revealFigureOf(draw: Draw): Figure {
  * `scanned` is what keeps that loudness honest, and it is the same distinction `commitCoverage.read`
  * exists for one level up. The chain answers slower than the subgraph and this page deliberately
  * does not wait for it, so between the two answers *every* committed draw has no log yet. Without
- * this argument all 56 of them would come up rose reading "Not read" on every cold load — a
+ * this argument all of them would come up rose reading "Not read" on every cold load — a
  * failure announced before it has happened, which is precisely the mistake ticket 07 found by
  * review and the reason `null` commits are not `[]`. Unscanned is a step not reached: an em dash,
  * in pending ink, exactly like a commitment that has not been made yet.
+ *
+ * The latency is an argument rather than a field of `Draw` because the court model no longer
+ * reads commitments at all (ADR-0012): the agent juror page joins its own, in
+ * `agent-juror-detail.ts`.
  */
-export function commitFigureOf(draw: Draw, scanned: boolean): Figure {
-  if (draw.commitLatencySeconds !== null) {
-    return { text: formatLatencySeconds(draw.commitLatencySeconds), tone: "value" };
+export function commitFigureOf(
+  draw: Draw,
+  commitLatencySeconds: number | null,
+  scanned: boolean,
+): Figure {
+  if (commitLatencySeconds !== null) {
+    return { text: formatLatencySeconds(commitLatencySeconds), tone: "value" };
   }
   if (draw.committed) {
     return scanned ? { text: "Not read", tone: "unread" } : { text: "—", tone: "pending" };

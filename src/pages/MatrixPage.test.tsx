@@ -403,7 +403,7 @@ describe("the matrix view's reads", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("does not name the Arbitrum endpoint once both of its reads have failed", () => {
+    it("does not name the Arbitrum endpoint once its parameter read has failed", () => {
       // The in-flight caveat went with the footer on 2026-09-24, and the failed one with the
       // Arbitrum banner, which ADR-0011 left with nothing on this page to describe. The dispute
       // view still names the endpoint for the window history, and `DisputePage.test.tsx` pins it.
@@ -702,18 +702,6 @@ describe("the failure banner", () => {
     expect(screen.getByRole("alert")).toHaveTextContent(/dispute subjects could not be read/i);
     expect(screen.queryByText(/^Partial\./)).not.toBeInTheDocument();
     expect(screen.queryByRole("heading", { name: /· partial/i })).not.toBeInTheDocument();
-  });
-
-  it("raises nothing over a commit scan that failed, landed or not", () => {
-    // These two used to word the commit banner by whether earlier figures were on screen. Since
-    // ADR-0011 none are, at any density or width, so neither case raises it.
-    for (const performance of [measured, arbitrumPending]) {
-      const view = renderAt("/", {
-        performance: { ...performance, commitError: new Error("UnknownRpcError") },
-      });
-      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-      view.unmount();
-    }
   });
 
   it("keeps the banner off the views that carry no figure of their own", () => {

@@ -39,20 +39,16 @@ const NOW = Date.UTC(2026, 7, 25, 12, 0, 0);
 describe("the live treatment, against the court as it stands", () => {
   it("flags exactly the disputes the court has not ruled on", async () => {
     const [disputes, draws] = await Promise.all([fetchCourtDisputes(), fetchCourtDraws()]);
-    // No commit scan. Liveness is read from the dispute's ruling and the round's timeline, so
-    // the commitments change nothing here — and a third cold scan of every commitment in the
-    // court, running beside the two this suite already does, is what puts the whole suite over
-    // the endpoint's per-call rate limit. It surfaces as `UnknownRpcError`, not as a 429, which
-    // is the trap `CLAUDE.md` records; it cost this test one run to rediscover.
-    // `parameters: null` for the same reason, and it is the choice ticket 08 made in
-    // `draws-subgraph.integration.test.ts`: the history is two more chain reads, liveness does
-    // not depend on which windows a dispute ran under, and `court-parameters.integration.test.ts`
-    // exercises the real history on its own. The footnote then words itself as unread, which is
-    // what an unread parameter history is.
+    // `parameters: null`, and it is the choice ticket 08 made in
+    // `draws-subgraph.integration.test.ts`: the history is more chain reads against an endpoint
+    // that rate-limits per call (a third cold scan beside this suite's two once put the whole
+    // suite over it, surfacing as `UnknownRpcError` rather than a 429 — the trap `CLAUDE.md`
+    // records). Liveness is read from the dispute's ruling and the round's timeline and does not
+    // depend on which windows a dispute ran under, and `court-parameters.integration.test.ts`
+    // exercises the real history on its own.
     const built = buildCourtPerformance({
       disputes,
       draws,
-      commits: null,
       parameters: null,
       // Nor the payouts: liveness is about a dispute still being decided, and a dispute still
       // being decided has not been executed and so has no payout to read.

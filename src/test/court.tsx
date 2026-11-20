@@ -11,6 +11,7 @@ import {
 } from "../disputes/dispute-templates";
 import { type RawDispute, toDisputes } from "../disputes/disputes";
 import type { DisputesView } from "../disputes/useDisputes";
+import type { RawCommitCast } from "../performance/commitments";
 import referenceFixture from "../performance/court-29-reference.fixture.json" with { type: "json" };
 import commitFixture from "../performance/court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "../performance/court-34-draws.fixture.json" with { type: "json" };
@@ -19,14 +20,18 @@ import parameterFixture from "../performance/court-34-parameters.fixture.json" w
 };
 import rewardFixture from "../performance/court-34-rewards.fixture.json" with { type: "json" };
 import { COMPACT_FROM_COLUMNS } from "../performance/density";
+import disputeChainFixture from "../performance/dispute-156-chain.fixture.json" with {
+  type: "json",
+};
+import type { RawDisputeChain } from "../performance/dispute-chain";
 import {
   buildCourtPerformance,
-  type RawCommitCast,
   type RawCourtData,
   type RawDraw,
   type RawRewardShift,
 } from "../performance/performance";
 import { type RawReference, referenceReadingOf } from "../performance/reference";
+import type { ChainRead } from "../performance/useChainReads";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import type { RawCourtParameters } from "../performance/windows";
 import { ReadFailure, SOURCES } from "../read-failure";
@@ -205,7 +210,6 @@ export const REFERENCE = referenceReadingOf(referenceFixture as RawReference);
 const built = buildCourtPerformance({
   disputes: fixture as RawDispute[],
   draws: drawFixture as RawDraw[],
-  commits: commitFixture as RawCommitCast[],
   parameters: parameterFixture as RawCourtParameters[],
   rewards: rewardFixture as RawRewardShift[],
   roster: FIXTURE_ROSTER,
@@ -218,7 +222,6 @@ export const measured: CourtPerformanceView = {
   performance: built.data,
   isLoading: false,
   error: null,
-  commitError: null,
   parametersError: null,
   rewardsError: null,
   reference: REFERENCE,
@@ -237,7 +240,6 @@ export const unmeasured: CourtPerformanceView = {
     source: SOURCES.core,
     status: "HTTP 503",
   }),
-  commitError: null,
   parametersError: null,
   rewardsError: null,
   reference: REFERENCE,
@@ -251,20 +253,19 @@ export const unmeasured: CourtPerformanceView = {
 };
 
 /**
- * The same court with the commit log read still out — which is every cold load, because the
- * chain answers slower than the subgraph and the matrix deliberately does not wait for it.
+ * The same court with the parameter history still out — which is every cold load not served from
+ * the cache, because the chain answers slower than the subgraph and the matrix does not wait.
  *
- * `commits: null` and not `[]`: the two are different states and the page says different things
- * about them. This is the one the merge of tickets 07 and 15 newly made reachable: the page
- * says one thing once commit latency is read and another while the reading is in flight.
+ * `parameters: null` and not `[]`: the two are different states and the page says different
+ * things about them. Named for Arbitrum because the history is the one court-wide read left on
+ * that chain: the commit scan is each view's own since ADR-0012, and has fixtures of its own below.
  */
 const building = buildCourtPerformance({
   disputes: fixture as RawDispute[],
   draws: drawFixture as RawDraw[],
-  commits: null,
   parameters: null,
-  // The payouts are in, so this fixture isolates the two Arbitrum reads exactly as its name
-  // says. `rewardsPending` below is the one that holds them back.
+  // The payouts are in, so this fixture isolates the Arbitrum read exactly as its name says.
+  // `rewardsPending` below is the one that holds them back.
   rewards: rewardFixture as RawRewardShift[],
   roster: FIXTURE_ROSTER,
   drawsReadAt: null,
@@ -272,14 +273,13 @@ const building = buildCourtPerformance({
 if (!building.success) throw new Error(`${building.code}: ${building.message}`);
 
 /**
- * What the page has before either Arbitrum read lands: every subgraph measure, no commit
- * latency, and nothing marked as having run under a window the court has since changed.
+ * What the page has before the parameter history lands: every subgraph measure, and no window
+ * resolved for any dispute.
  */
 export const arbitrumPending: CourtPerformanceView = {
   performance: building.data,
   isLoading: false,
   error: null,
-  commitError: null,
   parametersError: null,
   rewardsError: null,
   reference: REFERENCE,
@@ -291,7 +291,7 @@ export const arbitrumPending: CourtPerformanceView = {
 };
 
 /**
- * The same court with both Arbitrum reads having failed rather than being in flight.
+ * The same court with the parameter history having failed rather than being in flight.
  *
  * A separate fixture and not a flag on the one above, for the reason `CLAUDE.md` records
  * against `RosterView`: `read` is false while the chain is being asked *and* after it refused,
@@ -301,7 +301,6 @@ export const arbitrumPending: CourtPerformanceView = {
  */
 export const arbitrumFailed: CourtPerformanceView = {
   ...arbitrumPending,
-  commitError: new Error("HTTP request failed: 429 Too Many Requests"),
   parametersError: new Error("HTTP request failed: 429 Too Many Requests"),
   failure: null,
   readAt: READ_AT,
@@ -320,7 +319,6 @@ export const arbitrumFailed: CourtPerformanceView = {
 const unpaid = buildCourtPerformance({
   disputes: fixture as RawDispute[],
   draws: drawFixture as RawDraw[],
-  commits: commitFixture as RawCommitCast[],
   parameters: parameterFixture as RawCourtParameters[],
   rewards: null,
   roster: FIXTURE_ROSTER,
@@ -358,7 +356,6 @@ export const rewardsFailed: CourtPerformanceView = {
 const emptied = buildCourtPerformance({
   disputes: fixture as RawDispute[],
   draws: drawFixture as RawDraw[],
-  commits: commitFixture as RawCommitCast[],
   parameters: parameterFixture as RawCourtParameters[],
   rewards: [],
   roster: FIXTURE_ROSTER,
@@ -447,7 +444,6 @@ export const disputesWithNewcomer: DisputesView = {
 const drifted = buildCourtPerformance({
   disputes: driftedDisputes,
   draws: drawFixture as RawDraw[],
-  commits: commitFixture as RawCommitCast[],
   // `null` rather than the captured history: nothing this fixture is about is a window, and an
   // unread history marks no row, which keeps the drift the only thing it demonstrates.
   parameters: null,
@@ -470,7 +466,6 @@ export const staleDraws: CourtPerformanceView = {
     source: SOURCES.core,
     status: "HTTP 502",
   }),
-  commitError: null,
   parametersError: null,
   rewardsError: null,
   reference: REFERENCE,
@@ -490,9 +485,9 @@ export const staleDraws: CourtPerformanceView = {
  * density that ticket is about cannot be reached from the fixture as captured. The live court
  * has since passed it — 46 disputes as of 2026-09-04, so the compact density is what a reader
  * gets in production, which is exactly why the offline suite has to be able to reach it.
- * Dispute 156 is cloned under fresh ids, with its draws and its commitments, so the extra
- * rows are ordinary rows: ruled, drawn, revealed and dated, rather than empty scaffolding that
- * could be compacted without proving anything about a cell.
+ * Dispute 156 is cloned under fresh ids, with its draws, so the extra rows are ordinary rows:
+ * ruled, drawn, revealed and dated, rather than empty scaffolding that could be compacted
+ * without proving anything about a cell.
  *
  * Its payouts are deliberately *not* cloned. A ruled dispute the court has not executed pays
  * nothing, which is a legitimate state lasting hours (`CLAUDE.md`), and `RewardCoverage.short` is
@@ -503,22 +498,17 @@ export const staleDraws: CourtPerformanceView = {
  */
 const CLONE_SOURCE = "156";
 
-export function padCourt(
-  disputeCount: number,
-): Pick<RawCourtData, "disputes" | "draws" | "commits"> {
+export function padCourt(disputeCount: number): Pick<RawCourtData, "disputes" | "draws"> {
   const raw = fixture as RawDispute[];
   const draws = drawFixture as RawDraw[];
-  const commits = commitFixture as RawCommitCast[];
 
   const source = raw.find((dispute) => dispute.disputeID === CLONE_SOURCE);
   if (source === undefined) throw new Error(`No dispute ${CLONE_SOURCE} in the fixture`);
   const sourceDraws = draws.filter((draw) => draw.dispute.disputeID === CLONE_SOURCE);
-  const sourceCommits = commits.filter((commit) => commit.disputeID === CLONE_SOURCE);
   const highest = Math.max(...raw.map((dispute) => Number(dispute.disputeID)));
 
   const extraDisputes: RawDispute[] = [];
   const extraDraws: RawDraw[] = [];
-  const extraCommits: RawCommitCast[] = [];
 
   for (let n = 1; raw.length + extraDisputes.length < disputeCount; n += 1) {
     const id = String(highest + n);
@@ -536,13 +526,11 @@ export function padCourt(
         round: { id: `${id}-0` },
       })),
     );
-    extraCommits.push(...sourceCommits.map((commit) => ({ ...commit, disputeID: id })));
   }
 
   return {
     disputes: [...extraDisputes, ...raw],
     draws: [...draws, ...extraDraws],
-    commits: [...commits, ...extraCommits],
   };
 }
 
@@ -575,7 +563,6 @@ export const waitingCourt: CourtPerformanceView = {
     const result = buildCourtPerformance({
       disputes: [waitingDispute, ...(fixture as RawDispute[])],
       draws: drawFixture as RawDraw[],
-      commits: commitFixture as RawCommitCast[],
       parameters: parameterFixture as RawCourtParameters[],
       rewards: rewardFixture as RawRewardShift[],
       roster: FIXTURE_ROSTER,
@@ -593,7 +580,6 @@ export const offRosterCourt: CourtPerformanceView = {
     const result = buildCourtPerformance({
       disputes: fixture as RawDispute[],
       draws: [...(drawFixture as RawDraw[]), offRosterDraw()],
-      commits: commitFixture as RawCommitCast[],
       parameters: parameterFixture as RawCourtParameters[],
       rewards: rewardFixture as RawRewardShift[],
       roster: FIXTURE_ROSTER,
@@ -619,7 +605,6 @@ export const refused: CourtPerformanceView = {
   performance: null,
   isLoading: false,
   error: new Error('MALFORMED_COURT_DATA: Draw sits in a round with an unreadable id: "163-x"'),
-  commitError: null,
   parametersError: null,
   rewardsError: null,
   reference: REFERENCE,
@@ -633,6 +618,56 @@ export const refused: CourtPerformanceView = {
   isPaused: false,
   retry: () => {},
 };
+
+/**
+ * A view's own Arbitrum read (`useChainReads.ts`), answered.
+ *
+ * Views that make one take it as a prop, so a test hands over the answer exactly as it hands over
+ * the court. Rendered through the route instead, the read never runs (`inertQueries`), and the
+ * view draws what it draws before the chain answers.
+ */
+export function answered<T>(data: T): ChainRead<T> {
+  return { data, answered: true, error: null, isPaused: false, retry: () => {} };
+}
+
+/** The same read before anything has landed: every cold load, for as long as the chain takes. */
+export function pending<T>(): ChainRead<T> {
+  return { data: null, answered: false, error: null, isPaused: false, retry: () => {} };
+}
+
+/**
+ * The same read failed. `data` is what an earlier read left in hand, which is `null` on a cold
+ * load and an earlier answer when a re-read is what failed.
+ */
+export function failed<T>(data: T | null = null): ChainRead<T> {
+  return {
+    data,
+    answered: false,
+    error: new Error("HTTP request failed: 429 Too Many Requests"),
+    isPaused: false,
+    retry: () => {},
+  };
+}
+
+/**
+ * One agent juror's commitments, from the captured scan: what `useAgentJurorCommits` returns
+ * for it. Filtered by address exactly as the chain filters the topic.
+ */
+export function commitsOf(address: string): readonly RawCommitCast[] {
+  return (commitFixture as RawCommitCast[]).filter(
+    (commit) => commit.juror.toLowerCase() === address.toLowerCase(),
+  );
+}
+
+/**
+ * Dispute 156's record on Arbitrum, captured on 2026-11-20 from the block its panel was drawn in
+ * to the block its execution period opened in: four period openings and four commitments.
+ *
+ * Every opening was sent by the same account off the roster. That address is replaced in the
+ * fixture by `OFF_ROSTER_ADDRESS`: it is whoever called `passPeriod`, and an account off the
+ * roster is not one this repository holds, in a fixture any more than on the page.
+ */
+export const DISPUTE_156_CHAIN = disputeChainFixture as RawDisputeChain;
 
 export const views: DashboardRoutesProps = {
   roster: resolvedRoster,

@@ -4,6 +4,7 @@ import {
   REFUSE_TO_ARBITRATE,
 } from "../disputes/dispute-templates";
 import type { Dispute, DisputeRound } from "../disputes/disputes";
+import type { DisputeBlockRange } from "./dispute-chain";
 import { type Justification, toJustification } from "./justifications";
 import type { Draw, DrawState, MatrixRow } from "./performance";
 import type { PeriodWindows } from "./windows";
@@ -49,6 +50,8 @@ export type RawKitDispute = {
 /** One drawn vote ID with its prose, from the same `Draw` entity the matrix reads. */
 export type RawDetailDraw = {
   id: string;
+  /** The block it was drawn in. Where this dispute's record on chain can start. */
+  blockNumber?: string | null;
   juror: { id: string };
   round: { id: string };
   vote?: {
@@ -70,6 +73,10 @@ export type RawDisputeDetail = {
     externalDisputeId: string;
     /** The transaction that created the dispute. See `transactionOf`. */
     transactionHash?: string | null;
+    /** The period the dispute is in, as this read saw it. See `blockRangeOf`. */
+    period?: string | null;
+    /** The block its current period opened in. See `blockRangeOf`. */
+    lastPeriodChangeBlockNumber?: string | null;
     disputeKitDispute?: readonly RawKitDispute[] | null;
   } | null;
   evidenceGroup?: { id: string; nextEvidenceIndex: string } | null;
@@ -116,6 +123,11 @@ export type DisputeDetail = {
   transactionHash: string | null;
   /** What each agent juror published. Absent from this list means no justification was found. */
   justifications: readonly DrawJustification[];
+  /**
+   * The blocks that hold this dispute's current round on chain, for the timeline's Arbitrum read
+   * (ADR-0012), or `null` where they cannot be known. See `blockRangeOf`.
+   */
+  blockRange: DisputeBlockRange | null;
 };
 
 /** Nothing read: what every field of the model says when the read has not come back. */
@@ -124,6 +136,7 @@ export const NO_DETAIL: DisputeDetail = {
   evidenceCount: null,
   transactionHash: null,
   justifications: [],
+  blockRange: null,
 };
 
 /** Same canonical-decimal guard as the rest of the model, and for the same reason. */
@@ -271,6 +284,41 @@ function transactionOf(value: string | null | undefined): string | null {
 }
 
 /**
+ * Which blocks hold this dispute's record on chain, or `null` where nothing can be read yet.
+ *
+ * From the first block anyone was drawn in. `passPeriod` cannot leave the evidence period until
+ * every vote ID is drawn, so every opening past evidence and every commitment sits at or after
+ * the first draw. The earliest draw of any round rather than of the current one, which costs a
+ * later round a few earlier blocks and buys a bound that never moves once one draw exists: a
+ * read that landed mid-draw already has it.
+ *
+ * To the block the execution period opened in, once the dispute has reached it: nothing this
+ * dashboard reads happens after that. Until then, to the head. `lastPeriodChangeBlockNumber`
+ * is only a bound when `period` says execution, which is why both are read together, from the
+ * same response.
+ *
+ * `null` for a dispute nobody has been drawn in yet. Nothing in it can have been committed and
+ * no period past evidence can have opened, so there is nothing on chain to read — until the
+ * court read sees a draw, which is when `useDisputeDetail` reads this again.
+ */
+function blockRangeOf(raw: RawDisputeDetail): DisputeBlockRange | null {
+  let first: number | null = null;
+  for (const draw of raw.draws ?? []) {
+    const block = toCount(draw.blockNumber);
+    if (block !== null && (first === null || block < first)) first = block;
+  }
+  if (first === null) return null;
+
+  const executedAt =
+    raw.dispute?.period === "execution" ? toCount(raw.dispute.lastPeriodChangeBlockNumber) : null;
+
+  return {
+    fromBlock: BigInt(first),
+    toBlock: executedAt === null ? "latest" : BigInt(executedAt),
+  };
+}
+
+/**
  * Every justification in the dispute, one per agent juror.
  *
  * Several vote IDs collapse to one, which is the unit this whole dashboard counts in: a
@@ -332,6 +380,7 @@ export function toDisputeDetail(raw: RawDisputeDetail): DisputeDetail {
     ballot: toBallot(raw.dispute?.disputeKitDispute?.[0]),
     evidenceCount: evidenceCountOf(raw),
     justifications: toJustifications(raw),
+    blockRange: blockRangeOf(raw),
   };
 }
 

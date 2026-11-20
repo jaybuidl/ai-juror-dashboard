@@ -1,6 +1,12 @@
 import type { PublicClient } from "viem";
 import { describe, expect, it } from "vitest";
-import { COURT_CREATED, fetchCourtParameters, KLEROS_CORE } from "./court-parameters";
+import { LOG_RANGE_LIMIT } from "./arbitrum";
+import {
+  COURT_CREATED,
+  COURT_CREATED_BLOCK,
+  fetchCourtParameters,
+  KLEROS_CORE,
+} from "./court-parameters";
 
 /**
  * The parameter reader, offline.
@@ -29,10 +35,13 @@ type FakeLog = {
 type Asked = {
   address?: string;
   event?: { name?: string };
-  fromBlock?: bigint;
-  toBlock?: string;
+  fromBlock: bigint;
+  toBlock: bigint;
   args?: { _courtID?: bigint };
 };
+
+/** Where the fake chain's head is: court 34's creation plus a little over three windows. */
+const HEAD = 525_842_400n;
 
 const OLD_TIMES = [43_200n, 28_800n, 28_800n, 129_600n] as const;
 const NEW_TIMES = [2_700n, 2_700n, 1_800n, 129_600n] as const;
@@ -57,6 +66,9 @@ const REWARDS = {
  * Separately because the interleaving is the thing being tested: `CourtCreated` and
  * `CourtModified` are two filters, and one list that happened to arrive in the right order
  * would prove nothing about the sort that puts them in it.
+ *
+ * Each window answers with only the logs inside it, as the chain does. A fake that returned
+ * every log to every window would hand the reader each change once per window.
  */
 function fakeClient(
   byEvent: { created?: FakeLog[]; modified?: FakeLog[] },
@@ -66,10 +78,13 @@ function fakeClient(
   const blocksRead: bigint[] = [];
 
   const client = {
+    getBlockNumber: async () => HEAD,
     getLogs: async (request: Asked) => {
       asked.push(request);
       const key = request.event?.name === "CourtCreated" ? "created" : "modified";
-      return byEvent[key] ?? [];
+      return (byEvent[key] ?? []).filter(
+        (log) => log.blockNumber >= request.fromBlock && log.blockNumber <= request.toBlock,
+      );
     },
     getBlock: async ({ blockNumber }: { blockNumber: bigint }) => {
       blocksRead.push(blockNumber);
@@ -147,16 +162,25 @@ describe("fetchCourtParameters", () => {
     ).toEqual(["28800", "2700", "28800"]);
   });
 
-  it("scans the whole chain for one court rather than from a start block to maintain", async () => {
+  it("scans from the court's creation to the head, in windows the endpoint accepts", async () => {
+    // arb1 refuses a scan wider than ten million blocks (#25), and this one ran from block 0
+    // until it did. Every window is one court wide and none is wider than the cap.
     const { client, asked } = fakeClient({});
     await fetchCourtParameters({ client, courtId: "34" });
 
-    expect(asked).toHaveLength(2);
-    for (const request of asked) {
-      expect(request.fromBlock).toBe(0n);
-      expect(request.toBlock).toBe("latest");
-      expect(request.address).toBe(KLEROS_CORE);
-      expect(request.args?._courtID).toBe(34n);
+    for (const name of ["CourtCreated", "CourtModified"]) {
+      const windows = asked.filter((request) => request.event?.name === name);
+
+      expect(windows[0]?.fromBlock).toBe(COURT_CREATED_BLOCK);
+      expect(windows.at(-1)?.toBlock).toBe(HEAD);
+      for (const [index, request] of windows.entries()) {
+        expect(request.address).toBe(KLEROS_CORE);
+        expect(request.args?._courtID).toBe(34n);
+        expect(request.toBlock - request.fromBlock + 1n).toBeLessThanOrEqual(LOG_RANGE_LIMIT);
+        // Contiguous: a gap between two windows is a configuration nobody asked about.
+        const next = windows[index + 1];
+        if (next !== undefined) expect(next.fromBlock).toBe(request.toBlock + 1n);
+      }
     }
   });
 

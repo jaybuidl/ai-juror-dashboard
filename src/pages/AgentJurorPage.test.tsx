@@ -1,11 +1,22 @@
-import { screen, within } from "@testing-library/react";
+import { render, screen, within } from "@testing-library/react";
+import { MemoryRouter } from "react-router";
+import { ThemeProvider } from "styled-components";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import type { RawCommitCast } from "../performance/commitments";
+import type { ChainRead } from "../performance/useChainReads";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { ROSTER } from "../roster/agent-jurors";
 import { rosterIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
+import { theme } from "../styles/theme";
 import {
+  answered,
+  commitsOf,
+  disputes,
+  failed,
   measured,
+  pending,
+  READ_AT,
   referenceFailed,
   renderAt,
   resolvedRoster,
@@ -18,6 +29,7 @@ import {
   waitingCourt,
 } from "../test/court";
 import { PHONE_WIDTH, stubViewportWidth } from "../test/viewport";
+import { AgentJurorView } from "./AgentJurorPage";
 
 /**
  * One agent juror on its own.
@@ -654,5 +666,87 @@ describe("an agent juror's own account", () => {
 
     renderAt("/");
     expect(screen.queryByRole("link", { name: /^X profile/ })).not.toBeInTheDocument();
+  });
+});
+
+/**
+ * The view with its own commit read handed over, as the route hands it.
+ *
+ * Through `AgentJurorView` rather than the route: the route reads Columbo's commitments from
+ * Arbitrum itself (ADR-0012), and `yarn test` reaches no network, so through `renderAt` that read
+ * never runs and the page draws what it draws before the chain answers.
+ */
+const COLUMBO_ADDRESS = "0x70239816581Afff150814B46C831e2e5F9E3bF4C";
+
+function renderColumbo(commits: ChainRead<readonly RawCommitCast[]>) {
+  return render(
+    <ThemeProvider theme={theme}>
+      <MemoryRouter>
+        <AgentJurorView
+          roster={resolvedRoster}
+          disputes={disputes}
+          performance={measured}
+          pathNickname="Columbo"
+          now={READ_AT}
+          commits={commits}
+        />
+      </MemoryRouter>
+    </ThemeProvider>,
+  );
+}
+
+/** The commit figure on one dispute's line of the table. */
+function commitOn(disputeId: number): string {
+  const row = screen.getByRole("link", { name: String(disputeId) }).closest("tr");
+  if (row === null) throw new Error(`No row for dispute ${disputeId}`);
+  const cells = within(row).getAllByRole("cell");
+  const header = screen.getAllByRole("columnheader").map((cell) => cell.textContent);
+  return cells[header.indexOf("Commit")]?.textContent ?? "";
+}
+
+describe("its commitments, read for this agent juror alone (ADR-0012)", () => {
+  it("dates each commitment from its own read", () => {
+    // 2m 06s is Columbo's commitment in dispute 151, the low end of the range the canvas quotes.
+    renderColumbo(answered(commitsOf(COLUMBO_ADDRESS)));
+
+    expect(commitOn(151)).toBe("2m 06s");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("draws a commitment not yet read as a dash, and raises nothing", () => {
+    // Every cold load: the chain answers after the subgraph, and nothing has failed.
+    renderColumbo(pending());
+
+    expect(commitOn(151)).toBe("—");
+    expect(screen.queryByText("Not read")).not.toBeInTheDocument();
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("raises the read when it failed, and says no commit latency is a measurement", () => {
+    renderColumbo(failed());
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /commitments could not be read from Arbitrum, so no commit latency here is a measurement/i,
+    );
+  });
+
+  it("counts what an answered read did not find, and marks each such draw", () => {
+    const short = commitsOf(COLUMBO_ADDRESS).filter((commit) => commit.disputeID !== "151");
+    renderColumbo(answered(short));
+
+    expect(commitOn(151)).toBe("Not read");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /1 of \d+ commitments could not be found on Arbitrum/,
+    );
+  });
+
+  it("counts nothing missing from a read standing in while the court has moved past it", () => {
+    // The court saw a commitment this read predates, and the re-read is in flight: the moments
+    // it has are shown, and what it lacks is a dash rather than a finding.
+    const short = commitsOf(COLUMBO_ADDRESS).filter((commit) => commit.disputeID !== "151");
+    renderColumbo({ ...answered(short), answered: false });
+
+    expect(commitOn(151)).toBe("—");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });

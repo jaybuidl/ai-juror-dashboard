@@ -9,16 +9,22 @@ import { casePageOf } from "../court-frontend";
 import type { DisputesView } from "../disputes/useDisputes";
 import { arbitrumSource } from "../performance/arbitrum";
 import { DisputePanel } from "../performance/DisputePanel";
+import type { RawDisputeChain } from "../performance/dispute-chain";
 import {
   buildDisputeReading,
   type DisputeReading,
-  type PeriodRun,
   revealedCountOf,
 } from "../performance/dispute-detail";
-import { formatElapsedSeconds, formatWindowSeconds } from "../performance/latency";
+import {
+  buildDisputeTimeline,
+  type DisputeTimeline,
+  progressOf,
+} from "../performance/dispute-timeline";
+import { PeriodStrip } from "../performance/PeriodStrip";
+import { type ChainRead, useDisputeChain } from "../performance/useChainReads";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type DisputeDetailView, useDisputeDetail } from "../performance/useDisputeDetail";
-import { failureOf, SOURCES } from "../read-failure";
+import { type FailedRead, failureOf, SOURCES } from "../read-failure";
 import { ensFallbackOf } from "../roster/ens-fallback";
 import type { RosterView } from "../roster/useRoster";
 import { narrow } from "../styles/breakpoints";
@@ -31,12 +37,14 @@ import { VisuallyHidden } from "../styles/hidden";
  * what each of them thought, in its own words, against the same evidence — which is the thing a
  * reader wants the moment they see a diverged cell.
  *
- * Four sources meet here and only one of them is this view's own. The dispute, its title and
- * its cells are already held for the matrix and the index; `useDisputeDetail` adds the ballot,
- * the evidence count and the prose. That is deliberate — moving between views must not re-read
- * the court — and it is also why the failure composition below has four channels rather than
- * one: they can each fail, and each fail differently, and `CLAUDE.md` records what happens when
- * a page reports "the court" is stale instead of saying which half is.
+ * Five sources meet here and two of them are this view's own. The dispute, its title and its
+ * cells are already held for the matrix and the index; `useDisputeDetail` adds the ballot, the
+ * evidence count and the prose, and `useDisputeChain` adds the dispute's record on Arbitrum —
+ * who opened each period and when each agent juror committed — for the timeline (ADR-0012).
+ * That is deliberate — moving between views must not re-read the court — and it is also why the
+ * failure composition below has several channels rather than one: they can each fail, and each
+ * fail differently, and `CLAUDE.md` records what happens when a page reports "the court" is
+ * stale instead of saying which half is.
  */
 
 const Header = styled.header`
@@ -233,43 +241,6 @@ const TallyVotes = styled.span<{ $ruling: boolean; $any: boolean }>`
   white-space: nowrap;
 `;
 
-const Strip = styled.ol`
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: ${({ theme }) => theme.space6};
-  padding: ${({ theme }) => `${theme.space6} ${theme.space7}`};
-  border: ${({ theme }) => theme.borderHairline};
-  border-radius: ${({ theme }) => theme.radiusTile};
-  background-color: ${({ theme }) => theme.surfaceInset};
-  list-style: none;
-
-  /* The one width this dashboard reduces at, since ticket 16. It was a 760px literal that
-     pre-dated nothing and agreed with nothing; four period columns still fit at 720. */
-  ${narrow} {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-`;
-
-const Slot = styled.li`
-  display: flex;
-  min-width: 0;
-  flex-direction: column;
-  gap: ${({ theme }) => theme.space4};
-`;
-
-const SlotName = styled.span`
-  font: ${({ theme }) => theme.typeMonoSm};
-  letter-spacing: ${({ theme }) => theme.trackingMono};
-  text-transform: uppercase;
-  color: ${({ theme }) => theme.textPending};
-`;
-
-const SlotValue = styled.span`
-  font: ${({ theme }) => theme.typeMono};
-  font-feature-settings: ${({ theme }) => theme.featureMono};
-  color: ${({ theme }) => theme.textBody};
-`;
-
 /* A section and emphatically not a `main`: `View` already wraps every view's children in one,
    so this nested a second `main` inside it — invalid HTML, two landmarks of the same name, and
    `getByRole("main")` ambiguous for anything that ever looks for it. `NotFoundPage` gets the
@@ -291,60 +262,6 @@ const MissingBody = styled.p`
   font: ${({ theme }) => theme.typeBodyLg};
   color: ${({ theme }) => theme.textBody};
 `;
-
-const PERIOD_NAMES: Record<PeriodRun["period"], string> = {
-  evidence: "Evidence",
-  commit: "Commit period",
-  vote: "Vote period",
-  appeal: "Appeal period",
-};
-
-/**
- * What one slot of the timeline reads.
- *
- * The configured window and how long the period actually ran, as two absolute durations with a
- * middot between them and no division anywhere — ADR-0005, and this is the strip that decision
- * names. The evidence slot carries its submission count instead, because no window governs how
- * long evidence is accepted in practice and the count is what a reader wants there.
- *
- * Three absences, told apart: a window the parameter history has not supplied, a period that
- * has not closed, and a period the dispute never reached. Only the first is about this
- * dashboard, and it is the only one worded as something unread.
- */
-function slotValue(run: PeriodRun, evidenceCount: number | null, reached: boolean): string {
-  if (run.period === "evidence") {
-    if (evidenceCount === null) return "Submissions not read";
-    return evidenceCount === 1 ? "1 submission" : `${evidenceCount} submissions`;
-  }
-
-  const window =
-    run.windowSeconds === null
-      ? "Window not read"
-      : `${formatWindowSeconds(run.windowSeconds)} configured`;
-
-  if (run.elapsedSeconds !== null) {
-    return `${window} · closed in ${formatElapsedSeconds(run.elapsedSeconds)}`;
-  }
-
-  return `${window} · ${reached ? "still open" : "not reached"}`;
-}
-
-/** Whether the dispute has got as far as a period, from the moments its round recorded. */
-function hasReached(reading: DisputeReading, period: PeriodRun["period"]): boolean {
-  const round = reading.round;
-  if (round === undefined) return period === "evidence";
-
-  switch (period) {
-    case "evidence":
-      return true;
-    case "commit":
-      return round.commitOpenedAt !== null;
-    case "vote":
-      return round.voteOpenedAt !== null;
-    case "appeal":
-      return round.appealOpenedAt !== null;
-  }
-}
 
 /**
  * The core subgraph's half, at most once — the same worst-first shape the matrix uses.
@@ -390,41 +307,102 @@ function coreFailureOf({
   return null;
 }
 
+/**
+ * Arbitrum's half, at most once, worded by what it cost the timeline.
+ *
+ * Two reads share the endpoint: the court's parameter history, which supplies each period's
+ * window, and this dispute's own record, which supplies who opened each period and when each
+ * agent juror committed. One source gets one banner line, so the two errors are worded together
+ * when both failed, and either error outranks the shortfall — a read that failed has not come
+ * back short.
+ *
+ * The shortfall is only counted once the dispute's read answers for the dispute as the court now
+ * reports it (`ChainRead.answered`): a read standing in from before a commitment the court has
+ * since seen has not fallen short, it is behind, and `buildDisputeTimeline` counts nothing
+ * missing from it.
+ */
+function arbitrumFailureOf(
+  performance: CourtPerformanceView,
+  chain: ChainRead<RawDisputeChain>,
+  timeline: DisputeTimeline | null,
+): FailedRead | null {
+  const source = arbitrumSource();
+  const parameters = performance.parametersError;
+
+  if (parameters !== null && chain.error !== null) {
+    return failureOf(
+      chain.error,
+      source,
+      "Neither the court's parameter history nor this dispute's record could be read from Arbitrum, so the timeline below shows when each period opened and how long it ran, but not what it was configured to allow, who opened it, or when any agent juror committed.",
+    );
+  }
+
+  if (chain.error !== null) {
+    return failureOf(
+      chain.error,
+      source,
+      chain.data !== null
+        ? "This dispute's record could not be re-read from Arbitrum, so who opened each period and when each agent juror committed come from an earlier read, which accounts for nothing since."
+        : "This dispute's record could not be read from Arbitrum, so the timeline below shows when each period opened but not who opened it, and no agent juror's commitment.",
+    );
+  }
+
+  if (parameters !== null) {
+    return failureOf(
+      parameters,
+      source,
+      "The court's period durations could not be read from its own parameter history, so the timeline below shows how long each period ran and not what it was configured to allow.",
+    );
+  }
+
+  const missing = timeline?.missing;
+  const expected = timeline?.expected;
+  if (missing === undefined || expected === undefined) return null;
+  if (missing.commits === 0 && missing.openings === 0) return null;
+
+  const parts = [
+    missing.commits > 0 ? `${missing.commits} of ${expected.commits} commitments` : null,
+    missing.openings > 0 ? `${missing.openings} of ${expected.openings} period openings` : null,
+  ].filter((part) => part !== null);
+  return {
+    source,
+    status: "Short read",
+    what: `${parts.join(" and ")} in this dispute could not be found on Arbitrum, so those moments are unknown.`,
+  };
+}
+
 function failuresOf({
   roster,
   disputes,
   performance,
   detail,
+  chain,
+  timeline,
 }: {
   roster: RosterView;
   disputes: DisputesView;
   performance: CourtPerformanceView;
   detail: DisputeDetailView;
+  chain: ChainRead<RawDisputeChain>;
+  timeline: DisputeTimeline | null;
 }): Failures {
   return {
     blocking: present(
       coreFailureOf({ disputes, performance, detail }),
-      // Only the parameter history. Arbitrum serves the commit scan too, but since ADR-0011 this
-      // page shows no commit moment, so a failure of that scan changes nothing here and a banner
-      // about it would describe nothing on screen.
-      performance.parametersError !== null
-        ? failureOf(
-            performance.parametersError,
-            arbitrumSource(),
-            "The court's period durations could not be read from its own parameter history, so the timeline below shows how long each period ran and not what it was configured to allow.",
-          )
-        : null,
+      arbitrumFailureOf(performance, chain, timeline),
     ),
     degraded: [ensFallbackOf(roster)].filter((read) => read !== null),
-    offline: disputes.isPaused || performance.isPaused || detail.isPaused,
+    offline: disputes.isPaused || performance.isPaused || detail.isPaused || chain.isPaused,
     // The oldest of the three reads this page is built from. It was last whole when the
     // stalest of them landed, and `null` if any has never landed at all — the page has then
     // never been complete, and the banner says "Never" rather than dating it by the half that
-    // worked.
+    // worked. The chain read is not counted, as the parameter history is not: the page renders
+    // without either and the timeline says for itself, moment by moment, what is not in.
     lastCompleteRead: olderOf(olderOf(disputes.readAt, performance.readAt), detail.readAt),
     retry: () => {
       performance.retry();
       detail.retry();
+      chain.retry();
     },
   };
 }
@@ -439,6 +417,8 @@ export type DisputeViewProps = DisputePageProps & {
   /** The path segment exactly as it was typed, for the breadcrumb and the wrong-address case. */
   pathId: string | undefined;
   detail: DisputeDetailView;
+  /** The dispute's own record on Arbitrum, for the timeline. See `useDisputeChain`. */
+  chain: ChainRead<RawDisputeChain>;
 };
 
 /**
@@ -455,7 +435,7 @@ function disputeIdOf(raw: string | undefined): number | null {
 }
 
 /**
- * The route, and the one read this view makes of its own.
+ * The route, and the two reads this view makes of its own.
  *
  * Split from `DisputeView` below so that everything with a decision in it stays testable
  * offline against hand-built data, which is the discipline every other view here keeps — the
@@ -468,14 +448,19 @@ export function DisputePage(props: DisputePageProps) {
   // asked for rather than with a name this view has just refused to give it.
   useDocumentTitle(`Dispute ${pathId ?? ""}`.trim());
   const disputeId = disputeIdOf(pathId);
+  const row = props.performance.performance?.rows.find(
+    (candidate) => candidate.dispute.id === disputeId,
+  );
   const detail = useDisputeDetail(
     disputeId,
-    revealedCountOf(
-      props.performance.performance?.rows.find((row) => row.dispute.id === disputeId),
-    ),
+    revealedCountOf(row),
+    row === undefined ? null : row.panelSize > 0,
   );
+  // Keyed on what the court read says the dispute has reached, so the record is read again when
+  // a period opens or an agent juror commits, and not on a clock.
+  const chain = useDisputeChain(disputeId, detail.detail.blockRange, progressOf(row));
 
-  return <DisputeView {...props} pathId={pathId} detail={detail} />;
+  return <DisputeView {...props} pathId={pathId} detail={detail} chain={chain} />;
 }
 
 /**
@@ -511,6 +496,7 @@ export function DisputeView({
   performance,
   pathId: raw,
   detail,
+  chain,
 }: DisputeViewProps) {
   const disputeId = disputeIdOf(raw);
 
@@ -534,12 +520,26 @@ export function DisputeView({
           detailBehind: detail.isBehindReveals,
         });
 
-  // **Known wrong ordering, deliberately left.** A failure is loud because it costs a figure, so
-  // failures must be composed *after* the branch that can return early — a page carrying no figure
-  // has lost none and should raise no banner. `AgentJurorPage` does it in that order; this view
-  // still composes above the `reading === null` branch below, so a dispute that was never read can
-  // draw a banner about a read that cost it nothing. Settle it the day this view is next touched.
-  const failures = failuresOf({ roster, disputes, performance, detail });
+  const timeline =
+    reading === null || performance.performance === null
+      ? null
+      : buildDisputeTimeline({
+          reading,
+          roster: performance.performance.agentJurors,
+          chain: chain.data,
+          answered: chain.answered,
+        });
+
+  // A failure is loud because it costs a figure, so a page that names nothing here — not a
+  // dispute, no dispute, or another court's — raises no banner: it has lost no figure, and every
+  // sentence `failuresOf` writes would describe something not on screen (`AgentJurorPage` settles
+  // its own wrong address the same way). A court-34 dispute that is merely not read *yet* keeps
+  // the banner, because the banner is what says why.
+  const namesNothingHere =
+    reading === null && (disputeId === null || detail.isUnknownDispute || elsewhere);
+  const failures = namesNothingHere
+    ? undefined
+    : failuresOf({ roster, disputes, performance, detail, chain, timeline });
 
   return (
     <View failures={failures}>
@@ -625,16 +625,9 @@ export function DisputeView({
               <RulingCard reading={reading} />
             </Split>
 
-            <Strip aria-label="How long each period ran">
-              {reading.periods.map((run) => (
-                <Slot key={run.period}>
-                  <SlotName>{PERIOD_NAMES[run.period]}</SlotName>
-                  <SlotValue>
-                    {slotValue(run, reading.evidenceCount, hasReached(reading, run.period))}
-                  </SlotValue>
-                </Slot>
-              ))}
-            </Strip>
+            {timeline !== null && (
+              <PeriodStrip reading={reading} timeline={timeline} roster={roster} />
+            )}
           </Header>
 
           {!reading.read && (

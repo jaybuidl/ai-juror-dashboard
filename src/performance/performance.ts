@@ -75,26 +75,6 @@ export type RawDraw = {
 };
 
 /**
- * One `CommitCast` log, reduced to the three things a latency needs.
- *
- * The only value in this model that does not come from a subgraph: `ClassicVote.commited` is a
- * boolean and nothing in the schema records when a commitment was published, so the moment is
- * the timestamp of the block the log sits in (ADR-0004). Strings, like every other raw shape
- * here, so the seam validates them itself and a captured payload stays plain JSON.
- *
- * There is no round on the event. An agent juror drawn twice in one dispute has two of these
- * under one dispute-and-juror key, which is why `commitAt` selects by round rather than
- * looking one up.
- */
-export type RawCommitCast = {
-  disputeID: string;
-  /** Checksummed, as the chain returns it — never as The Graph lowercases it. */
-  juror: string;
-  /** Unix seconds, from the block the commitment was mined in. */
-  timestamp: string;
-};
-
-/**
  * One reward or penalty the court paid out, as `TokenAndETHShift` records it.
  *
  * Written when the court **executes** a dispute, which is a later and separate transaction from
@@ -137,28 +117,22 @@ export type RawRewardShift = {
  * Everything fetched, in one value.
  *
  * Tickets 06, 10 and 12 add fields here rather than a second seam beside this one, exactly as
- * tickets 07 and 08 added `commits` and `parameters`.
+ * ticket 08 added `parameters`.
+ *
+ * Ticket 07 added `commits` the same way, and ADR-0012 took them out again: the commit scan
+ * reads one dispute or one agent juror for the view that shows its moments, and nothing in the
+ * court model shows one. `commitments.ts` is where those views join it.
  */
 export type RawCourtData = {
   disputes: readonly RawDispute[];
   draws: readonly RawDraw[];
   /**
-   * Every commitment the roster has published, from the logs — or `null` where that read has
-   * not come back yet. See `RawCommitCast`.
-   *
-   * `null` and `[]` are emphatically not the same thing, which is why this is nullable rather
-   * than defaulted. `[]` is a read that returned nothing, and the page says so in the loudest
-   * terms it has. `null` is a read still in flight, and saying that would be announcing a
-   * failure that has not happened — on every cold load, because the chain is slower than the
-   * subgraph and the matrix deliberately does not wait for it.
-   */
-  commits: readonly RawCommitCast[] | null;
-  /**
    * Every configuration the court has held, from `CourtCreated` and `CourtModified` — or
    * `null` where that read has not come back yet. See `windows.ts`.
    *
-   * `null` and `[]` are different for the same reason they are on `commits`, and the
-   * consequence here is quieter: an unread history leaves every row's windows unresolved and
+   * `null` and `[]` are emphatically not the same thing, which is why this is nullable rather
+   * than defaulted: `[]` is a read that returned nothing, and `null` is one still in flight. The
+   * consequence of confusing them is quiet here: an unread history leaves every row's windows unresolved and
    * nothing marked, which is a page saying less than it knows rather than one saying something
    * false. What it must never become is the court's *current* `timesPerPeriod` used as though
    * it had always held — the read exists precisely to make that impossible.
@@ -188,7 +162,7 @@ export type RawCourtData = {
    * empty — which this design defines as "not drawn", a positive claim about a court nobody read.
    * Comparing the dispute's own `createdAt` against this moment is what keeps that claim honest.
    *
-   * Not a clock read: the moment arrives as data, the same way the commit timestamps do. The
+   * Not a clock read: the moment arrives as data, the same way every other timestamp does. The
    * seam still consults no clock of its own, and a fixture that supplies `null` gets exactly
    * today's behaviour — every row read — which is true of a fixture, because it is one payload.
    */
@@ -256,19 +230,27 @@ export type Draw = {
    */
   revealLatencySeconds: number | null;
   /**
-   * Seconds from the moment the commit period opened to the moment the commitment was mined,
-   * per ADR-0001 and on the same scale as the reveal. `null` where no log matched this draw's
-   * round — which is either a draw that has not committed, or the shortfall `commitCoverage`
-   * counts. Never a fraction of a window, and never negative — ADR-0005.
-   */
-  commitLatencySeconds: number | null;
-  /**
-   * Whether the subgraph recorded a commitment, whatever the log scan found.
+   * When the reveal was recorded, in unix seconds, or `null` exactly where the latency is.
    *
-   * Kept beside the latency because the cell's wording turns on the difference the two of them
-   * make together: committed with no moment is a *log* this dashboard failed to read, and not
-   * committed with the window closed is an agent juror that failed to act. Collapsing them
-   * would put "Missed" under a commitment that happened.
+   * The moment itself, for the dispute's timeline (ADR-0012), which shows when things happened
+   * and no duration between them. Carried rather than rebuilt from the latency so the timeline
+   * never has to know which round's vote period the latency was measured from.
+   */
+  revealedAt: number | null;
+  /**
+   * The round this draw sits in — the agent juror's latest in the dispute, which `cellFor`
+   * chooses. Every dispute in court 34 has one round, so this is 0 throughout; a view that
+   * shows one round's moments (the dispute timeline) uses it to leave out a draw from another.
+   */
+  roundIndex: number;
+  /**
+   * Whether the subgraph recorded a commitment.
+   *
+   * The commitment's *moment* is not here: it is an Arbitrum read that only the views showing it
+   * make (ADR-0012), joined in `commitments.ts`. This is what those views need beside it, because
+   * their wording turns on the difference the two make together: committed with no moment is a
+   * *log* this dashboard failed to read, and not committed with the window closed is an agent
+   * juror that failed to act. Collapsing them would put "Missed" under a commitment that happened.
    */
   committed: boolean;
   /** How many vote IDs this one draw holds. `1` for most of them. */
@@ -323,7 +305,7 @@ export type MatrixRow = {
    * The one thing the matrix has never been able to say. `draws-subgraph.ts` scopes its query by
    * court and not by juror, so every draw in court 34 is already in hand; the roster is the column
    * set, so a draw belonging to an address outside it has no cell to sit in and falls out of the
-   * grid, out of every column marginal and out of the commit-coverage cross-check. Nothing threw
+   * grid and out of every column marginal. Nothing threw
    * and nothing was blank — the row simply reported fewer draws than the court made.
    *
    * It is not hypothetical and it is not rare: Grokleros was drawn four times across three
@@ -372,34 +354,6 @@ export type MatrixRow = {
 };
 
 /**
- * Whether the commit half of the per-draw latency record was read whole.
- *
- * A count and not an error, because the failure it exists for throws nothing: an endpoint that
- * caps `eth_getLogs` answers with fewer logs and no complaint, and every draw it dropped then
- * renders as a commitment that never happened (ADR-0004). Comparing what came back against the
- * known set — every draw the subgraph reports as committed — turns that silence into a number,
- * the same shape ticket 04 uses for dispute titles that did not resolve.
- *
- * It is deliberately not a reason to fail: reveal latency and coherence are read from the
- * subgraph and are unaffected by an Arbitrum outage, so a matrix that blanked itself over a
- * missing commitment would hide every row of measurements that are perfectly true. Ticket 13
- * lifts this count into the blocking banner it deserves.
- */
-export type CommitCoverage = {
-  /**
-   * Whether the log read has happened at all.
-   *
-   * False means the answer is not in yet, and nothing may be concluded from `resolved` — least
-   * of all out loud. A shortfall is only a shortfall once there is a read to have fallen short.
-   */
-  read: boolean;
-  /** Draws the subgraph reports as committed — what a whole read would account for. */
-  expected: number;
-  /** How many of those a log was found for. Equal to `expected` when the scan was whole. */
-  resolved: number;
-};
-
-/**
  * What the court configured, and when.
  *
  * Carried on the model rather than looked up by whatever needs it, so every reading of it (the
@@ -423,8 +377,8 @@ export type CourtParameters = {
 /**
  * Whether the court's payouts were read, and what the figures built from them cover.
  *
- * Deliberately **not** the shape `CommitCoverage` has, and the difference is the point. That one
- * compares a read against a known set — every draw the subgraph says committed — because a log
+ * Deliberately **not** the shape `CommitCoverage` has (`commitments.ts`), and the difference is the
+ * point. That one compares a read against a known set — every draw the subgraph says committed — because a log
  * scan that comes back short is indistinguishable from a court that never committed. This one
  * has no such set to compare against: a draw with no shift is most often a dispute the court has
  * ruled and not yet executed, which is an ordinary state lasting hours. Counting those as a
@@ -506,8 +460,6 @@ export type CourtPerformance = {
    * that reduced the rows while rendering would be a second definition of "how many draws".
    */
   marginals: readonly AgentJurorMarginals[];
-  /** Whether every commitment the subgraph knows of was found on chain. */
-  commitCoverage: CommitCoverage;
   /** The court's own parameter history, and what it holds now. */
   parameters: CourtParameters;
   /** Whether the court's payouts were read, and what the column headers' two sums cover. */
@@ -624,32 +576,7 @@ function rulingChoiceOf(dispute: Dispute): number | null {
 }
 
 /**
- * Every commitment the roster published, keyed by dispute and lowercased address.
- *
- * The chain checksums an address and The Graph lowercases it, so the join is on the lowercased
- * form — the same join, and the same reason, as the roster's. Several timestamps can share one
- * key: the event carries no round, and an agent juror drawn again on appeal commits again.
- * They are sorted so `commitAt` can pick the one belonging to a round.
- */
-function commitsByDraw(raw: RawCourtData): Map<string, number[]> {
-  const commits = new Map<string, number[]>();
-
-  for (const commit of raw.commits ?? []) {
-    const disputeId = toNumber(commit.disputeID, "Commitment names a bad dispute");
-    const timestamp = toNumber(commit.timestamp, "Commitment carries a bad timestamp");
-    const key = `${disputeId}/${commit.juror.toLowerCase()}`;
-
-    const timestamps = commits.get(key);
-    if (timestamps === undefined) commits.set(key, [timestamp]);
-    else timestamps.push(timestamp);
-  }
-
-  for (const timestamps of commits.values()) timestamps.sort((a, b) => a - b);
-  return commits;
-}
-
-/**
- * What the court paid each agent juror in each dispute, keyed exactly as the commitments are.
+ * What the court paid each agent juror in each dispute, keyed by dispute and lowercased address.
  *
  * Summed rather than indexed, because a shift is per round and a cell is per dispute: an
  * appealed dispute writes one shift per round for the same agent juror, and the figure the
@@ -658,8 +585,8 @@ function commitsByDraw(raw: RawCourtData): Map<string, number[]> {
  * today and stays right the first time it does not — the same shape as `roundIndexOf` reading
  * the index from the id rather than from the position a round arrived in.
  *
- * Keyed on the lowercased address for the same reason `commitsByDraw` is: The Graph lowercases
- * and the roster checksums, and this is the only join between them.
+ * Keyed on the lowercased address because The Graph lowercases and the roster checksums, and
+ * this is the only join between them.
  */
 function rewardsByDraw(raw: RawCourtData): Map<string, DrawReward> {
   const rewards = new Map<string, DrawReward>();
@@ -683,29 +610,7 @@ function rewardsByDraw(raw: RawCourtData): Map<string, DrawReward> {
   return rewards;
 }
 
-/**
- * When this draw committed, out of every commitment its agent juror published in the dispute.
- *
- * The earliest one at or after this round's commit period opened. A juror commits at most once
- * per round and a later round opens later, so that is this round's commitment and no other —
- * and choosing this way makes a negative latency structurally impossible rather than something
- * to detect afterwards. A commitment that predates the round is an earlier round's, which is
- * why this returns null instead of failing the way the reveal path does: the reveal has one
- * justification and no round to choose between, and this has neither of those luxuries.
- */
-function commitAt(timestamps: readonly number[] | undefined, round: DisputeRound): number | null {
-  if (timestamps === undefined || round.commitOpenedAt === null) return null;
-
-  const opened = round.commitOpenedAt;
-  return timestamps.find((timestamp) => timestamp >= opened) ?? null;
-}
-
-function drawOf(
-  group: DrawGroup,
-  dispute: Dispute,
-  commits: Map<string, number[]>,
-  rewards: Map<string, DrawReward>,
-): Draw {
+function drawOf(group: DrawGroup, dispute: Dispute, rewards: Map<string, DrawReward>): Draw {
   const revealed = group.votes.some((vote) => vote.voted);
   const committed = group.votes.some((vote) => vote.commited);
   // Once, here, rather than again inside `stateOf`: the same list decides coherence and is
@@ -724,27 +629,20 @@ function drawOf(
     }
   }
 
-  // Read from the log whether or not the subgraph has caught up: a commitment that is on chain
-  // and not yet indexed is a moment this page can state, and the *state* stays whatever the
-  // subgraph supports — which keeps `NO VOTE` as conservative as ticket 05 left it.
-  const committedAt = commitAt(
-    commits.get(`${dispute.id}/${group.agentJuror.address.toLowerCase()}`),
-    group.round,
-  );
-  const commitOpenedAt = group.round.commitOpenedAt;
-
   return {
     agentJuror: group.agentJuror,
     state: stateOf({ group, dispute, revealed, committed, choices }),
     revealLatencySeconds,
-    commitLatencySeconds:
-      committedAt === null || commitOpenedAt === null ? null : committedAt - commitOpenedAt,
+    // Only where the latency is: a reveal with no vote period to measure from has not been
+    // checked against one, and the timeline must not place a moment this seam has not checked.
+    revealedAt: revealLatencySeconds === null ? null : revealedTimestamp,
+    roundIndex: group.round.index,
     committed,
     voteCount: group.voteCount,
     roundVoteCount: group.roundVoteCount,
     choices,
-    // The same key the commitments use, and `undefined` collapsed to `null` because the model
-    // says "no reward" with a null everywhere else it says anything is absent.
+    // `undefined` collapsed to `null` because the model says "no reward" with a null everywhere
+    // else it says anything is absent.
     reward: rewards.get(`${dispute.id}/${group.agentJuror.address.toLowerCase()}`) ?? null,
   };
 }
@@ -934,7 +832,6 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
   try {
     const disputes = toDisputes(raw.disputes);
     const grouped = groupDraws(raw, disputes);
-    const commits = commitsByDraw(raw);
     const rewards = rewardsByDraw(raw);
 
     // The court's own history, never its current configuration: what the court holds today is
@@ -942,13 +839,9 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
     const regimes = toRegimes(raw.parameters ?? []);
     const current = regimes[regimes.length - 1]?.windows ?? null;
 
-    // The cross-check ADR-0004 requires, counted where every draw is already in hand rather
-    // than by walking the model a second time.
-    let expected = 0;
-    let resolved = 0;
-
-    // What the reward figures cover, counted in the same pass and for the same reason. Not a
-    // per-draw cross-check and deliberately not shaped like one — see `RewardCoverage`.
+    // What the reward figures cover, counted where every draw is already in hand rather than by
+    // walking the model a second time. Not a per-draw cross-check and deliberately not shaped
+    // like one — see `RewardCoverage`.
     let paidDraws = 0;
     let feeTokenDraws = 0;
     // Draws in disputes the court has ruled: what a whole payout read would have *something* to
@@ -981,11 +874,7 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
         const group = currentDraw(drawn?.byAgentJuror.get(agentJuror.address.toLowerCase()));
         if (group === undefined) return null;
 
-        const draw = drawOf(group, dispute, commits, rewards);
-        if (group.votes.some((vote) => vote.commited)) {
-          expected += 1;
-          if (draw.commitLatencySeconds !== null) resolved += 1;
-        }
+        const draw = drawOf(group, dispute, rewards);
         if (draw.reward !== null) {
           paidDraws += 1;
           if (draw.reward.inFeeToken) feeTokenDraws += 1;
@@ -1033,7 +922,6 @@ export function buildCourtPerformance(raw: RawCourtData): KlerosResult<CourtPerf
         rows,
         totals: courtTotalsOf(rows, raw.roster),
         marginals: agentJurorMarginalsOf(rows, raw.roster),
-        commitCoverage: { read: raw.commits !== null, expected, resolved },
         parameters: { read: raw.parameters !== null, regimes, current },
         rewards: {
           read: raw.rewards !== null,

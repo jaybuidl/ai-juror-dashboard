@@ -20,7 +20,6 @@ import { VisuallyHidden } from "../styles/hidden";
 import { theme } from "../styles/theme";
 import { FIXTURE_ROSTER, OFF_ROSTER_ADDRESS, offRosterDraw, padCourt } from "../test/court";
 import { stubViewportWidth } from "../test/viewport";
-import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import rewardFixture from "./court-34-rewards.fixture.json" with { type: "json" };
@@ -29,7 +28,6 @@ import { HEADER_AVATAR_PX, Matrix } from "./Matrix";
 import {
   buildCourtPerformance,
   type CourtPerformance,
-  type RawCommitCast,
   type RawCourtData,
   type RawDraw,
   type RawRewardShift,
@@ -73,7 +71,6 @@ function build(raw: Partial<RawCourtData> = {}): CourtPerformance {
   const result = buildCourtPerformance({
     disputes: disputeFixture as RawDispute[],
     draws: drawFixture as RawDraw[],
-    commits: commitFixture as RawCommitCast[],
     parameters: parameterFixture as RawCourtParameters[],
     rewards: rewardFixture as RawRewardShift[],
     roster: FIXTURE_ROSTER,
@@ -601,13 +598,13 @@ describe("Matrix", () => {
           vote: { commited: true, voted: false, choice: null, justification: null },
         },
       ],
-      commits: [{ disputeID: "900", juror: ROSTER[3]?.address ?? "", timestamp: "160" }],
     });
     renderMatrix(missed);
 
     expect(grid().getByText("No vote")).toBeInTheDocument();
     expect(grid().getByText("∅")).toBeInTheDocument();
-    // The commit that did happen is not a figure here (ADR-0011): it is on the agent juror page.
+    // The commit that did happen is not a figure here (ADR-0011): its moment is on the dispute's
+    // timeline and its agent juror's page.
     expect(grid().queryByText("60s")).not.toBeInTheDocument();
   });
 
@@ -636,7 +633,6 @@ describe("Matrix", () => {
           vote: { commited: true, voted: false, choice: null, justification: null },
         },
       ],
-      commits: [{ disputeID: "900", juror: ROSTER[3]?.address ?? "", timestamp: "150" }],
     });
     renderMatrix(acting);
 
@@ -673,7 +669,6 @@ describe("Matrix", () => {
           vote: { commited: false, voted: false, choice: null, justification: null },
         },
       ],
-      commits: [],
     });
     renderMatrix(awaiting);
     const cell = grid().getByText("Awaiting").closest("td");
@@ -771,15 +766,6 @@ describe("Matrix", () => {
       expect(header("007").queryByText("0.0026")).not.toBeInTheDocument();
       // Every column falls back to the same dash the never-drawn one shows.
       expect(header("007").getAllByText("—").length).toBeGreaterThanOrEqual(2);
-    });
-
-    it("does not call a commit not read while the log scan is still in flight", () => {
-      // The trap this repository has now hit four times: a flag that is false while a read is
-      // in flight is not a flag that the read failed. Six columns reading "Not read" for the
-      // length of every cold load is a failure announced before it has happened.
-      renderMatrix(build({ commits: null }));
-
-      expect(screen.queryByText("Not read")).not.toBeInTheDocument();
     });
   });
 
@@ -988,20 +974,15 @@ describe("Matrix", () => {
     });
 
     it("says nothing about the commit scan, which no cell reads", () => {
-      // The notice that counted a short scan went with the commit line: no figure on this grid
-      // comes from Arbitrum's logs, so a shortfall there changes nothing a reader is looking at.
-      // The agent juror page, which still carries each draw's moments, says it instead.
-      const short = (commitFixture as RawCommitCast[]).slice(0, 50);
-      for (const commits of [short, [], null]) {
-        renderMatrix(build({ commits }));
-        expect(screen.queryByText(/Arbitrum/)).not.toBeInTheDocument();
-        expect(screen.queryByRole("status")).not.toBeInTheDocument();
-        const row = rowFor(163);
-        if (row === null) throw new Error("no row for dispute 163");
-        expect(within(row).getAllByText("Coherent")).toHaveLength(5);
-        expect(within(row).queryByText("Not read")).not.toBeInTheDocument();
-        cleanup();
-      }
+      // No figure on this grid comes from Arbitrum's logs, and since ADR-0012 the court model
+      // reads none: the dispute's timeline and the agent juror page read their own and say so.
+      renderMatrix(build());
+      expect(screen.queryByText(/Arbitrum/)).not.toBeInTheDocument();
+      expect(screen.queryByRole("status")).not.toBeInTheDocument();
+      const row = rowFor(163);
+      if (row === null) throw new Error("no row for dispute 163");
+      expect(within(row).getAllByText("Coherent")).toHaveLength(5);
+      expect(within(row).queryByText("Not read")).not.toBeInTheDocument();
     });
   });
 
@@ -1583,7 +1564,7 @@ describe("Matrix", () => {
         }) as RawDispute,
     );
 
-    renderMatrix(build({ disputes: waiting, draws: [], commits: [], rewards: [] }));
+    renderMatrix(build({ disputes: waiting, draws: [], rewards: [] }));
 
     expect(screen.queryByText("Never drawn")).not.toBeInTheDocument();
     expect(screen.queryByText(/blank end to end/i)).not.toBeInTheDocument();

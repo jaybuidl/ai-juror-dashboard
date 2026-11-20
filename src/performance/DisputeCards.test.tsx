@@ -10,7 +10,6 @@ import { rosterIdentity } from "../roster/ens";
 import type { RosterView } from "../roster/useRoster";
 import { theme } from "../styles/theme";
 import { offRosterDraw } from "../test/court";
-import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import rewardFixture from "./court-34-rewards.fixture.json" with { type: "json" };
@@ -22,7 +21,6 @@ import {
   type Draw,
   type DrawState,
   type MatrixRow,
-  type RawCommitCast,
   type RawCourtData,
   type RawDraw,
   type RawRewardShift,
@@ -49,7 +47,6 @@ function build(raw: Partial<RawCourtData> = {}): CourtPerformance {
   const result = buildCourtPerformance({
     disputes: disputeFixture as RawDispute[],
     draws: drawFixture as RawDraw[],
-    commits: commitFixture as RawCommitCast[],
     parameters: parameterFixture as RawCourtParameters[],
     // The same payouts `Matrix.test.tsx` builds, though no card renders one: the two layouts are
     // twins over one court, and a phone suite running against a court whose payouts were never
@@ -255,18 +252,17 @@ describe("DisputeCards", () => {
       row.cells.forEach((cell, column) => {
         if (cell === null) return;
         const slot = slots[column] as HTMLElement;
-        for (const seconds of [cell.revealLatencySeconds, cell.commitLatencySeconds]) {
-          if (seconds !== null) {
-            expect(slot).not.toHaveTextContent(formatLatencySeconds(seconds));
-          }
+        if (cell.revealLatencySeconds !== null) {
+          expect(slot).not.toHaveTextContent(formatLatencySeconds(cell.revealLatencySeconds));
         }
       });
     }
   });
 
   it("says nothing about the commit scan, which no slot reads", () => {
-    // The notice that counted a short scan went with the slot's figure (ADR-0011).
-    renderCards(build({ commits: [] }));
+    // The notice that counted a short scan went with the slot's figure (ADR-0011), and the scan
+    // went from the court model with ADR-0012: nothing here could raise one now.
+    renderCards(build());
 
     expect(screen.queryByText(/Arbitrum/)).not.toBeInTheDocument();
     expect(screen.queryByText(/Not read/)).not.toBeInTheDocument();
@@ -315,7 +311,6 @@ describe("DisputeCards", () => {
         ...first,
         state,
         revealLatencySeconds: state.kind === "no-vote" ? null : 46,
-        commitLatencySeconds: state.kind === "live" && state.stage === "awaiting" ? null : 41,
         committed: !(state.kind === "live" && state.stage === "awaiting"),
       };
       const { unmount } = renderCards(

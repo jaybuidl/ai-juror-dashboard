@@ -112,3 +112,55 @@ describe("useDisputeDetail and reveals it has not seen", () => {
     expect(fetched).toHaveBeenCalledTimes(2);
   });
 });
+
+/**
+ * ADR-0012: a read that landed before anyone was drawn has no block range for the timeline's
+ * chain read, and nothing else brings it back before the first reveal — so the court read seeing
+ * a draw does, once.
+ */
+describe("useDisputeDetail and draws it has not seen", () => {
+  const undrawn = { ...(detailFixture as object), draws: [] };
+
+  beforeEach(() => {
+    fetched.mockReset();
+  });
+
+  it("re-reads once when the court sees a draw this read predates", async () => {
+    fetched.mockResolvedValueOnce(undrawn as never);
+    fetched.mockResolvedValue(detailFixture as never);
+    const { result, rerender } = renderHook(({ drawn }) => useDisputeDetail(156, null, drawn), {
+      wrapper,
+      initialProps: { drawn: false as boolean | null },
+    });
+    await waitFor(() => expect(result.current.readAt).not.toBeNull());
+    expect(result.current.detail.blockRange).toBeNull();
+    expect(fetched).toHaveBeenCalledTimes(1);
+
+    rerender({ drawn: true });
+    await waitFor(() => expect(result.current.detail.blockRange).not.toBeNull());
+    expect(fetched).toHaveBeenCalledTimes(2);
+  });
+
+  it("asks once, not again and again while the subgraph still reports no draw", async () => {
+    fetched.mockResolvedValue(undrawn as never);
+    const { result, rerender } = renderHook(({ drawn }) => useDisputeDetail(156, null, drawn), {
+      wrapper,
+      initialProps: { drawn: true as boolean | null },
+    });
+    await waitFor(() => expect(fetched).toHaveBeenCalledTimes(2));
+    rerender({ drawn: true });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(fetched).toHaveBeenCalledTimes(2);
+    expect(result.current.detail.blockRange).toBeNull();
+  });
+
+  it("does not re-read a dispute whose read already has its range", async () => {
+    fetched.mockResolvedValue(detailFixture as never);
+    const { result } = renderHook(() => useDisputeDetail(156, null, true), { wrapper });
+    await waitFor(() => expect(result.current.readAt).not.toBeNull());
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(fetched).toHaveBeenCalledTimes(1);
+  });
+});

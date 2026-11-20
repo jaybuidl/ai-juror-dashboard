@@ -10,7 +10,8 @@ function draw(overrides: Partial<Draw> = {}): Draw {
     agentJuror: AGENT_JUROR,
     state: { kind: "coherent" },
     revealLatencySeconds: 85,
-    commitLatencySeconds: 396,
+    revealedAt: 1787343483,
+    roundIndex: 0,
     committed: true,
     voteCount: 1,
     roundVoteCount: 3,
@@ -133,26 +134,20 @@ describe("revealFigureOf", () => {
 
 describe("commitFigureOf", () => {
   it("reads a measured latency as a figure, in the same unit as the reveal", () => {
-    expect(commitFigureOf(draw(), true)).toEqual({ text: "6m 36s", tone: "value" });
+    expect(commitFigureOf(draw(), 396, true)).toEqual({ text: "6m 36s", tone: "value" });
   });
 
   it("reads a commitment that never came as a miss once the window has closed", () => {
     expect(
-      commitFigureOf(
-        draw({ state: { kind: "no-vote" }, committed: false, commitLatencySeconds: null }),
-        true,
-      ),
+      commitFigureOf(draw({ state: { kind: "no-vote" }, committed: false }), null, true),
     ).toEqual({ text: "Missed", tone: "missed" });
   });
 
   it("reads a commitment that has not come yet as a dash, never as blank", () => {
     expect(
       commitFigureOf(
-        draw({
-          state: { kind: "live", stage: "awaiting" },
-          committed: false,
-          commitLatencySeconds: null,
-        }),
+        draw({ state: { kind: "live", stage: "awaiting" }, committed: false }),
+        null,
         true,
       ),
     ).toEqual({ text: "—", tone: "pending" });
@@ -171,9 +166,10 @@ describe("commitFigureOf", () => {
     ];
 
     for (const state of states) {
-      expect(
-        commitFigureOf(draw({ state, committed: true, commitLatencySeconds: null }), true),
-      ).toEqual({ text: "Not read", tone: "unread" });
+      expect(commitFigureOf(draw({ state, committed: true }), null, true)).toEqual({
+        text: "Not read",
+        tone: "unread",
+      });
     }
   });
 
@@ -182,19 +178,16 @@ describe("commitFigureOf", () => {
     // the chain answering, every committed draw has no log — so without the scanned flag all
     // 56 cells would come up rose reading "Not read" on every cold load, announcing a failure
     // that has not happened. Unscanned is a step not reached, which is what a dash means.
-    const pending = draw({
-      state: { kind: "coherent" },
-      committed: true,
-      commitLatencySeconds: null,
-    });
+    const pending = draw({ state: { kind: "coherent" }, committed: true });
 
-    expect(commitFigureOf(pending, false)).toEqual({ text: "—", tone: "pending" });
-    expect(commitFigureOf(pending, true)).toEqual({ text: "Not read", tone: "unread" });
+    expect(commitFigureOf(pending, null, false)).toEqual({ text: "—", tone: "pending" });
+    expect(commitFigureOf(pending, null, true)).toEqual({ text: "Not read", tone: "unread" });
   });
 
   it("never says Missed about a draw the subgraph reports as committed", () => {
     const missed = commitFigureOf(
-      draw({ state: { kind: "no-vote" }, committed: true, commitLatencySeconds: null }),
+      draw({ state: { kind: "no-vote" }, committed: true }),
+      null,
       true,
     );
 

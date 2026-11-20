@@ -5,7 +5,6 @@ import {
   fetchCourtDisputes,
 } from "../disputes/court-subgraph";
 import { ROSTER } from "../roster/agent-jurors";
-import { fetchCommitCasts } from "./commit-logs";
 import { fetchCourtDraws } from "./draws-subgraph";
 import { buildCourtPerformance } from "./performance";
 
@@ -48,21 +47,17 @@ describe("fetchCourtDraws", () => {
     }
   }, 30_000);
 
-  it("builds a model out of what the three live reads return together", async () => {
-    const [disputes, draws, commits] = await Promise.all([
-      fetchCourtDisputes(),
-      fetchCourtDraws(),
-      fetchCommitCasts(),
-    ]);
-    // `parameters: null` and not a fourth read. The whole live run shares one endpoint that
-    // rate-limits per RPC *call*, and adding the parameter scan here returned HTTP 429 —
+  it("builds a model out of what the two live reads return together", async () => {
+    const [disputes, draws] = await Promise.all([fetchCourtDisputes(), fetchCourtDraws()]);
+    // `parameters: null` and not a third read. The whole live run shares one endpoint that
+    // rate-limits per RPC *call*, and adding the parameter scan here once returned HTTP 429 —
     // surfaced by viem as `UnknownRpcError: Cannot read properties of undefined`, the exact
     // shape `docs/knowledge/chain-and-subgraph.md` records. `court-parameters.integration.test.ts` builds the model
-    // with a live history; nothing this suite asserts is about a window.
+    // with a live history; nothing this suite asserts is about a window. (It read the court-wide
+    // commit scan too until ADR-0012 retired that scan.)
     const result = buildCourtPerformance({
       disputes,
       draws,
-      commits,
       parameters: null,
       // And the payouts are not read either: `rewards-subgraph.integration.test.ts` reads them
       // live, and nothing this suite asserts is about what an agent juror earned.

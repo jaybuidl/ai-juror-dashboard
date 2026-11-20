@@ -86,11 +86,9 @@ describe("fetchCourtRewards", () => {
     const result = buildCourtPerformance({
       disputes,
       draws,
-      // Neither Arbitrum read: nothing here is about a commitment or a window, and both cost
-      // calls against the endpoint whose rate limit the live suite as a whole has to live
-      // within. `court-parameters.integration.test.ts` and `commit-logs.integration.test.ts`
-      // read them.
-      commits: null,
+      // No parameter history: nothing here is about a window, and it costs calls against the
+      // endpoint whose rate limit the live suite as a whole has to live within.
+      // `court-parameters.integration.test.ts` reads it.
       parameters: null,
       rewards,
       roster: ROSTER,

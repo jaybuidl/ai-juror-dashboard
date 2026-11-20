@@ -1,8 +1,9 @@
 import type { PublicClient } from "viem";
 import { beforeEach, describe, expect, it } from "vitest";
-import { ROSTER } from "../roster/agent-jurors";
+import { LOG_RANGE_LIMIT } from "./arbitrum";
 import { createBlockTimes } from "./block-times";
-import { DISPUTE_KIT_CLASSIC, fetchCommitCasts } from "./commit-logs";
+import { type CommitFilter, DISPUTE_KIT_CLASSIC, fetchCommitCasts } from "./commit-logs";
+import { COURT_CREATED_BLOCK } from "./court-parameters";
 
 /**
  * The reader, offline.
@@ -23,19 +24,32 @@ type FakeLog = {
 /** What `getLogs` was asked for, so the request itself can be asserted. */
 type Asked = {
   address?: string;
-  fromBlock?: bigint;
-  toBlock?: string;
-  args?: { _juror?: string[] };
+  fromBlock: bigint;
+  toBlock: bigint;
+  args?: Record<string, unknown>;
 };
 
+/** Where the fake chain's head is: court 34's creation plus a little over three windows. */
+const HEAD = 525_842_400n;
+
+/** Columbo's commitments, which is what an agent juror page asks for. */
+const COLUMBO: CommitFilter = { _juror: "0x70239816581Afff150814B46C831e2e5F9E3bF4C" };
+
+/**
+ * A chain that answers each window with the logs inside it, as arb1 does. A fake that handed every
+ * window every log would return each commitment once per window.
+ */
 function fakeClient(logs: FakeLog[], timestamps: Record<string, bigint> = {}) {
   const asked: Asked[] = [];
   const blocksRead: bigint[] = [];
 
   const client = {
+    getBlockNumber: async () => HEAD,
     getLogs: async (request: Asked) => {
       asked.push(request);
-      return logs;
+      return logs.filter(
+        (log) => log.blockNumber >= request.fromBlock && log.blockNumber <= request.toBlock,
+      );
     },
     getBlock: async ({ blockNumber }: { blockNumber: bigint }) => {
       blocksRead.push(blockNumber);
@@ -81,7 +95,7 @@ describe("fetchCommitCasts", () => {
   it("reads a commitment as the dispute, the juror and the moment its block was mined", async () => {
     const { client } = fakeClient([unstampedLog()], { "496351385": 1_787_188_232n });
 
-    expect(await fetchCommitCasts({ client })).toEqual([
+    expect(await fetchCommitCasts({ client, filter: COLUMBO })).toEqual([
       {
         disputeID: "151",
         juror: "0x70239816581Afff150814B46C831e2e5F9E3bF4C",
@@ -99,29 +113,59 @@ describe("fetchCommitCasts", () => {
     const { client } = fakeClient([fakeLog({ blockTimestamp: 0n })], {
       "496351385": 1_787_188_232n,
     });
-    const [commit] = await fetchCommitCasts({ client });
+    const [commit] = await fetchCommitCasts({ client, filter: COLUMBO });
 
     expect(commit?.timestamp).toBe("1787188232");
   });
 
-  it("scans the whole chain in one request rather than from a start block to maintain", async () => {
+  it("scans an agent juror's record from the court's creation, in windows the endpoint accepts", async () => {
+    // arb1 refuses a scan wider than ten million blocks (#25), and this one ran from block 0
+    // until it did. No commitment in court 34 can predate the court.
     const { client, asked } = fakeClient([]);
-    await fetchCommitCasts({ client });
+    await fetchCommitCasts({ client, filter: COLUMBO });
 
-    expect(asked).toHaveLength(1);
-    expect(asked[0]?.fromBlock).toBe(0n);
-    expect(asked[0]?.toBlock).toBe("latest");
-    expect(asked[0]?.address).toBe(DISPUTE_KIT_CLASSIC);
+    expect(asked[0]?.fromBlock).toBe(COURT_CREATED_BLOCK);
+    expect(asked.at(-1)?.toBlock).toBe(HEAD);
+    for (const [index, request] of asked.entries()) {
+      expect(request.address).toBe(DISPUTE_KIT_CLASSIC);
+      expect(request.toBlock - request.fromBlock + 1n).toBeLessThanOrEqual(LOG_RANGE_LIMIT);
+      const next = asked[index + 1];
+      if (next !== undefined) expect(next.fromBlock).toBe(request.toBlock + 1n);
+    }
   });
 
-  it("narrows the scan to the roster, because the event carries no court", async () => {
-    // `CommitCast` names a dispute and a juror and never a court, so the filter is on the six
-    // addresses this dashboard has columns for. A log for a dispute outside court 34 is dropped
-    // by the join in the seam, exactly as a draw for one is.
-    const { client, asked } = fakeClient([]);
-    await fetchCommitCasts({ client, roster: ROSTER });
+  it("finds a commitment in whichever window holds it, once", async () => {
+    const { client } = fakeClient([unstampedLog({ blockNumber: 515_000_000n })], {
+      "515000000": 1_792_000_000n,
+    });
 
-    expect(asked[0]?.args?._juror).toEqual(ROSTER.map((agentJuror) => agentJuror.address));
+    expect(await fetchCommitCasts({ client, filter: COLUMBO })).toHaveLength(1);
+  });
+
+  it("asks for one agent juror or one dispute, and never a list", async () => {
+    // A list-valued topic is allowed a hundredth of the range a single value is (#25), which
+    // is why this stopped reading the roster as one list. The event carries no court, so a log
+    // for a dispute outside court 34 is dropped by the join, exactly as a draw for one is.
+    const byJuror = fakeClient([]);
+    await fetchCommitCasts({ client: byJuror.client, filter: COLUMBO });
+    const byDispute = fakeClient([]);
+    await fetchCommitCasts({
+      client: byDispute.client,
+      filter: { _coreDisputeID: 156n },
+      fromBlock: 496_780_897n,
+      toBlock: 497_058_149n,
+    });
+
+    expect(byJuror.asked[0]?.args).toEqual(COLUMBO);
+    expect(byDispute.asked).toEqual([
+      {
+        address: DISPUTE_KIT_CLASSIC,
+        event: expect.anything(),
+        args: { _coreDisputeID: 156n },
+        fromBlock: 496_780_897n,
+        toBlock: 497_058_149n,
+      },
+    ]);
   });
 
   it("reads a block once however many commitments it carries", async () => {
@@ -135,7 +179,7 @@ describe("fetchCommitCasts", () => {
       ],
       { "496351385": 1_787_188_232n, "496363761": 1_787_191_342n },
     );
-    const commits = await fetchCommitCasts({ client });
+    const commits = await fetchCommitCasts({ client, filter: COLUMBO });
 
     expect(commits).toHaveLength(3);
     expect(blocksRead).toEqual([496_351_385n, 496_363_761n]);
@@ -149,7 +193,7 @@ describe("fetchCommitCasts", () => {
       "496351385": 1_787_188_232n,
       "496363761": 1_787_191_342n,
     });
-    await fetchCommitCasts({ client: first.client, blockTimes });
+    await fetchCommitCasts({ client: first.client, filter: COLUMBO, blockTimes });
 
     const second = fakeClient(
       [
@@ -159,7 +203,7 @@ describe("fetchCommitCasts", () => {
       ],
       { "496400000": 1_787_200_000n },
     );
-    const commits = await fetchCommitCasts({ client: second.client, blockTimes });
+    const commits = await fetchCommitCasts({ client: second.client, filter: COLUMBO, blockTimes });
 
     // Only the block it had never seen, and every commitment still carries its moment.
     expect(second.blocksRead).toEqual([496_400_000n]);
@@ -174,7 +218,7 @@ describe("fetchCommitCasts", () => {
     // The cache is an optimisation and never a source: with an empty one the scan is exactly
     // what it was before this existed.
     const { client, blocksRead } = fakeClient([unstampedLog()], { "496351385": 1_787_188_232n });
-    await fetchCommitCasts({ client, blockTimes: createBlockTimes(null) });
+    await fetchCommitCasts({ client, filter: COLUMBO, blockTimes: createBlockTimes(null) });
 
     expect(blocksRead).toEqual([496_351_385n]);
   });
@@ -187,6 +231,6 @@ describe("fetchCommitCasts", () => {
       "496351385": 1_787_188_232n,
     });
 
-    await expect(fetchCommitCasts({ client })).rejects.toThrow(/CommitCast/);
+    await expect(fetchCommitCasts({ client, filter: COLUMBO })).rejects.toThrow(/CommitCast/);
   });
 });

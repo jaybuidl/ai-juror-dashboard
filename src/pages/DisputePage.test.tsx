@@ -9,7 +9,17 @@ import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import type { DisputeDetailView } from "../performance/useDisputeDetail";
 import { ReadFailure, SOURCES } from "../read-failure";
 import { theme } from "../styles/theme";
-import { disputes, measured, READ_AT, resolvedRoster, unresolvedRoster } from "../test/court";
+import {
+  answered,
+  DISPUTE_156_CHAIN,
+  disputes,
+  failed,
+  measured,
+  pending,
+  READ_AT,
+  resolvedRoster,
+  unresolvedRoster,
+} from "../test/court";
 import { DisputeView, type DisputeViewProps } from "./DisputePage";
 
 /**
@@ -50,6 +60,7 @@ function renderDispute(overrides: Partial<DisputeViewProps> = {}) {
           performance={measured}
           pathId="156"
           detail={read()}
+          chain={answered(DISPUTE_156_CHAIN)}
           {...overrides}
         />
       </MemoryRouter>
@@ -208,7 +219,7 @@ describe("the ruling card", () => {
 describe("the timeline strip", () => {
   it("covers the four periods a dispute runs through", () => {
     renderDispute();
-    const strip = screen.getByRole("list", { name: /how long each period ran/i });
+    const strip = screen.getByRole("list", { name: "Timeline" });
 
     for (const name of ["Evidence", "Commit period", "Vote period", "Appeal period"]) {
       expect(within(strip).getByText(name)).toBeInTheDocument();
@@ -219,7 +230,7 @@ describe("the timeline strip", () => {
     // ADR-0005: never a ratio, at any altitude. Two durations with a middot between them, and
     // the reader forms the comparison themselves if they want it.
     renderDispute();
-    const strip = screen.getByRole("list", { name: /how long each period ran/i });
+    const strip = screen.getByRole("list", { name: "Timeline" });
 
     expect(within(strip).getByText(/45m configured · closed in/)).toBeInTheDocument();
     expect(within(strip).queryByText(/%/)).not.toBeInTheDocument();
@@ -227,7 +238,7 @@ describe("the timeline strip", () => {
 
   it("carries the evidence submission count where no window governs", () => {
     renderDispute();
-    const strip = screen.getByRole("list", { name: /how long each period ran/i });
+    const strip = screen.getByRole("list", { name: "Timeline" });
 
     expect(within(strip).getByText("1 submission")).toBeInTheDocument();
   });
@@ -725,6 +736,113 @@ describe("a dispute with no panel yet", () => {
   });
 });
 
+/** One lane of the timeline, read as the lines a reader sees, in order. */
+function laneLines(period: string): string[] {
+  const lane = screen.getByRole("list", { name: period });
+  return within(lane)
+    .getAllByRole("listitem")
+    .map((item) => item.textContent?.replace(/\s+/g, " ").trim() ?? "");
+}
+
+describe("the timeline (ADR-0012)", () => {
+  it("says when each period opened, and who opened it, in UTC", () => {
+    renderDispute();
+
+    expect(laneLines("Evidence")).toEqual(["21 Aug 06:56:27 Dispute created"]);
+    expect(screen.getByText("All times UTC")).toBeInTheDocument();
+    expect(laneLines("Commit period")[0]).toBe("07:42:00 Opened by an off-roster account");
+    expect(laneLines("Vote period")[0]).toBe("08:02:35 Opened by an off-roster account");
+    expect(laneLines("Appeal period")).toEqual([
+      "08:12:55 Opened by an off-roster account",
+      // The appeal ran into the next day, which is the one place a day is printed again.
+      "22 Aug 02:18:45 Closed by an off-roster account",
+    ]);
+  });
+
+  it("never prints the address of an account off the roster", () => {
+    // Whoever called `passPeriod` is not an agent juror this dashboard follows, and an address
+    // is the personal data it does not hold. The fixture's sender is the synthetic one.
+    const { container } = renderDispute();
+
+    expect(container.textContent).not.toMatch(/0x1111/i);
+    expect(container.innerHTML).not.toMatch(/0x1111/i);
+  });
+
+  it("names a rostered agent juror that opened a period, by the name the panel uses", () => {
+    const blaise = "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea";
+    renderDispute({
+      chain: answered({
+        ...DISPUTE_156_CHAIN,
+        openings: DISPUTE_156_CHAIN.openings.map((opening) =>
+          opening.period === "2" ? { ...opening, from: blaise.toLowerCase() } : opening,
+        ),
+      }),
+    });
+
+    expect(laneLines("Vote period")[0]).toBe("08:02:35 Opened by Blaise");
+  });
+
+  it("lists each commitment and reveal at its moment, in the order they happened", () => {
+    // Clock readings and no durations: the seconds from an opening to an agent juror acting are
+    // latency, which no surface setting agent jurors side by side may carry (ADR-0010).
+    renderDispute();
+
+    expect(laneLines("Commit period").slice(1)).toEqual([
+      "07:43:43 ◐ Daemonhill committed",
+      "07:44:12 ◐ 007 committed",
+      "07:47:23 ◐ Blaise committed",
+      "07:54:17 ◐ Columbo committed",
+    ]);
+    expect(laneLines("Vote period").slice(1)).toEqual([
+      "08:03:06 ● Blaise revealed",
+      "08:03:15 ● Daemonhill revealed",
+      "08:03:58 ● 007 revealed",
+      "08:04:32 ● Columbo revealed",
+    ]);
+    for (const period of ["Commit period", "Vote period"]) {
+      for (const line of laneLines(period)) {
+        expect(line).not.toMatch(/\d+m \d{2}s|\b\d+s\b/);
+      }
+    }
+  });
+
+  it("keeps the glyph out of what a screen reader hears", () => {
+    renderDispute();
+    const lane = screen.getByRole("list", { name: "Commit period" });
+
+    for (const glyph of within(lane).getAllByText("◐")) {
+      expect(glyph).toHaveAttribute("aria-hidden", "true");
+    }
+  });
+
+  it("marks who opened and when each committed as not read yet while the chain answers", () => {
+    // Every cold load, for as long as the chain takes: a dash and nothing louder, because nothing
+    // has failed. The openings are still dated, from the subgraph.
+    renderDispute({ chain: pending() });
+
+    expect(laneLines("Commit period")[0]).toBe("07:42:00 Opened by —an account not read yet");
+    // With no moment to order them by, they keep the roster's order: 007 first, never a ranking.
+    expect(laneLines("Commit period")[1]).toBe("—Time not read yet ◐ 007 committed");
+    expect(screen.queryByText("Not read")).not.toBeInTheDocument();
+    // Reveals are the subgraph's and need no chain read.
+    expect(laneLines("Vote period")[1]).toBe("08:03:06 ● Blaise revealed");
+  });
+
+  it("marks a commitment an answered read did not find as not read, in rose", () => {
+    renderDispute({ chain: answered({ ...DISPUTE_156_CHAIN, commits: [] }) });
+
+    const lines = laneLines("Commit period").slice(1);
+    expect(lines).toHaveLength(4);
+    for (const line of lines) expect(line).toMatch(/^Not read ◐ \w+ committed$/);
+  });
+
+  it("says an opening an answered read did not find was not found, not who it guesses", () => {
+    renderDispute({ chain: answered({ ...DISPUTE_156_CHAIN, openings: [] }) });
+
+    expect(laneLines("Commit period")[0]).toBe("07:42:00 Opened by an account not found on chain");
+  });
+});
+
 describe("what could not be read", () => {
   it("raises one banner line when this dispute's own read fails", () => {
     renderDispute({
@@ -758,24 +876,72 @@ describe("what could not be read", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("That is not a dispute");
   });
 
-  it("raises nothing over a commit scan that failed, since this page shows no commit moment", () => {
-    // ADR-0011 took each draw's commit and reveal times off the panel, so the scan feeds nothing
-    // here. The agent juror page, which still shows them, is where its failure is raised.
-    renderDispute({
-      performance: { ...measured, commitError: new Error("UnknownRpcError") },
-    });
-
-    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
-  });
-
-  it("still raises the window history, which the timeline is drawn against", () => {
-    // The other direction of the gate above, on the same endpoint: the parameter history does
-    // feed this page, so losing it is a failure a reader has to be told about.
+  it("raises the window history, which the timeline is drawn against", () => {
     renderDispute({
       performance: { ...measured, parametersError: new Error("UnknownRpcError") },
     });
 
     expect(screen.getByRole("alert")).toHaveTextContent(/period durations could not be read/i);
+  });
+
+  it("raises this dispute's own record when it could not be read, and says what it cost", () => {
+    renderDispute({ chain: failed() });
+
+    const banner = screen.getByRole("alert");
+    expect(banner).toHaveTextContent(/this dispute's record could not be read from Arbitrum/i);
+    expect(banner).toHaveTextContent(/not who opened it/i);
+  });
+
+  it("words a failed re-read as an earlier read still standing", () => {
+    renderDispute({ chain: failed(DISPUTE_156_CHAIN) });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/could not be re-read/i);
+  });
+
+  it("states both Arbitrum failures in one line, since they share an endpoint", () => {
+    // One source gets one banner line: listed twice it would read as two things having gone
+    // wrong.
+    renderDispute({
+      performance: { ...measured, parametersError: new Error("UnknownRpcError") },
+      chain: failed(),
+    });
+
+    const banner = screen.getByRole("alert");
+    expect(banner).toHaveTextContent(/Neither the court's parameter history nor this dispute's/);
+    expect(within(banner).getAllByText("arb1.arbitrum.io")).toHaveLength(1);
+  });
+
+  it("counts what an answered read did not find, as a count", () => {
+    // A read that comes back short throws nothing: `eth_getLogs` capped at fewer blocks answers
+    // with fewer logs. Two of 156's four commitments and one opening are dropped here.
+    renderDispute({
+      chain: answered({
+        openings: DISPUTE_156_CHAIN.openings.filter((opening) => opening.period !== "2"),
+        commits: DISPUTE_156_CHAIN.commits.slice(2),
+      }),
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /2 of 4 commitments and 1 of 4 period openings in this dispute could not be found/,
+    );
+  });
+
+  it("raises nothing while the record is still being read, however much of it is missing", () => {
+    // The trap this repository keeps meeting: an absence is only a shortfall once there has
+    // been an answer to fall short of.
+    renderDispute({ chain: pending() });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("raises nothing over a read standing in for one the court has since moved past", () => {
+    // The court saw a commitment this read predates and a re-read is in flight. What it lacks is
+    // not yet a finding.
+    renderDispute({
+      chain: { ...answered({ openings: [], commits: [] }), answered: false },
+    });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
   it("falls back to roster names without raising a banner when ENS is down", () => {

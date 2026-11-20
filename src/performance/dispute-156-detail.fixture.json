@@ -23,7 +23,9 @@
         ]
       }
     ],
-    "transactionHash": "0x81097239dba2585c9e9982e38ea8c05435c96d5155ddc053f87a2d9669db3c8d"
+    "transactionHash": "0x81097239dba2585c9e9982e38ea8c05435c96d5155ddc053f87a2d9669db3c8d",
+    "period": "execution",
+    "lastPeriodChangeBlockNumber": "497058149"
   },
   "evidenceGroup": {
     "id": "156",
@@ -32,6 +34,7 @@
   "draws": [
     {
       "id": "156-0-0",
+      "blockNumber": "496780897",
       "juror": {
         "id": "0xac237740772093fcc812a463050c43a275dd01e5"
       },
@@ -47,6 +50,7 @@
     },
     {
       "id": "156-0-1",
+      "blockNumber": "496780897",
       "juror": {
         "id": "0x70239816581afff150814b46c831e2e5f9e3bf4c"
       },
@@ -62,6 +66,7 @@
     },
     {
       "id": "156-0-2",
+      "blockNumber": "496780897",
       "juror": {
         "id": "0x57eb05d4dffac43a0c52b42c47a4e7d1838725ea"
       },
@@ -77,6 +82,7 @@
     },
     {
       "id": "156-0-3",
+      "blockNumber": "496780897",
       "juror": {
         "id": "0xac237740772093fcc812a463050c43a275dd01e5"
       },
@@ -92,6 +98,7 @@
     },
     {
       "id": "156-0-4",
+      "blockNumber": "496780897",
       "juror": {
         "id": "0x245314a76fc9b8e48fea7abb3b9b07e34e13d8c6"
       },

@@ -314,7 +314,7 @@ function linesOf(
   titleFor: (dispute: Dispute) => string | null,
   answersFor: (dispute: Dispute) => readonly ChoiceLabel[],
 ): DrawLine[] {
-  return draws.map(({ row, draw }) => {
+  return draws.map(({ row, draw, commitLatencySeconds }) => {
     const flag = rowFlagOf(row, flagContext);
 
     return {
@@ -325,7 +325,7 @@ function linesOf(
       lonePanel: row.panelSize === 1,
       choice: choiceOf(draw.choices, answersFor(row.dispute)),
       reveal: revealFigureOf(draw),
-      commit: commitFigureOf(draw, scanned),
+      commit: commitFigureOf(draw, commitLatencySeconds, scanned),
       state: presentationOf(draw.state),
       flag:
         flag === undefined

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { arbitrumSource, DEFAULT_ARBITRUM_RPC_URL } from "./arbitrum";
+import { arbitrumSource, blockRanges, DEFAULT_ARBITRUM_RPC_URL, LOG_RANGE_LIMIT } from "./arbitrum";
 
 /**
  * What the failure banner is allowed to say about this endpoint.
@@ -43,5 +43,41 @@ describe("arbitrumSource", () => {
 
     expect(source.name).toBe("Not a host this page can read");
     expect(source.name).not.toContain("with-a-key");
+  });
+});
+
+/**
+ * The windows a scan is cut into. arb1 refuses one `eth_getLogs` spanning more than
+ * `LOG_RANGE_LIMIT` blocks (#25), so a window one block too wide is a scan that reads nothing.
+ */
+describe("blockRanges", () => {
+  it("is one window when the range fits", () => {
+    expect(blockRanges(100n, 250n)).toEqual([{ fromBlock: 100n, toBlock: 250n }]);
+  });
+
+  it("cuts a wide range into contiguous windows of at most the limit, both ends inclusive", () => {
+    expect(blockRanges(0n, 24n, 10n)).toEqual([
+      { fromBlock: 0n, toBlock: 9n },
+      { fromBlock: 10n, toBlock: 19n },
+      { fromBlock: 20n, toBlock: 24n },
+    ]);
+  });
+
+  it("spans exactly the limit at the boundary, which the endpoint accepts", () => {
+    const [only, ...rest] = blockRanges(1n, LOG_RANGE_LIMIT);
+
+    expect(rest).toEqual([]);
+    expect((only?.toBlock ?? 0n) - (only?.fromBlock ?? 0n) + 1n).toBe(LOG_RANGE_LIMIT);
+  });
+
+  it("is a single block when the range is one block", () => {
+    expect(blockRanges(7n, 7n)).toEqual([{ fromBlock: 7n, toBlock: 7n }]);
+  });
+
+  it("is nothing to read when the start is past the end", () => {
+    // A node a few blocks behind the subgraph reports a head below the block a dispute was
+    // drawn in. That is a scan with nothing in it yet, not an error and not a window of
+    // negative width.
+    expect(blockRanges(10n, 9n)).toEqual([]);
   });
 });

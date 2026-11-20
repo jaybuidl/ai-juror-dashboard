@@ -32,9 +32,6 @@ const built = ((): CourtPerformance => {
   const result = buildCourtPerformance({
     disputes: disputeFixture as RawDispute[],
     draws: drawFixture as RawDraw[],
-    // The totals are reveal-only by design, so the commitments are deliberately not read here:
-    // every figure this suite pins must be the same whether or not the log scan came back.
-    commits: null,
     parameters: parameterFixture as RawCourtParameters[],
     // The payouts *are* read: they are the two figures ticket 10 added to each column, and
     // pinning them needs the real 44 shifts rather than a hand-written pair of amounts.
@@ -492,7 +489,7 @@ describe("agentJurorMarginalsOf", () => {
     // they poll the court, not how fast they judge. Each draw keeps its own figures; no column
     // reduces them.
     const marginal = agentJurorMarginalsOf(
-      [column({ id: 1, ruled: true, revealLatencySeconds: 90, commitLatencySeconds: 5 })],
+      [column({ id: 1, ruled: true, revealLatencySeconds: 90 })],
       ROSTER,
     )[0];
 
@@ -617,7 +614,7 @@ function column({
   ruled,
   state = { kind: "coherent" },
   revealLatencySeconds = 30,
-  commitLatencySeconds = 10,
+  committed = true,
   panelSize = 2,
   windows = null,
   at = 0,
@@ -627,7 +624,7 @@ function column({
   ruled: boolean;
   state?: Draw["state"];
   revealLatencySeconds?: number | null;
-  commitLatencySeconds?: number | null;
+  committed?: boolean;
   panelSize?: number;
   windows?: { commitSeconds: number; voteSeconds: number } | null;
   at?: number;
@@ -651,8 +648,9 @@ function column({
             agentJuror,
             state,
             revealLatencySeconds,
-            commitLatencySeconds,
-            committed: commitLatencySeconds !== null,
+            revealedAt: revealLatencySeconds,
+            roundIndex: 0,
+            committed,
             voteCount: 1,
             roundVoteCount: 3,
             // Ticket 09 put `choices` on `Draw`, and the seam never produces a revealed draw

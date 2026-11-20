@@ -79,6 +79,54 @@ export function createArbitrumClient(
   });
 }
 
+/**
+ * The widest block range one `eth_getLogs` may span on arb1, for a filter whose every topic is
+ * a single value.
+ *
+ * Measured 2026-11-20 (#25), when every scan here still ran from block 0 and every one of them
+ * was refused: `-32602 query spans 525839422 blocks … only 10000000 are allowed`. The cap
+ * depends on the filter's shape. A topic given as a **list** (several jurors at once, say) is
+ * allowed only 100,000 blocks — a hundredth — so no scan here puts a list in a topic: the
+ * commit scan reads one agent juror or one dispute, and the court's history is two events.
+ */
+export const LOG_RANGE_LIMIT = 10_000_000n;
+
+/** One `eth_getLogs` window, both ends inclusive. */
+export type BlockRange = { fromBlock: bigint; toBlock: bigint };
+
+/**
+ * `from` to `to` inclusive, cut into windows no wider than `limit`. Empty when `from` is past
+ * `to`, which is a scan with nothing to read rather than an error: a node a few blocks behind
+ * the subgraph can report a head below the block a dispute was drawn in.
+ */
+export function blockRanges(from: bigint, to: bigint, limit = LOG_RANGE_LIMIT): BlockRange[] {
+  const ranges: BlockRange[] = [];
+  for (let start = from; start <= to; start += limit) {
+    const end = start + limit - 1n;
+    ranges.push({ fromBlock: start, toBlock: end < to ? end : to });
+  }
+  return ranges;
+}
+
+/**
+ * Every log a scan finds from `from` to `to`, read window by window.
+ *
+ * `to` is `"latest"` for a scan that runs to the chain's head, which is then asked for once —
+ * the windows have to end somewhere a number can name. The windows go out together and the
+ * batching transport folds them into one request, which arb1 counts as one call per window: four
+ * for court 34's lifetime today, and one more every month or so.
+ */
+export async function scanBlocks<T>(
+  client: PublicClient,
+  from: bigint,
+  to: bigint | "latest",
+  read: (range: BlockRange) => Promise<readonly T[]>,
+): Promise<T[]> {
+  const head = to === "latest" ? await client.getBlockNumber() : to;
+  const found = await Promise.all(blockRanges(from, head).map(read));
+  return found.flat();
+}
+
 /** How many block reads go out together, and what to wait between one group and the next. */
 export type BlockReadPace = { chunk: number; pause: () => Promise<void> };
 
