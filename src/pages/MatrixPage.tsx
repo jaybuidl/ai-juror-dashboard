@@ -141,7 +141,7 @@ function coreFailureOf(
         performance.error,
         SOURCES.core,
         measured === null
-          ? "The draws could not be read, so no latency and no coherence on this page was measured on this load."
+          ? "The draws could not be read, so no draw and no coherence on this page was measured on this load."
           : "The draws could not be re-read, so the matrix below joins the disputes just read to an earlier read of the draws.",
       ),
     );
@@ -389,7 +389,7 @@ export function MatrixPage(props: MatrixPageProps) {
             This page measures how long the court took to bring each dispute to appeal, and whether
             each agent juror voted with the dispute's final ruling — but not on this load: what it
             needed could not be read, and it shows what it did read rather than a matrix built from
-            part of it. Nothing below is a latency, a coherence or a draw.
+            part of it. Nothing below is a time to appeal, a coherence or a draw.
           </CaveatBody>
         </Caveat>
       ) : null}
@@ -427,8 +427,8 @@ export function MatrixPage(props: MatrixPageProps) {
             // the dispute read failed, and when the seam rejected the payload it was given.
             <Notice $tone="rose" role="status">
               The matrix could not be built from what was read, so it is not shown. Below is the
-              record of which disputes the court has held — no latency, coherence or draw has been
-              measured from it.
+              record of which disputes the court has held — no time to appeal, coherence or draw has
+              been measured from it.
             </Notice>
           )}
           <DisputeList {...disputes} />

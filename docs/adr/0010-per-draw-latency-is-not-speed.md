@@ -2,6 +2,8 @@
 
 Supersedes the framing of ADR-0001 and the agent juror plot in ADR-0005 (2026-11-20, issue #8).
 
+_Amended by [ADR-0011](0011-a-cell-shows-what-a-draw-did-not-when.md) (2026-11-20): a draw's figures stay on its agent juror's page, and no cell, phone slot or dispute panel carries them._
+
 Until now this dashboard measured agent jurors on two dimensions, **speed** and coherence, and
 speed meant commit and reveal latency: seconds from the moment a period opened to the moment a
 draw's commit or reveal was mined. Each agent juror's column carried a median of each, its own page

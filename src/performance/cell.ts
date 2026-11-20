@@ -26,7 +26,7 @@ export type Figure = {
  * What a cell says, before any of it is drawn.
  *
  * Separate from `Matrix.tsx` because it is the part of the design that has to be checked rather
- * than looked at: ADR-0006 requires the five states to stay apart with hue removed, which is a
+ * than looked at: ADR-0006 requires every state to stay apart from every other with hue removed, which is a
  * property of this table and not of the stylesheet. Keeping it out of the component module also
  * keeps that module exporting components only, which is what React Fast Refresh needs.
  */
@@ -102,11 +102,12 @@ export function presentationOf(state: DrawState): Presentation {
 /**
  * The sixth state, and the only one that belongs to no draw.
  *
- * Ticket 13 and `canvas/Errors.dc.html:100-112`. A dispute whose draws were never read has six
- * cells that look exactly like six cells nobody was drawn for, and the difference between those
- * two is the difference between a gap in this dashboard and a fact about the court. It is drawn
- * as far from "not drawn" as the vocabulary allows — a fill, a border, a glyph, a word and rose,
- * against the emptiest thing on the page.
+ * Ticket 13 and `canvas/Errors.dc.html:100-112`, less the R and C lines that artboard still prints
+ * in each cell (ADR-0011). A dispute whose draws were never read has six cells that look exactly
+ * like six cells nobody was drawn for, and the difference between those two is the difference
+ * between a gap in this dashboard and a fact about the court. It is drawn as far from "not drawn"
+ * as the vocabulary allows — a fill, a border, a glyph, a word and rose, against the emptiest
+ * thing on the page.
  *
  * It shares rose with `no-vote` and is told apart from it by glyph and word alone, which is what
  * ADR-0006 says rose costs: `?` against `∅`, "Unknown" against "No vote". The row's own "Not read"

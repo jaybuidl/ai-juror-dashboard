@@ -403,14 +403,13 @@ describe("the matrix view's reads", () => {
       ).not.toBeInTheDocument();
     });
 
-    it("says neither that the read failed nor that it is still going, once it has failed", () => {
-      // The trap `CLAUDE.md` records against `RosterView`, in its second home: `read` is false
-      // in both states. Here it is moot in both directions: the in-flight caveat went with the
-      // footer on 2026-09-24, and the failed one with the Arbitrum banner, which ADR-0011 left
-      // with nothing on this page to describe. The dispute view still names the endpoint.
+    it("does not name the Arbitrum endpoint once both of its reads have failed", () => {
+      // The in-flight caveat went with the footer on 2026-09-24, and the failed one with the
+      // Arbitrum banner, which ADR-0011 left with nothing on this page to describe. The dispute
+      // view still names the endpoint for the window history, and `DisputePage.test.tsx` pins it.
       renderAt("/", { performance: arbitrumFailed });
 
-      expect(screen.queryByText(/period durations are still being read/i)).not.toBeInTheDocument();
+      expect(screen.queryByRole("alert")).not.toBeInTheDocument();
       expect(screen.queryByText(arbitrumSource().name)).not.toBeInTheDocument();
     });
 

@@ -18,8 +18,8 @@ against an ordinary court's time to ruling.
 **The matrix is live, and it now has a dashboard around it.** This repository contains the
 application shell, the deployment pipeline, the Kleros ×AI visual system, and seven routes under
 one piece of chrome: the matrix at `/` — one row per dispute, headed by what that dispute is
-actually about, one column per agent juror, each cell carrying that draw's commit latency, its
-reveal latency and whether it voted with the dispute's final ruling — plus the court's totals and
+actually about, one column per agent juror, each cell carrying that draw's state: its outcome
+once the dispute is ruled, its stage while it is live — plus the court's totals and
 its time-to-appeal distribution above it, a dispute index at `/disputes`, one dispute read whole at
 `/disputes/:id`, every agent juror at `/agent-jurors`, one of them on its own at
 `/agent-jurors/:nickname`, how everything is measured at `/method`, and a 404 view
@@ -99,7 +99,7 @@ set — the matrix crosses over on its own as disputes arrive and as the roster 
 Commit latency is the one figure not read from a subgraph: it comes from `CommitCast` logs on an
 Arbitrum RPC, because the subgraph records only *whether* a juror committed and never *when*. Every
 draw the subgraph calls committed is cross-checked against a matching log, and any shortfall is
-stated on the page as a count — an endpoint that silently returns fewer logs must never render as
+stated on each agent juror's page as a count — an endpoint that silently returns fewer logs must never render as
 an agent juror that failed to commit.
 
 Court 34's period durations changed partway through the experiment, so the windows each dispute ran
@@ -123,8 +123,8 @@ whole, with a retry beside it — and says so a second time in the place where t
 would have been. A read that costs only a label is quiet and local: ENS is the one documented
 exception, so an unreachable mainnet falls back to the checked-in roster nicknames in a
 degraded-not-broken panel and raises nothing, because no measurement depends on it. A dispute whose
-draws could not be read at all is drawn as Unknown across its whole row — `?` and the words "not
-read" in every slot — which is deliberately not what an empty cell means. An empty cell means the
+draws could not be read at all is drawn as Unknown across its whole row — `?` in every cell and a
+"Not read" flag on the row — which is deliberately not what an empty cell means. An empty cell means the
 agent juror was not drawn, and the difference between a gap in the record and a fact about the
 court is the one this dashboard exists to keep.
 
@@ -135,7 +135,7 @@ records the things that cost real time to discover. The design that this scaffol
 | --- | --- |
 | [`CONTEXT.md`](CONTEXT.md) | The glossary. Read before naming anything |
 | [`docs/knowledge/`](docs/knowledge/) | The domain knowledge base — every trap this project has hit, in full |
-| [`docs/adr/`](docs/adr/) | Ten decisions a reader would otherwise question |
+| [`docs/adr/`](docs/adr/) | Eleven decisions a reader would otherwise question |
 | [`.scratch/juror-performance-dashboard/spec.md`](.scratch/juror-performance-dashboard/spec.md) | The spec, plus a Further Notes section of hard-won facts |
 | [`.scratch/juror-performance-dashboard/issues/`](.scratch/juror-performance-dashboard/issues/) | Twenty-six tickets, blockers first |
 | [`.scratch/juror-performance-dashboard/canvas/DESIGN_PROMPT.md`](.scratch/juror-performance-dashboard/canvas/DESIGN_PROMPT.md) | The UI brief. Answered — read the canvas rather than re-deriving it |

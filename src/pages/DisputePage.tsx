@@ -374,7 +374,7 @@ function coreFailureOf({
     return failureOf(
       performance.error,
       SOURCES.core,
-      "The draws could not be read, so no latency and no coherence on this page was measured on this load.",
+      "The draws could not be read, so no draw and no coherence on this page was measured on this load.",
     );
   }
 

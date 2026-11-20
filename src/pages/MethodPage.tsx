@@ -248,7 +248,7 @@ export function MethodPage() {
           <Term>CommitCast</Term> logs the dispute kit emits on Arbitrum, dated by the block they
           were mined in. Because a log scan can come back short without failing, every draw the
           subgraph calls committed is checked against a matching log, and any that are missing are
-          counted and stated on the agent juror's page rather than shown as commitments that never
+          counted and stated on each agent juror's page rather than shown as commitments that never
           happened.
         </Body>
         <Body>
@@ -260,12 +260,12 @@ export function MethodPage() {
           period opened, which is whenever any account told the court to advance it. An agent juror
           that advances the period itself and reveals in the same block reads 0 seconds. Each draw's
           two figures are on its agent juror's page, in the table of its draws, as a record of when
-          it acted. The matrix, the dispute cards and the dispute pages show what a draw did and not
-          when: a column of times reads as a ranking whatever the page says about it.
+          it acted. The matrix and each dispute's page show what a draw did, not when: agent jurors'
+          times set side by side read as a ranking, whatever the page says about them.
         </Body>
         <Body>
-          Neither latency is ever shown as a fraction of a period's window — not in a cell, not on a
-          dispute's page, not anywhere. See the window, below.
+          Neither latency is ever shown as a fraction of a period's window, anywhere. See the
+          window, below.
         </Body>
       </Section>
 
@@ -472,18 +472,19 @@ export function MethodPage() {
           The distinction the banner draws is between a failure that changes a number and one that
           changes only a label. The core subgraph, the template subgraph and the Arbitrum endpoint
           carry figures, or the identity of the rows those figures sit in, so a failure of any of
-          them raises the banner and nothing on the page should be quoted. Ethereum mainnet carries
-          only the agent jurors' ENS nicknames and avatars, on which no measurement depends: when it
-          fails you get an amber note saying names have fallen back to this repository's own roster,
-          and every figure on the page is still whole.
+          them raises the banner on every page that shows a figure read from it, and nothing on that
+          page should be quoted. Ethereum mainnet carries only the agent jurors' ENS nicknames and
+          avatars, on which no measurement depends: when it fails you get an amber note saying names
+          have fallen back to this repository's own roster, and every figure on the page is still
+          whole.
         </Body>
         <Body>
           A dispute whose draws could not be read is drawn as a row of <Term>Unknown</Term> cells —
-          a question mark and the words "not read" in every slot where a figure belongs — and is
-          left out of every total above it. That is deliberately as far as possible from a blank
-          cell, which means the opposite: an agent juror was not drawn for that dispute, which is
-          the ordinary state of a sparse matrix and not a gap in anything. Retrying from the banner
-          re-reads the failing source without a page reload, and the banner goes when it succeeds.
+          a question mark in every cell, and a "Not read" flag on the row — and is left out of every
+          total above it. That is deliberately as far as possible from a blank cell, which means the
+          opposite: an agent juror was not drawn for that dispute, which is the ordinary state of a
+          sparse matrix and not a gap in anything. Retrying from the banner re-reads the failing
+          source without a page reload, and the banner goes when it succeeds.
         </Body>
       </Section>
 

@@ -45,7 +45,7 @@ export type RowFlag = {
    *
    * The canvas is what settles this, and it is the one place the two artboards deliberately word
    * one thing twice: `Main.dc.html:302` gives "⋯ Live · commit 3m 12s" and
-   * `MatrixDense.dc.html:213` gives "⋯ Live" for the same row. Ticket 17's own criteria say the flag renders as it does at the other
+   * `MatrixDense.dc.html:214` gives "⋯ Live · Vote" for the same row. Ticket 17's own criteria say the flag renders as it does at the other
    * density; where the canvas and a ticket disagree the canvas wins (`CLAUDE.md`), and here it
    * has to — a one-line row is 375px wide on this page and the live flag alone was 175 of them,
    * which left the dispute's title with nothing and made the row unreadable rather than compact.

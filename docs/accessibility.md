@@ -23,8 +23,6 @@ wrong is a different fact from no entry at all.
   `VisuallyHidden` resets the transform for itself, deliberately, and says why.
 - **A not-drawn cell announces "Not drawn"** — not silence, which is what ticket 13's Unknown
   cell and a rendering failure also sound like.
-- **The rails are decoration and are hidden.** The latency beside each is the accessible content,
-  in seconds and minutes rather than as a fraction of a window (ADR-0005).
 - **The matrix spends no tab stop per cell.** Cells are not focusable and never were; the stops
   are the row header's dispute link and the column header's nickname, which are real
   destinations, plus the caveat marks.

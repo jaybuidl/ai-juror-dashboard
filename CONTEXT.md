@@ -281,7 +281,7 @@ to act.
 _Avoid_: tile, square (both name something drawn — a blank cell is still a cell), data point
 
 **Density** (comfortable, compact):
-How tightly the matrix is drawn. **Comfortable** is the two-line cell and the two-line row;
+How tightly the matrix is drawn. **Comfortable** is the 76px cell with its state word, and the two-line row;
 **compact** is what the matrix becomes past either of the grid's two axes — `COMPACT_FROM_ROWS`
 rows, or `COMPACT_FROM_COLUMNS` agent jurors — and it drops the cell's drawn word and halves it,
 drops the row's second line, and drops the column header's two reward sums and freezes the rest.

@@ -84,7 +84,7 @@ describe("rowFlagOf", () => {
 
   describe("the abbreviated labels the compact density uses", () => {
     /**
-     * `MatrixDense.dc.html:213` against `Main.dc.html:302`, which is the one place the two
+     * `MatrixDense.dc.html:214` against `Main.dc.html:302`, which is the one place the two
      * artboards deliberately word one thing twice. What has to hold is that the flag is still
      * named: a compact row 441px wide has an id, a title, a panel and a figure on it too, and
      * the live pill's 175px were coming out of the title.

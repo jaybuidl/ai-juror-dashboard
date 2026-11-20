@@ -521,12 +521,22 @@ const CellBox = styled.td<{
     $filled && $tone !== undefined && !$dashed
       ? `inset 0 0 0 1px ${toneLine(theme, $tone)}`
       : "none"};
-  /* An awaiting draw's border is dashed (ADR-0011): drawn, and nothing done yet. A box-shadow
-     cannot dash, so the dashed border is an outline pulled inside the cell, where the solid one
-     is an inset shadow — the same 1px in the same place, and neither moves the content. */
-  outline: ${({ theme, $tone, $dashed }) =>
-    $dashed && $tone !== undefined ? `1px dashed ${toneLine(theme, $tone)}` : "none"};
-  outline-offset: -1px;
+  /* The containing block for DashedEdge, and only on the cell that has one. */
+  position: ${({ $dashed }) => ($dashed ? "relative" : "static")};
+`;
+
+/* An awaiting draw's border, dashed (ADR-0011): drawn, and nothing done yet. A box-shadow cannot
+   dash, so this is a box of its own over the cell's padding box, which is where the solid inset
+   shadow on every other toned cell sits. Not an outline on the cell: Firefox paints outlines
+   after everything else in the stacking context, so the dashes would cross the sticky column
+   header as an awaiting row scrolls under it. Positioned with no z-index, this paints below it. */
+const DashedEdge = styled.span<{ $tone: Tone }>`
+  position: absolute;
+  inset: 0;
+  border-width: 1px;
+  border-style: dashed;
+  border-color: ${({ theme, $tone }) => toneLine(theme, $tone)};
+  pointer-events: none;
 `;
 
 const EmptyCell = styled(CellBox)`
@@ -619,10 +629,12 @@ function CellWhere({ nickname, disputeId }: { nickname: string; disputeId: numbe
 function CellBody({
   presentation,
   weight,
+  votes = 1,
   compact,
 }: {
   presentation: Presentation;
   weight: string | null;
+  votes?: number;
   compact: boolean;
 }) {
   return (
@@ -637,9 +649,10 @@ function CellBody({
       )}
       {weight !== null && (
         <VoteCount $compact={compact}>
-          {/* The space is a text node outside the hidden span, so the name does not run the
-              word and the count together. */}{" "}
-          <VisuallyHidden>{weight.slice(1)} vote IDs</VisuallyHidden>
+          {/* The comma leads the hidden text, so the name reads "Awaiting, 2 vote IDs" as the
+              phone slot does, and not "Awaiting 2 vote IDs", which sounds like what the draw is
+              waiting for. Inside the hidden span because a text node outside it is ink. */}
+          <VisuallyHidden>, {votes} vote IDs</VisuallyHidden>
           <span aria-hidden="true">{weight}</span>
         </VoteCount>
       )}
@@ -717,8 +730,14 @@ function DrawCell({
       $compact={compact}
       $grid={grid}
     >
+      {presentation.dashed && <DashedEdge $tone={presentation.tone} aria-hidden="true" />}
       <CellWhere nickname={nickname} disputeId={disputeId} />
-      <CellBody presentation={presentation} weight={voteWeightOf(draw)} compact={compact} />
+      <CellBody
+        presentation={presentation}
+        weight={voteWeightOf(draw)}
+        votes={draw.voteCount}
+        compact={compact}
+      />
     </CellBox>
   );
 }
@@ -956,7 +975,7 @@ export function Matrix({ performance, roster, slotsFor, now = Date.now() }: Matr
                             // with the card, and an absent slot takes its separator with it.
                             panel: panel?.text,
                             panelTone: panel?.tone,
-                            // Abbreviated at the compact density, per `MatrixDense.dc.html:213`
+                            // Abbreviated at the compact density, per `MatrixDense.dc.html:214`
                             // against `Main.dc.html:302` — the one place the two artboards word
                             // one thing twice, and the reason is a row 375px wide. Which flag it
                             // is never changes; what goes is the qualifier after it.

@@ -77,32 +77,39 @@ left alone because each needs an edit plus a re-seed. No ticket quotes any of th
 - `Errors.dc.html:195` renders "152 onward · Commit 45m · vote 45m". The modified `timesPerPeriod`
   is `[2700, 2700, 1800, 129600]` — the vote window is **30m**, not 45m. This is on the artboard
   whose whole subject is the parameter change, and it reads as measured rather than sampled.
-- `Errors.dc.html:45` uses `∅` for the blocking banner's badge. `Cell.dc.html:140` reserves that
-  glyph for a draw that failed to act and says it is "used nowhere else". The unread *cell*
+- `Errors.dc.html:45` uses `∅` for the blocking banner's badge. `Cell.dc.html:153` marks a draw
+  that failed to act with that glyph and calls it "the only loud state". The unread *cell*
   correctly uses `?`; only the banner tile clashes.
 - `Juror.dc.html:73` shows a median commit stat while `:108` excludes commit latency from the chart
   directly below it as not comparable across dispute 151. The same page both declines to compare
   and compares, and the stat carries no marker.
 
-Lesser, noted in passing: `Main.dc.html:118`'s legend words the live state `Acting` where the cell
-words it `Committed`/`Awaiting`, and `Dispute.dc.html`'s justification columns are not in roster
-order despite its caption saying they are.
+Lesser, noted in passing: `Dispute.dc.html`'s justification columns are not in roster order despite
+its caption saying they are.
 
 ## Overruled by an ADR, artboards not yet amended
 
 - **The latency medians and the agent juror latency profile are not built** (ADR-0010,
   2026-11-20). `Main.dc.html:147-148` heads each column with a median reveal and a median commit,
-  and `MatrixDense.dc.html:77` with the median reveal; `Juror.dc.html:72-73` puts both on the stat
+  and `MatrixDense.dc.html:77` did with the median reveal; `Juror.dc.html:72-73` puts both on the stat
   card and `:86-110` plots the reveal latencies against the court's. Per-draw latency does not measure how fast an agent
   juror judges, so none of those is drawn, whatever the artboard shows. This is not the canvas-wins
   rule failing: the artboards decide how a figure looks, and ADR-0010 decides that this figure is
-  not shown. Stage 2 of issue #8 amended `MatrixDense.dc.html:77` (now the Diverged share) and
+  not shown. Stage 2 of issue #8 amended `MatrixDense.dc.html:77-78` (now the Coherent and Diverged shares) and
   left `Main.dc.html` and `Juror.dc.html` drawing them: do not restore a median or the plot to
   match those two. The `Juror.dc.html:73` defect above is moot for the same reason.
 - **The comfortable cell carries no latency** (ADR-0011, 2026-11-20). `Main.dc.html:184-195` still
   draws each cell's `R` and `C` lines and their rail, and `:123-125` keys them in the legend. The
   cell is the state and the vote count only; `Cell.dc.html` is the authority on it, and was
-  amended. Do not restore a time to the cell to match `Main.dc.html`.
+  amended. Do not restore a time to the cell to match `Main.dc.html`. Its legend at `:118` also
+  words the three live stages as one `Acting`, where the cell has `Awaiting`, `Committed` and
+  `Revealed`.
+- **No panel card or cell on the dispute and failure artboards carries a time** (ADR-0011).
+  `Dispute.dc.html:125-126`, `:160-161`, `:190-191`, `:220-221` and `:251-252` still draw `R`
+  and `C` on every panel card, and `Errors.dc.html:79-131` draws them in its cells, with
+  `:101-112` and `:136` printing "R Not read / C Not read" across an unread row. Neither was
+  amended. The panel card is the state, the vote share and the justification; the unread cell is
+  `?` with the word Unknown, and the row's flag says Not read. Do not restore either to match.
 
 ## Fixed, by amending the artboard
 

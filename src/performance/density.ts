@@ -1,8 +1,8 @@
 /**
  * How tightly the matrix is drawn, and the one place the crossing point is written down.
  *
- * Ticket 17, against `canvas/MatrixDense.dc.html:45-122` and `canvas/Cell.dc.html:199-218`. Past
- * a row count the matrix compacts: the cell drops its commit line and halves in height, the row
+ * Ticket 17, against `canvas/MatrixDense.dc.html:45-122` and `canvas/Cell.dc.html:212-231`. Past
+ * a row count the matrix compacts: the cell drops its state word and halves in height, the row
  * drops its second line, the column header drops its two reward sums and freezes. Nothing
  * else changes — density is a legibility change and not a licence to edit the record, so no
  * dispute leaves the page, no column moves and no caveat is dropped.
@@ -33,8 +33,8 @@ export type Density = "comfortable" | "compact";
  *
  * **A heuristic about screen height, not a fact about this court.** Nothing in the record makes
  * forty special: it is a guess at how many rows a reader can hold on one screen before the
- * column headers scroll away and a two-line cell stops being worth its height. Both sources are
- * soft about it — `MatrixDense.dc.html:50` says "past forty rows" and `Cell.dc.html:201` says
+ * column headers scroll away and a 76px cell stops being worth its height. Both sources are
+ * soft about it — `MatrixDense.dc.html:50` says "past forty rows" and `Cell.dc.html:214` says
  * "past roughly forty" — so the value is open and only the behaviour either side of it is
  * pinned. A bare `40` in the render path would read as a claim about the court instead.
  *
@@ -91,19 +91,20 @@ export function densityOf(rows: number, columns: number): Density {
 }
 
 /**
- * The comfortable cell's height, from `Cell.dc.html:206`.
+ * The comfortable cell's height, from `Cell.dc.html:217`.
  *
  * Declared rather than left to the content so that the reduction below is measurable against
- * something. Three lines and their padding come to about this on their own, which is why
- * declaring it changes nothing at the comfortable density — a `height` on a table cell is a
- * minimum, and a cell whose content is taller keeps its own height.
+ * something. Until ADR-0011 the cell's three lines and their padding came to about this on their
+ * own, so declaring it changed nothing. The cell is one line now, and this declaration is what
+ * holds it at the height the artboard draws — a `height` on a table cell is a minimum, so a row
+ * whose header is taller still sets its own.
  */
 export const CELL_HEIGHT_PX = 76;
 
 /**
  * Half of it, which is the requirement.
  *
- * `Cell.dc.html:207` draws the compact cell at 44px and `MatrixDense.dc.html:85` draws its rows
+ * `Cell.dc.html:226` draws the compact cell at 44px and `MatrixDense.dc.html:85` draws its rows
  * at 40px, so the artboards disagree about the pixel — which is why ticket 17 asks for the
  * *ratio* and leaves the pixel open. Derived from the line above rather than typed as 38, so the
  * halving survives anyone changing what the comfortable cell stands at.

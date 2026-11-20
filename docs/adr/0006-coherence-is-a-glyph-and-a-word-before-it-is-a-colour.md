@@ -22,8 +22,8 @@ added Tied:
   44 draws.
 - `⋯` **Awaiting**, `◐` **Committed** or `●` **Revealed**, mint (`--mint-400`) — live, still
   acting, one glyph per stage since ADR-0011 (they shared `⋯` until the cell lost the latency that
-  told them apart). An awaiting draw, which has done nothing yet, has a dashed border, never a
-  blank one, because blank means something else here.
+  told them apart). An awaiting draw, which has done nothing yet, is dashed, never left blank,
+  because blank means something else here.
 - **Not drawn** — no glyph, no word, no colour, no tile and no border: one 3px dot so the matrix
   keeps its rhythm. 34 of 78 cells.
 
@@ -35,7 +35,7 @@ separated only by glyph and word. The rule earns its keep on this palette before
 considered.
 
 "Not drawn" and "failed to act" share no glyph, no weight, no fill and no border
-(`canvas/Cell.dc.html:173`). One is the emptiest thing on the page, the other the loudest. Confusing
+(`canvas/Cell.dc.html:186`). One is the emptiest thing on the page, the other the loudest. Confusing
 them attributes a failure to an agent juror that did nothing wrong.
 
 ## Considered Options

@@ -58,8 +58,11 @@ draw's two figures as the per-draw record ADR-0010 describes, and its banner.
 
 - `Cell.dc.html`, `MatrixDense.dc.html` and `Mobile.dc.html` were amended to match, in place, so
   their line citations still resolve. `Main.dc.html` still draws the comfortable cell's two latency
-  lines and was not amended; where it disagrees, this ADR wins (`canvas/README.md`).
-- The dispute page loses its per-draw moments until stage 3 (#13) puts them on the period timeline,
-  with who opened each period. Until then they are on each agent juror's page.
+  lines, `Dispute.dc.html` draws them on every panel card, and `Errors.dc.html` draws them in its
+  cells; none of the three was amended, and where they disagree this ADR wins
+  (`canvas/README.md`).
+- The dispute page loses its per-draw moments. Whether they return, on the period timeline beside
+  who opened each period, is stage 3 (#13) and still open. Until then they are on each agent
+  juror's page.
 - `◐` and `●` are not in the self-hosted JetBrains Mono subset, and neither are `✓ ✕ ∅ ⋯`: every
   state glyph renders in the system's fallback font, as it already did.

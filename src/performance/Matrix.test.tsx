@@ -179,10 +179,19 @@ function offRosterCourt(): CourtPerformance {
 const comfortableCourt = () => padTo(COMPACT_FROM_ROWS);
 const compactCourt = () => padTo(COMPACT_FROM_ROWS + 1);
 
-/** The same compact court with the Arbitrum scan still out, which is every cold load. */
-const padToUnscanned = () => padTo(COMPACT_FROM_ROWS + 1, { commits: null });
-
 /** Every dispute id the grid is drawing, read off the row headers in the order they appear. */
+/**
+ * The dashed edge an awaiting cell draws over its padding box, if it has one.
+ *
+ * A child rather than the cell's own outline (see `DashedEdge`), so this looks for any descendant
+ * whose border is dashed.
+ */
+function dashedEdgesOf(cell: HTMLElement): Element[] {
+  return [...cell.querySelectorAll("*")].filter(
+    (el) => getComputedStyle(el).borderStyle === "dashed",
+  );
+}
+
 function renderedIds(): number[] {
   return screen
     .getAllByRole("rowheader")
@@ -462,7 +471,18 @@ describe("Matrix", () => {
     if (lone === null || single === null) throw new Error("missing a row");
 
     // columbo held all three of dispute 155's vote IDs.
-    expect(within(lone).getByText("×3")).toBeInTheDocument();
+    const weight = within(lone).getByText("×3");
+    expect(weight).toBeInTheDocument();
+    // Said in words, after a comma, and the "×3" itself kept from a screen reader, which would
+    // read it as "times three". The glyph is hidden for the same reason; the word carries it.
+    expect(weight).toHaveAttribute("aria-hidden", "true");
+    const cell = weight.closest("td");
+    if (cell === null) throw new Error("no cell for the ×3");
+    expect(within(cell).getByText(", 3 vote IDs")).toBeInTheDocument();
+    expect(cell.textContent).toMatch(/Revealed, 3 vote IDs×3$|Coherent, 3 vote IDs×3$/);
+    for (const glyph of within(cell).getAllByText(/^[✓=✕∅⋯◐●?]$/)) {
+      expect(glyph).toHaveAttribute("aria-hidden", "true");
+    }
     // ×1 on forty-odd cells would be noise, so it is absent rather than quiet.
     expect(within(single).queryByText("×1")).not.toBeInTheDocument();
   });
@@ -660,9 +680,19 @@ describe("Matrix", () => {
     if (cell === null) throw new Error("no cell for the awaiting draw");
 
     expect(within(cell).getByText("⋯")).toBeInTheDocument();
-    // jsdom keeps the outline as the shorthand it was given.
-    expect(getComputedStyle(cell).outline).toMatch(/dashed/);
+    expect(dashedEdgesOf(cell)).toHaveLength(1);
     expect(getComputedStyle(cell).boxShadow).toBe("none");
+
+    // And the other way: every other toned cell keeps the solid inset edge and no dashes.
+    cleanup();
+    renderMatrix();
+    for (const word of ["Revealed", "Coherent"]) {
+      for (const other of grid().getAllByText(word)) {
+        const td = other.closest("td");
+        if (td === null) throw new Error(`no cell for ${word}`);
+        expect(dashedEdgesOf(td)).toHaveLength(0);
+      }
+    }
   });
 
   describe("the column marginals", () => {
@@ -1320,30 +1350,6 @@ describe("Matrix", () => {
       expect(getComputedStyle(compact).backgroundColor).toBe(
         getComputedStyle(comfortable).backgroundColor,
       );
-    });
-
-    it("carries no commit figure on the row or in its cells", () => {
-      // The row's median commit left on 2026-11-02 (maintainer's ruling: clutter), and the
-      // column header's with ADR-0010. At this density a dispute's commit latency is on its own
-      // page.
-      renderMatrix(compactCourt());
-      const row = rowOrThrow(156);
-
-      expect(within(row).queryByText(/med c/i)).not.toBeInTheDocument();
-      expect(within(row).queryByText(/^Median commit latency/)).not.toBeInTheDocument();
-      for (const cell of within(row).getAllByRole("cell")) {
-        expect(within(cell).queryByText("Commit latency")).not.toBeInTheDocument();
-      }
-    });
-
-    it("says nothing on the row about a commit read that has not come back", () => {
-      // The `RosterView` trap in its fifth place: between the subgraph's answer and Arbitrum's,
-      // every commitment is unread, and a row reading "Not read" on every cold load would
-      // announce a failure before it happened.
-      renderMatrix(padToUnscanned());
-      const row = rowOrThrow(156);
-
-      expect(within(row).queryByText("Not read")).not.toBeInTheDocument();
     });
 
     it("keeps the outcome breakdown and the draw count, and drops the payouts", () => {

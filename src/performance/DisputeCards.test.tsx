@@ -284,6 +284,15 @@ describe("DisputeCards", () => {
     expect(heavy).toHaveTextContent("×2");
     expect(heavy).toHaveTextContent(/Coherent, 2 vote IDs\./);
     expect(light?.textContent).not.toMatch(/×\d/);
+    // The glyph and the "×2" are what a sighted reader scans; a screen reader gets the sentence
+    // instead, so neither may reach it as well. `toHaveTextContent` reads hidden text too.
+    const weight = within(heavy as HTMLElement).getByText("×2");
+    expect(weight.closest('[aria-hidden="true"]')).not.toBeNull();
+    expect(
+      within(heavy as HTMLElement)
+        .getByText("✓")
+        .closest('[aria-hidden="true"]'),
+    ).not.toBeNull();
   });
 
   it("renders every state, including the two with no example in this court", () => {

@@ -639,6 +639,26 @@ describe("what could not be read", () => {
     expect(screen.getByRole("heading", { level: 1 })).toHaveTextContent("That is not a dispute");
   });
 
+  it("raises nothing over a commit scan that failed, since this page shows no commit moment", () => {
+    // ADR-0011 took each draw's commit and reveal times off the panel, so the scan feeds nothing
+    // here. The agent juror page, which still shows them, is where its failure is raised.
+    renderDispute({
+      performance: { ...measured, commitError: new Error("UnknownRpcError") },
+    });
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("still raises the window history, which the timeline is drawn against", () => {
+    // The other direction of the gate above, on the same endpoint: the parameter history does
+    // feed this page, so losing it is a failure a reader has to be told about.
+    renderDispute({
+      performance: { ...measured, parametersError: new Error("UnknownRpcError") },
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/period durations could not be read/i);
+  });
+
   it("falls back to roster names without raising a banner when ENS is down", () => {
     // The one documented exception: no measurement depends on ENS, so it is quiet and local.
     renderDispute({ roster: unresolvedRoster });
