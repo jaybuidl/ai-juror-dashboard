@@ -28,8 +28,6 @@ describe("SiteFooter", () => {
     renderFooter();
     const credit = screen.getByRole("link", { name: "jaybuidl" });
     expect(credit).toHaveAttribute("href", "https://github.com/jaybuidl");
-    // Inside a sentence, so marked by more than colour (WCAG 1.4.1).
-    expect(credit).toHaveStyle("text-decoration: underline");
     const line = credit.closest("p");
     expect(line?.querySelector('[aria-hidden="true"]')?.textContent).toBe("💜");
     expect(line?.textContent?.replace("💜", "")).toBe("Built with love by jaybuidl");

@@ -79,21 +79,10 @@ const Colophon = styled.div`
   }
 `;
 
-/* Inside a sentence, so underlined permanently: colour alone would not mark it (WCAG 1.4.1).
-   The block padding lifts the target to at least 24px tall (WCAG 2.5.8). */
-const Credit = styled.a`
-  display: inline-block;
-  padding-block: ${({ theme }) => theme.space2};
-  color: inherit;
-  text-decoration: underline;
-
-  &:hover,
-  &:focus-visible {
-    color: ${({ theme }) => theme.textBody};
-  }
-`;
-
-const Source = styled(Out)`
+/* The colophon's two links, styled like the row above. No resting underline on the inline name:
+   the maintainer's ruling (2026-11-20), knowingly against the prose-link tripwire, since hover
+   and focus change its colour. The block padding lifts each target to at least 24px tall. */
+const ColophonLink = styled(Out)`
   display: inline-block;
   padding-block: ${({ theme }) => theme.space2};
 `;
@@ -129,13 +118,13 @@ export function SiteFooter() {
         <p>
           Built with <span aria-hidden="true">💜</span>
           <VisuallyHidden>love</VisuallyHidden> by{" "}
-          <Credit href="https://github.com/jaybuidl" target="_blank" rel="noreferrer">
+          <ColophonLink href="https://github.com/jaybuidl" target="_blank" rel="noreferrer">
             jaybuidl
-          </Credit>
+          </ColophonLink>
         </p>
-        <Source href={REPOSITORY} target="_blank" rel="noreferrer">
+        <ColophonLink href={REPOSITORY} target="_blank" rel="noreferrer">
           Source on GitHub
-        </Source>
+        </ColophonLink>
       </Colophon>
     </Bar>
   );
