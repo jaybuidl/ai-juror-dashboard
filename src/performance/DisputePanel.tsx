@@ -215,10 +215,11 @@ const ColumnBody = styled.div`
   padding: ${({ theme }) => theme.space6};
 `;
 
-/* The empty state, and it must not read as a failure. Centred, quiet, and drawn in the
-   system's absent-data vocabulary rather than in the failure vocabulary: nothing went wrong
-   here and nothing was lost in transit — the field was published empty, or, on a live draw,
-   the reveal that carries it has not happened yet. */
+/* The empty state, drawn in the system's absent-data vocabulary rather than the failure one.
+   It holds three absences: a field published empty, where nothing went wrong and nothing was
+   lost in transit; a live draw whose reveal has not happened yet; and a no-vote draw, which
+   is a miss, but one the rose mark in the header already says, so this block does not repeat
+   it in the failure ink. None of the three is a read that failed. */
 const Unpublished = styled.div`
   display: flex;
   flex: 1;
