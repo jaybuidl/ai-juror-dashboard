@@ -24,10 +24,12 @@ describe("SiteFooter", () => {
     );
   });
 
-  it("credits the maintainer, reading the heart as a word rather than an emoji", () => {
+  it('credits the maintainer, hiding the heart emoji behind the word "love"', () => {
     renderFooter();
     const credit = screen.getByRole("link", { name: "jaybuidl" });
     expect(credit).toHaveAttribute("href", "https://github.com/jaybuidl");
+    // Inside a sentence, so marked by more than colour (WCAG 1.4.1).
+    expect(credit).toHaveStyle("text-decoration: underline");
     const line = credit.closest("p");
     expect(line?.querySelector('[aria-hidden="true"]')?.textContent).toBe("💜");
     expect(line?.textContent?.replace("💜", "")).toBe("Built with love by jaybuidl");
