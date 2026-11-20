@@ -77,9 +77,12 @@ and its line range, or, for ticket 14, the design system itself.
   ADR-0005 and ADR-0006. This does not extend to the canvas's *data*, which is largely sampled.
   Ticket 17 is the fourth: its criteria say a row's flag renders identically at both densities,
   and the artboards word it twice on purpose — `Main.dc.html:302` gives "† 8h window", "‡ Lone
-  panel", "⋯ Live · commit 3m 12s" and `MatrixDense.dc.html:213` gives "† 8h", "‡ Lone", "⋯ Live".
+  panel", "⋯ Live · commit 3m 12s" and `MatrixDense.dc.html:213` gave "† 8h", "‡ Lone", "⋯ Live" (now `:214`, and "⋯ Live · Vote" since
+  ADR-0011 put the period back in it).
   The canvas won, and a browser said why: the live pill was 175px of a 375px row and it was the
   dispute's title that paid. `ROW_FLAGS` carries `label` and `shortLabel` so the two cannot fork.
+  ADR-0011 put the period back into the short live flag ("⋯ Live · vote", amending the dense
+  artboard): with no time in the cells, the period is what says whether an awaiting cell is late.
   **The rule only helps if the artboard being read is the one that draws the element.** The
   column header's reason line was built from `Errors.dc.html:201-217`, which demonstrates the
   dagger pattern on a standalone **400px explainer card**; the artboard for that block,

@@ -45,13 +45,15 @@ export type RowFlag = {
    *
    * The canvas is what settles this, and it is the one place the two artboards deliberately word
    * one thing twice: `Main.dc.html:302` gives "⋯ Live · commit 3m 12s" and
-   * `MatrixDense.dc.html:213` gives "⋯ Live" for the same row. Ticket 17's own criteria say the flag renders as it does at the other
+   * `MatrixDense.dc.html:214` gives "⋯ Live · Vote" for the same row. Ticket 17's own criteria say the flag renders as it does at the other
    * density; where the canvas and a ticket disagree the canvas wins (`CLAUDE.md`), and here it
    * has to — a one-line row is 375px wide on this page and the live flag alone was 175 of them,
    * which left the dispute's title with nothing and made the row unreadable rather than compact.
    *
    * **Every flag still says what it is.** What goes is the qualifier a reader can get from the
    * row itself — how long the period has been open — which is still on that dispute's own view.
+   * The live flag keeps its period (ADR-0011), so its short form is "⋯ Live · vote" where the
+   * artboard drew "⋯ Live"; `MatrixDense.dc.html` was amended to match.
    */
   shortLabel: (row: MatrixRow, context: RowFlagContext) => string;
   tone: Tone;
@@ -93,10 +95,12 @@ export const ROW_FLAGS: readonly RowFlag[] = [
       const elapsed = open === null ? "" : ` ${formatElapsedSeconds(open)}`;
       return `Live · ${row.dispute.period}${elapsed}`;
     },
-    // "Live", and neither the period nor the elapsed time — 175px of a 375px row went here, and
-    // the row it sat on could not show which dispute it was. The live *treatment* is untouched:
-    // the tint and the rail still mark the row, and this pill still says it is live.
-    shortLabel: () => "Live",
+    // The period without the elapsed time. The full label was 175px of a 375px row, and the row
+    // it sat on could not show which dispute it was, so this was "Live" alone until ADR-0011. The
+    // period came back because the cells lost their times: an awaiting cell is on time in the
+    // commit period and late in the vote period, and with no time beside it this pill is the only
+    // thing on the row that says which.
+    shortLabel: (row) => `Live · ${row.dispute.period}`,
     tone: "live",
   },
 ];

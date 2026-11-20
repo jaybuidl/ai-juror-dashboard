@@ -17,8 +17,8 @@
   a:hover { color: #7ceee8; }
   .lbl { font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #8681a0; }
   .cell { box-sizing: border-box; padding: 0 11px; border-left: 1px solid rgba(255,255,255,0.05); border-bottom: 1px solid rgba(255,255,255,0.055); display: flex; align-items: center; gap: 7px; }
-  .rail { width: 34px; height: 3px; border-radius: 999px; background: rgba(255,255,255,0.07); overflow: hidden; flex: none; }
-  .rail > i { display: block; height: 3px; border-radius: 999px; background: #4ddfd8; }
+  .wt { font: 500 9px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #8681a0; flex: none; }
+  .vh { position: absolute; width: 1px; height: 1px; overflow: hidden; clip-path: inset(50%); white-space: nowrap; }
   .mv { font: 600 11.5px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; width: 54px; flex: none; }
   .gl { font: 500 11px/1 'JetBrains Mono', monospace; flex: none; }
   .sum { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; padding: 3px 0; }
@@ -47,7 +47,7 @@
         <div>
           <div class="lbl">Density &middot; illustrative projection</div>
           <h1 style="margin: 12px 0 0; font: 800 34px/1.08 'Manrope', sans-serif; letter-spacing: -0.028em; color: #f2f0f7;">Sixty disputes. Still six columns.</h1>
-          <p style="margin: 12px 0 0; font: 400 15px/1.6 'Manrope', sans-serif; color: #b9b5cc; max-width: 720px; text-wrap: pretty;">Rows are disputes because disputes grow without bound while the roster stays at six. Past forty rows the cell drops its commit line and halves in height; the column header freezes so the agent a column belongs to is never off screen. Nothing else changes.</p>
+          <p style="margin: 12px 0 0; font: 400 15px/1.6 'Manrope', sans-serif; color: #b9b5cc; max-width: 720px; text-wrap: pretty;">Rows are disputes because disputes grow without bound while the roster stays at six. Past forty rows the cell drops its state word and halves in height; the column header freezes so the agent a column belongs to is never off screen. Nothing else changes.</p>
         </div>
         <div style="display: flex; align-items: center; gap: 10px;">
           <span style="display: inline-flex; align-items: center; padding: 6px 10px; border-radius: 6px; border: 1px solid rgba(232,164,65,0.45); font: 500 9px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #e8a441;">Illustrative</span>
@@ -61,7 +61,7 @@
 
         <div style="box-sizing: border-box; padding: 16px 16px 12px; border-bottom: 1px solid rgba(255,255,255,0.12); display: flex; flex-direction: column; justify-content: flex-end;">
           <div class="lbl" style="color: #f2f0f7;">60 disputes &middot; 1 live</div>
-          <div style="margin-top: 8px; font: 400 12px/1.5 'Manrope', sans-serif; color: #8681a0;">Newest first. Reveal latency and coherence survive at this density; commit latency moves to the row.</div>
+          <div style="margin-top: 8px; font: 400 12px/1.5 'Manrope', sans-serif; color: #8681a0;">Newest first. One glyph per draw: its outcome once ruled, its stage while live.</div>
         </div>
 
         <sc-for list="{{agents}}" as="a" hint-placeholder-count="6">
@@ -74,8 +74,8 @@
               </span>
             </div>
             <div style="margin-top: 10px; padding-top: 9px; border-top: 1px solid rgba(255,255,255,0.07);">
-              <div class="sum"><span class="sumk">Med rev</span><span class="sumv" style="color: {{a.fg}};">{{a.medRev}}</span></div>
               <div class="sum"><span class="sumk">Coherent</span><span class="sumv">{{a.coh}}</span></div>
+              <div class="sum"><span class="sumk">Diverged</span><span class="sumv">{{a.div}}</span></div>
               <div class="sum"><span class="sumk">Draws</span><span class="sumv">{{a.draws}}</span></div>
             </div>
           </div>
@@ -93,10 +93,10 @@
 
           <sc-for list="{{row.cells}}" as="c" hint-placeholder-count="6">
             <sc-if value="{{c.drawn}}" hint-placeholder-val="{{ true }}">
-              <div class="cell" style="background: {{c.bg}}; box-shadow: {{c.ring}};">
+              <div class="cell" style="background: {{c.bg}}; box-shadow: {{c.ring}}; outline: {{c.dash}}; outline-offset: -1px;">
                 <span class="gl" style="color: {{c.fg}};">{{c.glyph}}</span>
-                <span class="mv" style="color: {{c.rFg}};">{{c.rt}}</span>
-                <span class="rail"><i style="width: {{c.rw}};"></i></span>
+                <span class="wt">{{c.wt}}</span>
+                <span class="vh">{{c.word}}</span>
               </div>
             </sc-if>
             <sc-if value="{{c.blank}}">
@@ -113,13 +113,13 @@
         <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #4ddfd8;"><span style="font-size: 12px;">=</span>Tied</span>
         <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #e8a441;"><span style="font-size: 12px;">&#10005;</span>Diverged</span>
         <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #f2557a;"><span style="font-size: 12px;">&#8709;</span>No vote</span>
-        <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #3ee08d;"><span style="font-size: 12px;">&#8943;</span>Acting</span>
+        <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #3ee08d;"><span style="font-size: 12px;">&#8943;</span>Awaiting</span> <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #3ee08d;"><span style="font-size: 12px;">&#9680;</span>Committed</span> <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #3ee08d;"><span style="font-size: 12px;">&#9679;</span>Revealed</span>
         <span style="display: inline-flex; align-items: center; gap: 7px; font: 500 10px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.12em; text-transform: uppercase; color: #5b5675;"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block; margin: 0 4px;"></span>Not drawn</span>
         <span style="margin-left: auto; font: 400 12.5px/1.5 'Manrope', sans-serif; color: #8681a0;">One column is still empty at sixty rows. Sparsity does not resolve with volume &mdash; it is what random selection looks like.</span>
       </div>
 
       <div style="margin-top: 24px; padding: 16px 0 44px; border-top: 1px solid rgba(255,255,255,0.07);">
-        <p style="margin: 0; font: 400 12px/1.6 'Manrope', sans-serif; color: #5b5675; max-width: 1000px;">Read only. Disputes 151&ndash;163 are the measured record; every row above 163, and every title, latency and coherence mark in them, is sampled for this projection and must not be read as data.</p>
+        <p style="margin: 0; font: 400 12px/1.6 'Manrope', sans-serif; color: #5b5675; max-width: 1000px;">Read only. Disputes 151&ndash;163 are the measured record; every row above 163, and every title, vote count and state mark in them, is sampled for this projection and must not be read as data.</p>
       </div>
     </div>
   </div>
@@ -189,7 +189,7 @@ class Component extends DCLogic {
         cells = [0, 1, 2, 3, 4, 5].map((i) => {
           if (g.charAt(i) !== "█") return null;
           const [c, r, k] = REAL_LAT[id][i];
-          return { c, r, k };
+          return { c, r, k, w: 1 };
         });
       } else {
         const forced = live ? [0, 1, 2, 4] : id === 187 ? [0, 1, 3, 4] : null;
@@ -198,20 +198,20 @@ class Component extends DCLogic {
           if (forced ? forced.indexOf(i) < 0 : rnd() > 0.62) return null;
           const r = Math.round(6 + Math.pow(rnd(), 1.9) * 560);
           const c = Math.round(130 + Math.pow(rnd(), 1.6) * 2200);
-          const k = rnd() > 0.13 ? 1 : 0;
-          return { c, r, k };
+          const k = rnd() > 0.13 ? 1 : 0, w = rnd() > 0.87 ? 2 : 1;
+          return { c, r, k, w };
         });
-        if (!cells.some(Boolean)) cells[2] = { c: 640, r: 96, k: 1 };
+        if (!cells.some(Boolean)) cells[2] = { c: 640, r: 96, k: 1, w: 1 };
       }
 
       // the two states with no example yet, placed once each in the projection
-      if (id === 187) { const x = cells.findIndex(Boolean); if (x >= 0) cells[x] = { c: 1204, r: null, k: -1 }; }
-      if (live) cells = cells.map((x, i) => (x ? { c: x.c, r: null, k: 2 } : null));
+      if (id === 187) { const x = cells.findIndex(Boolean); if (x >= 0) cells[x] = { c: 1204, r: null, k: -1, w: 1 }; }
+      if (live) cells = cells.map((x, i) => (x ? { c: x.c, r: null, k: 2, w: x.w, s: ["revealed", "committed", "awaiting", "", "revealed"][i] } : null));
 
       const panelSize = cells.filter(Boolean).length;
       const lone = panelSize === 1;
       const missed = cells.some((x) => x && x.k === -1);
-      const flag = live ? "⋯ Live" : missed ? "∅ Missed" : lone ? "‡ Lone" : id === 151 ? "† 8h" : "";
+      const flag = live ? "⋯ Live · Vote" : missed ? "∅ Missed" : lone ? "‡ Lone" : id === 151 ? "† 8h" : "";
       return {
         id,
         title,
@@ -228,25 +228,25 @@ class Component extends DCLogic {
           const st = x.k;
           return {
             drawn: true, blank: false,
-            glyph: st === 2 ? "⋯" : st === -1 ? "∅" : st === 1 ? "✓" : "✕",
+            glyph: st === 2 ? { awaiting: "⋯", committed: "◐", revealed: "●" }[x.s] : st === -1 ? "∅" : st === 1 ? "✓" : "✕",
             fg: st === 2 ? "#3ee08d" : st === -1 ? "#f2557a" : st === 1 ? "#4ddfd8" : "#e8a441",
             bg: st === 2 ? "rgba(62,224,141,0.10)" : st === -1 ? "rgba(242,85,122,0.10)" : st === 1 ? "transparent" : "rgba(232,164,65,0.10)",
-            ring: st === 2 ? "inset 0 0 0 1px rgba(62,224,141,0.45)" : st === -1 ? "inset 0 0 0 1px rgba(242,85,122,0.45)" : st === 1 ? "none" : "inset 0 0 0 1px rgba(232,164,65,0.45)",
-            rt: st === -1 ? "Missed" : st === 2 ? "—" : fmt(x.r),
-            rFg: st === -1 ? "#f2557a" : st === 2 ? "#5b5675" : "#f2f0f7",
-            rw: x.r == null ? "0%" : pct(x.r),
+            ring: st === 2 && x.s === "awaiting" ? "none" : st === 2 ? "inset 0 0 0 1px rgba(62,224,141,0.45)" : st === -1 ? "inset 0 0 0 1px rgba(242,85,122,0.45)" : st === 1 ? "none" : "inset 0 0 0 1px rgba(232,164,65,0.45)",
+            wt: x.w > 1 ? "×" + x.w : "",
+            dash: st === 2 && x.s === "awaiting" ? "1px dashed rgba(62,224,141,0.6)" : "none",
+            word: st === 2 ? x.s : st === -1 ? "No vote" : st === 1 ? "Coherent" : "Diverged",
           };
         }),
       };
     });
 
     const agents = [
-      { name: "agent007", stack: "HERMES", av: "07", medRev: "3m 12s", coh: "31/34", draws: "34" },
-      { name: "daemon", stack: "OPENCLAW", av: "DA", medRev: "94s", coh: "30/33", draws: "33" },
-      { name: "aletheia", stack: "LANGGRAPH", av: "AL", medRev: "88s", coh: "34/37", draws: "37" },
-      { name: "columbo", stack: "MASTRA", av: "CO", medRev: "2m 46s", coh: "28/32 ‡", draws: "32" },
-      { name: "blaise", stack: "CLAUDE CODE", av: "BL", medRev: "2m 21s", coh: "29/35", draws: "35" },
-      { name: "baskerville", stack: "NEVER DRAWN", av: "BA", medRev: "—", coh: "—", draws: "0", never: true },
+      { name: "agent007", stack: "HERMES", av: "07", div: "3/34", coh: "31/34", draws: "34" },
+      { name: "daemon", stack: "OPENCLAW", av: "DA", div: "3/33", coh: "30/33", draws: "33" },
+      { name: "aletheia", stack: "LANGGRAPH", av: "AL", div: "3/37", coh: "34/37", draws: "37" },
+      { name: "columbo", stack: "MASTRA", av: "CO", div: "4/32", coh: "28/32 ‡", draws: "32" },
+      { name: "blaise", stack: "CLAUDE CODE", av: "BL", div: "6/35", coh: "29/35", draws: "35" },
+      { name: "baskerville", stack: "NEVER DRAWN", av: "BA", div: "—", coh: "—", draws: "0", never: true },
     ].map((a) => ({
       ...a,
       fg: a.never ? "#5b5675" : "#f2f0f7",

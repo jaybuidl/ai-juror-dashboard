@@ -45,7 +45,8 @@ renders the period strip in that shape — the period named, then its configured
 long it in fact ran — and the same for the vote and appeal periods. The reader is free to form the ratio; the page does not form it for
 them.
 
-Relative magnitude is carried by the shared logarithmic rail instead (`canvas/Cell.dc.html:91`): 1s
+Relative magnitude is carried by the shared logarithmic rail instead (`canvas/Cell.dc.html:198`, the "Before" cell since ADR-0011 took the
+rail and its latencies out of the cell): 1s
 to 1h, shared by both latencies so they can be compared by eye, decoration only, with the number
 always present. On a linear rail the fastest three quarters of the record would be indistinguishable
 from zero.

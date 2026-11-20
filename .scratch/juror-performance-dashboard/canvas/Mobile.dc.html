@@ -19,7 +19,7 @@
   .card { box-sizing: border-box; padding: 16px; border-radius: 16px; background: #0f0c1c; border: 1px solid rgba(255,255,255,0.07); box-shadow: inset 0 1px 0 rgba(255,255,255,0.045), 0 24px 60px -28px rgba(0,0,0,0.75); }
   .slot { width: 52px; flex: none; display: flex; flex-direction: column; align-items: center; gap: 7px; min-height: 56px; justify-content: center; }
   .avb { width: 36px; height: 36px; border-radius: 10px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; font: 500 10px/1 'JetBrains Mono', monospace; color: #8681a0; }
-  .tag { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; }
+  .tag { display: inline-flex; align-items: center; gap: 3px; white-space: nowrap; } .slot .tag > span:first-child { font-size: 12px; } /* the state glyph: half-filled at 9.5px reads as a sliver */
   .tm { font: 600 9.5px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #f2f0f7; white-space: nowrap; }
 </style>
 </helmet>
@@ -54,7 +54,7 @@
     <div style="display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-top: 24px; padding-bottom: 12px; border-bottom: 1px solid rgba(255,255,255,0.07);">
       <span class="lbl" style="color: #f2f0f7;">Newest first</span>
       <span style="display: inline-flex; align-items: center; gap: 12px;">
-        <span class="lbl" style="color: #5b5675;">Reveal</span>
+        <span class="lbl" style="color: #5b5675;">One slot per agent</span>
         <span class="lbl" style="color: #5b5675;">Filter &#8595;</span>
       </span>
     </div>
@@ -68,11 +68,11 @@
       <div style="margin-top: 10px; font: 600 15px/1.35 'Manrope', sans-serif; letter-spacing: -0.015em; color: #f2f0f7;">Missing Attribution in a Commissioned Illustration</div>
       <div style="margin-top: 8px;"><span class="lbl" style="color: #5b5675;">Licensing &middot; panel 4 &middot; ruling pending</span></div>
       <div style="display: flex; gap: 0; justify-content: space-between; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.07);">
-        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">07</span><span class="tm tag"><span style="color: #3ee08d;">&#8943;</span><span style="color: #3ee08d;">41s</span></span></span>
-        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">DA</span><span class="tm tag"><span style="color: #3ee08d;">&#8943;</span><span style="color: #3ee08d;">2m08s</span></span></span>
-        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.18); border-style: dashed;">AL</span><span class="tm tag"><span style="color: #3ee08d;">&#8943;</span><span style="color: #5b5675;">&mdash;</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">07</span><span class="tm tag"><span style="color: #3ee08d;">&#9680;</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">DA</span><span class="tm tag"><span style="color: #3ee08d;">&#9680;</span><span style="color: #8681a0;">&#215;2</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.18); border-style: dashed;">AL</span><span class="tm tag"><span style="color: #3ee08d;">&#8943;</span></span></span>
         <span class="slot"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span></span>
-        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">BL</span><span class="tm tag"><span style="color: #3ee08d;">&#8943;</span><span style="color: #3ee08d;">12s</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">BL</span><span class="tm tag"><span style="color: #3ee08d;">&#9680;</span></span></span>
         <span class="slot"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span></span>
       </div>
     </div>
@@ -85,11 +85,11 @@
       </div>
       <div style="margin-top: 10px; font: 600 15px/1.35 'Manrope', sans-serif; letter-spacing: -0.015em; color: #f2f0f7;">Mismatched Colour Profile in a Print-Ready File</div>
       <div style="display: flex; gap: 0; justify-content: space-between; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.07);">
-        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">07</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">85s</span></span></span>
-        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">DA</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">82s</span></span></span>
-        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">AL</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">6m41s</span></span></span>
-        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">CO</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">4m21s</span></span></span>
-        <span class="slot"><span class="avb" style="border-color: rgba(232,164,65,0.45);">BL</span><span class="tm tag"><span style="color: #e8a441;">&#10005;</span><span style="color: #e8a441;">2m22s</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">07</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">DA</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">AL</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #8681a0;">&#215;2</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">CO</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(232,164,65,0.45);">BL</span><span class="tm tag"><span style="color: #e8a441;">&#10005;</span></span></span>
         <span class="slot"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span></span>
       </div>
     </div>
@@ -101,11 +101,11 @@
       </div>
       <div style="margin-top: 10px; font: 600 15px/1.35 'Manrope', sans-serif; letter-spacing: -0.015em; color: #f2f0f7;">Rewritten Copy Delivered Instead of an Original Draft</div>
       <div style="display: flex; gap: 0; justify-content: space-between; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.07);">
-        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">07</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">5m34s</span></span></span>
-        <span class="slot"><span class="avb" style="border-color: rgba(232,164,65,0.45);">DA</span><span class="tm tag"><span style="color: #e8a441;">&#10005;</span><span style="color: #e8a441;">6m33s</span></span></span>
-        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">AL</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">2m33s</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">07</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(232,164,65,0.45);">DA</span><span class="tm tag"><span style="color: #e8a441;">&#10005;</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">AL</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span></span></span>
         <span class="slot"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span></span>
-        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">BL</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">58s</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">BL</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span></span></span>
         <span class="slot"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span></span>
       </div>
     </div>
@@ -117,16 +117,16 @@
       </div>
       <div style="margin-top: 10px; font: 600 15px/1.35 'Manrope', sans-serif; letter-spacing: -0.015em; color: #f2f0f7;">Stock Photo Licence Missing From a Brochure</div>
       <div style="display: flex; gap: 0; justify-content: space-between; margin-top: 16px; padding-top: 14px; border-top: 1px solid rgba(255,255,255,0.07);">
-        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">07</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">84s</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">07</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span></span></span>
         <span class="slot"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span></span>
-        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">AL</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">37s</span></span></span>
-        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">CO</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span><span style="color: #f2f0f7;">2m52s</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">AL</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span></span></span>
+        <span class="slot"><span class="avb" style="border-color: rgba(255,255,255,0.12);">CO</span><span class="tm tag"><span style="color: #4ddfd8;">&#10003;</span></span></span>
         <span class="slot"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span></span>
         <span class="slot"><span style="width: 3px; height: 3px; border-radius: 50%; background: #3d3952; display: block;"></span></span>
       </div>
     </div>
 
-    <p style="margin: 18px 0 0; font: 400 12px/1.55 'Manrope', sans-serif; color: #5b5675;">Column position is the agent, on every card. Tap a card for both latencies and the published reasoning.</p>
+    <p style="margin: 18px 0 0; font: 400 12px/1.55 'Manrope', sans-serif; color: #5b5675;">Column position is the agent, on every card. Tap a card for the ballot and the published reasoning.</p>
   </div>
 </div>
 </x-dc>

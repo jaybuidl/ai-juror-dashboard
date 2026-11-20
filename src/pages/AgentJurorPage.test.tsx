@@ -248,7 +248,10 @@ describe("the disputes it was drawn in", () => {
     // a failure that is not there.
     renderAt("/agent-jurors/Columbo");
 
-    for (const word of ["Coherent", "Diverged", "No vote", "Acting", "Not drawn"]) {
+    // The three live stages by name: the legend lost its one "Acting" entry with ADR-0011, and
+    // "Acting" is still on this page as the stat card's breakdown line, so it proves nothing here.
+    const legend = ["Coherent", "Diverged", "No vote", "Awaiting", "Committed", "Revealed"];
+    for (const word of [...legend, "Not drawn"]) {
       expect(screen.getAllByText(word).length, word).toBeGreaterThan(0);
     }
     expect(screen.queryByText("Unknown")).not.toBeInTheDocument();
