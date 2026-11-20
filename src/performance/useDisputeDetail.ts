@@ -1,5 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { type DisputeDetail, NO_DETAIL, namesADispute, toDisputeDetail } from "./dispute-detail";
 import { fetchDisputeDetail } from "./dispute-detail-subgraph";
 
@@ -88,14 +88,21 @@ export function useDisputeDetail(
   });
 
   // A read that predates the court's own does not know what the court has since seen revealed.
-  // `null` on either side is nothing known to have moved: a read made before the court's landed
-  // is taken as current rather than re-read on every cold load.
-  const seen = detail.data?.revealed ?? null;
-  const isBehindReveals = revealed !== null && seen !== null && revealed > seen;
+  // Behind whenever the counts differ, not only when the court's is higher: a read that started
+  // before the court read landed recorded `null` and knows nothing (a cold deep link, which costs
+  // one extra read), and an appeal round restarts the count from zero.
+  const seen = detail.data === undefined ? undefined : detail.data.revealed;
+  const isBehindReveals = revealed !== null && seen !== undefined && revealed !== seen;
+  // One re-read per count, and never a second for the same one: a re-read that fails keeps the
+  // old payload and so stays behind, and asking again the moment it settles would loop against
+  // a failing endpoint. Recovery from that is the banner's retry, or the next reveal.
+  const asked = useRef<number | null>(null);
   const { refetch, isFetching } = detail;
   useEffect(() => {
-    if (isBehindReveals && !isFetching) void refetch();
-  }, [isBehindReveals, isFetching, refetch]);
+    if (!isBehindReveals || isFetching || asked.current === revealed) return;
+    asked.current = revealed;
+    void refetch();
+  }, [isBehindReveals, isFetching, revealed, refetch]);
 
   return {
     // `toDisputeDetail` is applied here rather than inside the query function, which is the

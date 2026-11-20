@@ -62,4 +62,49 @@ describe("useDisputeDetail and reveals it has not seen", () => {
     expect(result.current.isBehindReveals).toBe(false);
     expect(fetched).toHaveBeenCalledTimes(1);
   });
+
+  it("re-reads a read that started before the court read had landed", async () => {
+    // A cold deep link: the dispute's read starts with no court read to count against, so it
+    // knows nothing about reveals, and the first count the court gives is one it has not seen.
+    const { result, rerender } = renderHook(({ revealed }) => useDisputeDetail(156, revealed), {
+      wrapper,
+      initialProps: { revealed: null as number | null },
+    });
+    await waitFor(() => expect(result.current.readAt).not.toBeNull());
+    expect(result.current.isBehindReveals).toBe(false);
+
+    rerender({ revealed: 2 });
+    expect(result.current.isBehindReveals).toBe(true);
+    await waitFor(() => expect(fetched).toHaveBeenCalledTimes(2));
+    await waitFor(() => expect(result.current.isBehindReveals).toBe(false));
+  });
+
+  it("re-reads when an appeal round starts the count again", async () => {
+    const { result, rerender } = renderHook(({ revealed }) => useDisputeDetail(156, revealed), {
+      wrapper,
+      initialProps: { revealed: 3 as number | null },
+    });
+    await waitFor(() => expect(result.current.readAt).not.toBeNull());
+
+    rerender({ revealed: 0 });
+    expect(result.current.isBehindReveals).toBe(true);
+    await waitFor(() => expect(fetched).toHaveBeenCalledTimes(2));
+  });
+
+  it("asks once per reveal, not again and again while the re-read fails", async () => {
+    const { result, rerender } = renderHook(({ revealed }) => useDisputeDetail(156, revealed), {
+      wrapper,
+      initialProps: { revealed: 2 as number | null },
+    });
+    await waitFor(() => expect(result.current.readAt).not.toBeNull());
+
+    fetched.mockRejectedValue(new Error("HTTP 503"));
+    rerender({ revealed: 3 });
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    // Still behind, and honest about it, but not hammering the endpoint.
+    expect(result.current.isBehindReveals).toBe(true);
+    expect(fetched).toHaveBeenCalledTimes(2);
+  });
 });
