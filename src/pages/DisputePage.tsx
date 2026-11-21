@@ -284,7 +284,7 @@ function coreFailureOf({
   disputes: DisputesView;
   performance: CourtPerformanceView;
   detail: DisputeDetailView;
-  /** Whether the court read says the current round's appeal period has opened. */
+  /** Whether the court read says an appeal period has opened, in any round. */
   appealOpened: boolean;
   /** Whether the page shows any appeal funding, from this read or an earlier one. */
   funded: boolean;
@@ -313,11 +313,11 @@ function coreFailureOf({
     return failureOf(
       detail.error,
       SOURCES.core,
-      // Appeal funding is this read's too (#32): absent with it on a first read, so it is named
-      // where the court says an appeal period opened, and as of an earlier read where it shows.
+      // Appeal funding is this read's too (#32): named wherever the court says an appeal period
+      // opened, or an earlier read shows some, since an empty lane would read as nobody funding.
       detail.detail.blockRange === null
         ? `This dispute's ballot, evidence count and published reasoning could not be read, so the ruling card and every column below are missing what they would have said, and the timeline cannot say who opened each period${appealOpened ? ", when each agent juror committed, or how the appeal was funded" : " or when each agent juror committed"}.`
-        : `This dispute's ballot, evidence count and published reasoning could not be read again, so the ruling card and every column below show what an earlier read said${funded ? ", and so does the appeal funding" : ""}.`,
+        : `This dispute's ballot, evidence count and published reasoning could not be read again, so the ruling card and every column below show what an earlier read said${funded || appealOpened ? ", and so does the appeal funding" : ""}.`,
     );
   }
 
@@ -350,7 +350,7 @@ function arbitrumFailureOf(
   // be told from the creator and shows as not read (`appeal-funding.ts`). Said only where one does.
   const funders =
     chain.data === null && unnamedFunders
-      ? " Appeal funders it cannot otherwise name show as not read, since who created the dispute is unknown."
+      ? " An appeal funder nothing else names shows as not read, since who created the dispute is unknown."
       : "";
 
   if (parameters !== null && chain.error !== null) {
@@ -421,7 +421,7 @@ function templateFailureOf(
   return {
     source: SOURCES.templates,
     status: titles.resolved === 0 ? "No templates" : "Short read",
-    what: `This dispute's subject could not be read, so it is identified by its ID alone${unnamedFunders ? ", and appeal funders it cannot otherwise name show as not read, since its parties are unknown" : ""}.`,
+    what: `This dispute's subject could not be read, so it is identified by its ID alone.${unnamedFunders ? " Its parties are unknown too, so an appeal funder nothing else names shows as not read." : ""}`,
   };
 }
 
@@ -636,6 +636,7 @@ export function DisputeView({
           // dispute is not known until the creation transaction is read.
           creator: chain.data === null ? undefined : chain.data.creator,
           ensNames,
+          displayedNames: roster.entries.map((entry) => entry.identity.nickname),
         });
   const unnamedFunders = funding.some((round) =>
     round.sides.some((side) => side.funders.some(({ funder }) => funder.kind === "pending")),
@@ -657,7 +658,9 @@ export function DisputeView({
         detail,
         chain,
         timeline,
-        appealOpened: reading?.round?.appealOpenedAt != null,
+        // Any round's, since an earlier round's appeal is this read's to report too.
+        appealOpened:
+          reading?.dispute.rounds.some((round) => round.appealOpenedAt !== null) ?? false,
         funded: funding.length > 0,
         templateUnread: reading !== null && aliases === undefined,
         unnamedFunders,
@@ -752,7 +755,7 @@ export function DisputeView({
                 reading={reading}
                 timeline={timeline}
                 roster={roster}
-                funding={stripFundingOf(funding, reading.round)}
+                funding={stripFundingOf(funding, reading.round, detail.isBehindStage)}
               />
             )}
           </Header>

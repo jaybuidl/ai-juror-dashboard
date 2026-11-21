@@ -1,6 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
 import { useEffect, useRef } from "react";
-import { type DisputeDetail, NO_DETAIL, namesADispute, toDisputeDetail } from "./dispute-detail";
+import {
+  type DisputeDetail,
+  NO_DETAIL,
+  namesADispute,
+  type RawDisputeDetail,
+  toDisputeDetail,
+} from "./dispute-detail";
 import { fetchDisputeDetail } from "./dispute-detail-subgraph";
 
 /**
@@ -57,6 +63,12 @@ export type DisputeDetailView = {
    * for whenever this is true. See `PanelColumn.justificationUnread` (#21).
    */
   isBehindReveals: boolean;
+  /**
+   * Whether the court read has since seen the dispute move to another round or period, so the
+   * appeal's funding may be missing what arrived since. A re-read is already asked for whenever
+   * this is true, and until it lands the strip does not name the funding's outcome (#32).
+   */
+  isBehindStage: boolean;
 };
 
 /**
@@ -96,11 +108,8 @@ export function useDisputeDetail(
     // are fixed for ever; an unruled one gains prose as its panel reveals, and the five-second
     // poll on the court is what brings a reader back here with fresh cells around it.
     staleTime: 60 * 1000,
-    // While the dispute is in its appeal period, contributions land at any moment and the strip
-    // says "so far" over them, so the sums are read again every half minute until this read sees
-    // the period close. One dispute's read, for the reader looking at it.
-    refetchInterval: (query) =>
-      query.state.data?.raw.dispute?.period === "appeal" ? 30 * 1000 : false,
+    // One dispute's read, for the reader looking at it: see `appealPollOf`.
+    refetchInterval: (query) => appealPollOf(query.state.data?.raw),
   });
 
   // A read that predates the court's own does not know what the court has since seen revealed.
@@ -123,22 +132,27 @@ export function useDisputeDetail(
     modelled.blockRange === null;
   // One re-read per count, and never a second for the same one: a re-read that fails keeps the
   // old payload and so stays behind, and asking again the moment it settles would loop against
-  // a failing endpoint. Recovery from that is the banner's retry, or the next reveal.
+  // a failing endpoint. Recovery from that is the banner's retry, or the next change.
   // Keyed by dispute too, so a count asked for on one dispute never stands in for another's.
-  // A read that predates the draws gets the same once-only rule under its own ask, so a dispute
-  // behind on both is read once for each and never in a loop.
-  const asked = useRef<string | null>(null);
+  // Each kind of change keeps its own last ask, so one whose re-read failed and stays behind
+  // never shadows another kind's: a stuck reveal must not keep the appeal's funding from being
+  // read when the period moves (#32). One read answers every kind at once, so every kind behind
+  // is marked asked by it, and a failure loops on none of them.
+  const asked = useRef<Record<"reveals" | "draws" | "stage", string | null>>({
+    reveals: null,
+    draws: null,
+    stage: null,
+  });
   const { refetch, isFetching } = detail;
   useEffect(() => {
-    const ask = isBehindReveals
-      ? `${disputeId}:${revealed}`
-      : isBehindDraws
-        ? `${disputeId}:drawn`
-        : isBehindStage
-          ? `${disputeId}:stage:${stage}`
-          : null;
-    if (ask === null || isFetching || asked.current === ask) return;
-    asked.current = ask;
+    if (isFetching) return;
+    const asks = [
+      ["reveals", isBehindReveals ? `${disputeId}:${revealed}` : null],
+      ["draws", isBehindDraws ? `${disputeId}:drawn` : null],
+      ["stage", isBehindStage ? `${disputeId}:${stage}` : null],
+    ] as const;
+    if (!asks.some(([kind, ask]) => ask !== null && asked.current[kind] !== ask)) return;
+    for (const [kind, ask] of asks) if (ask !== null) asked.current[kind] = ask;
     void refetch();
   }, [
     isBehindReveals,
@@ -174,5 +188,16 @@ export function useDisputeDetail(
       void detail.refetch();
     },
     isBehindReveals,
+    isBehindStage,
   };
+}
+
+/**
+ * How often to read a dispute again on its own: every half minute while this read sees it in its
+ * appeal period, when contributions land at any moment and the strip says "so far" over them,
+ * and never otherwise. Polled whether or not the last read failed, as any poll is, so a failing
+ * endpoint is asked twice a minute until the period closes or the reader leaves.
+ */
+export function appealPollOf(raw: RawDisputeDetail | undefined): number | false {
+  return raw?.dispute?.period === "appeal" ? 30 * 1000 : false;
 }

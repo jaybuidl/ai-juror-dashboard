@@ -58,17 +58,26 @@ export function useEnsNames(addresses: readonly string[]): ReadonlyMap<string, s
     queryKey: ["ensNames", asked],
     queryFn: async () => {
       const client = createFunderNameClient();
-      const names = await Promise.all(
-        asked.map((address) =>
-          client.getEnsName({ address: address as Address }).catch(() => null),
-        ),
+      const lookups = await Promise.allSettled(
+        asked.map((address) => client.getEnsName({ address: address as Address })),
       );
+      // Every lookup failing is mainnet not answering, not a set of accounts without names: an
+      // error, so react-query retries it and never holds an empty answer as a fresh one for the
+      // hour below. One that fails alone is that account's (an offchain name, with lookups off)
+      // and costs only its name.
+      if (lookups.every((lookup) => lookup.status === "rejected")) {
+        throw new Error("Mainnet did not answer any ENS lookup");
+      }
       return asked.flatMap((address, index) => {
-        const name = shownEnsName(names[index]);
+        const lookup = lookups[index];
+        const name = shownEnsName(lookup?.status === "fulfilled" ? lookup.value : null);
         return name === null ? [] : [[address, name] as const];
       });
     },
     enabled: asked.length > 0,
+    // A new funder changes the key; the names already read stay on screen meanwhile, rather
+    // than every named funder turning into "someone else" for the length of the round trip.
+    placeholderData: (previous) => previous,
     // A primary name changes when its holder changes it, rarely. An hour, as the roster holds.
     staleTime: 60 * 60 * 1000,
   });

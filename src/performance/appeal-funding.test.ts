@@ -233,6 +233,51 @@ describe("buildAppealFunding", () => {
       ]);
     });
 
+    it("is not shown where any label, or the labels run together, pass for one", () => {
+      const lookalikes = new Map([
+        [UNKNOWN, "x.grokleros.eth"],
+        ["0x4444444444444444444444444444444444444444", "grok.leros.eth"],
+        ["0x5555555555555555555555555555555555555555", "bot.kleros.xyz"],
+      ]);
+
+      expect(kinds(build([named], { ensNames: lookalikes })[0]?.sides[0]?.funders ?? [])).toEqual([
+        "someone-else",
+        "creator",
+      ]);
+    });
+
+    it("is not shown where it passes for a name the page gives an agent juror", () => {
+      const funders =
+        buildAppealFunding({
+          funding: [named],
+          answers: ANSWERS,
+          aliases: [],
+          roster: ROSTER,
+          creator: CREATOR,
+          ensNames: new Map([[UNKNOWN, "the-oracle.eth"]]),
+          displayedNames: ["The Oracle"],
+        })[0]?.sides[0]?.funders ?? [];
+
+      expect(funders.map(({ funder }) => funder.kind)).not.toContain("ens");
+    });
+
+    it("is not shown where a label is shaped like an address", () => {
+      const funders =
+        build([named], { ensNames: new Map([[UNKNOWN, "0x9eb6a13d66fb.eth"]]) })[0]?.sides[0]
+          ?.funders ?? [];
+
+      expect(funders.map(({ funder }) => funder.kind)).not.toContain("ens");
+    });
+
+    it("is not exempt deeper under the agents parent, where a subname's holder issues names", () => {
+      const funders =
+        build([named], {
+          ensNames: new Map([[UNKNOWN, `grokleros.blaise.${AGENT_JUROR_ENS_PARENT}`]]),
+        })[0]?.sides[0]?.funders ?? [];
+
+      expect(funders.map(({ funder }) => funder.kind)).not.toContain("ens");
+    });
+
     it("is shown under the agents parent, which only Kleros issues", () => {
       const issued = new Map([[UNKNOWN, `grokleros.${AGENT_JUROR_ENS_PARENT}`]]);
       const funders = build([named], { ensNames: issued })[0]?.sides[0]?.funders ?? [];
@@ -394,7 +439,18 @@ describe("stripFundingOf", () => {
     ).toEqual({
       current: null,
       earlier: rounds.slice(0, 1),
+      behind: false,
     });
-    expect(stripFundingOf(rounds, undefined)).toEqual({ current: null, earlier: [] });
+    expect(stripFundingOf(rounds, undefined)).toEqual({
+      current: null,
+      earlier: [],
+      behind: false,
+    });
+  });
+
+  it("carries whether the sums predate the court's view of the dispute", () => {
+    expect(
+      stripFundingOf(rounds, { index: 1, appealOpenedAt: 10, executionOpenedAt: 20 }, true).behind,
+    ).toBe(true);
   });
 });

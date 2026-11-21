@@ -5,7 +5,12 @@ import { theme } from "../styles/theme";
 import { DISPUTE_156_CHAIN, measured, resolvedRoster } from "../test/court";
 import { buildAppealFunding, stripFundingOf } from "./appeal-funding";
 import detailFixture from "./dispute-156-detail.fixture.json" with { type: "json" };
-import { buildDisputeReading, type RawDisputeDetail, toDisputeDetail } from "./dispute-detail";
+import {
+  buildDisputeReading,
+  type DetailRound,
+  type RawDisputeDetail,
+  toDisputeDetail,
+} from "./dispute-detail";
 import { buildDisputeTimeline } from "./dispute-timeline";
 import { PeriodStrip } from "./PeriodStrip";
 import type { MatrixRow } from "./performance";
@@ -36,7 +41,32 @@ function appealedRow(): MatrixRow {
   };
 }
 
-function renderAppealed(ensNames: ReadonlyMap<string, string> = new Map()) {
+/** Round 1's appeal, both sides funded, the second by two accounts. */
+const APPEALED_ROUND: DetailRound = {
+  index: 0,
+  sides: [
+    { choice: 1, paidWei: 8_910_000_000_000_000n, funded: true },
+    { choice: 2, paidWei: 11_880_000_000_000_000n, funded: true },
+  ],
+  contributions: [
+    {
+      contributor: "0x1111111111111111111111111111111111111111",
+      choice: 1,
+      wei: 8_910_000_000_000_000n,
+    },
+    { contributor: GROKLEROS, choice: 2, wei: 5_940_000_000_000_000n },
+    {
+      contributor: "0x4444444444444444444444444444444444444444",
+      choice: 2,
+      wei: 5_940_000_000_000_000n,
+    },
+  ],
+};
+
+function renderAppealed(
+  ensNames: ReadonlyMap<string, string> = new Map(),
+  round: DetailRound = APPEALED_ROUND,
+) {
   const roster = resolvedRoster.entries.map((entry) => entry.agentJuror);
   const reading = buildDisputeReading({
     row: appealedRow(),
@@ -44,28 +74,7 @@ function renderAppealed(ensNames: ReadonlyMap<string, string> = new Map()) {
     template: undefined,
   });
   const funding = buildAppealFunding({
-    funding: [
-      {
-        index: 0,
-        sides: [
-          { choice: 1, paidWei: 8_910_000_000_000_000n, funded: true },
-          { choice: 2, paidWei: 11_880_000_000_000_000n, funded: true },
-        ],
-        contributions: [
-          {
-            contributor: "0x1111111111111111111111111111111111111111",
-            choice: 1,
-            wei: 8_910_000_000_000_000n,
-          },
-          { contributor: GROKLEROS, choice: 2, wei: 5_940_000_000_000_000n },
-          {
-            contributor: "0x4444444444444444444444444444444444444444",
-            choice: 2,
-            wei: 5_940_000_000_000_000n,
-          },
-        ],
-      },
-    ],
+    funding: [round],
     answers: [],
     aliases: [],
     roster,
@@ -113,6 +122,37 @@ describe("an appealed round, once the next round has started", () => {
 
     expect(within(list).getAllByRole("listitem")[0]?.textContent).toContain("alice.eth");
     expect(list.textContent).not.toContain("0x1111");
+  });
+
+  it("heads it appealed on the court's word, even where its sums predate the appeal", () => {
+    // Read before the second side was funded: one side funded in these sums, and yet round 2
+    // exists, so the round was appealed. The head never contradicts the round below it.
+    renderAppealed(new Map(), {
+      index: 0,
+      sides: [{ choice: 1, paidWei: 8_910_000_000_000_000n, funded: true }],
+      contributions: [
+        {
+          contributor: "0x1111111111111111111111111111111111111111",
+          choice: 1,
+          wei: 8_910_000_000_000_000n,
+        },
+      ],
+    });
+
+    expect(screen.getByRole("list", { name: "Round 1 · appealed" })).toBeInTheDocument();
+  });
+
+  it("says what a side raised beyond the contributions read", () => {
+    renderAppealed(new Map(), {
+      index: 0,
+      sides: [{ choice: 1, paidWei: 8_910_000_000_000_000n, funded: true }],
+      contributions: [{ contributor: GROKLEROS, choice: 1, wei: 2_000_000_000_000_000n }],
+    });
+    const list = screen.getByRole("list", { name: /round 1 · appealed/i });
+
+    expect(within(list).getAllByRole("listitem")[0]?.textContent).toContain(
+      "Grokleros, others not read",
+    );
   });
 
   it("puts it in the evidence period's slot, which the appeal opened", () => {

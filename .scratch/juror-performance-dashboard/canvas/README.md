@@ -261,5 +261,7 @@ file is still 288 lines. The sampled figures are sampled. Not drawn, and the imp
 the next round's evidence lane. Also the implementation's, added the same day: a funder's ENS name
 in the funder line's own meta ink (never the heading ink an agent juror's name takes, so a stranger's
 name never reads as the roster's), "Choice N" for a side the template does not name, and an
-"others not read" line where the contributions read fall short of what a side raised.
+"others not read" line where the contributions read fall short of what a side raised. An earlier
+round's compact head always says "appealed", on the court's word that a round came after it, and
+the current round's head says "Funding as last read" until a re-read catches up with the court.
 

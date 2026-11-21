@@ -87,21 +87,31 @@ function bare(text: string): string {
 }
 
 /**
- * Whether an ENS name would pass for an agent juror or for Kleros on the page.
+ * Whether an ENS name would pass for an agent juror, for Kleros, or for an address on the page.
  *
- * Anyone can register a name such as `grokleros.eth` and make it their primary name, and the
- * forward check that `useEnsNames` relies on proves only that the account holds it. Such a funder
- * is "someone else": a name that dresses as the roster or as the court is worth less than none.
- * A name under the agents parent is exempt, since only Kleros issues those. Conservative by
- * design: a genuine name that happens to contain a nickname loses a label, never a figure.
+ * Anyone can register a name such as `grokleros.eth`, or `x.grokleros.eth` under it, and make it
+ * their primary name, and the forward check that `useEnsNames` relies on proves only that the
+ * account holds it. Such a funder is "someone else": a name that dresses as the roster or as the
+ * court is worth less than none. So every label but the top-level one is read, run together so
+ * that `grok.leros.eth` is caught too, against "kleros" and against every name the page gives an
+ * agent juror. A label shaped like an address is dropped as well, since no address is ever shown.
+ *
+ * Exempt: a direct child of the agents parent, which only Kleros issues. A deeper name under it
+ * is not, since a subname's holder can issue its own. Conservative by design: a genuine name that
+ * happens to contain a nickname loses a label, never a figure.
  */
-function imitates(name: string, roster: readonly AgentJuror[]): boolean {
-  if (name.endsWith(`.${AGENT_JUROR_ENS_PARENT}`)) return false;
-  const label = bare(name.split(".")[0] ?? "");
-  if (label.includes("kleros")) return true;
-  return roster.some((agentJuror) => {
-    const nickname = bare(agentJuror.nickname);
-    return nickname.length > 0 && label.includes(nickname);
+function imitates(name: string, nicknames: readonly string[]): boolean {
+  const labels = name.split(".");
+  const parent = AGENT_JUROR_ENS_PARENT.split(".");
+  if (labels.length === parent.length + 1 && name.endsWith(`.${AGENT_JUROR_ENS_PARENT}`)) {
+    return false;
+  }
+  if (labels.some((label) => /^0x[0-9a-f]{6,}/i.test(label))) return true;
+  const run = bare(labels.slice(0, -1).join(""));
+  if (run.includes("kleros")) return true;
+  return nicknames.some((nickname) => {
+    const bareNickname = bare(nickname);
+    return bareNickname.length > 0 && run.includes(bareNickname);
   });
 }
 
@@ -114,11 +124,13 @@ function classOf(
   account: string,
   {
     roster,
+    nicknames,
     aliases,
     creator,
     ensNames,
   }: {
     roster: readonly AgentJuror[];
+    nicknames: readonly string[];
     aliases: ReadonlySet<string> | undefined;
     creator: string | null | undefined;
     ensNames: ReadonlyMap<string, string>;
@@ -132,7 +144,7 @@ function classOf(
   if (creator === undefined) return { kind: "pending" };
   if (creator !== null && account === creator) return { kind: "creator" };
   const name = ensNames.get(account);
-  return name === undefined || imitates(name, roster)
+  return name === undefined || imitates(name, nicknames)
     ? { kind: "someone-else" }
     : { kind: "ens", name, address: account };
 }
@@ -167,6 +179,7 @@ export function buildAppealFunding({
   roster,
   creator,
   ensNames = new Map(),
+  displayedNames = [],
 }: {
   /** `DisputeDetail.funding`. */
   funding: readonly DetailRound[];
@@ -187,9 +200,15 @@ export function buildAppealFunding({
   creator: string | null | undefined;
   /** Primary ENS names by lowercased address (`useEnsNames`), for funders nothing else names. */
   ensNames?: ReadonlyMap<string, string>;
+  /**
+   * Every other name the page shows an agent juror by (its ENS nickname where that resolved),
+   * which an ENS name must not pass for either. The roster's own nicknames are always checked.
+   */
+  displayedNames?: readonly string[];
 }): readonly RoundFunding[] {
   const context = {
     roster,
+    nicknames: [...roster.map((agentJuror) => agentJuror.nickname), ...displayedNames],
     aliases: aliases === undefined ? undefined : new Set(aliases),
     creator: creator === null || creator === undefined ? creator : creator.toLowerCase(),
     ensNames,
@@ -285,7 +304,15 @@ export type StripFunding = {
    * second side, so an appealed round is an earlier round by the time anything reads it.
    */
   current: { round: RoundFunding; open: boolean } | null;
-  /** Rounds before the current one, oldest first: each was appealed, or it would be current. */
+  /**
+   * Whether the funding was read before the court saw the dispute move on, so its sums may miss
+   * what arrived since: the strip then says it is as last read rather than name an outcome.
+   */
+  behind: boolean;
+  /**
+   * Rounds before the current one, oldest first: each was appealed, or it would be current, which
+   * the court read says whatever these sums were read at. The strip heads them "appealed" on that.
+   */
   earlier: readonly RoundFunding[];
 };
 
@@ -295,8 +322,10 @@ export function stripFundingOf(
   round:
     | { index: number; appealOpenedAt: number | null; executionOpenedAt: number | null }
     | undefined,
+  /** `DisputeDetailView.isBehindStage`. */
+  behind = false,
 ): StripFunding {
-  if (round === undefined) return { current: null, earlier: [] };
+  if (round === undefined) return { current: null, earlier: [], behind };
 
   const current = funding.find((entry) => entry.roundIndex === round.index);
   return {
@@ -308,5 +337,6 @@ export function stripFundingOf(
             open: round.appealOpenedAt !== null && round.executionOpenedAt === null,
           },
     earlier: funding.filter((entry) => entry.roundIndex < round.index),
+    behind,
   };
 }

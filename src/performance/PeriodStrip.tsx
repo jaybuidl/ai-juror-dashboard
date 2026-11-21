@@ -475,9 +475,12 @@ function keyOfFunder({ funder }: Funder): string {
 
 /**
  * What the head of one round's funding says. "So far" while the appeal period runs, because the
- * outcome can still change; the maintainer's terms once it has closed.
+ * outcome can still change; the maintainer's terms once it has closed. "As last read" while the
+ * court has seen the dispute move on since these sums were read, so no outcome is named over sums
+ * that may miss the contribution that decided it (#32).
  */
-function fundingLabel(round: RoundFunding, open: boolean): string {
+function fundingLabel(round: RoundFunding, open: boolean, behind: boolean): string {
+  if (behind) return "Funding as last read";
   if (open) return "Funding so far";
   switch (round.outcome) {
     case "appealed":
@@ -493,7 +496,7 @@ export function PeriodStrip({
   reading,
   timeline,
   roster,
-  funding = { current: null, earlier: [] },
+  funding = { current: null, earlier: [], behind: false },
 }: {
   reading: DisputeReading;
   timeline: DisputeTimeline;
@@ -529,7 +532,9 @@ export function PeriodStrip({
                 <FundingList
                   key={round.roundIndex}
                   funding={round}
-                  label={`Round ${round.roundIndex + 1} · ${fundingLabel(round, false).toLowerCase()}`}
+                  // Appealed, because a round came after it: the court read's word, never these
+                  // sums', which a read made before the appeal would contradict.
+                  label={`Round ${round.roundIndex + 1} · appealed`}
                   nameOf={nameOf}
                   compact
                 />
@@ -544,7 +549,7 @@ export function PeriodStrip({
             {run.period === "appeal" && funding.current !== null && (
               <FundingList
                 funding={funding.current.round}
-                label={fundingLabel(funding.current.round, funding.current.open)}
+                label={fundingLabel(funding.current.round, funding.current.open, funding.behind)}
                 nameOf={nameOf}
               />
             )}

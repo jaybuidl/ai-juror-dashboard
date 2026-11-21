@@ -48,6 +48,7 @@ function read(overrides: Partial<DisputeDetailView> = {}): DisputeDetailView {
     readAt: READ_AT,
     retry: () => {},
     isBehindReveals: false,
+    isBehindStage: false,
     ...overrides,
   };
 }
@@ -827,7 +828,7 @@ describe("the appeal's funding, where a read it depends on is missing (#32)", ()
     const banner = screen.getByRole("alert");
     expect(banner).toHaveTextContent("kleros-v2-drt");
     expect(banner).toHaveTextContent(
-      /appeal funders it cannot otherwise name show as not read, since its parties are unknown/,
+      /Its parties are unknown too, so an appeal funder nothing else names shows as not read/,
     );
   });
 
@@ -835,7 +836,7 @@ describe("the appeal's funding, where a read it depends on is missing (#32)", ()
     renderDispute({ detail: withFunding(), chain: failed() });
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      /Appeal funders it cannot otherwise name show as not read, since who created the dispute is unknown/,
+      /An appeal funder nothing else names shows as not read, since who created the dispute is unknown/,
     );
   });
 
@@ -843,6 +844,22 @@ describe("the appeal's funding, where a read it depends on is missing (#32)", ()
     renderDispute({ chain: failed() });
 
     expect(screen.getByRole("alert")).not.toHaveTextContent(/Appeal funders/);
+  });
+
+  it("says the template banner without the funders clause where no funder is left unnamed", () => {
+    renderDispute({ disputes: untemplated(false) });
+
+    const banner = screen.getByRole("alert");
+    expect(banner).toHaveTextContent(/identified by its ID alone\./);
+    expect(banner).not.toHaveTextContent(/appeal funder/);
+  });
+
+  it("does not name an outcome over sums read before the court saw the dispute move on", () => {
+    renderDispute({
+      detail: read({ detail: { ...detail156, funding: FUNDED }, isBehindStage: true }),
+    });
+
+    expect(fundingLines()[0]).toBe("Funding as last readETH");
   });
 
   it("says the funding is an earlier read's when this dispute's re-read fails", () => {
@@ -859,6 +876,59 @@ describe("the appeal's funding, where a read it depends on is missing (#32)", ()
     expect(screen.getByRole("alert")).toHaveTextContent(
       /show what an earlier read said, and so does the appeal funding/,
     );
+  });
+});
+
+describe("what a failed dispute read costs the funding (#32)", () => {
+  const failure = new ReadFailure("The core subgraph returned HTTP 503 Service Unavailable", {
+    source: SOURCES.core,
+    status: "HTTP 503",
+  });
+  /** The court's reading of dispute 156 with no appeal period opened in any round. */
+  const beforeAppeal = (): CourtPerformanceView => {
+    const rows = measured.performance?.rows.map((row) =>
+      row.dispute.id === 156
+        ? {
+            ...row,
+            dispute: {
+              ...row.dispute,
+              rounds: row.dispute.rounds.map((round) => ({
+                ...round,
+                appealOpenedAt: null,
+                executionOpenedAt: null,
+              })),
+            },
+          }
+        : row,
+    );
+    if (measured.performance === null || rows === undefined) throw new Error("no court reading");
+    return { ...measured, performance: { ...measured.performance, rows } };
+  };
+
+  it("leaves the funding out of a first read's failure before any appeal period opened", () => {
+    renderDispute({
+      performance: beforeAppeal(),
+      detail: read({ error: failure, detail: NO_DETAIL, readAt: null }),
+      chain: pending(),
+    });
+
+    const banner = screen.getByRole("alert");
+    expect(banner).toHaveTextContent(
+      /the timeline cannot say who opened each period or when each agent juror committed\./,
+    );
+    expect(banner).not.toHaveTextContent(/funded/);
+  });
+
+  it("names the funding in a failed re-read once an appeal opened, even with none read", () => {
+    renderDispute({ detail: read({ error: failure }) });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/and so does the appeal funding/);
+  });
+
+  it("leaves it out of a failed re-read with no appeal opened and none read", () => {
+    renderDispute({ performance: beforeAppeal(), detail: read({ error: failure }) });
+
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/appeal funding/);
   });
 });
 

@@ -93,9 +93,15 @@ this file is the full account.
   shows as "others not read". The read bounds contributions at 100 per round.
 - **A funder's ENS name is reverse resolution on mainnet** (`getEnsName`, through ENS's universal
   resolver, which forward-checks it), asked only for funders nothing else names. Anyone can register
-  `grokleros.eth` and make it their primary name, so a name whose first label contains a roster
-  nickname or "kleros" is not shown, unless it sits under `agents.kleroslabs.eth`, which only Kleros
-  issues. A name not already in ENSIP-15 normal form is dropped too. **Offchain lookups are off for
+  `grokleros.eth`, or `x.grokleros.eth` under it, and make it their primary name, so a name is not
+  shown where its labels (all but the top-level one, run together) contain "kleros" or any name the
+  page gives an agent juror, or where a label is shaped like an address. Exempt: a direct child of
+  `agents.kleroslabs.eth`, which only Kleros issues; a deeper name under it is not, since a subname's
+  holder can issue its own. A name not already in ENSIP-15 normal form is dropped too. **It is the
+  mainnet primary name** (coin type 60): for a funder that is a contract on Arbitrum, the name
+  belongs to whoever holds that address on mainnet, and a name set only on an L2 is not read.
+  **A 1-wei contribution is enough** to put a funder's chosen name on the page; the filters bound
+  what it can pass for, not what it says. **Offchain lookups are off for
   it** (`ccipRead: false`): a funder picks its own resolver, and an offchain one would have every
   reader's browser fetch a gateway the funder chose. Mainnet-held names resolve without one.
 - **A dispute's parties are the addresses under its template's `aliases`**, when the template has

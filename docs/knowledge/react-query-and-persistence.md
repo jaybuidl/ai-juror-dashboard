@@ -86,8 +86,12 @@ this file is the full account.
   read again once whenever the court read shows something it predates: a reveal (#21), a draw
   (ADR-0012), or the dispute's round or period moving (#32), each recorded beside the payload
   rather than put in the key, which would blank the page for the re-read. Once per change, never
-  again while a re-read fails, or it loops against a failing endpoint. Appeal funding is the one
-  thing that also changes *within* a period, so the read polls every 30 seconds while it sees the
-  dispute in its appeal period, and stops when it sees the period close. Funders' ENS names
-  (`useEnsNames`) are not persisted, like the roster's identities: a failed lookup is a successful
-  query that would keep a name missing after mainnet answered again.
+  again while a re-read fails, or it loops against a failing endpoint — and **each kind keeps its
+  own last ask**: when one shared ask held a reveal whose re-read had failed, the period moving
+  asked nothing and the appeal's funding was never read. Appeal funding is the one thing that also
+  changes *within* a period, so the read polls every 30 seconds while it sees the dispute in its
+  appeal period (failing or not, as a poll does) and stops when it sees the period close. Until a
+  re-read for a new period lands, the strip names no outcome over the old sums. Funders' ENS names
+  (`useEnsNames`) are not persisted, like the roster's identities, and **every lookup failing is
+  an error, not an empty answer**, or an outage would be held as "no names" for the hour the query
+  stays fresh.
