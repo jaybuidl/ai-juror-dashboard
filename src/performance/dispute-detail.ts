@@ -350,10 +350,9 @@ function fundingOf(
  *
  * So the join is an assumption: that court 34's one arbitrable
  * (`0xb5526d022962a1fff6ed32c93e8b714c901f4323`) uses the core dispute id as its evidence group
- * id. Checked on 2026-08-25 across all 31 disputes the court then held — every one had a group,
- * and all 33 submissions fell inside their dispute's own evidence period. The court has grown
- * past that read, so the check covers a prefix of what it now holds rather than the whole of it;
- * the guard below is what makes the assumption safe on the disputes nobody re-checked.
+ * id. Checked on 2026-08-25 across all 31 disputes the court then held, and all 33 submissions
+ * fell inside their dispute's own evidence period; the live suite re-checks every submission the
+ * court holds. The guard below is what makes the assumption safe between those runs.
  *
  * `externalDisputeId` is what guards it. The group is asked for by the dispute's own id, so if
  * the arbitrable ever numbers its disputes differently the two disagree and this returns `null`
@@ -364,15 +363,19 @@ function fundingOf(
 function evidenceCountOf(raw: RawDisputeDetail): number | null {
   const dispute = raw.dispute;
   const group = raw.evidenceGroup;
-  if (dispute === undefined || dispute === null || group === undefined || group === null) {
-    return null;
-  }
+  if (dispute === undefined || dispute === null || group === undefined) return null;
 
   // The read asks for the group under the core dispute id. This is the check that the
   // arbitrable agrees that is its own id for the dispute.
-  if (dispute.externalDisputeId !== dispute.disputeID || group.id !== dispute.disputeID) {
-    return null;
-  }
+  if (dispute.externalDisputeId !== dispute.disputeID) return null;
+
+  // No group is nobody having submitted anything, and not a read that fell short. The mapping
+  // creates a group in its `Evidence` handler and nowhere else, so an empty one never exists:
+  // twelve of the court's disputes had no group on 2026-11-21, and every group it does hold has
+  // at least one submission. `dispute-detail.integration.test.ts` checks both live, and is where
+  // a mapping that started creating groups up front would show.
+  if (group === null) return 0;
+  if (group.id !== dispute.disputeID) return null;
 
   // `nextEvidenceIndex` counts the submissions: the mapping increments it after each one and
   // `evidenceIndex` is one-based, so the two coincide. Read as a single number rather than by
@@ -570,8 +573,8 @@ export function periodsOf(
       // captured court has run about eighteen hours against a configured thirty-six, and no one
       // has explained the gap — so appeal duration is not understood here and nothing may be
       // derived from the configured value as though it were. The *window* is the one the court
-      // has never moved: 36h in all three configurations. How long an appeal in fact runs under
-      // the third has not been measured — the capture stops at dispute 166, two days before it
+      // has never moved: 36h in all five configurations. How long an appeal in fact runs under
+      // the later ones has not been measured — the capture stops at dispute 166, two days before it
       // — so the eighteen hours is a claim about the capture and not about the court.
       period: "appeal",
       windowSeconds: windows?.appealSeconds ?? null,
