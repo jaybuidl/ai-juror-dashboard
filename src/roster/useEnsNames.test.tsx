@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { ContractFunctionRevertedError, RawContractError } from "viem";
+import { ContractFunctionRevertedError, RawContractError, RpcRequestError } from "viem";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { shownEnsName, useEnsNames } from "./useEnsNames";
 
@@ -40,7 +40,20 @@ function nodeFailed(data?: `0x${string}`): Error {
     functionName: "reverseWithGateways",
     data,
     message: "Internal error",
-    cause: new Error("Internal error"),
+    cause: new RpcRequestError({
+      body: {},
+      error: { code: -32603, message: "Internal error" },
+      url: "https://ethereum-rpc.publicnode.com",
+    }),
+  });
+}
+
+/** A leg whose revert data viem recognised and could not decode: the decode error is its cause. */
+function legUndecodable(): Error {
+  return new ContractFunctionRevertedError({
+    abi: [],
+    functionName: "reverseWithGateways",
+    data: "0x08c379a0",
   });
 }
 
@@ -100,6 +113,16 @@ describe("useEnsNames", () => {
   it("takes a lone funder whose lookup reverts as an answer, not an outage to retry", async () => {
     // An offchain primary name, with offchain lookups off: the resolver reverts for that account.
     getEnsName.mockRejectedValue(legReverted());
+    const { client, wrapper } = withClient();
+    renderHook(() => useEnsNames([ALICE]), { wrapper });
+
+    await waitFor(() =>
+      expect(client.getQueryState(["ensNames", [ALICE]])?.status).toBe("success"),
+    );
+  });
+
+  it("takes a leg whose revert viem could not decode as that account's, not an outage", async () => {
+    getEnsName.mockRejectedValue(legUndecodable());
     const { client, wrapper } = withClient();
     renderHook(() => useEnsNames([ALICE]), { wrapper });
 

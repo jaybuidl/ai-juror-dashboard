@@ -13,12 +13,16 @@ import { imitates } from "./lookalike";
  * - **Partially funded**: exactly one side funded. That side may have had several funders.
  * - Nothing funded: contributions that did not reach any side's fee.
  *
- * Funders are classes and never addresses, by the rule the timeline's openers follow: an agent
- * juror on the roster by name, the Kleros bot, "a party" (an address under the dispute template's
- * `aliases`), "the dispute creator" (the sender of the transaction that created it), then the
- * account's primary ENS name where it has one, and otherwise "someone else". Several accounts in
- * one class are one funder line with a count. A class that depends on a read not yet in (the
+ * Each funder is named by the first of these that fits: an agent juror on the roster by name, the
+ * Kleros bot, "a party" (an address under the dispute template's `aliases`), "the dispute creator"
+ * (the sender of the transaction that created it), the account's primary ENS name, and otherwise
+ * the account itself, drawn short and linked to Arbiscan (the maintainer's ruling, 2026-11-21:
+ * "someone else" told a reader nothing they could check). Several parties are one line with a
+ * count; every other account is its own line. A class that depends on a read not yet in (the
  * template's parties, the creator) is "pending" until it is, never guessed.
+ *
+ * Each side also carries the fee it needed, where it can be worked out (`requiredOf`), so a side
+ * that raised something and was not funded says how far short it fell.
  *
  * Pure, with no clock and no network: the kit's rounds arrive from the dispute's own read, and
  * the creator from its chain read.
@@ -31,15 +35,16 @@ export type FunderClass =
   | { kind: "party" }
   | { kind: "creator" }
   /**
-   * Someone else, with a primary ENS name (#32, the maintainer's addition): shown by that name,
-   * one line per account. Only where nothing above names the account, and never a name that
-   * passes for an agent juror or for Kleros (`lookalike.ts`).
+   * An account nothing above names, with a primary ENS name (#32, the maintainer's addition):
+   * shown by that name. Never a name that passes for an agent juror, Kleros or an address
+   * (`lookalike.ts`).
    */
   | { kind: "ens"; name: string; address: string }
-  | { kind: "someone-else" }
+  /** An account nothing above names, and no name to show: the account, lowercased. */
+  | { kind: "account"; address: string }
   /**
    * Not on the roster and not the bot, while the template's parties or the dispute's creator are
-   * not read yet, so which of party, creator or someone else it is is not known. Never guessed.
+   * not read yet, so which of party, creator or another account it is is not known. Never guessed.
    */
   | { kind: "pending" }
   /**
@@ -60,6 +65,11 @@ export type SideFunding = {
   /** Whether it reached its full appeal fee. */
   funded: boolean;
   /**
+   * The fee it needed to be funded, in wei, or `null` where it cannot be worked out. See
+   * `requiredOf`.
+   */
+  requiredWei: bigint | null;
+  /**
    * Who gave it, largest share first, then any sum the read returned no contribution for
    * (`unread`). Empty only where the side raised nothing.
    */
@@ -75,10 +85,10 @@ export type RoundFunding = {
   outcome: RoundOutcome;
 };
 
-/** One stable key per funder line: an agent juror by address, every other class by kind. */
+/** One stable key per funder line: an account by its address, every class of several by kind. */
 function keyOf(funder: FunderClass): string {
   if (funder.kind === "agent-juror") return `agent-juror:${funder.agentJuror.address}`;
-  if (funder.kind === "ens") return `ens:${funder.address}`;
+  if (funder.kind === "ens" || funder.kind === "account") return `account:${funder.address}`;
   return funder.kind;
 }
 
@@ -112,8 +122,66 @@ function classOf(
   if (creator !== null && account === creator) return { kind: "creator" };
   const name = ensNames.get(account);
   return name === undefined || imitates(name, nicknames)
-    ? { kind: "someone-else" }
+    ? { kind: "account", address: account }
     : { kind: "ens", name, address: account };
+}
+
+/**
+ * DisputeKitClassic's appeal fee multipliers, in basis points, read off the kit
+ * (`commit-logs.ts` holds its address) on 2026-11-21: the side the round's vote favoured pays
+ * the appeal's cost once more on top of it, any other side twice more.
+ */
+export const WINNER_STAKE_MULTIPLIER = 10_000n;
+export const LOSER_STAKE_MULTIPLIER = 20_000n;
+const ONE_BASIS_POINT = 10_000n;
+
+/** The court's fee per vote and its jump threshold, as in force for one round's appeal. */
+export type AppealCourtFee = { feeForJuror: string; jurorsForCourtJump: string };
+
+/**
+ * The fee each side of one round needed to be funded, or `null` per side where it cannot be
+ * worked out.
+ *
+ * The kit's own rule (`fundAppeal`): the appeal's cost, plus the cost times the side's multiplier,
+ * the winner's for the choice the round's vote favoured and the loser's for every other. A tied
+ * round favoured none, so every side pays the loser's: dispute 318's Yes needed 0.00891 ETH, not
+ * the 0.00594 Grokleros gave it.
+ *
+ * The cost itself, from the first of these that is there:
+ * - **A funded side.** The kit caps contributions at the fee, so a funded side raised its fee
+ *   exactly, and the cost follows from its multiplier. Exact, and checked: a side whose sum
+ *   does not come back out of the cost it implies gives no cost.
+ * - **The court's fee** in force for the appeal (`fee`), times the votes the next round would
+ *   draw (twice this round's, plus one), as `KlerosCore.appealCost` reckons it. Only where the
+ *   appeal stays in this court: past `jurorsForCourtJump` it is the parent court's fee, which is
+ *   not read here, and the answer is `null`.
+ */
+function requiredOf(
+  round: DetailRound,
+  fee: AppealCourtFee | undefined,
+): (choice: number) => bigint | null {
+  const { tied, winningChoice, nbVotes } = round;
+  if (tied === null || tied === undefined) return () => null;
+  if (!tied && (winningChoice === null || winningChoice === undefined)) return () => null;
+  const multiplierOf = (choice: number) =>
+    !tied && choice === winningChoice ? WINNER_STAKE_MULTIPLIER : LOSER_STAKE_MULTIPLIER;
+  const feeFor = (cost: bigint, choice: number) =>
+    cost + (cost * multiplierOf(choice)) / ONE_BASIS_POINT;
+
+  let cost: bigint | null = null;
+  const funded = round.sides.filter((side) => side.funded);
+  const [first] = funded;
+  if (first !== undefined) {
+    const implied =
+      (first.paidWei * ONE_BASIS_POINT) / (ONE_BASIS_POINT + multiplierOf(first.choice));
+    if (funded.every((side) => feeFor(implied, side.choice) === side.paidWei)) cost = implied;
+  } else if (fee !== undefined && nbVotes !== null && nbVotes !== undefined) {
+    if (BigInt(nbVotes) < BigInt(fee.jurorsForCourtJump)) {
+      cost = BigInt(fee.feeForJuror) * BigInt(nbVotes * 2 + 1);
+    }
+  }
+
+  return (choice) => (cost === null ? null : feeFor(cost, choice));
 }
 
 /**
@@ -147,6 +215,7 @@ export function buildAppealFunding({
   creator,
   ensNames = new Map(),
   displayedNames = [],
+  fees = new Map(),
 }: {
   /** `DisputeDetail.funding`. */
   funding: readonly DetailRound[];
@@ -160,8 +229,8 @@ export function buildAppealFunding({
   roster: readonly AgentJuror[];
   /**
    * The dispute's creator, lowercased or as the chain returns it; `null` where it cannot be read
-   * (no creation transaction); `undefined` while it has not been read yet. `null` makes an
-   * unmatched funder "someone else", which asserts it is not the creator: the subgraph records a
+   * (no creation transaction); `undefined` while it has not been read yet. `null` shows an
+   * unmatched funder as its account, which asserts it is not the creator: the subgraph records a
    * creation transaction for every dispute in court 34, so this is the case of none at all.
    */
   creator: string | null | undefined;
@@ -172,6 +241,11 @@ export function buildAppealFunding({
    * which an ENS name must not pass for either. The roster's own nicknames are always checked.
    */
   displayedNames?: readonly string[];
+  /**
+   * The court's fee in force for each round's appeal, by round index, where the parameter history
+   * was read. Only needed for a round no side funded; see `requiredOf`.
+   */
+  fees?: ReadonlyMap<number, AppealCourtFee>;
 }): readonly RoundFunding[] {
   const context = {
     roster,
@@ -182,6 +256,7 @@ export function buildAppealFunding({
   };
 
   return funding.map((round) => {
+    const requiredFor = requiredOf(round, fees.get(round.index));
     const byChoice = new Map<number, SideFunding & { funders: Funder[] }>();
     const sideOf = (choice: number) => {
       let side = byChoice.get(choice);
@@ -191,6 +266,7 @@ export function buildAppealFunding({
           title: choiceTitleOf(choice, answers),
           raisedWei: 0n,
           funded: false,
+          requiredWei: requiredFor(choice),
           funders: [],
         };
         byChoice.set(choice, side);
@@ -204,7 +280,7 @@ export function buildAppealFunding({
       entry.funded = side.funded;
     }
 
-    // Who made each side up, one line per class, counting distinct accounts.
+    // Who made each side up: one line per account, or per class where a class holds several.
     const accounts = new Map<string, Set<string>>();
     const contributedTo = new Map<number, bigint>();
     for (const contribution of round.contributions) {

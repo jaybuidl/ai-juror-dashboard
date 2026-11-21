@@ -39,7 +39,9 @@ const DRAW_LIMIT = 100;
  *
  * Each round's `answers { paidFee funded }` and `contributions` are its appeal funding: what each
  * side raised, whether it reached its fee, and who gave how much (#32). `first` bounds the
- * contributions as it bounds the draws; a round of a single dispute has a handful.
+ * contributions as it bounds the draws; a round of a single dispute has a handful. `tied`,
+ * `winningChoice` and the core round's `nbVotes` are what each side's fee is worked out from
+ * (`requiredOf` in `appeal-funding.ts`).
  *
  * `period`, `lastPeriodChangeBlockNumber` and each draw's `blockNumber` are where the dispute's
  * record sits on chain, which is the range `fetchDisputeChain` scans (ADR-0012). See
@@ -58,12 +60,18 @@ const DETAIL_QUERY = `
       transactionHash
       period
       lastPeriodChangeBlockNumber
+      rounds {
+        id
+        nbVotes
+      }
       disputeKitDispute {
         ... on ClassicDispute {
           numberOfChoices
           localRounds {
             id
             ... on ClassicRound {
+              tied
+              winningChoice
               answers {
                 answerId
                 count

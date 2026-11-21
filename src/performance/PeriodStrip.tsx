@@ -1,9 +1,10 @@
 import styled from "styled-components";
+import { arbiscanAddressOf, shortAddress } from "../arbiscan";
 import type { AgentJuror } from "../roster/agent-jurors";
 import type { RosterView } from "../roster/useRoster";
 import { narrow } from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
-import type { Funder, RoundFunding, StripFunding } from "./appeal-funding";
+import type { Funder, RoundFunding, SideFunding, StripFunding } from "./appeal-funding";
 import type { DisputeReading, PeriodRun } from "./dispute-detail";
 import type { DisputeTimeline, Moment, Opener, TimelineEntry } from "./dispute-timeline";
 import { formatElapsedSeconds, formatWindowSeconds } from "./latency";
@@ -114,6 +115,15 @@ const Name = styled.span`
    holder's choice and has no length limit, so it breaks anywhere rather than widen the lane. */
 const EnsName = styled.span`
   overflow-wrap: anywhere;
+`;
+
+/* A funder named by its account or its ENS name links to that account on Arbiscan, where a reader
+   can check it. Underlined always, in the line's own ink: a link marked by colour alone fails WCAG
+   1.4.1, and the accent would mark it as the page's own (CLAUDE.md). */
+const AccountLink = styled.a`
+  color: inherit;
+  text-decoration: underline;
+  text-underline-offset: 2px;
 `;
 
 const OffRoster = styled.span`
@@ -354,7 +364,11 @@ function EntryRow({
   }
 }
 
-/** One funder line's words: an agent juror by name, every other class by kind, never an address. */
+/**
+ * One funder line's words: an agent juror by name, a class by its kind, and any other account by
+ * its ENS name or its short address, linked to Arbiscan. The link's name is said in full, since
+ * the short form drawn is not one a screen reader can be expected to read out usefully.
+ */
 function FunderName({
   funder,
   nameOf,
@@ -373,12 +387,29 @@ function FunderName({
     case "creator":
       return <>the dispute creator</>;
     case "ens":
-      // The account's own public name, as ENS gives it, and never its address.
-      return <EnsName>{who.name}</EnsName>;
+      return (
+        <AccountLink
+          href={arbiscanAddressOf(who.address)}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`${who.name}, account ${who.address} on Arbiscan`}
+        >
+          <EnsName>{who.name}</EnsName>
+        </AccountLink>
+      );
+    case "account":
+      return (
+        <AccountLink
+          href={arbiscanAddressOf(who.address)}
+          target="_blank"
+          rel="noopener noreferrer"
+          aria-label={`Account ${who.address} on Arbiscan`}
+        >
+          {shortAddress(who.address)}
+        </AccountLink>
+      );
     case "unread":
       return <>others not read</>;
-    case "someone-else":
-      return <>{accounts > 1 ? `${accounts} others` : "someone else"}</>;
     case "pending":
       return (
         <>
@@ -397,6 +428,21 @@ function Eth({ wei }: { wei: bigint }) {
     <Amount>
       {formatEthWei(wei)}
       {/* The separating space in a text node, never inside the hidden element (CLAUDE.md). */}{" "}
+      <VisuallyHidden>ETH</VisuallyHidden>
+    </Amount>
+  );
+}
+
+/**
+ * What a side raised, and, where it was not funded and its fee is known, what it needed: "0.0059 of
+ * 0.0089". A funded side raised its fee exactly, so it says one figure.
+ */
+function Raised({ side }: { side: SideFunding }) {
+  const required = side.funded ? null : side.requiredWei;
+  return (
+    <Amount>
+      {formatEthWei(side.raisedWei)}
+      {required !== null && required > side.raisedWei && ` of ${formatEthWei(required)}`}{" "}
       <VisuallyHidden>ETH</VisuallyHidden>
     </Amount>
   );
@@ -437,7 +483,7 @@ function FundingList({
                 {side.title === null ? `Choice ${side.choice}` : `${side.choice} · ${side.title}`}
               </SideName>{" "}
               <Funded $funded={side.funded}>{side.funded ? "funded" : "not funded"}</Funded>{" "}
-              <Eth wei={side.raisedWei} />
+              <Raised side={side} />
             </Row>
             {compact || side.funders.length === 1
               ? side.funders.length > 0 && (
@@ -469,7 +515,7 @@ function FundingList({
 
 function keyOfFunder({ funder }: Funder): string {
   if (funder.kind === "agent-juror") return funder.agentJuror.address;
-  if (funder.kind === "ens") return funder.address;
+  if (funder.kind === "ens" || funder.kind === "account") return funder.address;
   return funder.kind;
 }
 

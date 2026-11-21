@@ -263,5 +263,7 @@ in the funder line's own meta ink (never the heading ink an agent juror's name t
 name never reads as the roster's), "Choice N" for a side the template does not name, and an
 "others not read" line where the contributions read fall short of what a side raised. An earlier
 round's compact head always says "appealed", on the court's word that a round came after it, and
-the current round's head says "Funding as last read" until a re-read catches up with the court.
+the current round's head says "Funding as last read" until a re-read catches up with the court. An
+account nothing else names is drawn as its short address (`0x1111…1111`), underlined and linked to
+Arbiscan, and a side short of its fee reads "0.0059 of 0.0089" (the maintainer's request on 318).
 

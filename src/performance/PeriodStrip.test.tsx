@@ -111,9 +111,9 @@ describe("an appealed round, once the next round has started", () => {
         .map((item) => item.textContent?.replace(/\s+/g, " ").trim()),
     ).toEqual([
       // No template, so each side is "Choice N": a lone number would read as a count.
-      "Choice 1 funded 0.0089 ETHsomeone else",
+      "Choice 1 funded 0.0089 ETH0x1111…1111",
       // Compact: funders on one line, no amount each.
-      "Choice 2 funded 0.0119 ETHGrokleros, someone else",
+      "Choice 2 funded 0.0119 ETHGrokleros, 0x4444…4444",
     ]);
   });
 

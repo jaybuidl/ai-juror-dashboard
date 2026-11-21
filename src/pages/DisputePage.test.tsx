@@ -774,17 +774,30 @@ describe("the appeal's funding (#32)", () => {
     expect(fundingLines()).toEqual([
       "Partially funded · no appealETH",
       // Dispute 156's own choice names, since its template is the one on the page.
-      "1 · YES (50% or more) funded 0.0089 ETHsomeone else",
-      "2 · NO (under 50%) not funded 0.0059 ETHGrokleros",
+      "1 · YES (50% or more) funded 0.0089 ETH0x1111…1111",
+      // Short of the 0.0089 a tied round asks of every side (#32, the maintainer's question).
+      "2 · NO (under 50%) not funded 0.0059 of 0.0089 ETHGrokleros",
     ]);
   });
 
-  it("names a funder by class and never prints its address", () => {
+  it("shows a funder nothing else names by its short address, linked to it on Arbiscan", () => {
+    renderDispute({ detail: read({ detail: { ...detail156, funding: FUNDED } }) });
+    const link = screen.getByRole("link", {
+      name: "Account 0x1111111111111111111111111111111111111111 on Arbiscan",
+    });
+
+    expect(link).toHaveTextContent("0x1111…1111");
+    expect(link).toHaveAttribute(
+      "href",
+      "https://arbiscan.io/address/0x1111111111111111111111111111111111111111",
+    );
+  });
+
+  it("names an agent juror by its nickname, never its address", () => {
     const { container } = renderDispute({
       detail: read({ detail: { ...detail156, funding: FUNDED } }),
     });
 
-    expect(container.innerHTML).not.toMatch(/0x1111/i);
     expect(container.innerHTML).not.toMatch(/0x93aa/i);
   });
 

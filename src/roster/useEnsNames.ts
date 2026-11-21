@@ -2,10 +2,12 @@ import { useQuery } from "@tanstack/react-query";
 import {
   type Address,
   BaseError,
+  ContractFunctionRevertedError,
   createPublicClient,
   http,
   type PublicClient,
   RawContractError,
+  RpcRequestError,
 } from "viem";
 import { mainnet } from "viem/chains";
 import { normalize } from "viem/ens";
@@ -16,7 +18,7 @@ import { mainnetRpcUrl } from "./ens";
  *
  * Only a name already in normal form (ENSIP-15) is shown. A name that `normalize` rejects or
  * rewrites is not one a reader could type back into ENS, and it is the shape a look-alike takes,
- * so it is dropped and its funder stays "someone else".
+ * so it is dropped and its funder is shown by its account.
  */
 export function shownEnsName(name: unknown): string | null {
   if (typeof name !== "string" || name.length === 0) return null;
@@ -33,7 +35,7 @@ export function shownEnsName(name: unknown): string | null {
  * A funder chooses its own name, and so its resolver: one that answers offchain names a gateway
  * URL of its choosing, which every reader's browser would then fetch, handing a funder each
  * visitor's address. The CSP would block the fetch anyway (`netlify.toml`), with a console
- * violation per name. Off, such a name fails to resolve and the funder stays "someone else". A
+ * violation per name. Off, such a name fails to resolve and the funder is shown by its account. A
  * name held on mainnet needs no gateway: `vitalik.eth` resolves either way (checked 2026-11-21).
  */
 function createFunderNameClient(): PublicClient {
@@ -49,15 +51,19 @@ function createFunderNameClient(): PublicClient {
  * Whether a lookup failed because its own call reverted, rather than because nothing answered.
  *
  * Every lookup goes through multicall, one leg per address even for one address, and a leg that
- * reverts reaches here as viem's `RawContractError` with that leg's return data. Not its
- * `ContractFunctionRevertedError`, which viem also makes of a node's -32603 internal error, with or
- * without data in it: that one is an outage, and taking it for a revert would hold "no names" for
- * the hour below.
+ * reverts reaches here as viem's `RawContractError` with that leg's return data, or, where viem
+ * tried to decode that data and could not, as a `ContractFunctionRevertedError` whose cause is the
+ * decoding failure. Neither has a node's own error in its chain. viem also makes a reverted call
+ * of a node's -32603 internal error, with or without data in it, and that one carries the node's
+ * `RpcRequestError`: it is an outage, and taking it for a revert would hold "no names" for the
+ * hour below.
  */
 function isRevert(reason: unknown): boolean {
+  if (!(reason instanceof BaseError)) return false;
+  if (reason.walk((error) => error instanceof RawContractError) !== null) return true;
   return (
-    reason instanceof BaseError &&
-    reason.walk((error) => error instanceof RawContractError) !== null
+    reason.walk((error) => error instanceof ContractFunctionRevertedError) !== null &&
+    reason.walk((error) => error instanceof RpcRequestError) === null
   );
 }
 
@@ -67,8 +73,8 @@ function isRevert(reason: unknown): boolean {
  * Reverse resolution through ENS's universal resolver, which checks it against forward
  * resolution: a name only counts if it resolves back to the same address, so an account cannot
  * claim a name it does not hold. A name is the account's own public choice, set on chain by
- * whoever holds it; the maintainer asked for it (2026-11-21) where a funder is otherwise
- * "someone else".
+ * whoever holds it; the maintainer asked for it (2026-11-21) where a funder would otherwise be
+ * shown by its bare account.
  *
  * Best effort, like every ENS read here: a lookup that fails is a name not shown, never a banner,
  * because it costs a label and never a figure (`CLAUDE.md`). Not persisted, for the reason the
@@ -100,7 +106,7 @@ export function useEnsNames(addresses: readonly string[]): ReadonlyMap<string, s
     },
     enabled: asked.length > 0,
     // A new funder changes the key; the names already read stay on screen meanwhile, rather
-    // than every named funder turning into "someone else" for the length of the round trip.
+    // than every named funder turning back into its bare account for the length of the round trip.
     placeholderData: (previous) => previous,
     // A primary name changes when its holder changes it, rarely. An hour, as the roster holds.
     staleTime: 60 * 60 * 1000,

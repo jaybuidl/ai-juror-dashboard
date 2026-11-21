@@ -43,6 +43,9 @@ export type RawContribution = {
 
 export type RawLocalRound = {
   id: string;
+  /** Whether the round's vote ended in a tie, which leaves no side winning. */
+  tied?: boolean | null;
+  winningChoice?: string | null;
   answers?: readonly RawChoiceVotes[] | null;
   contributions?: readonly RawContribution[] | null;
 };
@@ -90,6 +93,8 @@ export type RawDisputeDetail = {
     period?: string | null;
     /** The block its current period opened in. See `blockRangeOf`. */
     lastPeriodChangeBlockNumber?: string | null;
+    /** The core rounds, for each one's panel size, which its appeal's cost is a multiple of. */
+    rounds?: readonly { id: string; nbVotes?: string | null }[] | null;
     disputeKitDispute?: readonly RawKitDispute[] | null;
   } | null;
   evidenceGroup?: { id: string; nextEvidenceIndex: string } | null;
@@ -170,6 +175,14 @@ export type DetailRound = {
   index: number;
   sides: readonly DetailSide[];
   contributions: readonly DetailContribution[];
+  /**
+   * Whether the round's vote tied, and which choice won it; `null` where the read did not say.
+   * The kit asks a winning side for a smaller appeal fee than any other, and a tie has no winner.
+   */
+  tied?: boolean | null;
+  winningChoice?: number | null;
+  /** How many votes the round drew, which its appeal's cost is a multiple of; `null` if unread. */
+  nbVotes?: number | null;
 };
 
 /** Same canonical-decimal guard as the rest of the model, and for the same reason. */
@@ -275,8 +288,17 @@ function toWei(value: string | null | undefined): bigint | null {
  * nothing to say. `paidFee` is the kit's own sum for the side, so it is the figure shown, and the
  * contributions are who made it up.
  */
-function fundingOf(kit: RawKitDispute | undefined): readonly DetailRound[] {
+function fundingOf(
+  kit: RawKitDispute | undefined,
+  coreRounds: readonly { id: string; nbVotes?: string | null }[] | null | undefined,
+): readonly DetailRound[] {
   const rounds: DetailRound[] = [];
+  const nbVotesOf = new Map<number, number>();
+  for (const round of coreRounds ?? []) {
+    const index = toCount(roundSuffixOf(round.id));
+    const nbVotes = toCount(round.nbVotes);
+    if (index !== null && nbVotes !== null) nbVotesOf.set(index, nbVotes);
+  }
 
   for (const local of kit?.localRounds ?? []) {
     const index = toCount(roundSuffixOf(local.id));
@@ -302,7 +324,14 @@ function fundingOf(kit: RawKitDispute | undefined): readonly DetailRound[] {
 
     if (sides.length === 0 && contributions.length === 0) continue;
     sides.sort((a, b) => a.choice - b.choice);
-    rounds.push({ index, sides, contributions });
+    rounds.push({
+      index,
+      sides,
+      contributions,
+      tied: typeof local.tied === "boolean" ? local.tied : null,
+      winningChoice: toCount(local.winningChoice),
+      nbVotes: nbVotesOf.get(index) ?? null,
+    });
   }
 
   return rounds.sort((a, b) => a.index - b.index);
@@ -462,7 +491,7 @@ export function toDisputeDetail(raw: RawDisputeDetail): DisputeDetail {
     evidenceCount: evidenceCountOf(raw),
     justifications: toJustifications(raw),
     blockRange: blockRangeOf(raw),
-    funding: fundingOf(raw.dispute?.disputeKitDispute?.[0]),
+    funding: fundingOf(raw.dispute?.disputeKitDispute?.[0], raw.dispute?.rounds),
   };
 }
 

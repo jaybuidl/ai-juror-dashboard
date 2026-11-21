@@ -63,10 +63,7 @@ describe("buildAppealFunding", () => {
       ["No", 8_910_000_000_000_000n, true],
       ["Yes", 5_940_000_000_000_000n, false],
     ]);
-    expect(round?.sides.map((side) => kinds(side.funders))).toEqual([
-      ["someone-else"],
-      ["Grokleros"],
-    ]);
+    expect(round?.sides.map((side) => kinds(side.funders))).toEqual([["account"], ["Grokleros"]]);
   });
 
   it("leaves out a side nobody raised anything for", () => {
@@ -100,9 +97,9 @@ describe("buildAppealFunding", () => {
     expect(build([short])[0]?.outcome).toBe("not-funded");
   });
 
-  it("groups several accounts of one class into one line, with their count and their sum", () => {
-    // One side can have several funders, and several in one class: the maintainer's example of a
-    // Yes side funded by more than one person.
+  it("gives each account its own line, with what it gave in all", () => {
+    // One side can have several funders: the maintainer's example of a Yes side funded by more
+    // than one person. Each is its own account, linked on the page, so none is folded into a count.
     const crowded: DetailRound = {
       index: 0,
       sides: [{ choice: 2, paidWei: 60n, funded: true }],
@@ -115,9 +112,15 @@ describe("buildAppealFunding", () => {
     };
     const [side] = build([crowded])[0]?.sides ?? [];
 
-    expect(side?.funders.map(({ funder, wei, accounts }) => [funder.kind, wei, accounts])).toEqual([
-      ["someone-else", 35n, 2],
-      ["agent-juror", 25n, 1],
+    expect(
+      side?.funders.map(({ funder, wei }) => [
+        funder.kind === "account" ? funder.address : funder.kind,
+        wei,
+      ]),
+    ).toEqual([
+      ["agent-juror", 25n],
+      ["0x5555555555555555555555555555555555555555", 20n],
+      ["0x4444444444444444444444444444444444444444", 15n],
     ]);
   });
 
@@ -139,7 +142,7 @@ describe("buildAppealFunding", () => {
       "kleros-bot",
       "party",
       "creator",
-      "someone-else",
+      "account",
     ]);
   });
 
@@ -163,9 +166,9 @@ describe("buildAppealFunding", () => {
     expect(round?.sides.map((side) => kinds(side.funders))).toEqual([["pending"], ["Grokleros"]]);
   });
 
-  it("calls an unmatched account someone else where the creator cannot be read at all", () => {
+  it("shows an unmatched account as itself where the creator cannot be read at all", () => {
     expect(build(funding318, { creator: null })[0]?.sides[0]?.funders[0]?.funder.kind).toBe(
-      "someone-else",
+      "account",
     );
   });
 
@@ -212,7 +215,7 @@ describe("buildAppealFunding", () => {
       ).toEqual([
         ["alice.eth", 5n],
         ["bob.eth", 4n],
-        ["someone-else", 3n],
+        ["account", 3n],
         // A party and the creator keep their class: the maintainer's rule is a name only where
         // there is no alias for the account.
         ["party", 2n],
@@ -228,7 +231,10 @@ describe("buildAppealFunding", () => {
       ]);
 
       expect(kinds(build([named], { ensNames: lookalikes })[0]?.sides[0]?.funders ?? [])).toEqual([
-        "someone-else",
+        "account",
+        "account",
+        "account",
+        "account",
         "creator",
       ]);
     });
@@ -241,7 +247,10 @@ describe("buildAppealFunding", () => {
       ]);
 
       expect(kinds(build([named], { ensNames: lookalikes })[0]?.sides[0]?.funders ?? [])).toEqual([
-        "someone-else",
+        "account",
+        "account",
+        "account",
+        "account",
         "creator",
       ]);
     });
@@ -325,9 +334,12 @@ describe("buildAppealFunding", () => {
       ).toEqual(["pending"]);
     });
 
-    it("is someone else while the names are not read", () => {
+    it("is shown as its account while the names are not read", () => {
       expect(kinds(build([named])[0]?.sides[0]?.funders ?? [])).toEqual([
-        "someone-else",
+        "account",
+        "account",
+        "account",
+        "account",
         "creator",
       ]);
     });
@@ -371,7 +383,7 @@ describe("buildAppealFunding", () => {
     const [side] = build([short])[0]?.sides ?? [];
 
     expect(side?.funders.map(({ funder, wei }) => [funder.kind, wei])).toEqual([
-      ["someone-else", 60n],
+      ["account", 60n],
       ["agent-juror", 10n],
       ["unread", 30n],
     ]);
@@ -401,6 +413,114 @@ describe("buildAppealFunding", () => {
     expect(build([first, second]).map((round) => [round.roundIndex, round.outcome])).toEqual([
       [0, "appealed"],
       [1, "partially-funded"],
+    ]);
+  });
+});
+
+describe("what each side needed to be funded", () => {
+  const sideNeeds = (rounds: readonly RoundFunding[]) =>
+    rounds[0]?.sides.map((side) => [side.choice, side.requiredWei]);
+
+  it("asks every side of a tied round for the loser's fee: dispute 318's Yes fell short", () => {
+    // 2 for Refuse, 2 for Yes, 1 for No: tied, so no side was the winner and each needed three
+    // times the 0.00297 ETH appeal cost. No raised it; Grokleros gave Yes the winner's 0.00594.
+    expect(sideNeeds(build())).toEqual([
+      [1, 8_910_000_000_000_000n],
+      [2, 8_910_000_000_000_000n],
+    ]);
+  });
+
+  it("asks the side the vote favoured for the winner's fee, worked out from a funded side", () => {
+    const decided: DetailRound = {
+      index: 0,
+      tied: false,
+      winningChoice: 2,
+      sides: [
+        { choice: 1, paidWei: 8_910_000_000_000_000n, funded: true },
+        { choice: 2, paidWei: 1_000_000_000_000_000n, funded: false },
+      ],
+      contributions: [],
+    };
+
+    expect(sideNeeds(build([decided]))).toEqual([
+      [1, 8_910_000_000_000_000n],
+      [2, 5_940_000_000_000_000n],
+    ]);
+  });
+
+  it("works it out from the court's fee where no side was funded", () => {
+    const short: DetailRound = {
+      index: 0,
+      tied: false,
+      winningChoice: 1,
+      nbVotes: 5,
+      sides: [{ choice: 2, paidWei: 1n, funded: false }],
+      contributions: [],
+    };
+    const fees = new Map([[0, { feeForJuror: "270000000000000", jurorsForCourtJump: "511" }]]);
+
+    expect(
+      sideNeeds(
+        buildAppealFunding({
+          funding: [short],
+          answers: ANSWERS,
+          aliases: [],
+          roster: ROSTER,
+          creator: CREATOR,
+          fees,
+        }),
+      ),
+    ).toEqual([[2, 8_910_000_000_000_000n]]);
+  });
+
+  it("does not say where the appeal would leave the court, whose parent's fee is not read", () => {
+    const jumping: DetailRound = {
+      index: 0,
+      tied: true,
+      nbVotes: 511,
+      sides: [{ choice: 2, paidWei: 1n, funded: false }],
+      contributions: [],
+    };
+    const fees = new Map([[0, { feeForJuror: "270000000000000", jurorsForCourtJump: "511" }]]);
+
+    expect(
+      sideNeeds(
+        buildAppealFunding({
+          funding: [jumping],
+          answers: ANSWERS,
+          aliases: [],
+          roster: ROSTER,
+          creator: CREATOR,
+          fees,
+        }),
+      ),
+    ).toEqual([[2, null]]);
+  });
+
+  it("does not say where the round's tie or winner was not read", () => {
+    const unread: DetailRound = {
+      index: 0,
+      sides: [{ choice: 1, paidWei: 8_910_000_000_000_000n, funded: true }],
+      contributions: [],
+    };
+
+    expect(sideNeeds(build([unread]))).toEqual([[1, null]]);
+  });
+
+  it("does not trust a funded side whose sum no appeal cost would give", () => {
+    const odd: DetailRound = {
+      index: 0,
+      tied: true,
+      sides: [
+        { choice: 1, paidWei: 10n, funded: true },
+        { choice: 2, paidWei: 1n, funded: false },
+      ],
+      contributions: [],
+    };
+
+    expect(sideNeeds(build([odd]))).toEqual([
+      [1, null],
+      [2, null],
     ]);
   });
 });

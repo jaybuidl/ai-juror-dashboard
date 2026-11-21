@@ -49,6 +49,7 @@ describe("imitates", () => {
     "agentoo7.eth",
     "x0-07.eth",
     "〇〇7.eth",
+    "øø7.eth",
   ])("does not show %s", (name) => {
     expect(imitates(name, NICKNAMES)).toBe(true);
   });

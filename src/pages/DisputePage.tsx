@@ -7,7 +7,12 @@ import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import { casePageOf } from "../court-frontend";
 import type { DisputesView } from "../disputes/useDisputes";
-import { buildAppealFunding, ensCandidatesOf, stripFundingOf } from "../performance/appeal-funding";
+import {
+  type AppealCourtFee,
+  buildAppealFunding,
+  ensCandidatesOf,
+  stripFundingOf,
+} from "../performance/appeal-funding";
 import { arbitrumSource } from "../performance/arbitrum";
 import { DisputePanel } from "../performance/DisputePanel";
 import type { RawDisputeChain } from "../performance/dispute-chain";
@@ -26,6 +31,7 @@ import { PeriodStrip } from "../performance/PeriodStrip";
 import { type ChainRead, useDisputeChain } from "../performance/useChainReads";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type DisputeDetailView, useDisputeDetail } from "../performance/useDisputeDetail";
+import { type ParameterRegime, rewardsAt } from "../performance/windows";
 import { type FailedRead, failureOf, SOURCES } from "../read-failure";
 import { ensFallbackOf } from "../roster/ens-fallback";
 import { useEnsNames } from "../roster/useEnsNames";
@@ -405,6 +411,24 @@ function arbitrumFailureOf(
 }
 
 /**
+ * The court's fee in force for each round's appeal, for a round no side funded (`requiredOf`):
+ * the configuration when its appeal period opened, or the latest while it is still open or yet to
+ * open, since the court reads its fee at each contribution. Nothing for a round with no history.
+ */
+function appealFeesOf(
+  reading: DisputeReading,
+  regimes: readonly ParameterRegime[],
+): ReadonlyMap<number, AppealCourtFee> {
+  const fees = new Map<number, AppealCourtFee>();
+  for (const round of reading.dispute.rounds) {
+    const open = round.index === reading.round?.index && round.executionOpenedAt === null;
+    const rewards = rewardsAt(regimes, open ? null : round.appealOpenedAt);
+    if (rewards !== null) fees.set(round.index, rewards);
+  }
+  return fees;
+}
+
+/**
  * The template subgraph's half: this dispute's template, which it has, did not come back.
  *
  * Only once the template read has settled, since a template still in flight is not missing. It
@@ -486,7 +510,7 @@ export type DisputeViewProps = DisputePageProps & {
   chain: ChainRead<RawDisputeChain>;
   /**
    * Primary ENS names of the appeal's funders, by lowercased address (`useEnsNames`). Empty
-   * until mainnet answers, and for good if it never does: a funder without one is "someone else".
+   * until mainnet answers, and for good if it never does: a funder without one is its account.
    */
   ensNames: ReadonlyMap<string, string>;
 };
@@ -619,7 +643,7 @@ export function DisputeView({
         });
 
   // The template's parties, and `undefined` while a template the dispute has is not read: an
-  // unmatched funder is then pending, never "someone else" in place of a party it may be (#32).
+  // unmatched funder is then pending, never a bare account in place of a party it may be (#32).
   const aliases =
     reading === null || (reading.template === null && reading.dispute.templateId !== null)
       ? undefined
@@ -637,6 +661,7 @@ export function DisputeView({
           creator: chain.data === null ? undefined : chain.data.creator,
           ensNames,
           displayedNames: roster.entries.map((entry) => entry.identity.nickname),
+          fees: appealFeesOf(reading, performance.performance?.parameters.regimes ?? []),
         });
   const unnamedFunders = funding.some((round) =>
     round.sides.some((side) => side.funders.some(({ funder }) => funder.kind === "pending")),

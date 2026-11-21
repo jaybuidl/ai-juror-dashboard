@@ -5,7 +5,7 @@ import { AGENT_JUROR_ENS_PARENT } from "../roster/agent-jurors";
  * (#32). A funder nothing else names is shown by its primary ENS name, which anyone can register:
  * `grokleros.eth`, `x.grokleros.eth`, `k1eros.eth`. The forward check `useEnsNames` relies on
  * proves only that the account holds the name, so a name that dresses as the roster or as the
- * court is not shown, and its funder is "someone else".
+ * court is not shown, and its funder is shown by its account instead.
  *
  * A deny rule, so never complete, and built to fail one way: a genuine name that happens to look
  * like one of these loses a label, never a figure, and nobody is named who should not be. Four
@@ -53,7 +53,8 @@ export function imitates(name: string, nicknames: readonly string[]): boolean {
 function isNotPlainLatin(label: string): boolean {
   const stripped = stripMarks(label).toLowerCase();
   if (/[\p{Script=Cyrillic}\p{Script=Greek}]/u.test(stripped)) return true;
-  return /[a-z]/.test(stripped) && /[^a-z0-9-]/.test(stripped);
+  // Any Latin letter, a–z or not: `øø7` has no a–z and is still Latin dressed as 007.
+  return /\p{Script=Latin}/u.test(stripped) && /[^a-z0-9-]/.test(stripped);
 }
 
 /**

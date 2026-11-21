@@ -107,6 +107,16 @@ this file is the full account.
   the page; the filters bound what it can pass for, not what it says. **Offchain lookups are off for
   it** (`ccipRead: false`): a funder picks its own resolver, and an offchain one would have every
   reader's browser fetch a gateway the funder chose. Mainnet-held names resolve without one.
+- **What a side must raise is the kit's rule, not a field.** `fundAppeal` asks the appeal's cost
+  (`KlerosCore.appealCost`: the court's `feeForJuror` times twice the round's `nbVotes` plus one,
+  unless the next round jumps court) plus the cost times a multiplier: `WINNER_STAKE_MULTIPLIER`
+  (10000 bp) for the choice `currentRuling` favours, `LOSER_STAKE_MULTIPLIER` (20000) for any other.
+  A **tied** round favours none (`ClassicRound.tied`; `winningChoice` is still set, misleadingly),
+  so every side owes the loser's fee. Dispute 318 (2026-10-26) tied 2–2–1: No raised 0.00891 and
+  was funded; Grokleros gave Yes 0.00594, the winner's fee, and Yes was not; with one side funded,
+  `currentRuling` then overrode the jurors' Yes with No. A funded side's sum is its fee exactly
+  (contributions are capped), which is the exact way to recover the cost; the court's fee in force
+  is the fallback where no side was funded.
 - **A dispute's parties are the addresses under its template's `aliases`**, when the template has
   that key (the maintainer's rule, 2026-11-21): typically the parties, or at least the accounts of
   interest. It is an object of name → address, e.g. dispute 266's template 277 carries

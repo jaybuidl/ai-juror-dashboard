@@ -1,5 +1,6 @@
 import { Link, useParams } from "react-router";
 import styled from "styled-components";
+import { arbiscanAddressOf, shortAddress } from "../arbiscan";
 import { Breadcrumb } from "../chrome/Breadcrumb";
 import { Notice } from "../chrome/Failure";
 import { type Failures, olderOf, present } from "../chrome/failures";
@@ -236,11 +237,6 @@ const MissingBody = styled.p`
     text-underline-offset: 2px;
   }
 `;
-
-/** `0x7a3f…c412`. The href beside it carries the whole of it, and so does the tooltip. */
-function shortAddress(address: string): string {
-  return `${address.slice(0, 6)}…${address.slice(-4)}`;
-}
 
 /**
  * The core subgraph's half, at most once — the same worst-first shape the other two views use.
@@ -517,7 +513,7 @@ export function AgentJurorView({
                       half says so for a links list read out of context. */}
                   <FactLink
                     as="a"
-                    href={`https://arbiscan.io/address/${agentJuror.address}`}
+                    href={arbiscanAddressOf(agentJuror.address)}
                     target="_blank"
                     rel="noopener noreferrer"
                     title={agentJuror.address}

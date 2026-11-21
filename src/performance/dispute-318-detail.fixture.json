@@ -6,12 +6,20 @@
     "transactionHash": "0x1aaab7c230f0f6c1cb32bcff6d5c194df96375105aa90c3e41ff5d4f68f3a73e",
     "period": "execution",
     "lastPeriodChangeBlockNumber": "518896573",
+    "rounds": [
+      {
+        "id": "318-0",
+        "nbVotes": "5"
+      }
+    ],
     "disputeKitDispute": [
       {
         "numberOfChoices": "4",
         "localRounds": [
           {
             "id": "1-318-0",
+            "tied": true,
+            "winningChoice": "2",
             "answers": [
               {
                 "answerId": "0",

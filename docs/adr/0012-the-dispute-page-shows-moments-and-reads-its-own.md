@@ -81,7 +81,15 @@ contribution is dated here. Amended the same day at the maintainer's request: a 
 names is shown by its primary ENS name, a public name its holder chose and holds (reverse resolution,
 forward-checked), unless it passes for an agent juror or for Kleros. Funding arrives after the
 reveals, so the dispute's own read is read again when the court sees its period move, and every half
-minute while its appeal period runs. The head says "Partially funded · no appeal" when one side was funded,
+minute while its appeal period runs. Amended again the same day, at the maintainer's request on
+dispute 318: an account nothing else names is shown by its short address linked to Arbiscan, not
+as "someone else", which gave a reader nothing to check; and a side that raised something and was
+not funded shows its fee beside its sum ("0.0059 of 0.0089"), since two sides with money against
+them under "Partially funded" read as a contradiction. On 318 the vote tied, so both sides owed the
+loser's fee of 0.00891 ETH, and Grokleros gave Yes the winner's 0.00594. This reverses the
+funder-as-class rule for accounts only; an address is public on chain, is not linked to any agent
+juror, and an opener off the roster is still "an off-roster account".
+The head says "Partially funded · no appeal" when one side was funded,
 "Funding so far" while the period runs. An appealed round's funding moves to the top of the next
 round's evidence lane, compact, so it does not drop out of view when that round starts.
 
