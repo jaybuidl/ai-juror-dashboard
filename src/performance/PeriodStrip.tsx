@@ -109,6 +109,12 @@ const Name = styled.span`
   color: ${({ theme }) => theme.textHeading};
 `;
 
+/* A funder's ENS name is its holder's choice and has no length limit, so it breaks anywhere rather
+   than push its lane wider than the strip. */
+const EnsName = styled(Name)`
+  overflow-wrap: anywhere;
+`;
+
 const OffRoster = styled.span`
   color: ${({ theme }) => theme.textMeta};
 `;
@@ -365,6 +371,9 @@ function FunderName({
       return <>{accounts > 1 ? `${accounts} parties` : "a party"}</>;
     case "creator":
       return <>the dispute creator</>;
+    case "ens":
+      // The account's own public name, as ENS gives it, and never its address.
+      return <EnsName>{who.name}</EnsName>;
     case "someone-else":
       return <>{accounts > 1 ? `${accounts} others` : "someone else"}</>;
     case "pending":
@@ -454,7 +463,9 @@ function FundingList({
 }
 
 function keyOfFunder({ funder }: Funder): string {
-  return funder.kind === "agent-juror" ? funder.agentJuror.address : funder.kind;
+  if (funder.kind === "agent-juror") return funder.agentJuror.address;
+  if (funder.kind === "ens") return funder.address;
+  return funder.kind;
 }
 
 /**

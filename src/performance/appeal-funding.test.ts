@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ROSTER } from "../roster/agent-jurors";
 import {
   buildAppealFunding,
+  ensCandidatesOf,
   type FunderClass,
   type RoundFunding,
   stripFundingOf,
@@ -30,7 +31,11 @@ const funding318 = toDisputeDetail(detail318 as RawDisputeDetail).funding;
 
 function build(
   funding: readonly DetailRound[] = funding318,
-  overrides: { aliases?: readonly string[]; creator?: string | null | undefined } = {},
+  overrides: {
+    aliases?: readonly string[];
+    creator?: string | null | undefined;
+    ensNames?: ReadonlyMap<string, string>;
+  } = {},
 ): readonly RoundFunding[] {
   return buildAppealFunding({
     funding,
@@ -38,6 +43,7 @@ function build(
     aliases: overrides.aliases ?? [],
     roster: ROSTER,
     creator: "creator" in overrides ? overrides.creator : CREATOR,
+    ensNames: overrides.ensNames,
   });
 }
 
@@ -176,6 +182,58 @@ describe("buildAppealFunding", () => {
     ).toBe("creator");
   });
 
+  describe("a funder with a primary ENS name", () => {
+    const named: DetailRound = {
+      index: 0,
+      sides: [{ choice: 1, paidWei: 20n, funded: true }],
+      contributions: [
+        { contributor: UNKNOWN, choice: 1, wei: 5n },
+        { contributor: "0x4444444444444444444444444444444444444444", choice: 1, wei: 4n },
+        { contributor: "0x5555555555555555555555555555555555555555", choice: 1, wei: 3n },
+        { contributor: PARTY, choice: 1, wei: 2n },
+        { contributor: CREATOR, choice: 1, wei: 1n },
+      ],
+    };
+    const ensNames = new Map([
+      [UNKNOWN, "alice.eth"],
+      ["0x4444444444444444444444444444444444444444", "bob.eth"],
+      [PARTY, "party.eth"],
+      [CREATOR, "creator.eth"],
+    ]);
+
+    it("is shown by that name, one line each, where nothing else names the account", () => {
+      const [side] = build([named], { aliases: [PARTY], ensNames })[0]?.sides ?? [];
+
+      expect(
+        side?.funders.map(({ funder, wei }) => [
+          funder.kind === "ens" ? funder.name : funder.kind,
+          wei,
+        ]),
+      ).toEqual([
+        ["alice.eth", 5n],
+        ["bob.eth", 4n],
+        ["someone-else", 3n],
+        // A party and the creator keep their class: the maintainer's rule is a name only where
+        // there is no alias for the account.
+        ["party", 2n],
+        ["creator", 1n],
+      ]);
+    });
+
+    it("is not named before the creator is read, since it may be the creator", () => {
+      expect(
+        kinds(build([named], { creator: undefined, ensNames })[0]?.sides[0]?.funders ?? []),
+      ).toEqual(["pending"]);
+    });
+
+    it("is someone else while the names are not read", () => {
+      expect(kinds(build([named])[0]?.sides[0]?.funders ?? [])).toEqual([
+        "someone-else",
+        "creator",
+      ]);
+    });
+  });
+
   it("keeps every round, in order, each with its own outcome", () => {
     const first: DetailRound = {
       index: 0,
@@ -195,6 +253,30 @@ describe("buildAppealFunding", () => {
       [0, "appealed"],
       [1, "partially-funded"],
     ]);
+  });
+});
+
+describe("ensCandidatesOf", () => {
+  it("asks for every contributor except the roster's and the Kleros bot, once, lowercased", () => {
+    const rounds: DetailRound[] = [
+      {
+        index: 0,
+        sides: [],
+        contributions: [
+          { contributor: UNKNOWN, choice: 1, wei: 1n },
+          { contributor: GROKLEROS, choice: 1, wei: 1n },
+          { contributor: KLEROS_BOT.toLowerCase(), choice: 2, wei: 1n },
+          { contributor: PARTY, choice: 2, wei: 1n },
+        ],
+      },
+      { index: 1, sides: [], contributions: [{ contributor: UNKNOWN, choice: 1, wei: 1n }] },
+    ];
+
+    expect(ensCandidatesOf(rounds, ROSTER)).toEqual([UNKNOWN, PARTY]);
+  });
+
+  it("asks for nothing where nothing was contributed", () => {
+    expect(ensCandidatesOf(funding318.slice(0, 0), ROSTER)).toEqual([]);
   });
 });
 

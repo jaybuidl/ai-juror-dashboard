@@ -63,6 +63,7 @@ function renderDispute(overrides: Partial<DisputeViewProps> = {}) {
           pathId="156"
           detail={read()}
           chain={answered(DISPUTE_156_CHAIN)}
+          ensNames={new Map()}
           {...overrides}
         />
       </MemoryRouter>

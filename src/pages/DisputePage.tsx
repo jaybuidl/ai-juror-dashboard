@@ -7,7 +7,7 @@ import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import { casePageOf } from "../court-frontend";
 import type { DisputesView } from "../disputes/useDisputes";
-import { buildAppealFunding, stripFundingOf } from "../performance/appeal-funding";
+import { buildAppealFunding, ensCandidatesOf, stripFundingOf } from "../performance/appeal-funding";
 import { arbitrumSource } from "../performance/arbitrum";
 import { DisputePanel } from "../performance/DisputePanel";
 import type { RawDisputeChain } from "../performance/dispute-chain";
@@ -27,6 +27,7 @@ import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type DisputeDetailView, useDisputeDetail } from "../performance/useDisputeDetail";
 import { type FailedRead, failureOf, SOURCES } from "../read-failure";
 import { ensFallbackOf } from "../roster/ens-fallback";
+import { useEnsNames } from "../roster/useEnsNames";
 import type { RosterView } from "../roster/useRoster";
 import { narrow } from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
@@ -435,6 +436,11 @@ export type DisputeViewProps = DisputePageProps & {
   detail: DisputeDetailView;
   /** The dispute's own record on Arbitrum, for the timeline. See `useDisputeChain`. */
   chain: ChainRead<RawDisputeChain>;
+  /**
+   * Primary ENS names of the appeal's funders, by lowercased address (`useEnsNames`). Empty
+   * until mainnet answers, and for good if it never does: a funder without one is "someone else".
+   */
+  ensNames: ReadonlyMap<string, string>;
 };
 
 /**
@@ -480,8 +486,16 @@ export function DisputePage(props: DisputePageProps) {
     progressOf(row),
     detail.detail.transactionHash as `0x${string}` | null,
   );
+  const ensNames = useEnsNames(
+    ensCandidatesOf(
+      detail.detail.funding,
+      props.roster.entries.map((entry) => entry.agentJuror),
+    ),
+  );
 
-  return <DisputeView {...props} pathId={pathId} detail={detail} chain={chain} />;
+  return (
+    <DisputeView {...props} pathId={pathId} detail={detail} chain={chain} ensNames={ensNames} />
+  );
 }
 
 /**
@@ -518,6 +532,7 @@ export function DisputeView({
   pathId: raw,
   detail,
   chain,
+  ensNames,
 }: DisputeViewProps) {
   const disputeId = disputeIdOf(raw);
 
@@ -663,6 +678,7 @@ export function DisputeView({
                     // `undefined` while the chain read has not answered: whether a funder created
                     // the dispute is not known until the creation transaction is read.
                     creator: chain.data === null ? undefined : chain.data.creator,
+                    ensNames,
                   }),
                   reading.round,
                 )}

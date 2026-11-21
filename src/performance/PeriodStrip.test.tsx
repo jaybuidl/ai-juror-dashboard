@@ -36,7 +36,7 @@ function appealedRow(): MatrixRow {
   };
 }
 
-function renderAppealed() {
+function renderAppealed(ensNames: ReadonlyMap<string, string> = new Map()) {
   const roster = resolvedRoster.entries.map((entry) => entry.agentJuror);
   const reading = buildDisputeReading({
     row: appealedRow(),
@@ -70,6 +70,7 @@ function renderAppealed() {
     aliases: [],
     roster,
     creator: null,
+    ensNames,
   });
 
   return render(
@@ -103,6 +104,14 @@ describe("an appealed round, once the next round has started", () => {
       // Compact: funders on one line, no amount each.
       "2 funded 0.0119 ETHGrokleros, someone else",
     ]);
+  });
+
+  it("names a funder by its ENS name where nothing else does", () => {
+    renderAppealed(new Map([["0x1111111111111111111111111111111111111111", "alice.eth"]]));
+    const list = screen.getByRole("list", { name: /round 1 · appealed/i });
+
+    expect(within(list).getAllByRole("listitem")[0]?.textContent).toContain("alice.eth");
+    expect(list.textContent).not.toContain("0x1111");
   });
 
   it("puts it in the evidence period's slot, which the appeal opened", () => {

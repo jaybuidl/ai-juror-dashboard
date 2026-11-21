@@ -14,8 +14,9 @@ import { KLEROS_BOT } from "./dispute-timeline";
  *
  * Funders are classes and never addresses, by the rule the timeline's openers follow: an agent
  * juror on the roster by name, the Kleros bot, "a party" (an address under the dispute template's
- * `aliases`), "the dispute creator" (the sender of the transaction that created it), and
- * otherwise "someone else". Several accounts in one class are one funder line with a count.
+ * `aliases`), "the dispute creator" (the sender of the transaction that created it), then the
+ * account's primary ENS name where it has one, and otherwise "someone else". Several accounts in
+ * one class are one funder line with a count.
  *
  * Pure, with no clock and no network: the kit's rounds arrive from the dispute's own read, and
  * the creator from its chain read.
@@ -27,6 +28,11 @@ export type FunderClass =
   | { kind: "kleros-bot" }
   | { kind: "party" }
   | { kind: "creator" }
+  /**
+   * Someone else, with a primary ENS name (#32, the maintainer's addition): shown by that name,
+   * one line per account. Only where nothing above names the account.
+   */
+  | { kind: "ens"; name: string; address: string }
   | { kind: "someone-else" }
   /**
    * Not on the roster, not the bot, not a party, and the dispute's creator is not read yet, so
@@ -60,7 +66,9 @@ export type RoundFunding = {
 
 /** One stable key per funder line: an agent juror by address, every other class by kind. */
 function keyOf(funder: FunderClass): string {
-  return funder.kind === "agent-juror" ? `agent-juror:${funder.agentJuror.address}` : funder.kind;
+  if (funder.kind === "agent-juror") return `agent-juror:${funder.agentJuror.address}`;
+  if (funder.kind === "ens") return `ens:${funder.address}`;
+  return funder.kind;
 }
 
 /**
@@ -74,10 +82,12 @@ function classOf(
     roster,
     aliases,
     creator,
+    ensNames,
   }: {
     roster: readonly AgentJuror[];
     aliases: ReadonlySet<string>;
     creator: string | null | undefined;
+    ensNames: ReadonlyMap<string, string>;
   },
 ): FunderClass {
   const agentJuror = roster.find((candidate) => candidate.address.toLowerCase() === account);
@@ -85,7 +95,32 @@ function classOf(
   if (account === KLEROS_BOT.toLowerCase()) return { kind: "kleros-bot" };
   if (aliases.has(account)) return { kind: "party" };
   if (creator === undefined) return { kind: "pending" };
-  return creator !== null && account === creator ? { kind: "creator" } : { kind: "someone-else" };
+  if (creator !== null && account === creator) return { kind: "creator" };
+  const name = ensNames.get(account);
+  return name === undefined ? { kind: "someone-else" } : { kind: "ens", name, address: account };
+}
+
+/**
+ * The funders whose ENS name is worth asking for: every contributor that is not an agent juror
+ * on the roster or the Kleros bot, lowercased. Parties and the creator are asked for too, and
+ * their class still wins over the name (`classOf`); asking before the creator is known saves a
+ * second round trip when it lands.
+ */
+export function ensCandidatesOf(
+  funding: readonly DetailRound[],
+  roster: readonly AgentJuror[],
+): readonly string[] {
+  const named = new Set([
+    ...roster.map((agentJuror) => agentJuror.address.toLowerCase()),
+    KLEROS_BOT.toLowerCase(),
+  ]);
+  const candidates = new Set<string>();
+  for (const round of funding) {
+    for (const { contributor } of round.contributions) {
+      if (!named.has(contributor)) candidates.add(contributor);
+    }
+  }
+  return [...candidates].sort();
 }
 
 export function buildAppealFunding({
@@ -94,6 +129,7 @@ export function buildAppealFunding({
   aliases,
   roster,
   creator,
+  ensNames = new Map(),
 }: {
   /** `DisputeDetail.funding`. */
   funding: readonly DetailRound[];
@@ -107,11 +143,14 @@ export function buildAppealFunding({
    * (no creation transaction); `undefined` while it has not been read yet.
    */
   creator: string | null | undefined;
+  /** Primary ENS names by lowercased address (`useEnsNames`), for funders nothing else names. */
+  ensNames?: ReadonlyMap<string, string>;
 }): readonly RoundFunding[] {
   const context = {
     roster,
     aliases: new Set(aliases),
     creator: creator === null || creator === undefined ? creator : creator.toLowerCase(),
+    ensNames,
   };
 
   return funding.map((round) => {
