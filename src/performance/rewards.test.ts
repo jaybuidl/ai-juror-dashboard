@@ -87,6 +87,17 @@ describe("formatEthShortfall", () => {
     ]);
   });
 
+  it("prints the fee as every ETH figure is printed, and a sum too small for it as below it", () => {
+    expect(formatEthShortfall(1_000_000_000_000_000n, 5_670_000_000_000_000n)).toEqual([
+      "0.0010",
+      "0.0057",
+    ]);
+    expect(formatEthShortfall(60_000_000_000_000n, 5_670_000_000_000_000n)).toEqual([
+      "<0.0001",
+      "0.0057",
+    ]);
+  });
+
   it("never prints the sum as more than it is", () => {
     // 0.00890001 would round up to 0.0089; truncated, it stays below the fee.
     const [raised, needed] = formatEthShortfall(8_900_010_000_000_000n, 8_900_020_000_000_000n);

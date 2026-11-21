@@ -116,10 +116,10 @@ this file is the full account.
   `ClassicRound.winningChoice` is still set in a tie, misleadingly. Dispute 318 (2026-10-26) tied 2
   Refuse, 2 Yes, 1 No: No raised the loser's 0.00891 and was funded; Grokleros gave Yes 0.00594, the
   winner's fee, and Yes was not funded. In execution, with one side funded, `currentRuling` then
-  overrode the tied ruling with No. A funded side's sum is its fee exactly (contributions are
-  capped), which is the exact way to recover the cost; the court's fee in force is the fallback
-  where no side was funded. `appealCost` is read at each contribution, so the page prices an appeal
-  only where `feeForJuror` and `jurorsForCourtJump` held still across its window, or, for the
+  overrode the tied ruling with No. The page takes the cost from the court's fee in force and checks
+  it against every funded side, whose sum is its fee exactly (contributions are capped): a side that
+  disagrees silences the round. `appealCost` is read at each contribution, so the page prices an
+  appeal only where `feeForJuror` and `jurorsForCourtJump` held still across its window, or, for the
   current round, by the last fee set in it (`appealFeesOf`); never without the parameter history,
   and never past the jump threshold, where the parent court's fee applies. The multipliers are
   `constant` in the kit's implementation (v0.12.0), behind an upgradable proxy, so

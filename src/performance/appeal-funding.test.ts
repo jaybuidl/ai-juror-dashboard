@@ -607,6 +607,25 @@ describe("what each side needed to be funded", () => {
     ]);
   });
 
+  it("says nothing where a funded side disagrees with the court's fee", () => {
+    // 0.00495 is no multiple the kit's rule gives of 0.00297: the rule here would have drifted.
+    const drifted: DetailRound = {
+      index: 0,
+      tied: true,
+      nbVotes: 5,
+      sides: [
+        { choice: 1, paidWei: 4_950_000_000_000_000n, funded: true },
+        { choice: 2, paidWei: 1n, funded: false },
+      ],
+      contributions: [],
+    };
+
+    expect(sideNeeds(build([drifted]))).toEqual([
+      [1, null],
+      [2, null],
+    ]);
+  });
+
   it("does not say with no history read, even where a side was funded", () => {
     // Without the history nothing says the fee held still across the appeal.
     expect(sideNeeds(build(funding318, { fees: new Map() }))).toEqual([
@@ -688,6 +707,13 @@ describe("appealFeesOf", () => {
       kind: "steady",
       fee: REWARDS,
     });
+  });
+
+  it("closes the window where the read says the period closed, not at the latest it could", () => {
+    // Opened at 280 and passed to execution at 290, before the change at 300.
+    expect(
+      appealFeesOf([round({ appealOpenedAt: 280, executionOpenedAt: 290 })], 0, regimes).get(0),
+    ).toEqual({ kind: "steady", fee: REWARDS });
   });
 
   it("does not count a change that moved a window and not the fee", () => {

@@ -167,15 +167,11 @@ export type AppealFeeReading =
  * where the vote tied, whatever `winningChoice` says: dispute 318 tied, so Refuse owed the
  * winner's fee, and Yes the loser's 0.00891 ETH, not the 0.00594 Grokleros gave it.
  *
- * The cost itself, from the first of these that is there:
- * - **A funded side.** The kit caps contributions at the fee, so a funded side raised its fee
- *   exactly, and the cost follows from its multiplier. Exact where the multiplier is right; the
- *   check that a side's sum comes back out of the cost it implies catches only an indivisible
- *   sum, and every funded side must agree on the cost.
- * - **The court's fee** for the appeal (`reading`), times the votes the next round would draw
- *   (twice this round's, plus one), as `KlerosCore.appealCost` reckons it at each contribution.
- *   Only where the appeal stays in this court: past `jurorsForCourtJump` it is the parent court's
- *   fee, which is not read here, and the answer is `null`.
+ * The cost is the court's fee for the appeal (`reading`) times the votes the next round would draw
+ * (twice this round's, plus one), as `KlerosCore.appealCost` reckons it at each contribution. Only
+ * where the appeal stays in this court: past `jurorsForCourtJump` it is the parent court's fee,
+ * which is not read here, and the answer is `null`. Checked against every funded side, which
+ * raised its fee exactly: one that disagrees silences the round rather than print a wrong fee.
  *
  * A court reconfigured during the appeal changes what a side owes partway through (`AppealFee
  * Reading`): an open appeal is priced by the current configuration alone, and a closed one not at
@@ -200,18 +196,16 @@ function requiredOf(
   const feeFor = (cost: bigint, choice: number) =>
     cost + (cost * multiplierOf(choice)) / ONE_BASIS_POINT;
 
-  let cost: bigint | null = null;
-  const funded = reading.kind === "changed" ? [] : round.sides.filter((side) => side.funded);
-  const [first] = funded;
-  if (first !== undefined) {
-    const implied =
-      (first.paidWei * ONE_BASIS_POINT) / (ONE_BASIS_POINT + multiplierOf(first.choice));
-    if (funded.every((side) => feeFor(implied, side.choice) === side.paidWei)) cost = implied;
-  } else {
-    cost = BigInt(fee.feeForJuror) * BigInt(nbVotes * 2 + 1);
+  const cost = BigInt(fee.feeForJuror) * BigInt(nbVotes * 2 + 1);
+  // A funded side raised its fee exactly (contributions are capped), so under one steady fee
+  // every funded side must come out of this cost. One that does not means the rule here has
+  // drifted from the kit's, a multiplier or the cost formula, and no figure is said.
+  if (reading.kind === "steady") {
+    const funded = round.sides.filter((side) => side.funded);
+    if (!funded.every((side) => feeFor(cost, side.choice) === side.paidWei)) return () => null;
   }
 
-  return (choice) => (cost === null ? null : feeFor(cost, choice));
+  return (choice) => feeFor(cost, choice);
 }
 
 /**
@@ -219,8 +213,9 @@ function requiredOf(
  *
  * The court reads its fee at each contribution, so what matters is whether the two fields that
  * set it, `feeForJuror` and `jurorsForCourtJump`, held still across the appeal window: from the
- * period's opening to its deadline, the opening plus the longest appeal window the court held
- * from then on (a reconfigured window moves the deadline too, so the longest is the safe one).
+ * period's opening to its close where the read has one, and otherwise to the opening plus the
+ * longest appeal window the court held from then on (a reconfigured window moves the deadline
+ * too, so the longest is the safe one).
  * A move of anything else, a period's window, is not a move of the fee.
  *
  * A round whose appeal never opened has nothing to price, since contributions open with the
@@ -243,7 +238,13 @@ export function appealFeesOf(
       windowsAt(regimes, opened)?.appealSeconds ?? 0,
       ...later.map((regime) => regime.windows.appealSeconds),
     );
-    const deadline = opened + longest;
+    // The period's own close where the read has one: execution, or the next round, which the
+    // appeal opened, and whose commit period is later still. Otherwise the latest it could be.
+    const closedAt =
+      round.executionOpenedAt ??
+      rounds.find((next) => next.index === round.index + 1)?.commitOpenedAt ??
+      null;
+    const deadline = Math.min(opened + longest, closedAt ?? Number.POSITIVE_INFINITY);
     const moved = later.filter(
       (regime) =>
         regime.from <= deadline &&

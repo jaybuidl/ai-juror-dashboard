@@ -81,18 +81,20 @@ export function formatEthWei(wei: bigint): string {
 /**
  * A sum and the fee it fell short of, as the appeal lane prints them: `["0.0059", "0.0089"]`.
  *
- * At four places, truncated, where they differ there. Where those agree, a side just short of
- * its fee would read "0.0089 of 0.0089", so both are written out, truncated, to the first place at
- * which they part, with trailing zeros dropped: 0.00890999 of 0.00891 is `["0.0089", "0.00891"]`.
- * Truncated rather than rounded, so the sum is never printed as more than it is.
+ * The fee as every other ETH figure is printed (`formatEthWei`), so it reads the same as the funded
+ * side beside it that raised it; the sum truncated, never rounded, so a side that fell short is
+ * never printed as having raised more than it did. Where the two agree at four places, a side just
+ * short of its fee would read "0.0089 of 0.0089", so both are written out, truncated, to the first
+ * place at which they part, with trailing zeros dropped: 0.00890999 of 0.00891 is
+ * `["0.0089", "0.00891"]`. A sum too small for the fourth place is "<0.0001".
  */
 export function formatEthShortfall(raised: bigint, required: bigint): readonly [string, string] {
-  // Truncated at four places too, or 0.00595 would round up to "0.0060" against a fee of 0.0089.
-  // A sum too small for the fourth place keeps `formatEthWei`'s "<0.0001" rather than "0.0000".
-  const tiny = raised > 0n && raised < 10n ** BigInt(WEI - ETH_PLACES);
+  const fourth = 10n ** BigInt(WEI - ETH_PLACES);
   const loose = [
-    tiny ? formatEthWei(raised) : truncated(raised, ETH_PLACES),
-    truncated(required, ETH_PLACES),
+    raised > 0n && raised < fourth
+      ? `<0.${"0".repeat(ETH_PLACES - 1)}1`
+      : truncated(raised, ETH_PLACES),
+    formatEthWei(required),
   ] as const;
   if (loose[0] !== loose[1] || raised === required) return loose;
 
