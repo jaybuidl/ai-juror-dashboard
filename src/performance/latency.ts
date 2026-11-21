@@ -70,6 +70,24 @@ export function formatMinutes(seconds: number): string {
 }
 
 /**
+ * How long a period ran, to set beside its window: `"31m 09s"` beside 45 minutes, `"36h 07m"`
+ * beside 36 hours (#34).
+ *
+ * Never in days, whatever it ran: windows are configured in minutes and hours, and the
+ * maintainer's case was "1d 12h" beside "36h", one magnitude in two scales. Otherwise as
+ * `formatElapsedSeconds` reads it, so a period that closed early keeps its seconds ("5m 13s"
+ * beside an 8-hour window, never "0h 05m") and one that overran an hour reads in hours ("5h 00m"
+ * beside 45 minutes, never "300m 00s"). Still two absolute durations side by side, never one
+ * divided by the other (ADR-0005).
+ */
+export function formatRanSeconds(elapsedSeconds: number): string {
+  if (elapsedSeconds < HOURS_FROM) return formatLatencySeconds(elapsedSeconds);
+
+  const minutes = Math.floor(elapsedSeconds / 60);
+  return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m`;
+}
+
+/**
  * A configured window in words: `"45m"`, `"8h"`, `"1h 30m"`.
  *
  * Coarser than a latency on purpose, and a separate function rather than a mode of one. A

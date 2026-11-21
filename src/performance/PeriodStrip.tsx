@@ -7,7 +7,7 @@ import { VisuallyHidden } from "../styles/hidden";
 import type { Funder, RoundFunding, SideFunding, StripFunding } from "./appeal-funding";
 import type { DisputeReading, PeriodRun } from "./dispute-detail";
 import type { DisputeTimeline, Moment, Opener, TimelineEntry } from "./dispute-timeline";
-import { formatElapsedSeconds, formatWindowSeconds } from "./latency";
+import { formatRanSeconds, formatWindowSeconds } from "./latency";
 import { clockOf, dayOf, isoOf, sameDay } from "./moments";
 import { formatEthShortfall, formatEthWei, formatEthWeiDown } from "./rewards";
 
@@ -185,9 +185,12 @@ const SideName = styled.span`
   color: ${({ theme }) => theme.textHeading};
 `;
 
-/* "not funded" is quieter than "funded", and the word is what carries it, not the ink. */
-const Funded = styled.span<{ $funded: boolean }>`
-  color: ${({ theme, $funded }) => ($funded ? theme.textBody : theme.textMeta)};
+/* A funded side's mark, left of its amount (#34, the maintainer's call): discreet, in the funder
+   line's quiet ink. Its shape is what carries it, and a side short of its fee has none and says
+   "of" instead, so nothing rests on the ink. Hidden from a screen reader, which hears "funded". */
+const Check = styled.span`
+  margin-right: ${({ theme }) => theme.space3};
+  color: ${({ theme }) => theme.textMeta};
 `;
 
 const Amount = styled.span`
@@ -207,9 +210,9 @@ const PERIOD_NAMES: Record<PeriodRun["period"], string> = {
 /**
  * What one slot's summary reads.
  *
- * The configured window and how long the period actually ran, as two absolute durations with a
- * middot between them and no division anywhere — ADR-0005, and this is the strip that decision
- * names. The evidence slot carries its submission count instead, because no window governs how
+ * How long the period actually ran and, in brackets, the most the court allowed it: two absolute
+ * durations side by side, "31m 09s (max 45m)", and no division anywhere — ADR-0005, and this is the
+ * strip that decision names. The evidence slot carries its submission count instead, because no window governs how
  * long evidence is accepted in practice and the count is what a reader wants there.
  *
  * Three absences, told apart: a window the parameter history has not supplied, a period that
@@ -222,16 +225,15 @@ function slotValue(run: PeriodRun, evidenceCount: number | null, reached: boolea
     return evidenceCount === 1 ? "1 submission" : `${evidenceCount} submissions`;
   }
 
-  const window =
-    run.windowSeconds === null
-      ? "Window not read"
-      : `${formatWindowSeconds(run.windowSeconds)} configured`;
+  // How long it ran first, then the most the court allowed, never in days (#34, the maintainer's
+  // call): "31m 09s (max 45m)". No running time for an open period: nothing here reads a clock,
+  // and the strip says only what the chain recorded.
+  const max =
+    run.windowSeconds === null ? "max not read" : `max ${formatWindowSeconds(run.windowSeconds)}`;
 
-  if (run.elapsedSeconds !== null) {
-    return `${window} · closed in ${formatElapsedSeconds(run.elapsedSeconds)}`;
-  }
+  if (run.elapsedSeconds !== null) return `${formatRanSeconds(run.elapsedSeconds)} (${max})`;
 
-  return `${window} · ${reached ? "still open" : "not reached"}`;
+  return `${reached ? "open" : "not reached"} (${max})`;
 }
 
 /** Whether the dispute has got as far as a period, from the moments its round recorded. */
@@ -347,7 +349,21 @@ function EntryRow({
         <Entry>
           <MomentCell at={{ kind: "at", seconds: entry.at }} dayAnchor={dayAnchor} />{" "}
           <What $ink={entry.by.kind === "not-found" ? "unread" : undefined}>
-            {entry.kind === "opened" ? "Opened" : "Closed"} by <By by={entry.by} nameOf={nameOf} />
+            {entry.by.kind === "kleros-bot" ? (
+              // The routine case, so the verb alone (#34): the court's own keeper passed the period,
+              // as it does most. Said to a screen reader, which has no column of bare verbs to read
+              // the pattern from. Every other opener is named, an unread one included ("by —"), so
+              // a bare verb never stands for an opener nobody knows.
+              <>
+                {entry.kind === "opened" ? "Opened" : "Closed"}{" "}
+                <VisuallyHidden>by the Kleros bot</VisuallyHidden>
+              </>
+            ) : (
+              <>
+                {entry.kind === "opened" ? "Opened" : "Closed"} by{" "}
+                <By by={entry.by} nameOf={nameOf} />
+              </>
+            )}
           </What>
         </Entry>
       );
@@ -357,8 +373,10 @@ function EntryRow({
         <Entry>
           <MomentCell at={entry.at} dayAnchor={dayAnchor} />{" "}
           <What>
+            {/* The lane's heading and the glyph say which moment it is, so the verb is said to a
+                screen reader and not drawn (#34): the glyph is hidden from it. */}
             <Glyph aria-hidden="true">{entry.kind === "committed" ? "◐" : "●"}</Glyph>{" "}
-            <Name>{nameOf(entry.agentJuror)}</Name> {entry.kind}
+            <Name>{nameOf(entry.agentJuror)}</Name> <VisuallyHidden>{entry.kind}</VisuallyHidden>
           </What>
         </Entry>
       );
@@ -447,6 +465,7 @@ function Raised({ side }: { side: SideFunding }) {
       : [side.funded ? formatEthWei(side.raisedWei) : formatEthWeiDown(side.raisedWei), null];
   return (
     <Amount>
+      {side.funded && <Check aria-hidden="true">✓</Check>}
       {raised}
       {needed !== null && ` of ${needed}`} <VisuallyHidden>ETH</VisuallyHidden>
     </Amount>
@@ -487,7 +506,9 @@ function FundingList({
               <SideName>
                 {side.title === null ? `Choice ${side.choice}` : `${side.choice} · ${side.title}`}
               </SideName>{" "}
-              <Funded $funded={side.funded}>{side.funded ? "funded" : "not funded"}</Funded>{" "}
+              {/* Said, not drawn: the check mark beside a funded side's amount, or the "of" beside
+                  a short one, is what a sighted reader goes by (#34). */}
+              <VisuallyHidden>{side.funded ? "funded" : "not funded"}</VisuallyHidden>{" "}
               <Raised side={side} />
             </Row>
             {compact || side.funders.length === 1
