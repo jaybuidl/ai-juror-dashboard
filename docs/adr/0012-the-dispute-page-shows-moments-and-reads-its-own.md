@@ -27,7 +27,7 @@ Moments, none counted from another. Each entry is a UTC clock reading (`14:02:11
 the strip counts the seconds between an opening and an agent juror acting. That count is latency,
 and a column of five latencies under one period is the side-by-side comparison ADR-0010 and
 ADR-0011 removed. (Each period's header gives how long the period ran beside its window, as
-before; since #34 it reads "31m 09s (max 45m)", in the window's units.) UTC rather than the reader's zone, so that a cited page reads the same for everyone. The
+before; since #34 it reads "31m 09s (max 45m)", never in days.) UTC rather than the reader's zone, so that a cited page reads the same for everyone. The
 day is printed on the creation and on any moment that falls on a later UTC day.
 
 **Who opened a period is named only when it is an agent juror on the roster, or the Kleros bot.**

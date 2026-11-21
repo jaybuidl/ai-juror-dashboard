@@ -227,10 +227,10 @@ The dispute page's period strip, read as the order things happened in: in each p
 opened and its **Opener**, then each agent juror's commitment or reveal. Every entry is a moment, a
 UTC clock reading, and no entry is counted from another: the time from a period opening to an
 agent juror acting is a latency, and down one period those rank the panel (ADR-0012). Each
-period's header is how long it ran and the most the court allowed, "31m 09s (max 45m)", in the
-window's units (#34). A period the Kleros bot passed reads "Opened" or "Closed" alone, and an
-agent juror's moment is its glyph and name; the verb is said to a screen reader. Ties within a
-second keep roster order.
+period's header is how long it ran and the most the court allowed, "31m 09s (max 45m)", never in
+days (#34). A period the Kleros bot passed reads "Opened" or "Closed" alone, and an agent juror's
+moment is its glyph and name; the verb is said to a screen reader. Ties within a second keep roster
+order.
 _Avoid_: history, log, activity feed, "+Ns after opening"
 
 **Appeal funding**:

@@ -68,20 +68,25 @@ describe("formatElapsedSeconds", () => {
 });
 
 describe("formatRanSeconds", () => {
-  it("reads a period under an hour's window in minutes and seconds", () => {
-    expect(formatRanSeconds(1869, 2700)).toBe("31m 09s");
-    expect(formatRanSeconds(85, 2700)).toBe("85s");
+  it("reads under an hour in minutes and seconds, as a latency does", () => {
+    expect(formatRanSeconds(1869)).toBe("31m 09s");
+    expect(formatRanSeconds(85)).toBe("85s");
   });
 
-  it("reads a period of an hour's window or more in hours and minutes, never days", () => {
-    // The maintainer's case (#34): "36h" beside "1d 12h" mixed two scales for one comparison.
-    expect(formatRanSeconds(129_600, 129_600)).toBe("36h 00m");
-    expect(formatRanSeconds(64_920, 129_600)).toBe("18h 02m");
+  it("reads an hour or more in hours and minutes, and never in days", () => {
+    // The maintainer's case (#34): "1d 12h" beside a "36h" window, one magnitude in two scales.
+    expect(formatRanSeconds(129_600)).toBe("36h 00m");
+    expect(formatRanSeconds(133_920)).toBe("37h 12m");
   });
 
-  it("keeps the window's units for a period that ran past it", () => {
-    expect(formatRanSeconds(133_920, 129_600)).toBe("37h 12m");
-    expect(formatRanSeconds(5400, 2700)).toBe("90m 00s");
+  it("keeps the seconds of a period that closed early in a long window, and never says zero", () => {
+    // Dispute 151's commit and vote windows were 8 hours; "0h 05m" would drop what matters.
+    expect(formatRanSeconds(313)).toBe("5m 13s");
+    expect(formatRanSeconds(40)).toBe("40s");
+  });
+
+  it("reads a period that overran a short window in hours", () => {
+    expect(formatRanSeconds(18_000)).toBe("5h 00m");
   });
 });
 

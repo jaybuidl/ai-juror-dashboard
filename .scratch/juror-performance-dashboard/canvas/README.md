@@ -272,8 +272,8 @@ Arbiscan, and a side short of its fee reads "0.0059 of 0.0089" (the maintainer's
 
 The maintainer's review of the shipped timeline (2026-11-21). `Dispute.dc.html:91-95` now:
 
-- **Period headers** lead with how long the period ran and give the window as its maximum, in the
-  window's own units: "34m 23s (max 45m)", "18h 02m (max 36h)". Previously "45m configured · closed
+- **Period headers** lead with how long the period ran and give the window as its maximum, never in
+  days: "34m 23s (max 45m)", "18h 02m (max 36h)". Previously "45m configured · closed
   in 34m 23s", which also mixed "36h" with "1d 12h". An open period reads "open (max 45m)" and one
   not reached "not reached (max 45m)", both the implementation's.
 - **The Kleros bot** is no longer named: a period it passed reads "Opened" or "Closed" alone, and any

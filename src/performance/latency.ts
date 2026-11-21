@@ -70,17 +70,18 @@ export function formatMinutes(seconds: number): string {
 }
 
 /**
- * How long a period ran, in the units of the window it ran against: `"31m 09s"` beside a 45-minute
- * window, `"36h 00m"` beside a 36-hour one (#34).
+ * How long a period ran, to set beside its window: `"31m 09s"` beside 45 minutes, `"36h 07m"`
+ * beside 36 hours (#34).
  *
- * The window sets the scale, so the two figures a reader compares are in the same units: the
- * maintainer's case was "36h" beside "1d 12h". Under an hour of window it reads as a latency does
- * (`formatLatencySeconds`); from an hour, hours and minutes, and never days, however long the period
- * ran past its window. Still two absolute durations side by side, never one divided by the other
- * (ADR-0005).
+ * Never in days, whatever it ran: windows are configured in minutes and hours, and the
+ * maintainer's case was "1d 12h" beside "36h", one magnitude in two scales. Otherwise as
+ * `formatElapsedSeconds` reads it, so a period that closed early keeps its seconds ("5m 13s"
+ * beside an 8-hour window, never "0h 05m") and one that overran an hour reads in hours ("5h 00m"
+ * beside 45 minutes, never "300m 00s"). Still two absolute durations side by side, never one
+ * divided by the other (ADR-0005).
  */
-export function formatRanSeconds(elapsedSeconds: number, windowSeconds: number): string {
-  if (windowSeconds < HOURS_FROM) return formatLatencySeconds(elapsedSeconds);
+export function formatRanSeconds(elapsedSeconds: number): string {
+  if (elapsedSeconds < HOURS_FROM) return formatLatencySeconds(elapsedSeconds);
 
   const minutes = Math.floor(elapsedSeconds / 60);
   return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m`;

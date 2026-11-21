@@ -232,7 +232,7 @@ describe("the timeline strip", () => {
   });
 
   it("carries the configured window and what elapsed as two absolute durations", () => {
-    // ADR-0005: never a ratio, at any altitude. Two durations with a middot between them, and
+    // ADR-0005: never a ratio, at any altitude. Two durations side by side, the window bracketed, and
     // the reader forms the comparison themselves if they want it.
     renderDispute();
     const strip = screen.getByRole("list", { name: "Timeline" });
@@ -985,6 +985,19 @@ describe("what a failed dispute read costs the funding (#32)", () => {
   });
 });
 
+/** A lane's lines as drawn: its text with everything said only to a screen reader taken out. */
+function drawnLines(lane: HTMLElement): string[] {
+  return within(lane)
+    .getAllByRole("listitem")
+    .map((item) => {
+      const drawn = item.cloneNode(true) as HTMLElement;
+      for (const hidden of drawn.querySelectorAll(`.${VisuallyHidden.styledComponentId}`)) {
+        hidden.remove();
+      }
+      return drawn.textContent?.replace(/\s+/g, " ").trim() ?? "";
+    });
+}
+
 describe("the timeline (ADR-0012)", () => {
   it("says when each period opened, and who opened it, in UTC", () => {
     renderDispute();
@@ -1004,10 +1017,11 @@ describe("the timeline (ADR-0012)", () => {
     // #34: the bot passes most periods, so naming it on every line was noise. Every other
     // opener is still drawn.
     renderDispute();
-    const lane = screen.getByRole("list", { name: "Commit period" });
-    const bot = within(lane).getByText("by the Kleros bot");
+    const lane = screen.getByRole("list", { name: "Appeal period" });
+    const bot = within(lane).getAllByText("by the Kleros bot");
 
-    expect(bot.className).toContain(VisuallyHidden.styledComponentId);
+    for (const said of bot) expect(said.className).toContain(VisuallyHidden.styledComponentId);
+    expect(drawnLines(lane)).toEqual(["08:12:55 Opened", "22 Aug 02:18:45 Closed"]);
   });
 
   it("draws an agent juror's commitment as its name alone, and says the verb to a screen reader", () => {
@@ -1017,6 +1031,7 @@ describe("the timeline (ADR-0012)", () => {
 
     expect(verbs.length).toBeGreaterThan(0);
     for (const verb of verbs) expect(verb.className).toContain(VisuallyHidden.styledComponentId);
+    expect(drawnLines(lane).some((line) => /committed/.test(line))).toBe(false);
   });
 
   it("calls any other account off the roster an off-roster account, never by its address", () => {

@@ -210,9 +210,9 @@ const PERIOD_NAMES: Record<PeriodRun["period"], string> = {
 /**
  * What one slot's summary reads.
  *
- * The configured window and how long the period actually ran, as two absolute durations with a
- * middot between them and no division anywhere — ADR-0005, and this is the strip that decision
- * names. The evidence slot carries its submission count instead, because no window governs how
+ * How long the period actually ran and, in brackets, the most the court allowed it: two absolute
+ * durations side by side, "31m 09s (max 45m)", and no division anywhere — ADR-0005, and this is the
+ * strip that decision names. The evidence slot carries its submission count instead, because no window governs how
  * long evidence is accepted in practice and the count is what a reader wants there.
  *
  * Three absences, told apart: a window the parameter history has not supplied, a period that
@@ -235,7 +235,7 @@ function slotValue(run: PeriodRun, evidenceCount: number | null, reached: boolea
     const ran =
       run.windowSeconds === null
         ? formatElapsedSeconds(run.elapsedSeconds)
-        : formatRanSeconds(run.elapsedSeconds, run.windowSeconds);
+        : formatRanSeconds(run.elapsedSeconds);
     return `${ran} (${max})`;
   }
 
