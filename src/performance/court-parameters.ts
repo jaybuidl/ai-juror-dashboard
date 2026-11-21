@@ -1,6 +1,6 @@
 import { type PublicClient, parseAbiItem } from "viem";
 import { COURT_ID } from "../disputes/court-subgraph";
-import { blockTimestamps, createArbitrumClient } from "./arbitrum";
+import { blockTimestamps, createArbitrumClient, scanBlocks } from "./arbitrum";
 import type { RawCourtParameters } from "./windows";
 
 /**
@@ -45,14 +45,17 @@ export const COURT_MODIFIED = parseAbiItem(
 );
 
 /**
- * The whole chain, unchunked, exactly as the commit scan reads it.
+ * The block court 34 was created in: its `CourtCreated` log, and so the first block anything
+ * this dashboard reads about the court can sit in.
  *
- * The court has been configured three times in its life and the filter is on an indexed topic,
- * so this is three logs and answers in ~320ms from `fromBlock: 0`. A deployment block held here
- * would be one more number to keep true, and getting it wrong would drop the court's *first*
- * configuration — the one dispute 151 ran under, and the only one the marker is about.
+ * Until 2026-11-20 this read ran from block 0 and argued against holding a block at all: one
+ * more number to keep true, and getting it wrong would drop the court's *first* configuration,
+ * the one dispute 151 ran under. arb1 then started refusing any scan wider than
+ * `LOG_RANGE_LIMIT` (#25), and a scan has to start somewhere a window can be cut from. This one
+ * cannot drift — a log's block never changes — and the live suite pins that the scan still
+ * finds the `CourtCreated` log, so getting it wrong fails there first.
  */
-const FROM_BLOCK = 0n;
+export const COURT_CREATED_BLOCK = 493_394_990n;
 
 /**
  * Every configuration court 34 has held, as moments and durations.
@@ -64,27 +67,24 @@ const FROM_BLOCK = 0n;
 export async function fetchCourtParameters({
   client = createArbitrumClient(),
   courtId = COURT_ID,
+  fromBlock = COURT_CREATED_BLOCK,
 }: {
   client?: PublicClient;
   courtId?: string;
+  /** Where the scan starts. Court 34's own creation block unless a test says otherwise. */
+  fromBlock?: bigint;
 } = {}): Promise<RawCourtParameters[]> {
   const args = { _courtID: BigInt(courtId) };
 
+  // From the court's creation to the head, a window at a time: the court has been configured
+  // three times in its life, so each window returns a handful of logs or none.
   const [created, modified] = await Promise.all([
-    client.getLogs({
-      address: KLEROS_CORE,
-      event: COURT_CREATED,
-      args,
-      fromBlock: FROM_BLOCK,
-      toBlock: "latest",
-    }),
-    client.getLogs({
-      address: KLEROS_CORE,
-      event: COURT_MODIFIED,
-      args,
-      fromBlock: FROM_BLOCK,
-      toBlock: "latest",
-    }),
+    scanBlocks(client, fromBlock, "latest", (range) =>
+      client.getLogs({ address: KLEROS_CORE, event: COURT_CREATED, args, ...range }),
+    ),
+    scanBlocks(client, fromBlock, "latest", (range) =>
+      client.getLogs({ address: KLEROS_CORE, event: COURT_MODIFIED, args, ...range }),
+    ),
   ]);
 
   // Two scans, so two sequences that have to be interleaved. By block and then by log index,

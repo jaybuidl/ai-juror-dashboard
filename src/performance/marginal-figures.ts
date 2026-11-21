@@ -244,7 +244,8 @@ const EMPTY_REWARDS: AgentJurorRewards = {
 /**
  * A reward figure, and the four absences it has to tell apart before it prints a zero.
  *
- * The same shape as `commitFigureOf` in `cell.ts` and for a sharper version of the same reason.
+ * The same shape a draw's commit figure had on the agent juror page until ADR-0012, and for a
+ * sharper version of the same reason.
  * Every other figure here degrades to an em dash when it cannot be taken; these two are sums, and
  * a sum's natural degradation is `0.0000` — a number, in the ink of a measurement, saying an agent
  * juror earned nothing. So every gate comes first and the arithmetic last:

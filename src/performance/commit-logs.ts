@@ -1,8 +1,7 @@
 import { type PublicClient, parseAbiItem } from "viem";
-import { type AgentJuror, ROSTER } from "../roster/agent-jurors";
-import { blockTimestamps, createArbitrumClient } from "./arbitrum";
+import { blockTimestamps, createArbitrumClient, scanBlocks } from "./arbitrum";
 import { type BlockTimes, browserBlockTimes } from "./block-times";
-import type { RawCommitCast } from "./performance";
+import type { RawCommitCast } from "./commitments";
 
 /**
  * The commit half of the per-draw record: when each commitment was published.
@@ -11,6 +10,10 @@ import type { RawCommitCast } from "./performance";
  * a commitment was published, so the moment is recovered from `CommitCast` logs and the block
  * timestamp they sit in (ADR-0004). Reveal timestamps need none of this — they are on the
  * justification — which is why ticket 05 shipped the matrix with no RPC at all.
+ *
+ * Read for one dispute at a time, for its timeline, and never for the court (ADR-0012). Until then
+ * this read every commitment the whole roster had published, on every page including the matrix,
+ * which showed none of them.
  *
  * The endpoint, the client and the block-timestamp trap are `arbitrum.ts`'s: this was the only
  * thing read from a chain until ticket 08 read the court's own parameter history from it.
@@ -21,8 +24,8 @@ import type { RawCommitCast } from "./performance";
 export const DISPUTE_KIT_CLASSIC = "0x70B464be85A547144C72485eBa2577E5D3A45421";
 
 /**
- * Both the dispute and the juror are indexed, so the filter is narrow and the response is
- * bounded by the roster rather than by how large Kleros v2 grows.
+ * Both the dispute and the juror are indexed. The filter is on the dispute, one value in one
+ * topic, so the response is bounded by one panel rather than by how large Kleros v2 grows.
  *
  * `_voteIDs` and `_commit` are decoded and discarded: the draw is the unit here, the vote IDs
  * it holds are already counted from the subgraph, and the commitment hash is of no interest
@@ -33,31 +36,29 @@ export const COMMIT_CAST = parseAbiItem(
 );
 
 /**
- * The whole chain, in one unchunked request.
+ * Every commitment one dispute's panel has published, as moments.
  *
- * Not a deployment block and not a constant to be maintained: `arb1.arbitrum.io` answers
- * `fromBlock: 0` to `latest` for this filter in ~230ms, because the filter is on an indexed
- * topic and the kit has emitted 62 of these events in its lifetime. A start block guessed here
- * would be one more number to keep true, and getting it wrong would drop the oldest disputes
- * from the matrix without saying anything.
- */
-const FROM_BLOCK = 0n;
-
-/**
- * Every commitment the roster has ever published, as moments.
- *
- * Filtered by juror rather than by court, because the court is not in the event and the roster
- * is: a log for a dispute this dashboard does not hold is dropped by the join in the seam,
- * exactly as a draw for one is. Returned as strings so the shape is the subgraph's — canonical
- * decimals the seam validates for itself — and so a captured payload is plain JSON.
+ * One value in one topic, and never a list: arb1 allows a list-valued topic a hundredth of the
+ * block range it allows a single value (#25), which is one reason this read stopped being the
+ * roster's — the roster as one list of jurors is refused across anything wider than 100,000
+ * blocks, about seven hours of Arbitrum. Every juror on the panel is returned, on the roster or
+ * not; the timeline joins only the drawn agent jurors' and leaves the rest. Returned as strings
+ * so the shape is the subgraph's — canonical decimals the join validates for itself — and so a
+ * captured payload is plain JSON.
  */
 export async function fetchCommitCasts({
   client = createArbitrumClient(),
-  roster = ROSTER,
+  disputeId,
+  fromBlock,
+  toBlock,
   blockTimes = browserBlockTimes(),
 }: {
   client?: PublicClient;
-  roster?: readonly AgentJuror[];
+  disputeId: number;
+  /** The dispute's first draw: no commitment in it can sit earlier. */
+  fromBlock: bigint;
+  /** Where it ends: `"latest"` while anything can still be committed, a block once nothing can. */
+  toBlock: bigint | "latest";
   /**
    * Blocks this browser has already dated, so a repeated scan pays only for the new ones.
    *
@@ -67,24 +68,28 @@ export async function fetchCommitCasts({
    * reason about — see `block-times.ts`.
    */
   blockTimes?: BlockTimes;
-} = {}): Promise<RawCommitCast[]> {
-  const logs = await client.getLogs({
-    address: DISPUTE_KIT_CLASSIC,
-    event: COMMIT_CAST,
-    args: { _juror: roster.map((agentJuror) => agentJuror.address) },
-    fromBlock: FROM_BLOCK,
-    toBlock: "latest",
-  });
+}): Promise<RawCommitCast[]> {
+  // A window at a time, because arb1 refuses one wider than `LOG_RANGE_LIMIT` (#25). A dispute
+  // is one window unless it sat in a period for a month.
+  const logs = await scanBlocks(client, fromBlock, toBlock, (range) =>
+    client.getLogs({
+      address: DISPUTE_KIT_CLASSIC,
+      event: COMMIT_CAST,
+      args: { _coreDisputeID: BigInt(disputeId) },
+      ...range,
+    }),
+  );
 
   // From the block and never from the log's own `blockTimestamp`, which this endpoint sends on
   // every log and always as zero — see `blockTimestamps`, which carries the trap in full.
   //
   // The cost is one call per commitment, and the public endpoint rate-limits per call rather
   // than per request: 62 blocks read three times over in a second returns HTTP 429. The
-  // ceiling arrived on 2026-09-24, when a cold load of 429 blocks in one burst was refused and
-  // every commit figure read "—"; `blockTimestamps` now paces the reads, which makes a cold
-  // load of this size take ~17s. The fix that removes the cost is the one ADR-0004 already
-  // prefers on merit: put the timestamp in the subgraph upstream.
+  // ceiling arrived on 2026-09-24, when a cold load of the whole roster's 429 blocks in one
+  // burst was refused and every commit figure read "—". Scoping the read to one dispute
+  // (ADR-0012) keeps a cold load to a panel's few commitments, and `blockTimestamps` still paces
+  // them. The fix that removes the cost is the one ADR-0004 prefers on merit: put the timestamp
+  // in the subgraph upstream.
   const timestampOf = await blockTimestamps(
     client,
     logs.map((log) => log.blockNumber),

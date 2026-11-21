@@ -216,7 +216,7 @@ export function MethodPage() {
 
       {/* `#latency` keeps its id although the section is about time to appeal: the fragment may
           be linked from outside, and the per-draw record is still defined here. ADR-0010 and
-          ADR-0011 are why latency is a record and not a measure. */}
+          ADR-0011 are why latency is a record and not a measure; ADR-0012 is the timeline. */}
       <Section id="latency" heading="Speed is time to appeal">
         <Body>
           <Term>Time to appeal</Term> is the figure at the top of the matrix page, and it is the one
@@ -230,12 +230,15 @@ export function MethodPage() {
           are.
         </Body>
         <Body>
-          Commit and reveal latency are a record here, not a measure. Each agent juror's page keeps
-          two per draw, in the table of its draws: <Term>commit latency</Term>, the seconds from the
-          moment the commit period opened to the moment the draw's commitment was mined, and{" "}
-          <Term>reveal latency</Term>, the seconds from the moment the vote period opened to the
-          moment its reveal was recorded. Both moments come from the chain, never from your
-          browser's clock.
+          Commit and reveal latency are not shown anywhere on this dashboard.{" "}
+          <Term>Commit latency</Term> would be the seconds from the moment the commit period opened
+          to the moment a draw's commitment was mined, and <Term>reveal latency</Term> the seconds
+          from the moment the vote period opened to the moment its reveal was recorded. Each
+          dispute's page shows the moments themselves instead, on its timeline: when each period
+          opened and who opened it, and when each agent juror on the panel committed and revealed,
+          as clock times in UTC. None of them is counted from another. Every moment comes from the
+          chain, never from your browser's clock. Each agent juror's page lists, for every dispute
+          it was drawn in, that dispute's time to appeal, which is the same for the whole panel.
         </Body>
         <Body>
           Neither says how fast an agent juror judges a case, so neither is averaged, ranked or
@@ -245,15 +248,19 @@ export function MethodPage() {
           judgment at all, because the vote was fixed at commit. And both count from the moment a
           period opened, which is whenever any account told the court to advance it: an agent juror
           that advances the period itself and reveals in the same block reads 0 seconds. The matrix
-          and each dispute's page show what a draw did, not when.
+          shows what a draw did, not when.
         </Body>
         <Body>
           The commit moment is the one no subgraph carries. The subgraph records only{" "}
           <em>whether</em> a juror committed, so the moment comes from the <Term>CommitCast</Term>{" "}
-          logs the dispute kit emits on Arbitrum, dated by the block they were mined in. A log scan
-          can come back short without failing, so every draw the subgraph calls committed is checked
-          against a matching log, and any that are missing are counted on each agent juror's page
-          rather than shown as commitments that never happened.
+          logs the dispute kit emits on Arbitrum, dated by the block they were mined in. Who opened
+          a period is on Arbitrum too: it is the account that sent the transaction, which the
+          timeline names when it is an agent juror's own, or the Kleros bot, the court's own keeper
+          that advances a period once its time is up. Anyone else is an account off the roster, and
+          is not identified. A log scan can come back short without failing, so every draw the
+          subgraph calls committed, and every period it says opened, is checked against a matching
+          log, and any that are missing are counted on the page that shows them rather than shown as
+          things that never happened.
         </Body>
       </Section>
 
@@ -479,9 +486,9 @@ export function MethodPage() {
           subgraph for disputes, rounds, draws, votes and payouts, and for court{" "}
           {REFERENCE_COURT_ID}'s disputes, which the comparison band is read from; the dispute
           resolver template subgraph for what each dispute is about; an Arbitrum RPC for the
-          commitment logs and the court's own parameter history; and Ethereum mainnet for the agent
-          jurors' ENS names and avatars. There is no backend, no database and no stored copy — a
-          reload reads again.
+          commitment logs, the period-opening logs and the transactions that sent them, and the
+          court's own parameter history; and Ethereum mainnet for the agent jurors' ENS names and
+          avatars. There is no backend, no database and no stored copy — a reload reads again.
         </Body>
         <Body>
           This dashboard is read-only forever. It has no wallet, holds no key, and can neither vote

@@ -141,9 +141,20 @@ describe("the method page", () => {
     expect(section).toHaveTextContent(/it is the one figure here that measures speed/i);
     expect(section).toHaveTextContent(/neither is averaged, ranked or plotted here/i);
     expect(section).toHaveTextContent(/reveals in the same block reads 0 seconds/i);
-    expect(section).toHaveTextContent(/a record here, not a measure/i);
+    expect(section).toHaveTextContent(/not shown anywhere on this dashboard/i);
     // The framing this replaced, on the page a citing reader goes to for definitions.
     expect(screen.queryByText(/speed and coherence/i)).not.toBeInTheDocument();
+  });
+
+  it("says where the moments are shown, and that an opener off the roster is not named (ADR-0012)", () => {
+    renderAt("/method");
+
+    const section = screen.getByRole("region", { name: /speed is time to appeal/i });
+
+    expect(section).toHaveTextContent(/each dispute's page shows the moments themselves/i);
+    expect(section).toHaveTextContent(/none of them is counted from another/i);
+    expect(section).toHaveTextContent(/anyone else is an account off the roster/i);
+    expect(section).not.toHaveTextContent(/each dispute's page show what a draw did, not when/i);
   });
 
   it("says the band on the matrix page is not the quantity its marks are", () => {

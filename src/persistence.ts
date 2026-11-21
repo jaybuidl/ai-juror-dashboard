@@ -93,7 +93,9 @@ export const PERSISTED_CACHE_KEY = "kleros-ai-juror-dashboard:query-cache";
 const PERSISTED_QUERIES: readonly string[] = [
   "courtDisputes",
   "courtDraws",
-  "commitCasts",
+  // `commitCasts` was here until ADR-0012, when the court-wide commit scan it named was retired.
+  // The one commit read left is a dispute's own (`disputeChain`), which is not persisted, for
+  // `disputeDetail`'s reason below: one entry per dispute a reader ever opened.
   // Ticket 09's `disputeDetail` is **not** here, and it answered for itself first. Its value
   // is a raw payload that survives JSON, and a failed read of it is a failed query rather than
   // a successful one — so it passes both of the questions above. It is left out on a third

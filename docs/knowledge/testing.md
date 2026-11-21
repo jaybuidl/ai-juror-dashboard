@@ -22,8 +22,9 @@ cover, split by filename:
   failure mode would be network flake.
 
 Nothing between the two is stubbed: the pure core gets fixtures, the fetchers get the real
-endpoint. That only works because **views take what they render as props**: `App.tsx` is the one
-place a hook reaches the network, so the whole dashboard renders offline against hand-built data
+endpoint. That only works because **views take what they render as props**: `App.tsx` and the
+dispute page's route are the only places a hook reaches the network, so the whole dashboard renders
+offline against hand-built data
 through `src/test/court.tsx`'s `renderAt(path)`. A good test asserts external behaviour (given raw
 fetched data, what does the model say), never which helper computed a value.
 

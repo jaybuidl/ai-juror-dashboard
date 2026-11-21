@@ -91,11 +91,8 @@ describe("fetchCourtParameters", () => {
     const result = buildCourtPerformance({
       disputes,
       draws,
-      // Not read here: nothing below is about a commitment, and the commit scan is one RPC
-      // call per commitment against an endpoint that counts them.
-      commits: null,
       parameters: history,
-      // Not read here either, and for the plainer reason: nothing below is about a payout.
+      // Not read here: nothing below is about a payout.
       rewards: null,
       // `drawsReadAt: null` — one live payload is one moment, so every row counts as read.
       roster: ROSTER,

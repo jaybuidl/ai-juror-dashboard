@@ -17,9 +17,10 @@ import type { AgentJurorMarginals } from "./totals";
  * the shape of defect this repository keeps below the seam and out of components, so this is
  * pure, testable and asked for by name.
  *
- * It reads no clock and no network, like the two models beside it. Unlike `dispute-detail.ts` it
- * adds no read of its own at all: the agent juror view needs nothing the matrix has not already
- * fetched, which is what ticket 06 meant by "it needs no read of its own".
+ * It reads no clock and no network, like the models beside it, and the view it feeds makes no
+ * read of its own: every figure on that page is one the matrix already computed. The table's
+ * commit and reveal figures went with ADR-0012, which put each dispute's time to appeal in their
+ * place, so this page no longer reads Arbitrum at all.
  */
 
 /** One dispute this agent juror was drawn in, and the draw it took there. */
@@ -28,6 +29,17 @@ export type AgentJurorDraw = {
   row: MatrixRow;
   /** This agent juror's own cell in it. Never `null` — a row with none is not in the list. */
   draw: Draw;
+  /**
+   * Seconds from the dispute's creation to the moment its first round's appeal period opened, or
+   * `null` where it has not reached it — `CourtTotals.timeToAppeal`, the one speed figure
+   * (ADR-0010), looked up rather than recomputed so the column and the matrix's headline are one
+   * definition.
+   *
+   * **The dispute's figure, not this agent juror's.** It is the same for everyone on the panel,
+   * and the table that shows it says so; nothing may read it as how fast this agent juror acted.
+   * It replaced the draw's commit and reveal latency on this page (ADR-0012).
+   */
+  timeToAppealSeconds: number | null;
 };
 
 export type AgentJurorReading = {
@@ -80,11 +92,15 @@ export function buildAgentJurorReading(
   // get right.
   if (agentJuror === undefined || marginals === undefined) return null;
 
+  const timeToAppeal = new Map(
+    performance.totals.timeToAppeal.disputes.map((entry) => [entry.dispute, entry.seconds]),
+  );
+
   const draws: AgentJurorDraw[] = [];
   for (const row of performance.rows) {
     const draw = row.cells[column];
     if (draw === undefined || draw === null) continue;
-    draws.push({ row, draw });
+    draws.push({ row, draw, timeToAppealSeconds: timeToAppeal.get(row.dispute.id) ?? null });
   }
 
   return { agentJuror, marginals, draws };

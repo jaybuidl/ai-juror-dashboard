@@ -227,8 +227,11 @@ export function AgentJurorEmpty({
         <ComingLabel id="first-draw-heading">What appears here on its first draw</ComingLabel>
         <ComingList>
           <div>
-            <ComingKey>When it committed and revealed</ComingKey>
-            <ComingBody>Per draw, in seconds from the moment each period opened.</ComingBody>
+            <ComingKey>Time to appeal</ComingKey>
+            <ComingBody>
+              Of each dispute it is drawn in, in minutes: the dispute's figure, the same for its
+              whole panel. When it committed and revealed is on that dispute's timeline.
+            </ComingBody>
           </div>
           <div>
             <ComingKey>Coherence, once ruled</ComingKey>

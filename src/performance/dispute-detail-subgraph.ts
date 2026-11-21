@@ -37,6 +37,10 @@ const DRAW_LIMIT = 100;
  * `numberOfChoices`: without it the selection would take whichever kit sorted first, which in a
  * court running one kit is right by accident.
  *
+ * `period`, `lastPeriodChangeBlockNumber` and each draw's `blockNumber` are where the dispute's
+ * record sits on chain, which is the range `fetchDisputeChain` scans (ADR-0012). See
+ * `blockRangeOf`.
+ *
  * `justification { reference }` is the prose, and the one thing here no other read carries.
  * It is deliberately *not* on the court-wide draws query: it is 124 KB across the court today,
  * grows with every draw, and `courtDraws` is persisted to `localStorage`.
@@ -48,6 +52,8 @@ const DETAIL_QUERY = `
       disputeID
       externalDisputeId
       transactionHash
+      period
+      lastPeriodChangeBlockNumber
       disputeKitDispute {
         ... on ClassicDispute {
           numberOfChoices
@@ -69,6 +75,7 @@ const DETAIL_QUERY = `
     }
     draws(first: $first, where: { dispute: $id }) {
       id
+      blockNumber
       juror {
         id
       }

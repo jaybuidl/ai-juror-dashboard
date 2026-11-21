@@ -27,7 +27,7 @@
   .fade { position: absolute; left: 0; right: 0; bottom: 0; height: 96px; background: linear-gradient(180deg, rgba(15,12,28,0) 0%, #0f0c1c 78%); pointer-events: none; }
   .colft { padding: 13px 16px; border-top: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; justify-content: space-between; gap: 12px; }
   .av { width: 26px; height: 26px; flex: none; border-radius: 8px; background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.12); display: flex; align-items: center; justify-content: center; font: 500 10px/1 'JetBrains Mono', monospace; color: #8681a0; }
-  .mv { font: 600 11.5px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #b9b5cc; }
+  .mv { font: 600 11.5px/1.2 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #b9b5cc; } .tl { list-style: none; margin: 14px 0 0; padding: 12px 0 0; border-top: 1px solid rgba(255,255,255,0.07); display: flex; flex-direction: column; gap: 8px; } .tl li { display: grid; grid-template-columns: 58px minmax(0, 1fr); gap: 10px; align-items: baseline; } .tt { font: 500 11px/1.35 'JetBrains Mono', monospace; font-feature-settings: 'zero' 1, 'tnum' 1; color: #8681a0; } .te { font: 400 12.5px/1.4 'Manrope', sans-serif; color: #b9b5cc; } .te b { font-weight: 700; color: #f2f0f7; } .te .gl { margin-right: 5px; color: #8681a0; } .te .off { color: #8681a0; }
 </style>
 </helmet>
 
@@ -85,14 +85,14 @@
       </div>
 
       <!-- timeline -->
-      <div style="margin-top: 32px; padding: 20px 24px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); display: flex; align-items: center; gap: 0;">
-        <div style="flex: 1;"><div class="lbl" style="color: #5b5675;">Evidence</div><div class="mv" style="margin-top: 7px; color: #b9b5cc;">3 submissions</div></div>
-        <div style="width: 1px; height: 34px; background: rgba(255,255,255,0.07);"></div>
-        <div style="flex: 1; padding-left: 24px;"><div class="lbl" style="color: #5b5675;">Commit period</div><div class="mv" style="margin-top: 7px; color: #b9b5cc;">45m configured &middot; closed in 34m 23s</div></div>
-        <div style="width: 1px; height: 34px; background: rgba(255,255,255,0.07);"></div>
-        <div style="flex: 1; padding-left: 24px;"><div class="lbl" style="color: #5b5675;">Vote period</div><div class="mv" style="margin-top: 7px; color: #b9b5cc;">45m configured &middot; closed in 4m 58s</div></div>
-        <div style="width: 1px; height: 34px; background: rgba(255,255,255,0.07);"></div>
-        <div style="flex: 1; padding-left: 24px;"><div class="lbl" style="color: #5b5675;">Appeal period</div><div class="mv" style="margin-top: 7px; color: #b9b5cc;">36h configured &middot; ran 18h 02m</div></div>
+      <div style="margin-top: 32px; padding: 20px 24px; border-radius: 12px; background: rgba(255,255,255,0.02); border: 1px solid rgba(255,255,255,0.07); display: flex; align-items: stretch; gap: 0;">
+        <div style="flex: 1; min-width: 0;"><div class="lbl" style="color: #5b5675;">Evidence</div><div class="mv" style="margin-top: 7px; color: #b9b5cc;">3 submissions</div><ol class="tl"><li><span class="tt">20 Aug<br>13:35:00</span><span class="te">Dispute created</span></li></ol><div class="lbl" style="margin-top: 14px; color: #5b5675;">All times UTC</div></div>
+        <div style="width: 1px; align-self: stretch; background: rgba(255,255,255,0.07);"></div>
+        <div style="flex: 1; min-width: 0; padding-left: 24px;"><div class="lbl" style="color: #5b5675;">Commit period</div><div class="mv" style="margin-top: 7px; color: #b9b5cc;">45m configured &middot; closed in 34m 23s</div><ol class="tl"><li><span class="tt">14:20:00</span><span class="te">Opened by <span class="off">the Kleros bot</span></span></li><li><span class="tt">14:26:26</span><span class="te"><span class="gl">&#9680;</span><b>aletheia</b> committed</span></li><li><span class="tt">14:26:36</span><span class="te"><span class="gl">&#9680;</span><b>agent007</b> committed</span></li><li><span class="tt">14:31:57</span><span class="te"><span class="gl">&#9680;</span><b>columbo</b> committed</span></li><li><span class="tt">14:44:39</span><span class="te"><span class="gl">&#9680;</span><b>daemon</b> committed</span></li><li><span class="tt">14:54:23</span><span class="te"><span class="gl">&#9680;</span><b>blaise</b> committed</span></li></ol></div>
+        <div style="width: 1px; align-self: stretch; background: rgba(255,255,255,0.07);"></div>
+        <div style="flex: 1; min-width: 0; padding-left: 24px;"><div class="lbl" style="color: #5b5675;">Vote period</div><div class="mv" style="margin-top: 7px; color: #b9b5cc;">45m configured &middot; closed in 4m 58s</div><ol class="tl"><li><span class="tt">14:54:23</span><span class="te">Opened by <b>blaise</b></span></li><li><span class="tt">14:54:31</span><span class="te"><span class="gl">&#9679;</span><b>agent007</b> revealed</span></li><li><span class="tt">14:55:46</span><span class="te"><span class="gl">&#9679;</span><b>aletheia</b> revealed</span></li><li><span class="tt">14:55:47</span><span class="te"><span class="gl">&#9679;</span><b>daemon</b> revealed</span></li><li><span class="tt">14:58:58</span><span class="te"><span class="gl">&#9679;</span><b>blaise</b> revealed</span></li><li><span class="tt">14:59:21</span><span class="te"><span class="gl">&#9679;</span><b>columbo</b> revealed</span></li></ol></div>
+        <div style="width: 1px; align-self: stretch; background: rgba(255,255,255,0.07);"></div>
+        <div style="flex: 1; min-width: 0; padding-left: 24px;"><div class="lbl" style="color: #5b5675;">Appeal period</div><div class="mv" style="margin-top: 7px; color: #b9b5cc;">36h configured &middot; ran 18h 02m</div><ol class="tl"><li><span class="tt">14:59:21</span><span class="te">Opened by <span class="off">the Kleros bot</span></span></li><li><span class="tt">21 Aug<br>09:01:21</span><span class="te">Closed by <span class="off">the Kleros bot</span></span></li></ol></div>
       </div>
 
       <!-- panel strip -->

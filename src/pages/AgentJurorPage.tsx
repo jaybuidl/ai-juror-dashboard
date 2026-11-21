@@ -12,7 +12,6 @@ import { AgentJurorDraws } from "../performance/AgentJurorDraws";
 import { AgentJurorEmpty } from "../performance/AgentJurorEmpty";
 import { AgentJurorSummary } from "../performance/AgentJurorSummary";
 import { buildAgentJurorReading } from "../performance/agent-juror-detail";
-import { arbitrumSource } from "../performance/arbitrum";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type FailedRead, failureOf, SOURCES } from "../read-failure";
 import { ensNameOf, handleUrlOf, pathSegmentOf, stackLabelOf } from "../roster/agent-jurors";
@@ -38,11 +37,13 @@ import { VisuallyHidden } from "../styles/hidden";
  * **It reads nothing of its own.** Ticket 06 built `CourtPerformance.marginals` for exactly this
  * page and ticket 10 filled its last two figures, so every number here is one the matrix already
  * computed, sliced down one column by `buildAgentJurorReading`. That is why this route is not
- * split around a hook the way `DisputePage` is: there is no query for a nickname to name, and
- * therefore no fourth face of the disabled-query trap to fall into. The only thing the path
- * segment decides is which column, and the roster is local — so an address naming nothing is
- * decidable with no read at all, which is the one way this view is *simpler* than ticket 09's
- * and not merely similar to it.
+ * split around a hook the way `DisputePage` is: there is no query for a nickname to name. The
+ * only thing the path segment decides is which column, and the roster is local — so an address
+ * naming nothing is decidable with no read at all.
+ *
+ * Nor does it read Arbitrum. The table's commit and reveal columns, the last figures here that
+ * needed the commit scan, gave way to each dispute's time to appeal (ADR-0012), so the page raises
+ * no Arbitrum banner either.
  *
  * It is also where the two reward sums reach a phone reader. The matrix's card layout drops the
  * column headers whole, so below the breakpoint cumulative ETH and net PNK are legible here and
@@ -319,43 +320,6 @@ function coreFailureOf(
   return null;
 }
 
-/**
- * Arbitrum's half, at most once, worded by what is actually on this page.
- *
- * Only the commit scan. The same endpoint serves the parameter history, but on this page that
- * history fed nothing but the † under the latency plot, which ADR-0010 removed, so its failure
- * costs nothing here and a banner about it would describe nothing on screen. The error outranks
- * the shortfall count: they are the same endpoint, and a banner listing one source twice reads as
- * two things having gone wrong.
- */
-function arbitrumFailureOf(performance: CourtPerformanceView): FailedRead | null {
-  const coverage = performance.performance?.commitCoverage;
-  const source = arbitrumSource();
-
-  if (performance.commitError !== null) {
-    return failureOf(
-      performance.commitError,
-      source,
-      coverage?.read === true
-        ? "The commitments could not be re-read from Arbitrum, so every commit latency here comes from an earlier read and none of them accounts for a commitment made since."
-        : "The commitments could not be read from Arbitrum, so no commit latency here is a measurement.",
-    );
-  }
-
-  // `read` gates this and not just the count: until the scan comes back every commitment is
-  // unresolved, and a banner keyed on the count alone would announce that all of them failed on
-  // every cold load, before they had.
-  if (coverage?.read === true && coverage.expected > coverage.resolved) {
-    return {
-      source,
-      status: "Short read",
-      what: `${coverage.expected - coverage.resolved} of ${coverage.expected} commitments could not be found on Arbitrum, so those commit latencies are unknown.`,
-    };
-  }
-
-  return null;
-}
-
 function failuresOf(
   nickname: string,
   {
@@ -378,7 +342,6 @@ function failuresOf(
             what: `${missingTitles} of ${titles?.expected} dispute subjects could not be read, so those disputes are identified by their ID alone.`,
           }
         : null,
-      arbitrumFailureOf(performance),
     ),
     // This view shows a nickname and an avatar, so it falls back exactly as the roster index and
     // the matrix's column headers do, and has to say so in the same words. ENS is the one
@@ -638,7 +601,6 @@ export function AgentJurorView({
         <AgentJurorDraws
           nickname={agentJuror.nickname}
           draws={reading.draws}
-          scanned={measured.commitCoverage.read}
           // The clock reaches a flag here and never the seam, which reads none: `MatrixRow` is
           // built by a pure function, and `now` is threaded from the view for exactly that.
           flagContext={{ now }}

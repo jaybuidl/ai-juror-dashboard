@@ -2,14 +2,12 @@ import { describe, expect, it } from "vitest";
 import disputeFixture from "../disputes/court-34.fixture.json" with { type: "json" };
 import type { RawDispute } from "../disputes/disputes";
 import { type AgentJuror, ROSTER } from "../roster/agent-jurors";
-import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import rewardFixture from "./court-34-rewards.fixture.json" with { type: "json" };
 import {
   buildCourtPerformance,
   type CourtPerformance,
-  type RawCommitCast,
   type RawCourtData,
   type RawDraw,
   type RawRewardShift,
@@ -28,13 +26,11 @@ import type { RawCourtParameters } from "./windows";
  * rather than inventing: if a derivation drifts, it stops reproducing figures that were
  * established independently of this code.
  *
- * The commitments beside them came from Arbitrum the same day, through `fetchCommitCasts` and
- * not by hand: 56 `CommitCast` logs, one per committed draw, addresses checksummed as the chain
- * returns them rather than lowercased as The Graph does.
+ * The commitments captured beside them are not read here: since ADR-0012 the court model holds
+ * no commitment, and `agent-juror-detail.test.ts` joins them where a view does.
  */
 const rawDisputes = disputeFixture as RawDispute[];
 const rawDraws = drawFixture as RawDraw[];
-const rawCommits = commitFixture as RawCommitCast[];
 const rawParameters = parameterFixture as RawCourtParameters[];
 
 /**
@@ -64,7 +60,6 @@ function courtData(overrides: Partial<RawCourtData> = {}): RawCourtData {
   return {
     disputes: rawDisputes,
     draws: rawDraws,
-    commits: rawCommits,
     parameters: rawParameters,
     rewards: rawRewards,
     roster: ROSTER,
@@ -123,19 +118,6 @@ function rawDispute(overrides: Partial<RawDispute> = {}): RawDispute {
     lastPeriodChange: "1787409015",
     currentRoundIndex: "0",
     rounds: [{ id: "163-0", timeline: ["1787342856", "1787343398", "1787344095", "1787409015"] }],
-    ...overrides,
-  };
-}
-
-/**
- * One `CommitCast` log, as `fetchCommitCasts` hands it over: the dispute, the juror and the
- * moment the block carrying the commitment was mined. Checksummed, because the chain is.
- */
-function rawCommit(overrides: Partial<RawCommitCast> = {}): RawCommitCast {
-  return {
-    disputeID: "163",
-    juror: "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea",
-    timestamp: "1787342880",
     ...overrides,
   };
 }
@@ -388,124 +370,37 @@ describe("buildCourtPerformance", () => {
     });
   });
 
-  describe("commit latency", () => {
-    it("measures from the moment the commit period opened to the moment the block was mined", () => {
-      // Dispute 163's commit period opened at 1787342856; blaise's CommitCast landed in a
-      // block stamped 1787342880. Measured against the period that actually opened, never
-      // against a deadline and never as a fraction of the window (ADR-0005).
-      expect(cellFor(163, "Blaise")?.commitLatencySeconds).toBe(24);
-    });
+  describe("what the draw carries for the views that show its moments", () => {
+    it("carries the reveal's own moment beside its latency", () => {
+      // The timeline shows moments and no durations (ADR-0012), so it needs the moment itself:
+      // dispute 163's vote period opened at 1787343398 and blaise revealed 46s later.
+      const cell = cellFor(163, "Blaise");
 
-    it("reproduces the range the design was drawn against", () => {
-      // The canvas quotes commit latency running 2m 06s to 53m 56s, and dispute 151 holds
-      // both ends of it. Those two figures were established before any of this code existed.
-      expect(cellFor(151, "Columbo")?.commitLatencySeconds).toBe(126);
-      expect(cellFor(151, "Daemonhill")?.commitLatencySeconds).toBe(3236);
-    });
-
-    it("reproduces the measured spread across the finalised disputes", () => {
-      const latencies = built()
-        .rows.filter((row) => row.dispute.id <= 163)
-        .flatMap((row) => row.cells)
-        .map((cell) => cell?.commitLatencySeconds ?? null)
-        .filter((seconds): seconds is number => seconds !== null)
-        .sort((a, b) => a - b);
-      const median = ((latencies[21] ?? 0) + (latencies[22] ?? 0)) / 2;
-
-      expect(latencies).toHaveLength(44);
-      expect(latencies[0]).toBe(24);
-      expect(latencies[latencies.length - 1]).toBe(3236);
-      expect(median).toBe(256);
-    });
-
-    it("joins the chain's checksummed address to the subgraph's lowercased one", () => {
-      // The Graph lowercases; `eth_getLogs` does not. Joining on the raw strings would match
-      // nothing at all and render every commit slot as Unknown, with nothing in the console.
-      const raw = courtData({
-        disputes: [rawDispute()],
-        draws: [rawDraw()],
-        commits: [rawCommit({ juror: "0x57EB05D4DFFAC43A0C52B42C47A4E7D1838725EA" })],
-      });
-
-      expect(cellFor(163, "Blaise", built(raw))?.commitLatencySeconds).toBe(24);
-    });
-
-    it("measures against the round the draw belongs to, not the dispute's first round", () => {
-      const raw = courtData({
-        disputes: [
-          rawDispute({
-            rounds: [
-              { id: "163-0", timeline: ["1", "100", "500", "900"] },
-              { id: "163-1", timeline: ["1000", "1100", "1500", "1900"] },
-            ],
-          }),
-        ],
-        draws: [
-          rawDraw({
-            round: { id: "163-1" },
-            vote: {
-              commited: true,
-              voted: true,
-              choice: "2",
-              justification: { timestamp: "1142", choice: "2" },
-            },
-          }),
-        ],
-        commits: [rawCommit({ timestamp: "1030" })],
-      });
-
-      expect(cellFor(163, "Blaise", built(raw))?.commitLatencySeconds).toBe(30);
-    });
-
-    it("reports an unknown latency rather than a wrong one when no log matched the draw", () => {
-      const raw = courtData({ disputes: [rawDispute()], draws: [rawDraw()], commits: [] });
-      const cell = cellFor(163, "Blaise", built(raw));
-
-      expect(cell?.commitLatencySeconds).toBeNull();
-      // The draw still committed, still revealed, and still voted with the ruling. Only the
-      // moment is missing — a truncated scan must never cost a draw its verdict.
-      expect(cell?.state).toEqual({ kind: "coherent" });
       expect(cell?.revealLatencySeconds).toBe(46);
+      expect(cell?.revealedAt).toBe(1787343444);
     });
 
-    it("reports an unknown latency for a commit period that has not opened", () => {
+    it("has no reveal moment where it has no latency", () => {
+      // A reveal with no vote period to measure from was never checked against one, and the
+      // timeline must not place a moment the seam has not checked.
       const raw = courtData({
         disputes: [
           rawDispute({
-            period: "evidence",
+            period: "vote",
             ruled: false,
             currentRuling: "0",
-            tied: false,
-            rounds: [{ id: "163-0", timeline: ["0", "0", "0", "0"] }],
+            rounds: [{ id: "163-0", timeline: ["1787342856", "0", "0", "0"] }],
           }),
         ],
-        draws: [rawDraw({ vote: null })],
-        commits: [rawCommit()],
-      });
-
-      expect(cellFor(163, "Blaise", built(raw))?.commitLatencySeconds).toBeNull();
-    });
-
-    it("never reports a negative latency from a commitment that predates the round", () => {
-      // Unlike a reveal, a commitment has a round to belong to and the log does not say which:
-      // one that predates this round's commit period is an earlier round's, not a corrupt
-      // payload. So it is not selected, and the draw counts as a shortfall instead — which
-      // says the same thing without ever putting a negative duration on the page.
-      const raw = courtData({
-        disputes: [rawDispute()],
         draws: [rawDraw()],
-        commits: [rawCommit({ timestamp: "1787342000" })],
       });
-      const performance = built(raw);
+      const cell = cellFor(163, "Blaise", built(raw));
 
-      expect(cellFor(163, "Blaise", performance)?.commitLatencySeconds).toBeNull();
-      expect(performance.commitCoverage).toEqual({ read: true, expected: 1, resolved: 0 });
+      expect(cell?.revealLatencySeconds).toBeNull();
+      expect(cell?.revealedAt).toBeNull();
     });
 
-    it("takes the commitment belonging to the round the cell reports, not an earlier one", () => {
-      // The log carries a dispute and a juror and no round at all, so an agent juror drawn
-      // twice has two commitments under one key. Taking the wrong one dates a round-1 cell
-      // against round 0 and reports a latency wrong by the length of a whole dispute.
+    it("says which round the draw sits in", () => {
       const raw = courtData({
         disputes: [
           rawDispute({
@@ -515,121 +410,28 @@ describe("buildCourtPerformance", () => {
             ],
           }),
         ],
-        draws: [
-          rawDraw({
-            round: { id: "163-1" },
-            vote: {
-              commited: true,
-              voted: true,
-              choice: "2",
-              justification: { timestamp: "1142", choice: "2" },
-            },
-          }),
-        ],
-        commits: [rawCommit({ timestamp: "40" }), rawCommit({ timestamp: "1030" })],
+        draws: [rawDraw({ round: { id: "163-1" } })],
       });
 
-      expect(cellFor(163, "Blaise", built(raw))?.commitLatencySeconds).toBe(30);
-    });
-  });
-
-  describe("the commit cross-check", () => {
-    it("finds a log for every draw the subgraph reports as committed", () => {
-      // 56 committed draws, 56 CommitCast logs, on the day both were captured. The whole
-      // point of the count is that this is the number a truncating endpoint would change.
-      expect(built().commitCoverage).toEqual({ read: true, expected: 56, resolved: 56 });
+      expect(cellFor(163, "Blaise")?.roundIndex).toBe(0);
+      expect(cellFor(163, "Blaise", built(raw))?.roundIndex).toBe(1);
     });
 
-    it("tells a read that has not come back from one that came back empty", () => {
-      // The difference between the two is a sentence on a public page. `[]` is a read that
-      // found nothing, and the matrix says every commitment went unread; `null` is a read
-      // still in flight, and saying that would announce a failure that has not happened — on
-      // every cold load, because the chain is slower than the subgraph and the matrix does
-      // not wait for it. The resolved count is identical in both, which is the trap.
-      const pending = built(courtData({ commits: null }));
-      const empty = built(courtData({ commits: [] }));
-
-      expect(pending.commitCoverage).toEqual({ read: false, expected: 56, resolved: 0 });
-      expect(empty.commitCoverage).toEqual({ read: true, expected: 56, resolved: 0 });
-    });
-
-    it("still builds every other measurement while the commitments are unread", () => {
-      const pending = built(courtData({ commits: null }));
-
-      expect(cellFor(163, "Blaise", pending)?.revealLatencySeconds).toBe(46);
-      expect(cellFor(163, "Blaise", pending)?.state).toEqual({ kind: "coherent" });
-      expect(cellFor(163, "Blaise", pending)?.commitLatencySeconds).toBeNull();
-    });
-
-    it("carries the subgraph's own boolean beside the moment, not in place of it", () => {
-      // The cell's wording needs both: committed with no moment is a log this dashboard
-      // failed to read, and not committed with the window closed is an agent juror that
-      // failed to act. One flag cannot say both.
+    it("carries the subgraph's own commit boolean, and no commit moment at all", () => {
+      // The views that show a commitment's moment read it for themselves (ADR-0012). What they
+      // need from here is the boolean: committed with no moment is a log they failed to read,
+      // and not committed with the window closed is an agent juror that failed to act.
       const raw = courtData({
         disputes: [rawDispute()],
         draws: [
           rawDraw({ vote: { commited: false, voted: false, choice: null, justification: null } }),
         ],
-        commits: [],
       });
 
       expect(cellFor(163, "Blaise")?.committed).toBe(true);
       expect(cellFor(163, "Blaise", built(raw))?.committed).toBe(false);
-    });
-
-    it("counts a committed draw with no log as a shortfall rather than absorbing it", () => {
-      const raw = courtData({ disputes: [rawDispute()], draws: [rawDraw()], commits: [] });
-
-      expect(built(raw).commitCoverage).toEqual({ read: true, expected: 1, resolved: 0 });
-    });
-
-    it("never lets a missing log become a missed vote", () => {
-      // The failure ADR-0004 exists for: a provider that caps `eth_getLogs` returns fewer
-      // logs rather than an error, and blaming an agent juror that committed on time is the
-      // one outcome that must be impossible.
-      const raw = courtData({
-        disputes: [rawDispute()],
-        draws: [
-          rawDraw({ vote: { commited: true, voted: false, choice: null, justification: null } }),
-        ],
-        commits: [],
-      });
-      const cell = cellFor(163, "Blaise", built(raw));
-
-      expect(cell?.state).toEqual({ kind: "no-vote" });
-      expect(built(raw).commitCoverage).toEqual({ read: true, expected: 1, resolved: 0 });
-    });
-
-    it("expects nothing of a draw that never committed", () => {
-      const raw = courtData({
-        disputes: [
-          rawDispute({
-            period: "commit",
-            ruled: false,
-            currentRuling: "0",
-            tied: false,
-            rounds: [{ id: "163-0", timeline: ["1787342856", "0", "0", "0"] }],
-          }),
-        ],
-        draws: [
-          rawDraw({ vote: { commited: false, voted: false, choice: null, justification: null } }),
-        ],
-        commits: [],
-      });
-
-      expect(built(raw).commitCoverage).toEqual({ read: true, expected: 0, resolved: 0 });
-    });
-
-    it("ignores a log for a dispute the payload does not carry", () => {
-      // The roster commits in whatever court it is drawn in, and the filter is on the juror
-      // rather than on the court. A log with no row is dropped exactly as a draw with no row is.
-      const raw = courtData({
-        disputes: [rawDispute()],
-        draws: [rawDraw()],
-        commits: [rawCommit(), rawCommit({ disputeID: "999" })],
-      });
-
-      expect(built(raw).commitCoverage).toEqual({ read: true, expected: 1, resolved: 1 });
+      expect(cellFor(163, "Blaise")).not.toHaveProperty("commitLatencySeconds");
+      expect(built()).not.toHaveProperty("commitCoverage");
     });
   });
 
@@ -792,7 +594,7 @@ describe("buildCourtPerformance", () => {
       const tiedDispute = rawDispute({ currentRuling: "0", tied: true });
 
       it("calls a vote in a tied dispute tied, not diverged from the 0 it rules", () => {
-        const raw = courtData({ disputes: [tiedDispute], draws: [rawDraw()], commits: [] });
+        const raw = courtData({ disputes: [tiedDispute], draws: [rawDraw()] });
 
         expect(cellFor(163, "Blaise", built(raw))?.state).toEqual({ kind: "tied" });
       });
@@ -803,7 +605,6 @@ describe("buildCourtPerformance", () => {
           draws: [
             rawDraw({ vote: { commited: false, voted: false, choice: null, justification: null } }),
           ],
-          commits: [],
         });
 
         expect(cellFor(163, "Blaise", built(raw))?.state).toEqual({ kind: "no-vote" });
@@ -815,7 +616,6 @@ describe("buildCourtPerformance", () => {
             rawDispute({ ruled: false, period: "appeal", currentRuling: "2", tied: true }),
           ],
           draws: [rawDraw()],
-          commits: [],
         });
         const performance = built(raw);
 

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ROSTER } from "../roster/agent-jurors";
-import { commitFigureOf, presentationOf, revealFigureOf, voteWeightOf } from "./cell";
+import { presentationOf, timeToAppealFigureOf, voteWeightOf } from "./cell";
 import type { Draw, DrawState } from "./performance";
 
 const AGENT_JUROR = ROSTER[0] as (typeof ROSTER)[number];
@@ -10,7 +10,8 @@ function draw(overrides: Partial<Draw> = {}): Draw {
     agentJuror: AGENT_JUROR,
     state: { kind: "coherent" },
     revealLatencySeconds: 85,
-    commitLatencySeconds: 396,
+    revealedAt: 1787343483,
+    roundIndex: 0,
     committed: true,
     voteCount: 1,
     roundVoteCount: 3,
@@ -98,107 +99,16 @@ describe("presentationOf", () => {
   });
 });
 
-describe("revealFigureOf", () => {
-  it("reads a measured latency as a figure", () => {
-    expect(revealFigureOf(draw())).toEqual({ text: "85s", tone: "value" });
+describe("timeToAppealFigureOf", () => {
+  it("reads a dispute's time to appeal in whole minutes, as the matrix's headline does", () => {
+    // Dispute 151, under the court's first windows, reached its appeal period 48,050s after it
+    // was created; dispute 156, under the second, 4,588s after.
+    expect(timeToAppealFigureOf(48_050)).toEqual({ text: "801m", tone: "value" });
+    expect(timeToAppealFigureOf(4_588)).toEqual({ text: "76m", tone: "value" });
   });
 
-  it("reads a reveal that will not come as a miss, not as a number", () => {
-    expect(
-      revealFigureOf(draw({ state: { kind: "no-vote" }, revealLatencySeconds: null })),
-    ).toEqual({ text: "Missed", tone: "missed" });
-  });
-
-  it("reads a reveal that has not come yet as a dash, never as blank", () => {
-    for (const stage of ["awaiting", "committed"] as const) {
-      expect(
-        revealFigureOf(draw({ state: { kind: "live", stage }, revealLatencySeconds: null })),
-      ).toEqual({ text: "—", tone: "pending" });
-    }
-  });
-
-  it("reads a reveal with no moment recorded as undated, not as missed and not as a dash", () => {
-    // A draw that voted but whose justification is absent: it acted, and the record cannot say
-    // when. Saying "Missed" would blame it; saying "—" would claim it has not acted yet.
-    //
-    // "Not dated" and not "Unknown": ticket 13 gave that word to the unread row, and this is a
-    // different thing — the chain's record is thin, not this dashboard's read. It keeps pending
-    // ink for the same reason, because nothing here failed.
-    expect(revealFigureOf(draw({ revealLatencySeconds: null }))).toEqual({
-      text: "Not dated",
-      tone: "pending",
-    });
-  });
-});
-
-describe("commitFigureOf", () => {
-  it("reads a measured latency as a figure, in the same unit as the reveal", () => {
-    expect(commitFigureOf(draw(), true)).toEqual({ text: "6m 36s", tone: "value" });
-  });
-
-  it("reads a commitment that never came as a miss once the window has closed", () => {
-    expect(
-      commitFigureOf(
-        draw({ state: { kind: "no-vote" }, committed: false, commitLatencySeconds: null }),
-        true,
-      ),
-    ).toEqual({ text: "Missed", tone: "missed" });
-  });
-
-  it("reads a commitment that has not come yet as a dash, never as blank", () => {
-    expect(
-      commitFigureOf(
-        draw({
-          state: { kind: "live", stage: "awaiting" },
-          committed: false,
-          commitLatencySeconds: null,
-        }),
-        true,
-      ),
-    ).toEqual({ text: "—", tone: "pending" });
-  });
-
-  it("reads a commitment the log scan did not find as unread, never as a miss", () => {
-    // This is the cross-check's face in the cell, and the reason ADR-0004 asks for one: a
-    // truncating endpoint drops the log, not the commitment. Wording it "Missed" would blame
-    // an agent juror that committed on time, which is the failure the whole check exists for.
-    const states: DrawState[] = [
-      { kind: "coherent" },
-      { kind: "diverged" },
-      { kind: "no-vote" },
-      { kind: "live", stage: "committed" },
-      { kind: "live", stage: "revealed" },
-    ];
-
-    for (const state of states) {
-      expect(
-        commitFigureOf(draw({ state, committed: true, commitLatencySeconds: null }), true),
-      ).toEqual({ text: "Not read", tone: "unread" });
-    }
-  });
-
-  it("says a commitment is unread only once there has been a scan to come back short", () => {
-    // The trap ticket 07 found by review, one level down. Between the subgraph answering and
-    // the chain answering, every committed draw has no log — so without the scanned flag all
-    // 56 cells would come up rose reading "Not read" on every cold load, announcing a failure
-    // that has not happened. Unscanned is a step not reached, which is what a dash means.
-    const pending = draw({
-      state: { kind: "coherent" },
-      committed: true,
-      commitLatencySeconds: null,
-    });
-
-    expect(commitFigureOf(pending, false)).toEqual({ text: "—", tone: "pending" });
-    expect(commitFigureOf(pending, true)).toEqual({ text: "Not read", tone: "unread" });
-  });
-
-  it("never says Missed about a draw the subgraph reports as committed", () => {
-    const missed = commitFigureOf(
-      draw({ state: { kind: "no-vote" }, committed: true, commitLatencySeconds: null }),
-      true,
-    );
-
-    expect(missed.text).not.toBe("Missed");
+  it("reads a dispute not yet at its appeal period as a dash, never a zero", () => {
+    expect(timeToAppealFigureOf(null)).toEqual({ text: "—", tone: "pending" });
   });
 });
 

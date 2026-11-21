@@ -1,16 +1,15 @@
-import { formatLatencySeconds } from "./latency";
+import { formatMinutes } from "./latency";
 import type { Draw, DrawState, LiveStage } from "./performance";
 
 /**
- * One measurement as a draw's row states it: a duration, or a word saying why there is not one.
+ * One measurement as a row states it: a figure, or a word saying why there is not one.
  *
- * The matrix cell carried two of these until ADR-0011; the agent juror page's table of draws is
- * where they are read now.
+ * The matrix cell carried a draw's commit and reveal latency as two of these until ADR-0011, and
+ * the agent juror page's table until ADR-0012, which put each dispute's time to appeal there
+ * instead. The reward figures on the stat card are the others (`marginal-figures.ts`).
  *
  * `value` is a figure; `missed` is an agent juror that did not act while it could; `pending` is
- * a step not yet reached; `unread` is a moment this dashboard could not read. The two measures
- * share the type because they share the column, and a reader comparing them down a
- * column is comparing like with like.
+ * a step not yet reached; `unread` is something this dashboard could not read.
  *
  * `unread` was carved out of `pending` by ticket 13. They had been one tone, and the collapse
  * put "has not happened yet" and "we failed to read it" in the same ink — the exact pair that
@@ -145,64 +144,15 @@ export function voteWeightOf(draw: Draw): string | null {
 }
 
 /**
- * What the reveal slot reads, and why it never goes blank.
+ * What the agent juror page's time-to-appeal column reads for one dispute (ADR-0012).
  *
- * Three absences that must not be confused: a reveal that will not come (`Missed`), one that
- * has not come yet (`—`), and one that came without leaving a moment behind (`Not dated` — the
- * timestamp lives only on the justification, so a reveal with none cannot be dated). Blank is
- * reserved for a draw that is not there at all.
+ * Whole minutes, the unit the matrix's headline uses for the same figure, so the column and the
+ * median above the matrix read as one measure. A dispute that has not reached its appeal period
+ * has no time to appeal yet: a dash in pending ink, a step not reached, never a zero.
  *
- * `Not dated` was `Unknown` until ticket 13, and the rename is the substantive half of that
- * ticket's instruction to decide which of three Unknowns keeps the word. This one is the record
- * being thin, not the read failing: the reveal happened, the dashboard saw it happen, and the
- * subgraph carries no moment for it. Wording that as unread would report a defect in this
- * dashboard where the truth is a gap in the chain's own record, so it keeps pending ink and
- * gives up the word.
+ * The dispute's figure and not the draw's: every agent juror on the panel shows the same number.
  */
-export function revealFigureOf(draw: Draw): Figure {
-  if (draw.revealLatencySeconds !== null) {
-    return { text: formatLatencySeconds(draw.revealLatencySeconds), tone: "value" };
-  }
-  if (draw.state.kind === "no-vote") return { text: "Missed", tone: "missed" };
-  if (draw.state.kind === "live" && draw.state.stage !== "revealed") {
-    return { text: "—", tone: "pending" };
-  }
-  return { text: "Not dated", tone: "pending" };
-}
-
-/**
- * What the commit slot reads, and the one place a missing log must not become an accusation.
- *
- * The three absences again, told apart by the subgraph's boolean rather than by the state
- * alone: a commitment that will not come now (`Missed`), one that has not come yet (`—`), and
- * one that happened and whose log this dashboard did not find (`Not read`).
- *
- * That last case is the whole reason ADR-0004 asks for a cross-check. A provider that caps
- * `eth_getLogs` returns fewer logs and no error, so the draw arrives committed with no moment —
- * and wording it `Missed` would blame an agent juror that committed on time. `commitCoverage`
- * counts these; this is what one of them looks like in the row it lands in.
- *
- * Ticket 07 wrote it `Unknown` in pending ink and flagged it as the strongest candidate to
- * convert, which ticket 13 did: this *is* a read that came back short, so it takes the same
- * words and the same rose as the unread row — `Not read`, ADR-0006's second meaning for rose.
- * Nothing is lost by the ink being loud here. The cross-check counts exactly these draws, and
- * that page's Arbitrum banner explains them; a reader who spots one has somewhere to go.
- *
- * `scanned` is what keeps that loudness honest, and it is the same distinction `commitCoverage.read`
- * exists for one level up. The chain answers slower than the subgraph and this page deliberately
- * does not wait for it, so between the two answers *every* committed draw has no log yet. Without
- * this argument all 56 of them would come up rose reading "Not read" on every cold load — a
- * failure announced before it has happened, which is precisely the mistake ticket 07 found by
- * review and the reason `null` commits are not `[]`. Unscanned is a step not reached: an em dash,
- * in pending ink, exactly like a commitment that has not been made yet.
- */
-export function commitFigureOf(draw: Draw, scanned: boolean): Figure {
-  if (draw.commitLatencySeconds !== null) {
-    return { text: formatLatencySeconds(draw.commitLatencySeconds), tone: "value" };
-  }
-  if (draw.committed) {
-    return scanned ? { text: "Not read", tone: "unread" } : { text: "—", tone: "pending" };
-  }
-  if (draw.state.kind === "no-vote") return { text: "Missed", tone: "missed" };
-  return { text: "—", tone: "pending" };
+export function timeToAppealFigureOf(seconds: number | null): Figure {
+  if (seconds === null) return { text: "—", tone: "pending" };
+  return { text: formatMinutes(seconds), tone: "value" };
 }

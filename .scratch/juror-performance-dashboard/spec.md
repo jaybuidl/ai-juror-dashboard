@@ -81,9 +81,10 @@ must be visibly marked.
 **Coherence.** Per draw, against the dispute's final ruling, recomputed from vote choices. See
 ADR-0002.
 
-**Commit timestamps.** From `CommitCast` logs plus block timestamps; unchunked scans. Reveal
-timestamps come free from the justification entity. Every draw the subgraph reports as committed is
-cross-checked against a matching log; a discrepancy is surfaced, never absorbed. See ADR-0004.
+**Commit timestamps.** From `CommitCast` logs plus block timestamps, scanned in windows under
+arb1's 10M-block cap and only for the view that shows them (one dispute, or one agent juror; ADR-0012).
+Reveal timestamps come free from the justification entity. Every draw the subgraph reports as committed
+is cross-checked against a matching log; a discrepancy is surfaced, never absorbed. See ADR-0004.
 
 **Data sources**, all public and keyless by default, overridable by `VITE_`-prefixed variables that
 are baked into the bundle and therefore public by construction: the Kleros v2 core subgraph

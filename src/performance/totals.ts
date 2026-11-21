@@ -292,7 +292,7 @@ export type OffRoster = {
  * different things and only the view can tell them apart: the reward read has not come back,
  * this agent juror has never been drawn, or every dispute it was drawn in is still unexecuted.
  * `CourtPerformance.rewards.read` and `draws` are the two flags that separate them, exactly as
- * `commitCoverage.read` separates a commit latency still being read from one that is missing.
+ * `parameters.read` separates a window still being read from one that is missing.
  *
  * A `bigint` because a PNK penalty in this court is 1.87e20 wei. See `rewards.ts`.
  */

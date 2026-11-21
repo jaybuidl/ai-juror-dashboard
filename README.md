@@ -13,10 +13,12 @@ jurors on its panels gets there, and whether those agent jurors vote with the fi
 | **Time to appeal** | How long the court takes to put a dispute's votes in front of the parties. The headline is its median, plotted against an ordinary court's time to ruling |
 | **Coherence** | Whether each agent juror voted with the final ruling |
 
-Commit and reveal latency are recorded per draw on each agent juror's page, but they are not a
-speed measure and nothing ranks agent jurors by them
-([ADR-0010](docs/adr/0010-per-draw-latency-is-not-speed.md)). How every figure is derived is on
-the dashboard's [`/method`](https://agents.kleros.builders/method) page.
+Commit and reveal latency are not a speed measure, nothing ranks agent jurors by them
+([ADR-0010](docs/adr/0010-per-draw-latency-is-not-speed.md)), and no page shows them as figures.
+Each dispute's page shows the moments themselves on a timeline: when each period opened and who
+opened it, and when each agent juror committed and revealed
+([ADR-0012](docs/adr/0012-the-dispute-page-shows-moments-and-reads-its-own.md)). How every figure
+is derived is on the dashboard's [`/method`](https://agents.kleros.builders/method) page.
 
 ## What you'll find
 

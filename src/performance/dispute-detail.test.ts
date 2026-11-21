@@ -38,7 +38,6 @@ const court = ((): CourtPerformance => {
   const result = buildCourtPerformance({
     disputes: disputeFixture as RawDispute[],
     draws: drawFixture as RawDraw[],
-    commits: null,
     parameters: parameterFixture as RawCourtParameters[],
     // The per-dispute view shows no payout, so this model needs none to be built from.
     rewards: null,
@@ -327,6 +326,54 @@ describe("toDisputeDetail", () => {
         expect(published.juror).toBe(published.juror.toLowerCase());
       }
     });
+  });
+});
+
+describe("the dispute's block range, for its chain read (ADR-0012)", () => {
+  it("runs from the first draw to the block its execution period opened in", () => {
+    // Dispute 156's panel was drawn in one block, and it reached execution at 497058149.
+    expect(toDisputeDetail(raw156).blockRange).toEqual({
+      fromBlock: 496_780_897n,
+      toBlock: 497_058_149n,
+    });
+  });
+
+  it("runs to the head while the dispute has not reached execution", () => {
+    // `lastPeriodChangeBlockNumber` is the block the *current* period opened in; until that
+    // period is execution, a commitment or an opening can still come after it.
+    const appeal = {
+      ...raw156,
+      dispute: raw156.dispute && { ...raw156.dispute, period: "appeal" },
+    };
+
+    expect(toDisputeDetail(appeal).blockRange?.toBlock).toBe("latest");
+  });
+
+  it("starts at the earliest draw of any round, so it never moves once one exists", () => {
+    const draws = raw156.draws ?? [];
+    const spread = {
+      ...raw156,
+      draws: draws.map((draw, index) =>
+        index === 2 ? { ...draw, blockNumber: "496780001" } : draw,
+      ),
+    };
+
+    expect(toDisputeDetail(spread).blockRange?.fromBlock).toBe(496_780_001n);
+  });
+
+  it("has nothing to read for a dispute nobody has been drawn in yet", () => {
+    expect(toDisputeDetail({ ...raw156, draws: [] }).blockRange).toBeNull();
+    expect(NO_DETAIL.blockRange).toBeNull();
+  });
+
+  it("ignores a block number it cannot believe rather than starting a scan from it", () => {
+    const draws = raw156.draws ?? [];
+    const garbled = {
+      ...raw156,
+      draws: draws.map((draw, index) => (index === 0 ? { ...draw, blockNumber: "4.9e8" } : draw)),
+    };
+
+    expect(toDisputeDetail(garbled).blockRange?.fromBlock).toBe(496_780_897n);
   });
 });
 

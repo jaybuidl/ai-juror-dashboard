@@ -1,0 +1,50 @@
+{
+  "openings": [
+    {
+      "period": "1",
+      "from": "0x9eb6a13d66fb9b8de447e44d8cebda05d0446bd5",
+      "blockNumber": "496789983",
+      "logIndex": "6"
+    },
+    {
+      "period": "2",
+      "from": "0x9eb6a13d66fb9b8de447e44d8cebda05d0446bd5",
+      "blockNumber": "496794949",
+      "logIndex": "6"
+    },
+    {
+      "period": "3",
+      "from": "0x9eb6a13d66fb9b8de447e44d8cebda05d0446bd5",
+      "blockNumber": "496797433",
+      "logIndex": "6"
+    },
+    {
+      "period": "4",
+      "from": "0x9eb6a13d66fb9b8de447e44d8cebda05d0446bd5",
+      "blockNumber": "497058149",
+      "logIndex": "0"
+    }
+  ],
+  "commits": [
+    {
+      "disputeID": "156",
+      "juror": "0xAC237740772093Fcc812A463050c43A275dd01E5",
+      "timestamp": "1787298223"
+    },
+    {
+      "disputeID": "156",
+      "juror": "0x245314a76FC9b8e48Fea7Abb3B9B07E34E13d8C6",
+      "timestamp": "1787298252"
+    },
+    {
+      "disputeID": "156",
+      "juror": "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea",
+      "timestamp": "1787298443"
+    },
+    {
+      "disputeID": "156",
+      "juror": "0x70239816581Afff150814B46C831e2e5F9E3bF4C",
+      "timestamp": "1787298857"
+    }
+  ]
+}

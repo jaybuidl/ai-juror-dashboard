@@ -46,6 +46,42 @@ this file is the full account.
   passed alone, and fixed it by not scanning — liveness is read from the ruling and the round
   timeline, so it never needed the commitments. Before adding a commit scan to a live test, ask
   whether the test actually needs a moment, and run the whole suite rather than the one file.
+  Since ADR-0012 the commit scan reads one dispute, for its timeline, never the roster, so a cold
+  load costs a panel's few commitments rather than the court's.
+- **arb1 refuses an `eth_getLogs` wider than 10,000,000 blocks, and a hundredth of that when a
+  topic is a list.** Found 2026-11-20 (#25), when every scan here still ran from block 0 and all of
+  them failed at once: `-32602 query spans 525839422 blocks (0 to 525839421), but only 10000000 are
+  allowed`. A topic given as a list (the whole roster as `_juror`) is allowed only 100,000 blocks,
+  about seven hours of Arbitrum; a single value, or no topic at all, gets the full ten million,
+  about 29 days. Measured the same day: one juror over 9.9M blocks answers in ~150ms, two jurors
+  over 200K blocks is refused. So no scan puts a list in a topic, and every scan starts at a block
+  something fixes and is cut into windows (`scanBlocks`, `LOG_RANGE_LIMIT` in `arbitrum.ts`): court
+  34's creation block 493394990 for the parameter history, which is four windows today and one
+  more a month, and the dispute's own first draw for one dispute, which is one. ADR-0012.
+  Production overrides the endpoint to Alchemy, and on the same day every one of its block-0 scans
+  came back with no response at all, with no CORS headers to read a reason through. A first-time
+  visitor saw both Arbitrum banners; a returning one still saw the configured windows, restored from
+  the persisted cache — which is how it went unnoticed.
+- **Who opened a period is the sender of the transaction carrying its `NewPeriod` log, and nothing
+  in the subgraph has it.** `NewPeriod(uint256 indexed _disputeID, uint8 _period)` on KlerosCore
+  (deployed signature; `_period` is 0 evidence to 4 execution) marks each opening past evidence, and
+  `eth_getTransactionByHash` gives the `from`, lowercase from arb1. The subgraph's `Round.timeline`
+  matches each opening's block timestamp to the second (checked on disputes 160 and 366), so
+  the timeline takes its moments from the subgraph and only the sender from the chain. A dispute's
+  first evidence period has no `NewPeriod`: it opens with `DisputeCreation`. On disputes 156 and 160
+  every opening was sent by one of two accounts off the roster; on 366 Intendant opened the commit
+  and vote periods and committed in the same block it opened the first.
+- **The Kleros bot is `0x9EB6a13D66fb9B8De447E44d8CEbda05d0446Bd5`** — Kleros's own keeper for the
+  court, which calls `passPeriod` once a period's time is up (identified by the maintainer,
+  2026-11-20). It sent all four of dispute 156's openings, 160's appeal and execution, and 366's
+  appeal. The timeline names it "the Kleros bot" (`KLEROS_BOT` in `dispute-timeline.ts`); it is
+  infrastructure, not a person, so naming it breaks no privacy rule. Dispute 160's commit and vote
+  were opened by `0x9e51…d30a`, which nobody has identified, so it stays "an off-roster account".
+- **The core subgraph does carry block numbers, on `Draw.blockNumber` and
+  `Dispute.lastPeriodChangeBlockNumber`.** That is what bounds one dispute's chain read without a
+  guess: from its first draw (`passPeriod` cannot leave evidence until every vote ID is drawn) to
+  the block its execution period opened, once `period` says execution. Neither is selected by the
+  court-wide reads, which are persisted; only the per-dispute read asks for them.
 - **`TokenAndETHShift.isNativeCurrency` is `false` on a court that pays in native ETH.** All 44 of
   court 34's payouts carry it — a payout per *executed* draw, so fewer than the 56 draws — with
   `feeToken: null` and `feeTokenAmount: "0"`, while `ethAmount` carries the full `feeForJuror` —

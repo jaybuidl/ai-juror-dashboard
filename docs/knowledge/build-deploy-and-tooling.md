@@ -38,7 +38,12 @@ this file is the full account.
   derives to in one unit test that passes the URL explicitly. Before touching anything that reads
   `import.meta.env`, run the suite both ways: `yarn test` and
   `VITE_ARBITRUM_RPC_URL=… yarn test`. This applies to the other three overrides the moment
-  anything derives from them.
+  anything derives from them. **It recurred on 2026-11-20 (#31):** a new banner test in
+  `DisputePage.test.tsx` asserted the literal host, every local run was green, and only the deploy
+  preview's build failed. The reach is any *new* test of a banner that names its source, not only
+  edits to code that reads `import.meta.env`. The upside of the same fact: a deploy preview runs
+  against production's override, so it is where an RPC behaviour on that endpoint can be checked
+  from a real origin (#25 was confirmed there).
 - **`Thing.ts` and `Thing.tsx` differing only in case is a hard TypeScript error on macOS.**
   `TS1149`, raised at whichever file imports the second one, and it names both paths rather than
   saying "rename this". The house pattern of a pure model beside its component (`provenance.ts` +

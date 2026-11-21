@@ -65,10 +65,15 @@ export type DisputeDetailView = {
  *   so a rise in this count is what tells this read a justification may have appeared since it
  *   landed (#21). It is recorded beside the payload rather than put in the key, because a new key
  *   would blank the page for the length of the re-read.
+ * @param drawn Whether the court read says anyone has been drawn in the dispute, or `null` before
+ *   it says. A read that landed before the panel was drawn has no block range for the timeline's
+ *   chain read (`DisputeDetail.blockRange`), and nothing else would bring it back before the first
+ *   reveal: so it is read once more when this turns true (ADR-0012).
  */
 export function useDisputeDetail(
   disputeId: number | null,
   revealed: number | null,
+  drawn: boolean | null = null,
 ): DisputeDetailView {
   const detail = useQuery({
     queryKey: ["disputeDetail", disputeId],
@@ -93,18 +98,33 @@ export function useDisputeDetail(
   // one extra read), and an appeal round restarts the count from zero.
   const seen = detail.data === undefined ? undefined : detail.data.revealed;
   const isBehindReveals = revealed !== null && seen !== undefined && revealed !== seen;
+  // Modelled once per render: the view and the range check below both read it.
+  const modelled = detail.data === undefined ? NO_DETAIL : toDisputeDetail(detail.data.raw);
+  // A read of a dispute that exists, made before anyone in it was drawn, while the court read
+  // now says someone has been. `namesADispute` keeps an unknown id from asking again.
+  const isBehindDraws =
+    drawn === true &&
+    detail.data !== undefined &&
+    namesADispute(detail.data.raw) &&
+    modelled.blockRange === null;
   // One re-read per count, and never a second for the same one: a re-read that fails keeps the
   // old payload and so stays behind, and asking again the moment it settles would loop against
   // a failing endpoint. Recovery from that is the banner's retry, or the next reveal.
   // Keyed by dispute too, so a count asked for on one dispute never stands in for another's.
+  // A read that predates the draws gets the same once-only rule under its own ask, so a dispute
+  // behind on both is read once for each and never in a loop.
   const asked = useRef<string | null>(null);
   const { refetch, isFetching } = detail;
   useEffect(() => {
-    const ask = `${disputeId}:${revealed}`;
-    if (!isBehindReveals || isFetching || asked.current === ask) return;
+    const ask = isBehindReveals
+      ? `${disputeId}:${revealed}`
+      : isBehindDraws
+        ? `${disputeId}:drawn`
+        : null;
+    if (ask === null || isFetching || asked.current === ask) return;
     asked.current = ask;
     void refetch();
-  }, [isBehindReveals, isFetching, disputeId, revealed, refetch]);
+  }, [isBehindReveals, isBehindDraws, isFetching, disputeId, revealed, refetch]);
 
   return {
     // `toDisputeDetail` is applied here rather than inside the query function, which is the
@@ -114,7 +134,7 @@ export function useDisputeDetail(
     // tolerant by construction: every malformed field degrades to an absence, so there is
     // nothing to catch, and keeping the raw payload in the cache means `namesADispute` can
     // still tell "no such dispute" from "not read yet".
-    detail: detail.data === undefined ? NO_DETAIL : toDisputeDetail(detail.data.raw),
+    detail: modelled,
     isUnknownDispute: detail.data !== undefined && !namesADispute(detail.data.raw),
     // `fetchStatus` is what tells a query that has not answered from one that was never asked:
     // it is `"idle"` for a disabled query and `"fetching"` for one in flight. `isPending` is

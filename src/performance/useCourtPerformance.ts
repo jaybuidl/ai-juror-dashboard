@@ -5,7 +5,6 @@ import type { RawDispute } from "../disputes/disputes";
 import { refetchIntervalFor } from "../disputes/liveness";
 import { type AgentJuror, ROSTER } from "../roster/agent-jurors";
 import { createArbitrumClient } from "./arbitrum";
-import { fetchCommitCasts } from "./commit-logs";
 import { fetchCourtParameters } from "./court-parameters";
 import { fetchCourtDraws } from "./draws-subgraph";
 import { buildCourtPerformance, type CourtPerformance } from "./performance";
@@ -23,31 +22,22 @@ export type CourtPerformanceView = {
   isLoading: boolean;
   error: Error | null;
   /**
-   * Why the commit log read failed, separately from `error`.
+   * Why the court's parameter history could not be read, separately from `error`.
    *
    * Separate because `error` is the failure that leaves `performance` null, and this one must
-   * never do that: commit latency is read from Arbitrum and nothing in the matrix is, so folding
-   * an outage there into the blocking channel would blank every row of subgraph measurements that
-   * are entirely true. Since ADR-0011 only the agent juror page shows a figure read from it, and
-   * that page states the shortfall and raises this as its banner.
+   * never do that: a history that never arrives costs the configured windows on the dispute
+   * view's timeline, and nothing else. Every latency and every coherence on the page is still
+   * true. (It used to cost a † marker too: the matrix's went on 2026-09-24 and the agent juror
+   * plot's with ADR-0010, so neither of those views raises a banner for it now.)
    *
-   * It is also the half that tells a read still in flight from one that failed. Both leave
-   * `commitCoverage.read` false, and a page that keyed its wording on that flag alone would
-   * say "still being read" about a read that gave up minutes ago.
-   */
-  commitError: Error | null;
-  /**
-   * Why the court's parameter history could not be read, on the same terms.
+   * A history that arrives *malformed* is a different path and does block:
+   * `buildCourtPerformance` refuses a payload it cannot believe rather than measuring against a
+   * fabricated window. This field is about the request failing, not about what a successful one
+   * carried.
    *
-   * Non-blocking for the same reason: a history that never arrives costs the configured windows
-   * on the dispute view's timeline, and nothing else. Every latency and every coherence on the
-   * page is still true. (It used to cost a † marker too: the matrix's went on 2026-09-24 and
-   * the agent juror plot's with ADR-0010, so neither of those views raises a banner for it now.)
-   *
-   * A history that arrives *malformed* is a different path and does block, exactly as a
-   * malformed commit payload does: `buildCourtPerformance` refuses a payload it cannot believe
-   * rather than measuring against a fabricated window. This field is about the request failing,
-   * not about what a successful one carried.
+   * There is no commit read here. Until ADR-0012 this hook scanned every commitment the roster
+   * had published, for every page including the matrix; the two views that show a commit moment
+   * now read their own (`useChainReads.ts`).
    */
   parametersError: Error | null;
   /**
@@ -104,7 +94,7 @@ export type CourtPerformanceView = {
   readAt: number | null;
   /** Whether the reads are paused because the browser reports no connection. See `DisputesView`. */
   isPaused: boolean;
-  /** Read the draws and the commitments again, for the banner's retry. */
+  /** Read the court again, for the banner's retry. */
   retry: () => void;
 };
 
@@ -161,8 +151,8 @@ export function hasReadableDisputes(
  * resolved nickname would key the matrix on a display name.
  *
  * Liveness is ticket 12's, and it is here: the draws are re-read on the same five-second
- * interval as the disputes while the court has anything still being decided. The commitments
- * deliberately are not — see the commit query below.
+ * interval as the disputes while the court has anything still being decided. The parameter
+ * history, the payouts and the comparison court deliberately are not — see each query below.
  */
 export function useCourtPerformance(
   disputes: RawDisputesView,
@@ -203,61 +193,14 @@ export function useCourtPerformance(
   const draws = query.data?.draws;
 
   /**
-   * The commitments, read from Arbitrum rather than from the subgraph (ADR-0004).
+   * The court's parameter history, from Arbitrum rather than the subgraph (ticket 08).
    *
-   * A separate query on purpose, and one the matrix does not wait on: draw state, reveal latency
-   * and coherence come from the subgraph and are unaffected by an Arbitrum outage, so a failure
-   * here costs each draw's commit figure on the agent juror page and nothing else. Blanking the
-   * matrix over an endpoint that carries none of it would be the worse lie.
+   * Keyed on the court alone and on nothing else: it is not a cross-check against anything, but
+   * the court's own configuration, three logs deep, and it answers the same way whichever
+   * disputes have been read beside it.
    *
-   * Keyed on the draws it has to explain, which is what keeps the cross-check honest. The count
-   * compares two reads, so it is only meaningful when both have seen the same court: were this
-   * keyed on the court alone, a draws refetch that picked up a newly committed draw would raise
-   * `expected` against a commit list read before it existed, and the page would report a
-   * shortfall that is an artefact of which request returned first. A changed draw set retires
-   * this read instead, and until the replacement lands the model is told the commits are not in.
-   */
-  const commitQuery = useQuery({
-    queryKey: [
-      "commitCasts",
-      COURT_ID,
-      agentJurors.map((agentJuror) => agentJuror.address),
-      draws?.length ?? 0,
-    ],
-    queryFn: ({ signal }) =>
-      fetchCommitCasts({ client: createArbitrumClient(undefined, signal), roster: agentJurors }),
-    // Nothing to read against until the draws are in, and a first read keyed on zero draws would
-    // be retired by the very next render.
-    enabled: draws !== undefined,
-    staleTime: 60 * 1000,
-    /**
-     * No interval here, and that is the deliberate exception to the pair above.
-     *
-     * This read costs one `eth_getLogs` and then one `eth_getBlockByNumber` per commitment,
-     * against an endpoint that rate-limits per RPC *call* and counts a batch as its size.
-     * ADR-0004 measured it: 62 blocks read three times over inside a second returns HTTP 429,
-     * surfacing through viem as an unrecognisable `UnknownRpcError`. A five-second interval
-     * here would take the commit line down for exactly the person watching a commit period.
-     *
-     * It is gated on the draw set instead, which is the other half of ticket 07's advice: a
-     * newly committed draw changes the key and retires this read, so the commitments refresh
-     * when there is something new to explain and not on a clock. `block-times.ts` is what
-     * makes that re-read cheap — a block's timestamp cannot change, so a repeated scan pays
-     * only for blocks it has never seen.
-     */
-  });
-
-  const commits = commitQuery.data;
-
-  /**
-   * The court's parameter history, from the same chain and a different contract (ticket 08).
-   *
-   * Keyed on the court alone and on nothing else, because unlike the commit scan this read is
-   * not a cross-check against anything: it is the court's own configuration, three logs deep,
-   * and it answers the same way whichever disputes have been read beside it.
-   *
-   * Not waited on, exactly like the commitments. An unread history costs the dispute view's
-   * configured windows — worth stating there, never worth a blank page.
+   * Not waited on. An unread history costs the dispute view's configured windows — worth stating
+   * there, never worth a blank page.
    */
   const parametersQuery = useQuery({
     queryKey: ["courtParameters", COURT_ID],
@@ -266,8 +209,8 @@ export function useCourtPerformance(
     // The same minute as everything else. Court 34 is retimed to suit a demo and has been
     // reconfigured twice in a fortnight (`docs/knowledge/court-34.md`), but a minute is short
     // against even that — so this is about the endpoint's rate limit rather than about
-    // freshness: it counts a batch as its size, and this read is four calls on top of the
-    // commit scan's fifty-odd.
+    // freshness: it counts a batch as its size, and this read is a call per window per event,
+    // eight in all since it has had to be cut into windows (#25).
     staleTime: 60 * 1000,
   });
 
@@ -276,12 +219,11 @@ export function useCourtPerformance(
   /**
    * What the court has paid out, from the core subgraph (ticket 10).
    *
-   * Keyed on the court alone, like the parameter history and unlike the commit scan: it is not
-   * a cross-check against the draws, so it answers the same way whichever of them are on
-   * screen, and keying it on the draw set would retire a perfectly good read every time a new
-   * commitment landed.
+   * Keyed on the court alone, like the parameter history: it is not a cross-check against the
+   * draws, so it answers the same way whichever of them are on screen, and keying it on the draw
+   * set would retire a perfectly good read every time a new commitment landed.
    *
-   * **No interval, and the reason is not the one the commit scan has.** That read is throttled
+   * **No interval, and the reason is not the one the Arbitrum reads have.** Those are throttled
    * because arb1 rate-limits per call; this one shares an endpoint with the disputes and the
    * draws, which already poll every five seconds while the court is live. What decides it is
    * the figure's own cadence: a shift is written when a dispute is *executed*, hours after the
@@ -289,7 +231,7 @@ export function useCourtPerformance(
    * half again to this endpoint's load to catch a number that moves twice a day. It refetches
    * on mount and holds the same minute of staleness as everything else.
    *
-   * Not waited on, exactly like the two Arbitrum reads. What an unread payout costs is the two
+   * Not waited on, exactly like the parameter history. What an unread payout costs is the two
    * reward sums in each column header, and the header says which.
    */
   const rewardsQuery = useQuery({
@@ -345,11 +287,7 @@ export function useCourtPerformance(
       disputes: disputes.raw,
       draws,
       drawsReadAt,
-      // `null`, never `[]`: an unfinished read is not an empty one. `[]` here would have the
-      // matrix announce that every commitment in the court failed to read, on every cold load,
-      // for as long as the chain takes to answer — a failure stated before it has happened.
-      commits: commits ?? null,
-      // `null` for the same reason, and with a quieter consequence: an unread history marks
+      // `null`, never `[]`: an unfinished read is not an empty one. An unread history marks
       // nothing, where `[]` would assert that a court which has plainly been configured at
       // least once never was.
       parameters: parameters ?? null,
@@ -360,21 +298,19 @@ export function useCourtPerformance(
       rewards: rewards ?? null,
       roster: agentJurors,
     });
-  }, [disputes, draws, commits, parameters, rewards, agentJurors, drawsReadAt]);
+  }, [disputes, draws, parameters, rewards, agentJurors, drawsReadAt]);
 
   const failure = result?.success === false ? result : null;
 
   return {
     performance: result?.success === true ? result.data : null,
-    // Both Arbitrum reads are deliberately absent from `isLoading`: the matrix renders as soon
-    // as the subgraph answers. Neither read feeds the matrix (ADR-0011); the agent juror page
-    // and the dispute page say for themselves when the one they show is not in yet.
+    // The parameter history is deliberately absent from `isLoading`: the matrix renders as soon
+    // as the subgraph answers, and the dispute page says for itself when the windows are not in.
     isLoading: query.isPending || disputes.isLoading,
     error:
       query.error ??
       disputes.error ??
       (failure !== null ? new Error(`${failure.code}: ${failure.message}`) : null),
-    commitError: commitQuery.error,
     parametersError: parametersQuery.error,
     rewardsError: rewardsQuery.error,
     reference: referenceResult.reading,
@@ -384,12 +320,10 @@ export function useCourtPerformance(
       failure === null
         ? null
         : { code: failure.code, message: failure.message, details: failure.details },
-    // The commit query is deliberately not counted: it is the one read this page does not wait
-    // for, and an offline browser pauses it alongside the others anyway through the two below.
     isPaused: query.fetchStatus === "paused" || disputes.isPaused,
     retry: () => {
       void query.refetch();
-      void commitQuery.refetch();
+      void parametersQuery.refetch();
       void rewardsQuery.refetch();
       void referenceQuery.refetch();
       disputes.retry();

@@ -3,14 +3,12 @@ import fixture from "../disputes/court-34.fixture.json" with { type: "json" };
 import type { RawDispute } from "../disputes/disputes";
 import { ROSTER } from "../roster/agent-jurors";
 import { buildAgentJurorReading } from "./agent-juror-detail";
-import commitFixture from "./court-34-commits.fixture.json" with { type: "json" };
 import drawFixture from "./court-34-draws.fixture.json" with { type: "json" };
 import parameterFixture from "./court-34-parameters.fixture.json" with { type: "json" };
 import rewardFixture from "./court-34-rewards.fixture.json" with { type: "json" };
 import {
   buildCourtPerformance,
   type CourtPerformance,
-  type RawCommitCast,
   type RawDraw,
   type RawRewardShift,
 } from "./performance";
@@ -31,7 +29,6 @@ function court(): CourtPerformance {
   const built = buildCourtPerformance({
     disputes: fixture as RawDispute[],
     draws: drawFixture as RawDraw[],
-    commits: commitFixture as RawCommitCast[],
     parameters: parameterFixture as RawCourtParameters[],
     rewards: rewardFixture as RawRewardShift[],
     roster: ROSTER,
@@ -132,5 +129,57 @@ describe("buildAgentJurorReading", () => {
 
     expect(before?.draws.some(({ row }) => row.dispute.id === first.dispute.id)).toBe(true);
     expect(after?.draws.some(({ row }) => row.dispute.id === first.dispute.id)).toBe(false);
+  });
+});
+
+describe("each draw's time to appeal (ADR-0012)", () => {
+  it("is the dispute's own, looked up from the court's totals rather than recomputed", () => {
+    const performance = court();
+    const reading = buildAgentJurorReading(performance, "Columbo");
+    const byDispute = new Map(
+      performance.totals.timeToAppeal.disputes.map((entry) => [entry.dispute, entry.seconds]),
+    );
+
+    expect(reading?.draws.length).toBeGreaterThan(0);
+    for (const { row, timeToAppealSeconds } of reading?.draws ?? []) {
+      expect(timeToAppealSeconds).toBe(byDispute.get(row.dispute.id) ?? null);
+    }
+  });
+
+  it("is the same for every agent juror on one panel, because it is the dispute's", () => {
+    // Dispute 151's panel was Columbo and Daemonhill, and a figure that differed between them
+    // would be a measure of the agent juror, which this is not.
+    const performance = court();
+    const of = (nickname: string) =>
+      buildAgentJurorReading(performance, nickname)?.draws.find(({ row }) => row.dispute.id === 151)
+        ?.timeToAppealSeconds;
+
+    expect(of("Columbo")).toBeGreaterThan(0);
+    expect(of("Columbo")).toBe(of("Daemonhill"));
+  });
+
+  it("is nothing for a dispute that has not reached its appeal period", () => {
+    const performance = court();
+    const first = performance.rows[0];
+    if (first === undefined) throw new Error("no rows");
+    const drawn = first.cells.find((cell) => cell !== null)?.agentJuror.nickname;
+    if (drawn === undefined) throw new Error("no draw in the newest row");
+    const live: CourtPerformance = {
+      ...performance,
+      totals: {
+        ...performance.totals,
+        timeToAppeal: {
+          ...performance.totals.timeToAppeal,
+          disputes: performance.totals.timeToAppeal.disputes.filter(
+            (entry) => entry.dispute !== first.dispute.id,
+          ),
+        },
+      },
+    };
+
+    const line = buildAgentJurorReading(live, drawn)?.draws.find(
+      ({ row }) => row.dispute.id === first.dispute.id,
+    );
+    expect(line?.timeToAppealSeconds).toBeNull();
   });
 });

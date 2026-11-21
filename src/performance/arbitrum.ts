@@ -5,12 +5,13 @@ import type { Source } from "../read-failure";
 import type { BlockTimes } from "./block-times";
 
 /**
- * The chain this dashboard reads, and the one client both of its chain readers share.
+ * The chain this dashboard reads, and the one client its chain readers share.
  *
- * Two things come from Arbitrum rather than from a subgraph: the `CommitCast` logs that date
- * every commitment (ADR-0004, `commit-logs.ts`) and the court's parameter history (ticket 08,
- * `court-parameters.ts`). This module was the top of the first of those until the second
- * arrived; it is here so that neither reader owns the other's transport.
+ * Three things come from Arbitrum rather than from a subgraph: the `CommitCast` logs that date a
+ * commitment (ADR-0004, `commit-logs.ts`), who opened a dispute's periods (ADR-0012,
+ * `dispute-chain.ts`) and the court's parameter history (ticket 08, `court-parameters.ts`). This
+ * module was the top of the first of those until the second arrived; it is here so that no
+ * reader owns another's transport, and so the one range every scan must respect is one constant.
  */
 
 /**
@@ -18,8 +19,9 @@ import type { BlockTimes } from "./block-times";
  *
  * Overridable, but see netlify.toml: a host absent from `connect-src` is blocked by the browser
  * before the request leaves, and this one is already listed. See also ADR-0004 — many commercial
- * providers cap `eth_getLogs` at ~10,000 blocks, and substituting one here would not error. It
- * would return fewer logs, which is exactly the silent shortfall `commitCoverage` exists to name.
+ * providers cap `eth_getLogs` at ~10,000 blocks, far under `LOG_RANGE_LIMIT`, and substituting one
+ * here may not error. It may return fewer logs, which is exactly the silent shortfall the
+ * timeline's counts exist to name.
  */
 export const DEFAULT_ARBITRUM_RPC_URL = "https://arb1.arbitrum.io/rpc";
 
@@ -77,6 +79,54 @@ export function createArbitrumClient(
     // a single HTTP request; without it the commit scan alone is 56 round trips and counting.
     transport: http(url, { batch: true, fetchOptions: signal ? { signal } : undefined }),
   });
+}
+
+/**
+ * The widest block range one `eth_getLogs` may span on arb1, for a filter whose every topic is
+ * a single value.
+ *
+ * Measured 2026-11-20 (#25), when every scan here still ran from block 0 and every one of them
+ * was refused: `-32602 query spans 525839422 blocks … only 10000000 are allowed`. The cap
+ * depends on the filter's shape. A topic given as a **list** (several jurors at once, say) is
+ * allowed only 100,000 blocks — a hundredth — so no scan here puts a list in a topic: the
+ * commit scan reads one agent juror or one dispute, and the court's history is two events.
+ */
+export const LOG_RANGE_LIMIT = 10_000_000n;
+
+/** One `eth_getLogs` window, both ends inclusive. */
+export type BlockRange = { fromBlock: bigint; toBlock: bigint };
+
+/**
+ * `from` to `to` inclusive, cut into windows no wider than `limit`. Empty when `from` is past
+ * `to`, which is a scan with nothing to read rather than an error: a node a few blocks behind
+ * the subgraph can report a head below the block a dispute was drawn in.
+ */
+export function blockRanges(from: bigint, to: bigint, limit = LOG_RANGE_LIMIT): BlockRange[] {
+  const ranges: BlockRange[] = [];
+  for (let start = from; start <= to; start += limit) {
+    const end = start + limit - 1n;
+    ranges.push({ fromBlock: start, toBlock: end < to ? end : to });
+  }
+  return ranges;
+}
+
+/**
+ * Every log a scan finds from `from` to `to`, read window by window.
+ *
+ * `to` is `"latest"` for a scan that runs to the chain's head, which is then asked for once —
+ * the windows have to end somewhere a number can name. The windows go out together and the
+ * batching transport folds them into one request, which arb1 counts as one call per window: four
+ * for court 34's lifetime today, and one more every month or so.
+ */
+export async function scanBlocks<T>(
+  client: PublicClient,
+  from: bigint,
+  to: bigint | "latest",
+  read: (range: BlockRange) => Promise<readonly T[]>,
+): Promise<T[]> {
+  const head = to === "latest" ? await client.getBlockNumber() : to;
+  const found = await Promise.all(blockRanges(from, head).map(read));
+  return found.flat();
 }
 
 /** How many block reads go out together, and what to wait between one group and the next. */
@@ -149,7 +199,7 @@ export async function blockTimestamps(
     const timestamp = blockTimes.get(blockNumber);
     // A block the cache still does not know is one whose read failed, and it is left out
     // rather than defaulted: the seam drops a commitment with no moment, which is the
-    // shortfall `commitCoverage` counts. A zero here would date it to 1970 instead.
+    // shortfall the timeline counts. A zero here would date it to 1970 instead.
     if (timestamp !== undefined) timestampOf.set(blockNumber, timestamp);
   }
 

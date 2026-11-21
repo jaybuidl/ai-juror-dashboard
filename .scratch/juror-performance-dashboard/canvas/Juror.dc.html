@@ -113,13 +113,13 @@
       <h2 style="margin: 44px 0 0; font: 700 26px/1.15 'Manrope', sans-serif; letter-spacing: -0.02em; color: #f2f0f7;">Drawn in ten disputes.</h2>
       <p style="margin: 10px 0 0; font: 400 15px/1.6 'Manrope', sans-serif; color: #8681a0;">Newest first. Panel size sits beside every coherence mark, because one does not mean anything without the other.</p>
 
-      <div style="margin-top: 22px; display: grid; grid-template-columns: 56px 1fr 92px 96px 150px 150px 132px;">
+      <div style="margin-top: 22px; display: grid; grid-template-columns: 56px 1fr 92px 96px 170px 132px;">
         <div class="th">ID</div>
         <div class="th">Dispute</div>
         <div class="th">Panel</div>
         <div class="th">Choice</div>
-        <div class="th">Reveal</div>
-        <div class="th">Commit</div>
+        <div class="th">Dispute&#39;s time to appeal</div>
+
         <div class="th" style="text-align: right;">Coherence</div>
 
         <sc-for list="{{rows}}" as="r" hint-placeholder-count="10">
@@ -127,8 +127,8 @@
           <div class="td" style="padding-right: 24px; min-width: 0;"><span style="display: block; font: 600 14px/1.35 'Manrope', sans-serif; letter-spacing: -0.01em; color: #f2f0f7; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;">{{r.title}}</span></div>
           <div class="td"><span class="mv" style="color: #8681a0;">{{r.panel}}</span></div>
           <div class="td"><span class="mv" style="color: {{r.choiceFg}};">{{r.choice}}</span></div>
-          <div class="td"><span style="display: flex; align-items: center; gap: 10px;"><span class="mv" style="color: #f2f0f7; width: 58px;">{{r.rt}}</span><span class="rail"><i style="width: {{r.rw}};"></i></span></span></div>
-          <div class="td"><span style="display: flex; align-items: center; gap: 10px;"><span class="mv" style="width: 58px;">{{r.ct}}</span><span class="rail c"><i style="width: {{r.cw}};"></i></span></span></div>
+          <div class="td"><span class="mv" style="color: #f2f0f7;">{{r.tta}}</span></div>
+
           <div class="td" style="justify-content: flex-end;"><span style="display: inline-flex; align-items: center; gap: 6px; padding: 5px 9px; border-radius: 6px; border: 1px solid {{r.bd}}; font: 500 9px/1.2 'JetBrains Mono', monospace; letter-spacing: 0.1em; text-transform: uppercase; color: {{r.fg}};">{{r.glyph}} {{r.verdict}}</span></div>
         </sc-for>
       </div>
@@ -150,16 +150,16 @@ class Component extends DCLogic {
     const strip = (s) => ((Math.log10(Math.max(1, s)) / RAIL_MAX) * 100).toFixed(1) + "%";
 
     const D = [
-      { id: 163, title: "Mismatched Colour Profile in a Print-Ready File", panel: 5, choice: 2, r: 401, c: 1098, k: 1 },
-      { id: 162, title: "Rewritten Copy Delivered Instead of an Original Draft", panel: 4, choice: 1, r: 153, c: 595, k: 1 },
-      { id: 161, title: "Stock Photo Licence Missing From a Delivered Brochure", panel: 3, choice: 1, r: 37, c: 550, k: 1 },
-      { id: 160, title: "Duplicate Charge on a Recurring Retainer", panel: 3, choice: 2, r: 352, c: 175, k: 1 },
-      { id: 159, title: "Incomplete Migration of a Storefront Theme", panel: 4, choice: 2, r: 47, c: 249, k: 1 },
-      { id: 158, title: "Voice Clone Used Beyond the Licensed Scope", panel: 3, choice: 2, r: 42, c: 263, k: 0 },
-      { id: 157, title: "Late Delivery of a Commissioned Product Video", panel: 2, choice: 2, r: 85, c: 835, k: 1 },
-      { id: 154, title: "Refund Refused on a Cancelled Translation Job", panel: 4, choice: 1, r: 265, c: 1495, k: 1 },
-      { id: 153, title: "Undelivered Dataset After Partial Payment", panel: 4, choice: 2, r: 44, c: 353, k: 1 },
-      { id: 152, title: "Wrong Artistic Style in AI-Generated Painting", panel: 5, choice: 2, r: 83, c: 386, k: 1 },
+      { id: 163, title: "Mismatched Colour Profile in a Print-Ready File", panel: 5, choice: 2, r: 401, c: 1098, t: 5032, k: 1 },
+      { id: 162, title: "Rewritten Copy Delivered Instead of an Original Draft", panel: 4, choice: 1, r: 153, c: 595, t: 4511, k: 1 },
+      { id: 161, title: "Stock Photo Licence Missing From a Delivered Brochure", panel: 3, choice: 1, r: 37, c: 550, t: 3965, k: 1 },
+      { id: 160, title: "Duplicate Charge on a Recurring Retainer", panel: 3, choice: 2, r: 352, c: 175, t: 4106, k: 1 },
+      { id: 159, title: "Incomplete Migration of a Storefront Theme", panel: 4, choice: 2, r: 47, c: 249, t: 3788, k: 1 },
+      { id: 158, title: "Voice Clone Used Beyond the Licensed Scope", panel: 3, choice: 2, r: 42, c: 263, t: 3842, k: 0 },
+      { id: 157, title: "Late Delivery of a Commissioned Product Video", panel: 2, choice: 2, r: 85, c: 835, t: 4371, k: 1 },
+      { id: 154, title: "Refund Refused on a Cancelled Translation Job", panel: 4, choice: 1, r: 265, c: 1495, t: 6230, k: 1 },
+      { id: 153, title: "Undelivered Dataset After Partial Payment", panel: 4, choice: 2, r: 44, c: 353, t: 3655, k: 1 },
+      { id: 152, title: "Wrong Artistic Style in AI-Generated Painting", panel: 5, choice: 2, r: 83, c: 386, t: 5061, k: 1 },
     ];
 
     const rows = D.map((d) => ({
@@ -168,7 +168,7 @@ class Component extends DCLogic {
       panel: "Panel " + d.panel,
       choice: "Choice " + d.choice,
       choiceFg: d.k ? "#b9b5cc" : "#e8a441",
-      rt: fmt(d.r), rw: pct(d.r),
+      tta: Math.round(d.t / 60) + "m", rt: fmt(d.r), rw: pct(d.r),
       ct: fmt(d.c), cw: pct(d.c),
       glyph: d.k ? "✓" : "✕",
       verdict: d.k ? "Coherent" : "Diverged",

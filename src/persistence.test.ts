@@ -40,7 +40,6 @@ describe("shouldPersistQuery", () => {
   it("persists the reads that are expensive and cannot change once finalised", () => {
     expect(shouldPersistQuery(["courtDisputes", "34"])).toBe(true);
     expect(shouldPersistQuery(["courtDraws", "34"])).toBe(true);
-    expect(shouldPersistQuery(["commitCasts", "34", [], 76])).toBe(true);
     // Ticket 08's read, admitted when the two branches were merged. Plain numbers all the way
     // down, and a court's parameter history is the least changeable thing this app reads.
     expect(shouldPersistQuery(["courtParameters", "34"])).toBe(true);
@@ -51,6 +50,19 @@ describe("shouldPersistQuery", () => {
     // Ticket 23's comparison court. Strings and arrays only, and the median is taken above the
     // cache on every render, so what is stored is the court's record and never the figure.
     expect(shouldPersistQuery(["referenceCourt", "29"])).toBe(true);
+  });
+
+  it("no longer persists the court-wide commit scan, which ADR-0012 retired", () => {
+    expect(shouldPersistQuery(["commitCasts", "34", [], 76])).toBe(false);
+  });
+
+  it("keeps a dispute's own reads out of storage", () => {
+    // Both are keyed per dispute, so persisting them would accumulate an entry for every dispute
+    // a reader ever opened. The detail carries the justification prose besides.
+    expect(shouldPersistQuery(["disputeDetail", 156])).toBe(false);
+    expect(shouldPersistQuery(["disputeChain", 156, "496780897", "497058149", "execution:4"])).toBe(
+      false,
+    );
   });
 
   it("stores a comparison payload that measures the same after a JSON round trip", () => {
@@ -123,7 +135,6 @@ function marginalsFrom(rewards: RawRewardShift[]) {
   const result = buildCourtPerformance({
     disputes: raw,
     draws: drawFixture as RawDraw[],
-    commits: null,
     parameters: null,
     rewards,
     roster: ROSTER,

@@ -379,7 +379,8 @@ describe("the agent juror the court has never drawn", () => {
     renderAt("/agent-jurors/Baskerville");
     const coming = screen.getByRole("region", { name: /what appears here on its first draw/i });
 
-    expect(within(coming).getByText(/when it committed and revealed/i)).toBeVisible();
+    expect(within(coming).getByText(/time to appeal/i)).toBeVisible();
+    expect(within(coming).getByText(/the same for its whole panel/i)).toBeVisible();
     expect(within(coming).getByText(/coherence, once ruled/i)).toBeVisible();
     expect(
       within(coming).getByText(/undefined until the appeal period closes and a ruling exists/i),
@@ -606,12 +607,14 @@ describe("one agent juror's own view on a phone", () => {
     expect(screen.getByRole("table")).toBeInTheDocument();
   });
 
-  it("loses no figure with the table: votes, choice and both latencies stay on each block", () => {
+  it("loses no figure with the table: votes, choice and time to appeal stay on each block", () => {
     stubViewportWidth(PHONE_WIDTH);
     renderAt("/agent-jurors/Columbo");
 
-    const labels = screen.getAllByText(/^(Votes|Choice|Reveal|Commit)$/).map((n) => n.textContent);
-    expect(new Set(labels)).toEqual(new Set(["Votes", "Choice", "Reveal", "Commit"]));
+    const labels = screen
+      .getAllByText(/^(Votes|Choice|Dispute's time to appeal|Reveal|Commit)$/)
+      .map((n) => n.textContent);
+    expect(new Set(labels)).toEqual(new Set(["Votes", "Choice", "Dispute's time to appeal"]));
   });
 });
 
@@ -654,5 +657,56 @@ describe("an agent juror's own account", () => {
 
     renderAt("/");
     expect(screen.queryByRole("link", { name: /^X profile/ })).not.toBeInTheDocument();
+  });
+});
+
+/** The figure in one column of one dispute's line of the table. */
+function cellOn(disputeId: number, column: string): string {
+  const row = screen.getByRole("link", { name: String(disputeId) }).closest("tr");
+  if (row === null) throw new Error(`No row for dispute ${disputeId}`);
+  const cells = within(row).getAllByRole("cell");
+  const header = screen.getAllByRole("columnheader").map((cell) => cell.textContent);
+  return cells[header.indexOf(column)]?.textContent ?? "";
+}
+
+describe("each dispute's time to appeal, in place of the draw's latencies (ADR-0012)", () => {
+  it("shows the dispute's time to appeal and no commit or reveal column", () => {
+    // Dispute 151 reached its appeal period 48,050s after it was created: 801 minutes, in the
+    // unit the matrix's headline uses for the same figure.
+    renderAt("/agent-jurors/Columbo");
+
+    expect(cellOn(151, "Dispute's time to appeal")).toBe("801m");
+    const headers = screen.getAllByRole("columnheader").map((cell) => cell.textContent);
+    expect(headers).not.toContain("Reveal");
+    expect(headers).not.toContain("Commit");
+  });
+
+  it("says the figure is the dispute's, visibly and in the table's name", () => {
+    // Visibly because the page is named after one agent juror: a bare "Time to appeal" would read
+    // as its own speed to anyone who never hears the caption.
+    renderAt("/agent-jurors/Columbo");
+
+    expect(screen.getByRole("columnheader", { name: "Dispute's time to appeal" })).toBeVisible();
+
+    expect(screen.getByRole("table")).toHaveAccessibleName(
+      /how long the dispute took to reach its appeal period, which is the same for the whole panel/,
+    );
+  });
+
+  it("gives two agent juror pages the same figure for a dispute they shared", () => {
+    // Dispute 151's panel was Columbo and Daemonhill.
+    const { unmount } = renderAt("/agent-jurors/Columbo");
+    const columbo = cellOn(151, "Dispute's time to appeal");
+    unmount();
+    renderAt("/agent-jurors/Daemonhill");
+
+    expect(cellOn(151, "Dispute's time to appeal")).toBe(columbo);
+  });
+
+  it("reads Arbitrum for nothing, so raises no Arbitrum banner", () => {
+    renderAt("/agent-jurors/Columbo");
+
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+    expect(screen.queryByText(/arbitrum/i)).not.toBeInTheDocument();
   });
 });

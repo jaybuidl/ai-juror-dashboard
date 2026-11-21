@@ -10,7 +10,8 @@ this file is the full account.
 
 - **A ruled dispute can legitimately have no payout.** Shifts are written by `execute()`, a later
   and separate transaction from ruling, so cumulative rewards lag coherence by hours. This is why
-  ticket 10 has **no** coverage cross-check in the shape of `CommitCoverage`: "every draw in a ruled
+  ticket 10 has **no** coverage cross-check in the shape of the commit scan's `CommitCoverage`
+  (retired with ADR-0012): "every draw in a ruled
   dispute has a shift" is true of the captured court and would cry "short read" over an ordinary
   state lasting hours — the false caveat this file warns about four times over. The disclosure is
   the affirmative one instead: `RewardCoverage.paidDraws` says what the figures are summed *over*.
@@ -67,8 +68,13 @@ this file is the full account.
   would have put two clocks in one column. So there is no median, plot or ranking of either, per
   agent juror or court-wide; each draw keeps its own figures, and **time to appeal** is the one
   speed figure. Stage 2 of #8 (ADR-0011) took the figures out of the matrix cells, the phone
-  slots and the dispute panel; only the agent juror page's table of draws still shows them.
-  Whether the `CommitCast` scan survives is stage 3 (#13).
+  slots and the dispute panel, leaving them on the agent juror page's table of draws. Stage 3
+  (ADR-0012, #13) took them off that table too, putting each dispute's time to appeal in their
+  place (the dispute's figure, the same for its whole panel), and put the *moments* back on the
+  dispute page as a timeline of UTC clock readings, none counted from an opening, beside who
+  opened each period — named only when an agent juror on the roster did. No page shows either
+  latency as a figure now. The `CommitCast` scan survived for the timeline alone: one dispute's,
+  never the court's.
 - **A draw belonging to a juror the roster does not hold is counted, and was silently dropped
   before ticket 25.** `draws-subgraph.ts` scopes its query by court and not by juror, so every draw
   in court 34 is in hand — but the roster is the column set, so an address outside it has no cell
