@@ -45,11 +45,19 @@ function createFunderNameClient(): PublicClient {
   });
 }
 
-/** Whether a lookup failed because the contract reverted, rather than because nothing answered. */
+/**
+ * Whether a lookup failed because the contract reverted, rather than because nothing answered.
+ *
+ * Only a revert that carries return data, as a multicall leg's always does (`0x` for an empty
+ * revert): viem also dresses a node's -32603 internal error as a reverted call, and that one has
+ * no data and is an outage.
+ */
 function isRevert(reason: unknown): boolean {
   return (
     reason instanceof BaseError &&
-    reason.walk((error) => error instanceof ContractFunctionRevertedError) !== null
+    reason.walk(
+      (error) => error instanceof ContractFunctionRevertedError && typeof error.raw === "string",
+    ) !== null
   );
 }
 

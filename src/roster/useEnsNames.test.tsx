@@ -69,7 +69,8 @@ describe("useEnsNames", () => {
       new ContractFunctionRevertedError({
         abi: [],
         functionName: "reverseWithGateways",
-        message: "OffchainLookup",
+        // OffchainLookup's selector, as the resolver reverts with it.
+        data: "0x556f1830",
       }),
     );
     const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
@@ -82,6 +83,25 @@ describe("useEnsNames", () => {
     await waitFor(() =>
       expect(client.getQueryState(["ensNames", [ALICE]])?.status).toBe("success"),
     );
+  });
+
+  it("takes a node's internal error, which viem also calls a revert, as an outage", async () => {
+    // -32603 with no return data: nothing answered, so it must not be held as "no names".
+    getEnsName.mockRejectedValue(
+      new ContractFunctionRevertedError({
+        abi: [],
+        functionName: "reverseWithGateways",
+        message: "Internal error",
+      }),
+    );
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    renderHook(() => useEnsNames([ALICE]), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      ),
+    });
+
+    await waitFor(() => expect(client.getQueryState(["ensNames", [ALICE]])?.status).toBe("error"));
   });
 
   it("keeps the names it has while a new funder's lookup is in flight", async () => {
