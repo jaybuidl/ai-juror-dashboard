@@ -107,9 +107,9 @@ this file is the full account.
   2026-11-21 (no evidence, commit, vote or appeal period straddles either). Dispute 151's commit and vote periods closed ~11h before dispute
   152 was created; what happened 48 minutes before 152's creation is the **2026-08-20 change
   itself**, and those are two different gaps that a sentence naming only one number will
-  cheerfully swap (it did, and ticket 19's review caught it). Nothing was mid-period on 2026-08-26
-  either. One period does straddle 2026-08-20 — dispute 151's appeal — and it costs nothing,
-  because the appeal window never moved. This is why `windowsFor`'s per-period resolution has never yet *had* to disagree
+  cheerfully swap (it did, and ticket 19's review caught it). Appeal periods do straddle changes:
+  dispute 151's straddles 2026-08-20, and disputes 172–181 were all in appeal on 2026-08-26
+  (re-read 2026-11-21). That costs nothing, because the appeal window never moved. This is why `windowsFor`'s per-period resolution has never yet *had* to disagree
   with a per-dispute one, and why it must stay per-period anyway: the first dispute that straddles
   a change is the one a per-dispute lookup gets wrong, and it will look correct until then.
 
