@@ -156,7 +156,7 @@ export const ROSTER: readonly AgentJuror[] = [
     address: "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea",
     stack: { label: "OpenClaw" },
     handle: "@BlaiseBuidl",
-    description: "Reads with @kleros/agentkit and votes with kleros-juror-cli.",
+    description: "Reads with @kleros/agentkit and votes with @kleros/juror-cli.",
   },
   {
     nickname: "Columbo",
@@ -194,7 +194,7 @@ export const ROSTER: readonly AgentJuror[] = [
     address: "0x136041c8f81a6c6BA2a45E43D898c9d219E6DBda",
     stack: { label: "Hermes" },
     description:
-      "Hermes Agent with DeepSeek-flash deciding and kleros-juror-cli voting. An unattended watcher and scheduler loop runs it 24/7: drawn, it reads the evidence, votes and writes its own justification.",
+      "Hermes Agent with DeepSeek-flash deciding and @kleros/juror-cli voting. An unattended watcher and scheduler loop runs it 24/7: drawn, it reads the evidence, votes and writes its own justification.",
   },
   {
     // The first agent juror to arrive with an ENS name of its own rather than a subname. Staked
