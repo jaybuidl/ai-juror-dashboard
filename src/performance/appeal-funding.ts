@@ -1,5 +1,5 @@
 import { type ChoiceLabel, choiceTitleOf } from "../disputes/dispute-templates";
-import type { AgentJuror } from "../roster/agent-jurors";
+import { AGENT_JUROR_ENS_PARENT, type AgentJuror } from "../roster/agent-jurors";
 import type { DetailRound } from "./dispute-detail";
 import { KLEROS_BOT } from "./dispute-timeline";
 
@@ -16,7 +16,8 @@ import { KLEROS_BOT } from "./dispute-timeline";
  * juror on the roster by name, the Kleros bot, "a party" (an address under the dispute template's
  * `aliases`), "the dispute creator" (the sender of the transaction that created it), then the
  * account's primary ENS name where it has one, and otherwise "someone else". Several accounts in
- * one class are one funder line with a count.
+ * one class are one funder line with a count. A class that depends on a read not yet in (the
+ * template's parties, the creator) is "pending" until it is, never guessed.
  *
  * Pure, with no clock and no network: the kit's rounds arrive from the dispute's own read, and
  * the creator from its chain read.
@@ -30,15 +31,21 @@ export type FunderClass =
   | { kind: "creator" }
   /**
    * Someone else, with a primary ENS name (#32, the maintainer's addition): shown by that name,
-   * one line per account. Only where nothing above names the account.
+   * one line per account. Only where nothing above names the account, and never a name that
+   * passes for an agent juror or for Kleros (`imitates`).
    */
   | { kind: "ens"; name: string; address: string }
   | { kind: "someone-else" }
   /**
-   * Not on the roster, not the bot, not a party, and the dispute's creator is not read yet, so
-   * whether this is the creator or someone else is not known. Never guessed either way.
+   * Not on the roster and not the bot, while the template's parties or the dispute's creator are
+   * not read yet, so which of party, creator or someone else it is is not known. Never guessed.
    */
-  | { kind: "pending" };
+  | { kind: "pending" }
+  /**
+   * What a side raised beyond the contributions the read returned (`dispute-detail-subgraph.ts`
+   * bounds them). Its sum is known from the kit and its accounts are not, so it is one line.
+   */
+  | { kind: "unread" };
 
 /** One class's share of one side: how much, from how many accounts. */
 export type Funder = { funder: FunderClass; wei: bigint; accounts: number };
@@ -51,7 +58,10 @@ export type SideFunding = {
   raisedWei: bigint;
   /** Whether it reached its full appeal fee. */
   funded: boolean;
-  /** Who gave it, largest share first. Empty where the kit recorded a sum and no contribution. */
+  /**
+   * Who gave it, largest share first, then any sum the read returned no contribution for
+   * (`unread`). Empty only where the side raised nothing.
+   */
   funders: readonly Funder[];
 };
 
@@ -71,6 +81,30 @@ function keyOf(funder: FunderClass): string {
   return funder.kind;
 }
 
+/** Letters and digits only, lowercased: the form a look-alike is compared in. */
+function bare(text: string): string {
+  return text.toLowerCase().replace(/[^a-z0-9]/g, "");
+}
+
+/**
+ * Whether an ENS name would pass for an agent juror or for Kleros on the page.
+ *
+ * Anyone can register a name such as `grokleros.eth` and make it their primary name, and the
+ * forward check that `useEnsNames` relies on proves only that the account holds it. Such a funder
+ * is "someone else": a name that dresses as the roster or as the court is worth less than none.
+ * A name under the agents parent is exempt, since only Kleros issues those. Conservative by
+ * design: a genuine name that happens to contain a nickname loses a label, never a figure.
+ */
+function imitates(name: string, roster: readonly AgentJuror[]): boolean {
+  if (name.endsWith(`.${AGENT_JUROR_ENS_PARENT}`)) return false;
+  const label = bare(name.split(".")[0] ?? "");
+  if (label.includes("kleros")) return true;
+  return roster.some((agentJuror) => {
+    const nickname = bare(agentJuror.nickname);
+    return nickname.length > 0 && label.includes(nickname);
+  });
+}
+
 /**
  * Which class an account falls in. The order is the order of what this page can name: an agent
  * juror's own account first, then the court's bot, then the template's parties, then the creator.
@@ -85,7 +119,7 @@ function classOf(
     ensNames,
   }: {
     roster: readonly AgentJuror[];
-    aliases: ReadonlySet<string>;
+    aliases: ReadonlySet<string> | undefined;
     creator: string | null | undefined;
     ensNames: ReadonlyMap<string, string>;
   },
@@ -93,11 +127,14 @@ function classOf(
   const agentJuror = roster.find((candidate) => candidate.address.toLowerCase() === account);
   if (agentJuror !== undefined) return { kind: "agent-juror", agentJuror };
   if (account === KLEROS_BOT.toLowerCase()) return { kind: "kleros-bot" };
+  if (aliases === undefined) return { kind: "pending" };
   if (aliases.has(account)) return { kind: "party" };
   if (creator === undefined) return { kind: "pending" };
   if (creator !== null && account === creator) return { kind: "creator" };
   const name = ensNames.get(account);
-  return name === undefined ? { kind: "someone-else" } : { kind: "ens", name, address: account };
+  return name === undefined || imitates(name, roster)
+    ? { kind: "someone-else" }
+    : { kind: "ens", name, address: account };
 }
 
 /**
@@ -135,12 +172,17 @@ export function buildAppealFunding({
   funding: readonly DetailRound[];
   /** The template's named choices, for each side's title. */
   answers: readonly ChoiceLabel[];
-  /** The template's `aliases` addresses, lowercased. */
-  aliases: readonly string[];
+  /**
+   * The template's `aliases` addresses, lowercased; `[]` where the dispute has no template;
+   * `undefined` while one it has is not read, so no unmatched funder can be told from a party.
+   */
+  aliases: readonly string[] | undefined;
   roster: readonly AgentJuror[];
   /**
    * The dispute's creator, lowercased or as the chain returns it; `null` where it cannot be read
-   * (no creation transaction); `undefined` while it has not been read yet.
+   * (no creation transaction); `undefined` while it has not been read yet. `null` makes an
+   * unmatched funder "someone else", which asserts it is not the creator: the subgraph records a
+   * creation transaction for every dispute in court 34, so this is the case of none at all.
    */
   creator: string | null | undefined;
   /** Primary ENS names by lowercased address (`useEnsNames`), for funders nothing else names. */
@@ -148,7 +190,7 @@ export function buildAppealFunding({
 }): readonly RoundFunding[] {
   const context = {
     roster,
-    aliases: new Set(aliases),
+    aliases: aliases === undefined ? undefined : new Set(aliases),
     creator: creator === null || creator === undefined ? creator : creator.toLowerCase(),
     ensNames,
   };
@@ -210,10 +252,18 @@ export function buildAppealFunding({
     }
 
     const sides = [...byChoice.values()]
-      .map((side) => ({
-        ...side,
-        funders: [...side.funders].sort((a, b) => (a.wei === b.wei ? 0 : a.wei > b.wei ? -1 : 1)),
-      }))
+      .map((side) => {
+        const funders = [...side.funders].sort((a, b) =>
+          a.wei === b.wei ? 0 : a.wei > b.wei ? -1 : 1,
+        );
+        // The kit's sum is every contribution, so less from those returned is a short read, and
+        // a side whose list looks whole would understate who gave. Said as its own line, last.
+        const listed = funders.reduce((sum, funder) => sum + funder.wei, 0n);
+        if (side.raisedWei > listed) {
+          funders.push({ funder: { kind: "unread" }, wei: side.raisedWei - listed, accounts: 0 });
+        }
+        return { ...side, funders };
+      })
       .sort((a, b) => a.choice - b.choice);
     const funded = sides.filter((side) => side.funded).length;
 

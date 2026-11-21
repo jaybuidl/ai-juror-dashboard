@@ -77,7 +77,11 @@ reports it. A read standing in while a newer one is in flight has not fallen sho
 anything, what it raised in ETH, whether it was funded, and its funders by class only, under the
 opener rule above: an agent juror by name, the Kleros bot, "a party" (an address under the
 template's `aliases`), "the dispute creator", or "someone else". Not on the time axis, because no
-contribution is dated here. The head says "Partially funded · no appeal" when one side was funded,
+contribution is dated here. Amended the same day at the maintainer's request: a funder nothing else
+names is shown by its primary ENS name, a public name its holder chose and holds (reverse resolution,
+forward-checked), unless it passes for an agent juror or for Kleros. Funding arrives after the
+reveals, so the dispute's own read is read again when the court sees its period move, and every half
+minute while its appeal period runs. The head says "Partially funded · no appeal" when one side was funded,
 "Funding so far" while the period runs. An appealed round's funding moves to the top of the next
 round's evidence lane, compact, so it does not drop out of view when that round starts.
 

@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ROSTER } from "../roster/agent-jurors";
+import { AGENT_JUROR_ENS_PARENT, ROSTER } from "../roster/agent-jurors";
 import {
   buildAppealFunding,
   ensCandidatesOf,
@@ -185,7 +185,7 @@ describe("buildAppealFunding", () => {
   describe("a funder with a primary ENS name", () => {
     const named: DetailRound = {
       index: 0,
-      sides: [{ choice: 1, paidWei: 20n, funded: true }],
+      sides: [{ choice: 1, paidWei: 15n, funded: true }],
       contributions: [
         { contributor: UNKNOWN, choice: 1, wei: 5n },
         { contributor: "0x4444444444444444444444444444444444444444", choice: 1, wei: 4n },
@@ -220,6 +220,30 @@ describe("buildAppealFunding", () => {
       ]);
     });
 
+    it("is not shown where it passes for an agent juror or for Kleros", () => {
+      const lookalikes = new Map([
+        [UNKNOWN, "grokleros.eth"],
+        ["0x4444444444444444444444444444444444444444", "the-kleros-bot.eth"],
+        ["0x5555555555555555555555555555555555555555", "blaise-juror.eth"],
+      ]);
+
+      expect(kinds(build([named], { ensNames: lookalikes })[0]?.sides[0]?.funders ?? [])).toEqual([
+        "someone-else",
+        "creator",
+      ]);
+    });
+
+    it("is shown under the agents parent, which only Kleros issues", () => {
+      const issued = new Map([[UNKNOWN, `grokleros.${AGENT_JUROR_ENS_PARENT}`]]);
+      const funders = build([named], { ensNames: issued })[0]?.sides[0]?.funders ?? [];
+
+      expect(funders.find(({ funder }) => funder.kind === "ens")?.funder).toEqual({
+        kind: "ens",
+        name: `grokleros.${AGENT_JUROR_ENS_PARENT}`,
+        address: UNKNOWN,
+      });
+    });
+
     it("is not named before the creator is read, since it may be the creator", () => {
       expect(
         kinds(build([named], { creator: undefined, ensNames })[0]?.sides[0]?.funders ?? []),
@@ -232,6 +256,56 @@ describe("buildAppealFunding", () => {
         "creator",
       ]);
     });
+  });
+
+  it("does not guess party or someone else while the template is not read", () => {
+    // The template's parties are a read of their own: until it lands, an unmatched account may be
+    // one, and only the roster and the bot are known.
+    const everyone: DetailRound = {
+      index: 0,
+      sides: [{ choice: 1, paidWei: 3n, funded: false }],
+      contributions: [
+        { contributor: GROKLEROS, choice: 1, wei: 2n },
+        { contributor: PARTY, choice: 1, wei: 1n },
+      ],
+    };
+
+    expect(
+      kinds(
+        buildAppealFunding({
+          funding: [everyone],
+          answers: ANSWERS,
+          aliases: undefined,
+          roster: ROSTER,
+          creator: CREATOR,
+        })[0]?.sides[0]?.funders ?? [],
+      ),
+    ).toEqual(["Grokleros", "pending"]);
+  });
+
+  it("says what a side raised beyond the contributions read, as its own line, last", () => {
+    // The read bounds the contributions; the kit's sum does not, so the difference is a short read.
+    const short: DetailRound = {
+      index: 0,
+      sides: [{ choice: 1, paidWei: 100n, funded: true }],
+      contributions: [
+        { contributor: GROKLEROS, choice: 1, wei: 10n },
+        { contributor: UNKNOWN, choice: 1, wei: 60n },
+      ],
+    };
+    const [side] = build([short])[0]?.sides ?? [];
+
+    expect(side?.funders.map(({ funder, wei }) => [funder.kind, wei])).toEqual([
+      ["someone-else", 60n],
+      ["agent-juror", 10n],
+      ["unread", 30n],
+    ]);
+  });
+
+  it("adds no such line where the contributions read make up the whole sum", () => {
+    expect(
+      build()[0]?.sides.flatMap((side) => side.funders.map(({ funder }) => funder.kind)),
+    ).not.toContain("unread");
   });
 
   it("keeps every round, in order, each with its own outcome", () => {

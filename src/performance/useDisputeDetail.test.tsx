@@ -164,3 +164,43 @@ describe("useDisputeDetail and draws it has not seen", () => {
     expect(fetched).toHaveBeenCalledTimes(1);
   });
 });
+
+/**
+ * #32: appeal funding arrives after the reveals, so no reveal count brings this read back for it.
+ * The court read moving the dispute on does, once per stage.
+ */
+describe("useDisputeDetail and a period it has not seen", () => {
+  beforeEach(() => {
+    fetched.mockReset();
+    fetched.mockResolvedValue(detailFixture as never);
+  });
+
+  it("re-reads once when the court sees the dispute move to another period", async () => {
+    const { result, rerender } = renderHook(({ stage }) => useDisputeDetail(156, 2, true, stage), {
+      wrapper,
+      initialProps: { stage: "1:appeal" as string | null },
+    });
+    await waitFor(() => expect(result.current.readAt).not.toBeNull());
+    expect(fetched).toHaveBeenCalledTimes(1);
+
+    rerender({ stage: "1:execution" });
+    await waitFor(() => expect(fetched).toHaveBeenCalledTimes(2));
+    rerender({ stage: "1:execution" });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(fetched).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not re-read while the dispute stays where it was", async () => {
+    const { result, rerender } = renderHook(({ stage }) => useDisputeDetail(156, 2, true, stage), {
+      wrapper,
+      initialProps: { stage: "1:appeal" as string | null },
+    });
+    await waitFor(() => expect(result.current.readAt).not.toBeNull());
+    rerender({ stage: "1:appeal" });
+    rerender({ stage: null });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(fetched).toHaveBeenCalledTimes(1);
+  });
+});

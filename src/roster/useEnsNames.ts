@@ -1,7 +1,8 @@
 import { useQuery } from "@tanstack/react-query";
-import type { Address } from "viem";
+import { type Address, createPublicClient, http, type PublicClient } from "viem";
+import { mainnet } from "viem/chains";
 import { normalize } from "viem/ens";
-import { createMainnetClient } from "./ens";
+import { mainnetRpcUrl } from "./ens";
 
 /**
  * A primary ENS name worth showing, or `null`.
@@ -17,6 +18,24 @@ export function shownEnsName(name: unknown): string | null {
   } catch {
     return null;
   }
+}
+
+/**
+ * Mainnet, as `createMainnetClient` reaches it, with offchain lookups (CCIP-Read) turned off.
+ *
+ * A funder chooses its own name, and so its resolver: one that answers offchain names a gateway
+ * URL of its choosing, which every reader's browser would then fetch, handing a funder each
+ * visitor's address. The CSP would block the fetch anyway (`netlify.toml`), with a console
+ * violation per name. Off, such a name fails to resolve and the funder stays "someone else". A
+ * name held on mainnet needs no gateway: `vitalik.eth` resolves either way (checked 2026-11-21).
+ */
+function createFunderNameClient(): PublicClient {
+  return createPublicClient({
+    chain: mainnet,
+    transport: http(mainnetRpcUrl(), { batch: true }),
+    batch: { multicall: true },
+    ccipRead: false,
+  });
 }
 
 /**
@@ -38,7 +57,7 @@ export function useEnsNames(addresses: readonly string[]): ReadonlyMap<string, s
   const query = useQuery({
     queryKey: ["ensNames", asked],
     queryFn: async () => {
-      const client = createMainnetClient();
+      const client = createFunderNameClient();
       const names = await Promise.all(
         asked.map((address) =>
           client.getEnsName({ address: address as Address }).catch(() => null),

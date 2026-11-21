@@ -69,17 +69,23 @@ export type DisputeDetailView = {
  *   it says. A read that landed before the panel was drawn has no block range for the timeline's
  *   chain read (`DisputeDetail.blockRange`), and nothing else would bring it back before the first
  *   reveal: so it is read once more when this turns true (ADR-0012).
+ * @param stage Where the court read says the dispute stands (`stageOf`), or `null` before it says.
+ *   Appeal funding arrives after the reveals, so no reveal count brings it back: a read made
+ *   mid-appeal would otherwise show its sums under the next period's outcome (#32). Read once more
+ *   whenever this moves, the way `revealed` is.
  */
 export function useDisputeDetail(
   disputeId: number | null,
   revealed: number | null,
   drawn: boolean | null = null,
+  stage: string | null = null,
 ): DisputeDetailView {
   const detail = useQuery({
     queryKey: ["disputeDetail", disputeId],
     queryFn: async ({ signal }) => ({
       // Captured as the read starts, so a reveal landing mid-read still counts as unseen.
       revealed,
+      stage,
       raw: await fetchDisputeDetail({ disputeId: disputeId as number, signal }),
     }),
     // Nothing to ask for until the URL names a dispute. A path segment that is not a number is
@@ -90,6 +96,11 @@ export function useDisputeDetail(
     // are fixed for ever; an unruled one gains prose as its panel reveals, and the five-second
     // poll on the court is what brings a reader back here with fresh cells around it.
     staleTime: 60 * 1000,
+    // While the dispute is in its appeal period, contributions land at any moment and the strip
+    // says "so far" over them, so the sums are read again every half minute until this read sees
+    // the period close. One dispute's read, for the reader looking at it.
+    refetchInterval: (query) =>
+      query.state.data?.raw.dispute?.period === "appeal" ? 30 * 1000 : false,
   });
 
   // A read that predates the court's own does not know what the court has since seen revealed.
@@ -98,6 +109,9 @@ export function useDisputeDetail(
   // one extra read), and an appeal round restarts the count from zero.
   const seen = detail.data === undefined ? undefined : detail.data.revealed;
   const isBehindReveals = revealed !== null && seen !== undefined && revealed !== seen;
+  // The same rule for the dispute's period and round, which is what brings back appeal funding.
+  const seenStage = detail.data === undefined ? undefined : detail.data.stage;
+  const isBehindStage = stage !== null && seenStage !== undefined && stage !== seenStage;
   // Modelled once per render: the view and the range check below both read it.
   const modelled = detail.data === undefined ? NO_DETAIL : toDisputeDetail(detail.data.raw);
   // A read of a dispute that exists, made before anyone in it was drawn, while the court read
@@ -120,11 +134,22 @@ export function useDisputeDetail(
       ? `${disputeId}:${revealed}`
       : isBehindDraws
         ? `${disputeId}:drawn`
-        : null;
+        : isBehindStage
+          ? `${disputeId}:stage:${stage}`
+          : null;
     if (ask === null || isFetching || asked.current === ask) return;
     asked.current = ask;
     void refetch();
-  }, [isBehindReveals, isBehindDraws, isFetching, disputeId, revealed, refetch]);
+  }, [
+    isBehindReveals,
+    isBehindDraws,
+    isBehindStage,
+    isFetching,
+    disputeId,
+    revealed,
+    stage,
+    refetch,
+  ]);
 
   return {
     // `toDisputeDetail` is applied here rather than inside the query function, which is the

@@ -237,10 +237,11 @@ export function MethodPage() {
           dispute's page shows the moments themselves instead, on its timeline: when each period
           opened and who opened it, and when each agent juror on the panel committed and revealed,
           as clock times in UTC. None of them is counted from another. Its appeal period also lists
-          what each side of the appeal raised and who funded it, by kind rather than by address.
-          Every moment comes from the chain, never from your browser's clock. Each agent juror's
-          page lists, for every dispute it was drawn in, that dispute's time to appeal, which is the
-          same for the whole panel.
+          what each side of the appeal raised and who funded it, by kind rather than by address, or
+          by the funder's own ENS name where it has one and nothing else names it. Every moment
+          comes from the chain, never from your browser's clock. Each agent juror's page lists, for
+          every dispute it was drawn in, that dispute's time to appeal, which is the same for the
+          whole panel.
         </Body>
         <Body>
           Neither says how fast an agent juror judges a case, so neither is averaged, ranked or

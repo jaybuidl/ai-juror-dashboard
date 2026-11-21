@@ -590,6 +590,16 @@ export function revealedCountOf(row: MatrixRow | undefined): number | null {
   return row.cells.filter((cell) => cell !== null && hasRevealed(cell.state)).length;
 }
 
+/**
+ * Where the court read says this row's dispute stands: its round and its period. The dispute's own
+ * read is keyed against it as against `revealedCountOf`, for what arrives without a reveal: the
+ * appeal's funding (#32). `null` where the court read holds no row.
+ */
+export function stageOf(row: MatrixRow | undefined): string | null {
+  if (row === undefined) return null;
+  return `${row.dispute.rounds.length}:${row.dispute.period}`;
+}
+
 /** One dispute, as the view renders it. Every figure on the page is one of these fields. */
 export type DisputeReading = {
   dispute: Dispute;

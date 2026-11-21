@@ -109,9 +109,10 @@ const Name = styled.span`
   color: ${({ theme }) => theme.textHeading};
 `;
 
-/* A funder's ENS name is its holder's choice and has no length limit, so it breaks anywhere rather
-   than push its lane wider than the strip. */
-const EnsName = styled(Name)`
+/* A funder's ENS name, in the funder line's own quiet ink and not in the bold an agent juror's
+   name takes, so a name chosen by a stranger never reads as one of the roster's. It is its
+   holder's choice and has no length limit, so it breaks anywhere rather than widen the lane. */
+const EnsName = styled.span`
   overflow-wrap: anywhere;
 `;
 
@@ -374,6 +375,8 @@ function FunderName({
     case "ens":
       // The account's own public name, as ENS gives it, and never its address.
       return <EnsName>{who.name}</EnsName>;
+    case "unread":
+      return <>others not read</>;
     case "someone-else":
       return <>{accounts > 1 ? `${accounts} others` : "someone else"}</>;
     case "pending":
@@ -393,7 +396,8 @@ function Eth({ wei }: { wei: bigint }) {
   return (
     <Amount>
       {formatEthWei(wei)}
-      <VisuallyHidden> ETH</VisuallyHidden>
+      {/* The separating space in a text node, never inside the hidden element (CLAUDE.md). */}{" "}
+      <VisuallyHidden>ETH</VisuallyHidden>
     </Amount>
   );
 }
@@ -427,9 +431,10 @@ function FundingList({
         {funding.sides.map((side) => (
           <li key={side.choice}>
             <Row>
+              {/* "Choice N" where the template names nothing, so a lone number is never read as a
+                  count (2026-11-02, maintainer's ruling; see choiceNameOf). */}
               <SideName>
-                {side.choice}
-                {side.title !== null && ` · ${side.title}`}
+                {side.title === null ? `Choice ${side.choice}` : `${side.choice} · ${side.title}`}
               </SideName>{" "}
               <Funded $funded={side.funded}>{side.funded ? "funded" : "not funded"}</Funded>{" "}
               <Eth wei={side.raisedWei} />

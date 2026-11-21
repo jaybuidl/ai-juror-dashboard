@@ -805,6 +805,63 @@ describe("the appeal's funding (#32)", () => {
   });
 });
 
+describe("the appeal's funding, where a read it depends on is missing (#32)", () => {
+  const withFunding = () => read({ detail: { ...detail156, funding: FUNDED } });
+  /** The court's disputes with dispute 156's template not come back, as the template read left it. */
+  const untemplated = (isLoading: boolean) => ({
+    ...disputes,
+    templateFor: () => undefined,
+    titles: { expected: 2, resolved: 1, isLoading, readAt: READ_AT },
+  });
+
+  it("does not guess party or someone else while the template is still being read", () => {
+    renderDispute({ detail: withFunding(), disputes: untemplated(true) });
+
+    expect(fundingLines()[1]).toBe("Choice 1 funded 0.0089 ETH—an account not read yet");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("says so once the template read has settled without it", () => {
+    renderDispute({ detail: withFunding(), disputes: untemplated(false) });
+
+    const banner = screen.getByRole("alert");
+    expect(banner).toHaveTextContent("kleros-v2-drt");
+    expect(banner).toHaveTextContent(
+      /appeal funders it cannot otherwise name show as not read, since its parties are unknown/,
+    );
+  });
+
+  it("says what a failed chain read costs the funders, where it leaves one unnamed", () => {
+    renderDispute({ detail: withFunding(), chain: failed() });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /Appeal funders it cannot otherwise name show as not read, since who created the dispute is unknown/,
+    );
+  });
+
+  it("says nothing about funders a failed chain read leaves unnamed where there are none", () => {
+    renderDispute({ chain: failed() });
+
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/Appeal funders/);
+  });
+
+  it("says the funding is an earlier read's when this dispute's re-read fails", () => {
+    renderDispute({
+      detail: read({
+        detail: { ...detail156, funding: FUNDED },
+        error: new ReadFailure("The core subgraph returned HTTP 503 Service Unavailable", {
+          source: SOURCES.core,
+          status: "HTTP 503",
+        }),
+      }),
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /show what an earlier read said, and so does the appeal funding/,
+    );
+  });
+});
+
 describe("the timeline (ADR-0012)", () => {
   it("says when each period opened, and who opened it, in UTC", () => {
     renderDispute();
@@ -995,7 +1052,7 @@ describe("what could not be read", () => {
     });
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      /the timeline cannot say who opened each period or when each agent juror committed/,
+      /the timeline cannot say who opened each period, when each agent juror committed, or how the appeal was funded/,
     );
   });
 

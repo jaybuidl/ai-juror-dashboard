@@ -237,8 +237,11 @@ is one ruling option. **Partially funded** means exactly one side was funded, ho
 funded it, so there is no appeal; **appealed** means two or more were, and the dispute moves to the
 next round in that transaction. A **funder** is a class and never an address: an agent juror on the
 roster by name, the Kleros bot, "a party" (an address under the template's `aliases`), "the dispute
-creator" (who sent the transaction that created it), or "someone else"; several accounts in one
-class are one line with a count.
+creator" (who sent the transaction that created it), the account's primary ENS name where nothing
+before it names the account and the name does not pass for an agent juror or Kleros, or "someone
+else"; several accounts in one class are one line with a count. A funder whose class waits on a
+read not yet in is shown as not read, and a sum the read returned no contribution for is "others
+not read".
 _Avoid_: "fully funded" for one side (a side is funded or not; the appeal is what is partial),
 backer, sponsor, naming an address
 

@@ -258,5 +258,8 @@ agent juror's name in heading ink and the rest in meta ink, each with an amount 
 has more than one funder line. The styles were appended to line 30, as the timeline's were, so the
 file is still 288 lines. The sampled figures are sampled. Not drawn, and the implementation's: the
 "Funding so far" head while the period runs, and an appealed round's compact block at the top of
-the next round's evidence lane.
+the next round's evidence lane. Also the implementation's, added the same day: a funder's ENS name
+in the funder line's own meta ink (never the heading ink an agent juror's name takes, so a stranger's
+name never reads as the roster's), "Choice N" for a side the template does not name, and an
+"others not read" line where the contributions read fall short of what a side raised.
 

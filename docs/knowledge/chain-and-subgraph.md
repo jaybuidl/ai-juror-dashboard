@@ -87,7 +87,17 @@ this file is the full account.
   funding reads "appealed" is always an earlier round by the time anything reads it. As of
   2026-11-21 court 34 holds 5 contributions across disputes 282, 318, 338 and 339, every round
   one side funded, and no dispute has reached round 2. Contributors seen include Grokleros and the
-  unidentified `0x9e51…d30a`.
+  unidentified `0x9e51…d30a`. **`paidFee` is the sum of the round's `Contribution` events for that
+  choice** (the kit caps each at what the side still needs, and the subgraph does not subtract
+  withdrawals), so the contributions returned falling short of it is a short read, which the page
+  shows as "others not read". The read bounds contributions at 100 per round.
+- **A funder's ENS name is reverse resolution on mainnet** (`getEnsName`, through ENS's universal
+  resolver, which forward-checks it), asked only for funders nothing else names. Anyone can register
+  `grokleros.eth` and make it their primary name, so a name whose first label contains a roster
+  nickname or "kleros" is not shown, unless it sits under `agents.kleroslabs.eth`, which only Kleros
+  issues. A name not already in ENSIP-15 normal form is dropped too. **Offchain lookups are off for
+  it** (`ccipRead: false`): a funder picks its own resolver, and an offchain one would have every
+  reader's browser fetch a gateway the funder chose. Mainnet-held names resolve without one.
 - **A dispute's parties are the addresses under its template's `aliases`**, when the template has
   that key (the maintainer's rule, 2026-11-21): typically the parties, or at least the accounts of
   interest. It is an object of name → address, e.g. dispute 266's template 277 carries

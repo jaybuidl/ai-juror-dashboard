@@ -82,3 +82,12 @@ this file is the full account.
   nobody asked, `"fetching"` for one in flight — and the flag a view consumes must be
   `isPending && fetchStatus !== "idle"`. As with `RosterView`, the fixture hid it by hard-coding
   the flag.
+- **The dispute's own read does not poll; the court read does, and is what brings it back.** It is
+  read again once whenever the court read shows something it predates: a reveal (#21), a draw
+  (ADR-0012), or the dispute's round or period moving (#32), each recorded beside the payload
+  rather than put in the key, which would blank the page for the re-read. Once per change, never
+  again while a re-read fails, or it loops against a failing endpoint. Appeal funding is the one
+  thing that also changes *within* a period, so the read polls every 30 seconds while it sees the
+  dispute in its appeal period, and stops when it sees the period close. Funders' ENS names
+  (`useEnsNames`) are not persisted, like the roster's identities: a failed lookup is a successful
+  query that would keep a name missing after mainnet answered again.
