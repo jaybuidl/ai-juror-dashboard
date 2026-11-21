@@ -7,7 +7,7 @@ import { VisuallyHidden } from "../styles/hidden";
 import type { Funder, RoundFunding, SideFunding, StripFunding } from "./appeal-funding";
 import type { DisputeReading, PeriodRun } from "./dispute-detail";
 import type { DisputeTimeline, Moment, Opener, TimelineEntry } from "./dispute-timeline";
-import { formatElapsedSeconds, formatRanSeconds, formatWindowSeconds } from "./latency";
+import { formatRanSeconds, formatWindowSeconds } from "./latency";
 import { clockOf, dayOf, isoOf, sameDay } from "./moments";
 import { formatEthShortfall, formatEthWei, formatEthWeiDown } from "./rewards";
 
@@ -225,19 +225,13 @@ function slotValue(run: PeriodRun, evidenceCount: number | null, reached: boolea
     return evidenceCount === 1 ? "1 submission" : `${evidenceCount} submissions`;
   }
 
-  // How long it ran first, then the most the court allowed, in the window's units (#34, the
-  // maintainer's call): "31m 09s (max 45m)". No running time for an open period: nothing here
-  // reads a clock, and the strip says only what the chain recorded.
+  // How long it ran first, then the most the court allowed, never in days (#34, the maintainer's
+  // call): "31m 09s (max 45m)". No running time for an open period: nothing here reads a clock,
+  // and the strip says only what the chain recorded.
   const max =
     run.windowSeconds === null ? "max not read" : `max ${formatWindowSeconds(run.windowSeconds)}`;
 
-  if (run.elapsedSeconds !== null) {
-    const ran =
-      run.windowSeconds === null
-        ? formatElapsedSeconds(run.elapsedSeconds)
-        : formatRanSeconds(run.elapsedSeconds);
-    return `${ran} (${max})`;
-  }
+  if (run.elapsedSeconds !== null) return `${formatRanSeconds(run.elapsedSeconds)} (${max})`;
 
   return `${reached ? "open" : "not reached"} (${max})`;
 }

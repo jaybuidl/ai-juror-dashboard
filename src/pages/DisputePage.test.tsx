@@ -237,7 +237,7 @@ describe("the timeline strip", () => {
     renderDispute();
     const strip = screen.getByRole("list", { name: "Timeline" });
 
-    // How long it ran, then the most allowed, in the window's own units (#34).
+    // How long it ran, then the most allowed, never in days (#34).
     expect(within(strip).getAllByText(/^(\d+s|\d+m \d{2}s) \(max 45m\)$/).length).toBeGreaterThan(
       0,
     );
