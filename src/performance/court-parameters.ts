@@ -17,7 +17,7 @@ import type { RawCourtParameters } from "./windows";
  * `eth_call` at a historical block, which the public endpoint does not reliably serve.
  *
  * They carry the reward parameters in full too, and those are read for nothing: no extra call,
- * no extra log, the same three decodes. What a coherent draw earns and a wrong one risks is a
+ * no extra log, the same decodes. What a coherent draw earns and a wrong one risks is a
  * claim `CourtTotals` rests on, and until ticket 21 it was a claim checked by hand twice and by
  * nothing since — see `rewardParameterChanges`.
  */
@@ -77,7 +77,7 @@ export async function fetchCourtParameters({
   const args = { _courtID: BigInt(courtId) };
 
   // From the court's creation to the head, a window at a time: the court has been configured
-  // three times in its life, so each window returns a handful of logs or none.
+  // five times in its life, so each window returns a handful of logs or none.
   const [created, modified] = await Promise.all([
     scanBlocks(client, fromBlock, "latest", (range) =>
       client.getLogs({ address: KLEROS_CORE, event: COURT_CREATED, args, ...range }),

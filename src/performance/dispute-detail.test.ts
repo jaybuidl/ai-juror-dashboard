@@ -232,10 +232,27 @@ describe("toDisputeDetail", () => {
       expect(detail.evidenceCount).toBeNull();
     });
 
-    it("reads no count where the group does not exist", () => {
-      // Not zero. A dispute with no evidence group and a dispute with an empty one are
-      // different, and only the second is the claim "nobody submitted anything".
-      expect(toDisputeDetail({ ...raw156, evidenceGroup: null }).evidenceCount).toBeNull();
+    it("reads zero where the group does not exist, since only a submission creates one", () => {
+      // The deployed mapping writes a group in its `Evidence` handler and nowhere else, so a
+      // dispute nobody submitted to has none. Reading that as "not read" put "Submissions not
+      // read" on twelve disputes that simply had no evidence.
+      expect(toDisputeDetail({ ...raw156, evidenceGroup: null }).evidenceCount).toBe(0);
+    });
+
+    it("still reads no count for a missing group when the arbitrable numbers it differently", () => {
+      const detail = toDisputeDetail({
+        ...raw156,
+        dispute: { ...raw156.dispute, externalDisputeId: "9" } as never,
+        evidenceGroup: null,
+      });
+
+      expect(detail.evidenceCount).toBeNull();
+    });
+
+    it("still reads no count when the group was not asked for at all", () => {
+      const { evidenceGroup: _, ...withoutGroup } = raw156;
+
+      expect(toDisputeDetail(withoutGroup).evidenceCount).toBeNull();
     });
   });
 

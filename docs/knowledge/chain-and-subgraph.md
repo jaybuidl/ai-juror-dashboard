@@ -199,10 +199,15 @@ this file is the full account.
   trap — **the source in the monorepo is not what is answering**. So ticket 09's evidence count
   rests on an assumption: that court 34's one arbitrable
   (`0xb5526d022962a1fff6ed32c93e8b714c901f4323`) uses the core dispute id as its evidence group id.
-  Verified across all 31 disputes on 2026-08-25 — every one has a group, and all 33 submissions
-  fall inside their own dispute's evidence period — and guarded at runtime by comparing
-  `externalDisputeId` against `disputeID`, so a mismatch renders "Submissions not read" rather than
-  somebody else's count. `dispute-detail.integration.test.ts` re-checks both live. Also:
+  Verified across all 31 disputes on 2026-08-25 — all 33 submissions fall inside their own
+  dispute's evidence period — and guarded at runtime by comparing `externalDisputeId` against
+  `disputeID`, so a mismatch renders "Submissions not read" rather than somebody else's count.
+  `dispute-detail.integration.test.ts` re-checks it live, paged, over every submission the court
+  holds. **A dispute nobody submitted to has no group at all**, not an empty one: the mapping
+  creates a `ClassicEvidenceGroup` in its `Evidence` handler and nowhere else, and no group on the
+  deployment has `nextEvidenceIndex` 0. So an absent group reads as zero submissions (#30). Until
+  then it read as "Submissions not read", which on 2026-11-21 sat on twelve disputes (193, 266,
+  312, 313 and 350–357) that simply had no evidence. Also:
   `nextEvidenceIndex` **is** the submission count despite its name, and is read in preference to
   counting the entities because a counter cannot come back short and a paged list can.
 - **A dispute id is global across every court on the core subgraph.** `dispute(id: "50")` answers

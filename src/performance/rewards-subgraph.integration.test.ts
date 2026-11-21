@@ -101,14 +101,55 @@ describe("fetchCourtRewards", () => {
     // came back short renders as an agent juror that earned less rather than as an error.
     // Nothing about a shorter list would look wrong on its own.
     //
-    // PNK is a redistribution — taken from the incoherent, handed to the coherent — so the
-    // court's net is zero to within the dust integer division leaves behind. A single missing
+    // PNK is a redistribution — taken from the incoherent, handed to the coherent — so a
+    // dispute's net is zero to within the dust integer division leaves behind. A single missing
     // payout moves it by of the order of 1e20, which is fifteen orders of magnitude past the
-    // tolerance.
-    const net = result.data.marginals.reduce((total, m) => total + (m.rewards?.pnkWei ?? 0n), 0n);
-
+    // tolerance. Checked per dispute rather than over the court, because of the one case where
+    // it is not a redistribution at all.
+    //
+    // **A round with no coherent juror pays nobody.** KlerosCore sends its penalties and its fee
+    // to the governor, out of the court (`LeftoverRewardSent`). Dispute 282 is the first: all five
+    // votes were for 2, only the appeal side for 0 was funded, so the ruling became 0 and every
+    // draw was wrong. It was executed on 2026-09-20 and its 935 PNK left the court; the old
+    // court-wide sum read -935 PNK from then on.
+    //
+    // Summed from the raw shifts and not from the cells, so neither an off-roster juror (who has
+    // no cell) nor a draw the draw read dropped can take a payout out of the sum. A dispute counts
+    // as a forfeit only if **both** reads say nobody was paid: no shift is positive in PNK or ETH,
+    // and no cell is coherent or tied. A lost payout to the lone coherent juror leaves that juror's
+    // cell coherent, so the dispute still has to balance and goes red.
     expect(result.data.rewards.read).toBe(true);
+    expect(result.data.rewards.short).toBe(false);
     expect(result.data.rewards.paidDraws).toBeGreaterThan(0);
-    expect(net > -1_000_000n && net < 1_000_000n).toBe(true);
+
+    const byDispute = new Map<string, typeof rewards>();
+    for (const shift of rewards) {
+      const id = shift.dispute.disputeID;
+      byDispute.set(id, [...(byDispute.get(id) ?? []), shift]);
+    }
+    const rows = new Map(result.data.rows.map((row) => [String(row.dispute.id), row]));
+
+    let balanced = 0;
+    for (const [id, shifts] of byDispute) {
+      const net = shifts.reduce((total, shift) => total + BigInt(shift.pnkAmount), 0n);
+      const anyShiftPaid = shifts.some(
+        (shift) => BigInt(shift.pnkAmount) > 0n || BigInt(shift.ethAmount) > 0n,
+      );
+      const anyCellPaid = (rows.get(id)?.cells ?? []).some(
+        (cell) => cell?.state.kind === "coherent" || cell?.state.kind === "tied",
+      );
+
+      if (anyShiftPaid || anyCellPaid) {
+        expect(net > -1_000_000n && net < 1_000_000n, `dispute ${id}: ${net}`).toBe(true);
+        balanced += 1;
+      } else {
+        // The forfeit: nobody gained anything, in PNK or ETH, and every draw lost its stake.
+        for (const shift of shifts) {
+          expect(BigInt(shift.pnkAmount), `dispute ${id}`).toBeLessThan(0n);
+        }
+      }
+    }
+
+    expect(balanced).toBeGreaterThan(0);
   }, 30_000);
 });

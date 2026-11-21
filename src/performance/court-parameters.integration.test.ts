@@ -27,7 +27,7 @@ import {
  *    topic, matches no log, and returns a court that was never configured — an empty history
  *    that marks no dispute and fails no other check by saying so. A log counted twice is the
  *    second, and it is the one that needs the ordering above: a duplicate leaves both
- *    assertions below green, because there are still three configurations and the fold in case
+ *    assertions below green, because the configurations are all still there and the fold in case
  *    2 swallows a repeat, so a reader who skipped to case 3 would recapture the fixture with
  *    the duplicate in it and write it into `/method`.
  * 2. **A figure moved.** Two assertions, and both are worth waking up for. `has moved no commit
@@ -43,15 +43,15 @@ import {
  *    goes red, which makes this assertion the thing that says the day has come. Either failure
  *    also leaves the fixture behind the offline suite a snapshot of a court that no longer
  *    exists.
- * 3. **An account went stale.** `still holds the three configurations…` and `returns what the
+ * 3. **An account went stale.** `still holds the five configurations…` and `returns what the
  *    captured fixture holds…` fire on *any* change to the history, including one that moves no
  *    figure a reader can see. `MethodPage`'s account of the configurations is prose — it has to
  *    answer a reader arriving from the matrix's footnote on a cold load, so it cannot wait on
  *    this read — and prose is free to drift. With everything above green, these two are
  *    documentation upkeep: recapture the fixture, rewrite the section, done.
  *
- * **It has fired once, and the rewrite was ticket 19.** The 2026-08-26 change moved the
- * evidence period alone: it was case 3 and nothing else, and working out that it was took a
+ * **It has fired twice, and the rewrites were ticket 19 and #30.** The 2026-08-26 change moved
+ * the evidence period alone, as did the two in November 2026: each was case 3 and nothing else, and working out that it was took a
  * maintainer reading a diff by hand — which is the whole reason for the split above. Court 34
  * is a live demo instrument and gets reconfigured to suit a demo, so case 3 is the common one
  * (`docs/knowledge/court-34.md`); a nightly job habitually red for it is a job nobody reads,
@@ -62,12 +62,12 @@ import {
  */
 describe("fetchCourtParameters", () => {
   /**
-   * What each of the three configurations pays and puts at risk, identical across all three.
+   * What each of the five configurations pays and puts at risk, identical across all five.
    *
-   * Shared between the three entries in the full-history assertion rather than restated there,
+   * Shared between the five entries in the full-history assertion rather than restated there,
    * and that is safe only because `has changed no reward parameter…` has already established the
-   * three are equal. Written the other way round — three copies — a court that changed a fee
-   * would show up as one number inside one of three blocks, which is the diff the split at the
+   * five are equal. Written the other way round — five copies — a court that changed a fee
+   * would show up as one number inside one of five blocks, which is the diff the split at the
    * top of this file exists to spare a maintainer.
    */
   const REWARDS: RewardParameters = {
@@ -170,7 +170,7 @@ describe("fetchCourtParameters", () => {
     ).toEqual([]);
   });
 
-  it("still holds the three configurations the fixture and /method describe, in full", () => {
+  it("still holds the five configurations the fixture and /method describe, in full", () => {
     // Case 3. `MethodPage`'s window section states these in prose, in words (it was the
     // destination of the † marker's link until 2026-09-24), and this is the assertion that keeps the page and
     // the chain one account. It fires on any change at all — including the evidence-only kind
@@ -204,6 +204,29 @@ describe("fetchCourtParameters", () => {
       // be visible here as a changed number rather than as a new entry nobody reads.
       {
         from: 1_787_750_041,
+        windows: {
+          evidenceSeconds: 600,
+          commitSeconds: 2_700,
+          voteSeconds: 1_800,
+          appealSeconds: 129_600,
+        },
+        rewards: REWARDS,
+      },
+      // Two more of the evidence-only kind, 2026-11-02 and 2026-11-13: five minutes, then ten
+      // again. The fifth repeats the third and is still a configuration of its own, because it
+      // differs from the one before it.
+      {
+        from: 1_793_631_030,
+        windows: {
+          evidenceSeconds: 300,
+          commitSeconds: 2_700,
+          voteSeconds: 1_800,
+          appealSeconds: 129_600,
+        },
+        rewards: REWARDS,
+      },
+      {
+        from: 1_794_597_815,
         windows: {
           evidenceSeconds: 600,
           commitSeconds: 2_700,

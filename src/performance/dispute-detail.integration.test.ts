@@ -82,7 +82,66 @@ describe("fetchDisputeDetail", () => {
   }, 30_000);
 });
 
+/**
+ * Every entity a `where` selects, paged on `id`.
+ *
+ * The first version of this suite asked for `first: 200` groups and `first: 200` disputes, and
+ * the court passed 200 disputes in November 2026: the four newest fell off the dispute list, and
+ * the first submission to one of them read as evidence belonging to no dispute. A capped read
+ * that comes back full throws nothing, so these checks page rather than guess a ceiling.
+ */
+async function readAll<T extends { id: string }>(
+  entity: string,
+  where: { declare: string; filter: string },
+  selection: string,
+  variables: Record<string, unknown>,
+): Promise<T[]> {
+  const all: T[] = [];
+  let cursor = "";
+  for (;;) {
+    const data = await postSubgraphDocument({
+      url: DEFAULT_CORE_SUBGRAPH_URL,
+      query: `
+        query($first: Int!, $idGt: ID!, ${where.declare}) {
+          page: ${entity}(first: $first, where: { ${where.filter}, id_gt: $idGt }, orderBy: id) {
+            id
+            ${selection}
+          }
+        }
+      `,
+      variables: { first: 1000, idGt: cursor, ...variables },
+      source: SOURCES.core,
+    });
+    const page = data.page as T[];
+    all.push(...page);
+    const last = page[page.length - 1];
+    if (page.length < 1000 || last === undefined) return all;
+    cursor = last.id;
+  }
+}
+
+const BY_IDS = (field: string) => ({ declare: "$ids: [ID!]!", filter: `${field}: $ids` });
+
 describe("the evidence count", () => {
+  type Group = { id: string; nextEvidenceIndex: string };
+  type Evidence = { id: string; timestamp: string; evidenceGroup: { id: string } };
+
+  let groups: Group[] = [];
+  let evidences: Evidence[] = [];
+
+  beforeAll(async () => {
+    const ids = disputeIds.map(String);
+    [groups, evidences] = await Promise.all([
+      readAll<Group>("classicEvidenceGroups", BY_IDS("id_in"), "nextEvidenceIndex", { ids }),
+      readAll<Evidence>(
+        "classicEvidences",
+        BY_IDS("evidenceGroup_in"),
+        "timestamp evidenceGroup { id }",
+        { ids },
+      ),
+    ]);
+  }, 30_000);
+
   /**
    * The assumption, stated as a query.
    *
@@ -91,76 +150,56 @@ describe("the evidence count", () => {
    * makes a single number safe to read in place of a list that could come back short. If the
    * mapping ever changes, this is where it surfaces, rather than in a figure on a public page.
    */
-  it("counts the same submissions the evidence entities do", async () => {
-    const data = await postSubgraphDocument({
-      url: DEFAULT_CORE_SUBGRAPH_URL,
-      query: `
-        query($ids: [ID!]!) {
-          groups: classicEvidenceGroups(first: 200, where: { id_in: $ids }) {
-            id
-            nextEvidenceIndex
-          }
-          evidences: classicEvidences(first: 500, where: { evidenceGroup_in: $ids }) {
-            id
-            evidenceGroup { id }
-          }
-        }
-      `,
-      variables: { ids: disputeIds.map(String) },
-      source: SOURCES.core,
-    });
-
-    const groups = data.groups as { id: string; nextEvidenceIndex: string }[];
-    const evidences = data.evidences as { evidenceGroup: { id: string } }[];
-
-    // Every dispute the court holds has a group under its own id. The moment one does not,
-    // the view's evidence slot starts reading "Submissions not read" — which is correct, and
-    // this is where the reason for it would be found.
-    expect(groups).toHaveLength(disputeIds.length);
-
+  it("counts the same submissions the evidence entities do", () => {
     const counted = new Map<string, number>();
     for (const evidence of evidences) {
       const id = evidence.evidenceGroup.id;
       counted.set(id, (counted.get(id) ?? 0) + 1);
     }
 
+    expect(groups.length).toBeGreaterThan(0);
     for (const group of groups) {
-      expect(Number(group.nextEvidenceIndex)).toBe(counted.get(group.id) ?? 0);
+      expect(Number(group.nextEvidenceIndex), `group ${group.id}`).toBe(counted.get(group.id) ?? 0);
     }
-  }, 30_000);
+  });
+
+  it("has a group only where something was submitted, so a missing group is a count of zero", () => {
+    // The mapping creates a `ClassicEvidenceGroup` in its `Evidence` handler and nowhere else
+    // (`ensureClassicEvidenceGroup`), so a dispute nobody submitted to has no group at all rather
+    // than an empty one. That is what lets `evidenceCountOf` read an absent group as zero. Twelve
+    // of the court's disputes had none on 2026-11-21, and the view said "Submissions not read" on
+    // every one of them. The day an empty group appears, the mapping has changed, and an absent
+    // group may no longer mean nobody submitted anything.
+    for (const group of groups) {
+      expect(Number(group.nextEvidenceIndex), `group ${group.id}`).toBeGreaterThan(0);
+    }
+
+    const grouped = new Set(groups.map((group) => group.id));
+    for (const evidence of evidences) {
+      expect(grouped, `evidence ${evidence.id}`).toContain(evidence.evidenceGroup.id);
+    }
+  });
 
   it("belongs to the dispute it is read under, checked against that dispute's own periods", async () => {
     // The join has no schema behind it, so this is the check that it is not simply a
     // coincidence of ids: every submission in the group has to fall inside the evidence
     // period of the dispute whose number it shares. Evidence arriving before the dispute
     // exists or after its panel voted would mean the group belongs to something else.
-    const data = await postSubgraphDocument({
-      url: DEFAULT_CORE_SUBGRAPH_URL,
-      query: `
-        query($court: String!, $ids: [ID!]!) {
-          disputes(first: 200, where: { court: $court }) {
-            disputeID
-            externalDisputeId
-            createdAt
-            rounds { timeline }
-          }
-          evidences: classicEvidences(first: 500, where: { evidenceGroup_in: $ids }) {
-            timestamp
-            evidenceGroup { id }
-          }
-        }
-      `,
-      variables: { court: COURT_ID, ids: disputeIds.map(String) },
-      source: SOURCES.core,
-    });
-
-    const disputes = data.disputes as {
+    const disputes = await readAll<{
+      id: string;
       disputeID: string;
       externalDisputeId: string;
       createdAt: string;
       rounds: { timeline: string[] }[];
-    }[];
-    const evidences = data.evidences as { timestamp: string; evidenceGroup: { id: string } }[];
+    }>(
+      "disputes",
+      { declare: "$court: String!", filter: "court: $court" },
+      "disputeID externalDisputeId createdAt rounds { timeline }",
+      { court: COURT_ID },
+    );
+
+    // The same court, read the same way the page reads it. A shortfall here is this read's.
+    expect(disputes).toHaveLength(disputeIds.length);
 
     const byId = new Map(disputes.map((dispute) => [dispute.disputeID, dispute]));
 
