@@ -3,10 +3,12 @@ import type { AgentJuror } from "../roster/agent-jurors";
 import type { RosterView } from "../roster/useRoster";
 import { narrow } from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
+import type { Funder, RoundFunding, StripFunding } from "./appeal-funding";
 import type { DisputeReading, PeriodRun } from "./dispute-detail";
 import type { DisputeTimeline, Moment, Opener, TimelineEntry } from "./dispute-timeline";
 import { formatElapsedSeconds, formatWindowSeconds } from "./latency";
 import { clockOf, dayOf, isoOf, sameDay } from "./moments";
+import { formatEthWei } from "./rewards";
 
 /**
  * The dispute's periods, each with what happened in it: `canvas/Dispute.dc.html:87-96`.
@@ -121,6 +123,61 @@ const Zone = styled.span`
   letter-spacing: ${({ theme }) => theme.trackingMono};
   text-transform: uppercase;
   color: ${({ theme }) => theme.textPending};
+`;
+
+/* The appeal's funding, under the appeal lane (#32, Dispute.dc.html:95). Not moments, so not on
+   the time axis: contributions carry no time this dashboard reads, and placing them between two
+   clock readings would claim an order nobody knows. */
+const FundingHead = styled.p`
+  display: flex;
+  justify-content: space-between;
+  gap: ${({ theme }) => theme.space4};
+  margin-top: ${({ theme }) => theme.space3};
+  padding-top: ${({ theme }) => theme.space5};
+  border-top: ${({ theme }) => theme.borderHairline};
+  font: ${({ theme }) => theme.typeMonoSm};
+  letter-spacing: ${({ theme }) => theme.trackingMono};
+  text-transform: uppercase;
+  color: ${({ theme }) => theme.textPending};
+`;
+
+const Sides = styled.ul`
+  display: flex;
+  flex-direction: column;
+  gap: ${({ theme }) => theme.space3};
+  margin: 0;
+  padding: 0;
+  list-style: none;
+`;
+
+/* A side, and each funder under it: words on the left, the amount right-aligned in tabular
+   figures. Wraps rather than overflowing where a lane is narrow, so the amount drops under the
+   words instead of off the edge. */
+const Row = styled.span<{ $indent?: boolean }>`
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  column-gap: ${({ theme }) => theme.space4};
+  padding-left: ${({ theme, $indent }) => ($indent ? theme.space5 : "0")};
+  font: ${({ theme }) => theme.typeBodySm};
+  color: ${({ theme, $indent }) => ($indent ? theme.textMeta : theme.textBody)};
+`;
+
+const SideName = styled.span`
+  font-weight: 700;
+  color: ${({ theme }) => theme.textHeading};
+`;
+
+/* "not funded" is quieter than "funded", and the word is what carries it, not the ink. */
+const Funded = styled.span<{ $funded: boolean }>`
+  color: ${({ theme, $funded }) => ($funded ? theme.textBody : theme.textMeta)};
+`;
+
+const Amount = styled.span`
+  margin-left: auto;
+  font: ${({ theme }) => theme.typeMonoSm};
+  font-feature-settings: ${({ theme }) => theme.featureMono};
+  color: ${({ theme }) => theme.textBody};
 `;
 
 const PERIOD_NAMES: Record<PeriodRun["period"], string> = {
@@ -290,14 +347,143 @@ function EntryRow({
   }
 }
 
+/** One funder line's words: an agent juror by name, every other class by kind, never an address. */
+function FunderName({
+  funder,
+  nameOf,
+}: {
+  funder: Funder;
+  nameOf: (agentJuror: AgentJuror) => string;
+}) {
+  const { funder: who, accounts } = funder;
+  switch (who.kind) {
+    case "agent-juror":
+      return <Name>{nameOf(who.agentJuror)}</Name>;
+    case "kleros-bot":
+      return <>the Kleros bot</>;
+    case "party":
+      return <>{accounts > 1 ? `${accounts} parties` : "a party"}</>;
+    case "creator":
+      return <>the dispute creator</>;
+    case "someone-else":
+      return <>{accounts > 1 ? `${accounts} others` : "someone else"}</>;
+    case "pending":
+      return (
+        <>
+          <span aria-hidden="true">—</span>
+          <VisuallyHidden>
+            {accounts > 1 ? `${accounts} accounts` : "an account"} not read yet
+          </VisuallyHidden>
+        </>
+      );
+  }
+}
+
+/** An amount in ETH, the unit said to a screen reader on every figure and drawn once in the head. */
+function Eth({ wei }: { wei: bigint }) {
+  return (
+    <Amount>
+      {formatEthWei(wei)}
+      <VisuallyHidden> ETH</VisuallyHidden>
+    </Amount>
+  );
+}
+
+/**
+ * One round's funding: a head naming the outcome, then each side, its funders under it.
+ *
+ * A side with one funder line gives no amount on that line, since it is the side's own. `compact`
+ * is an earlier round's form, at the top of the next round's evidence lane: funders joined on one
+ * line, no amount each.
+ */
+function FundingList({
+  funding,
+  label,
+  nameOf,
+  compact = false,
+}: {
+  funding: RoundFunding;
+  label: string;
+  nameOf: (agentJuror: AgentJuror) => string;
+  compact?: boolean;
+}) {
+  const id = `funding-${funding.roundIndex}`;
+  return (
+    <>
+      <FundingHead id={id}>
+        <span>{label}</span>
+        <span aria-hidden="true">ETH</span>
+      </FundingHead>
+      <Sides aria-labelledby={id}>
+        {funding.sides.map((side) => (
+          <li key={side.choice}>
+            <Row>
+              <SideName>
+                {side.choice}
+                {side.title !== null && ` · ${side.title}`}
+              </SideName>{" "}
+              <Funded $funded={side.funded}>{side.funded ? "funded" : "not funded"}</Funded>{" "}
+              <Eth wei={side.raisedWei} />
+            </Row>
+            {compact || side.funders.length === 1
+              ? side.funders.length > 0 && (
+                  <Row $indent>
+                    <span>
+                      {side.funders.map((funder, index) => (
+                        <span key={keyOfFunder(funder)}>
+                          {index > 0 && ", "}
+                          <FunderName funder={funder} nameOf={nameOf} />
+                        </span>
+                      ))}
+                    </span>
+                  </Row>
+                )
+              : side.funders.map((funder) => (
+                  <Row $indent key={keyOfFunder(funder)}>
+                    <span>
+                      <FunderName funder={funder} nameOf={nameOf} />
+                    </span>{" "}
+                    <Eth wei={funder.wei} />
+                  </Row>
+                ))}
+          </li>
+        ))}
+      </Sides>
+    </>
+  );
+}
+
+function keyOfFunder({ funder }: Funder): string {
+  return funder.kind === "agent-juror" ? funder.agentJuror.address : funder.kind;
+}
+
+/**
+ * What the head of one round's funding says. "So far" while the appeal period runs, because the
+ * outcome can still change; the maintainer's terms once it has closed.
+ */
+function fundingLabel(round: RoundFunding, open: boolean): string {
+  if (open) return "Funding so far";
+  switch (round.outcome) {
+    case "appealed":
+      return "Appealed";
+    case "partially-funded":
+      return "Partially funded · no appeal";
+    case "not-funded":
+      return "No side funded · no appeal";
+  }
+}
+
 export function PeriodStrip({
   reading,
   timeline,
   roster,
+  funding = { current: null, earlier: [] },
 }: {
   reading: DisputeReading;
   timeline: DisputeTimeline;
   roster: RosterView;
+  /** The appeal's funding, current round and earlier ones (`stripFundingOf`). */
+  funding?: StripFunding;
 }) {
   // The ENS nickname where it resolved, as the panel's columns name the same agent jurors; the
   // roster's otherwise. Display only: every join above was on the address.
@@ -319,12 +505,32 @@ export function PeriodStrip({
             <SlotValue>
               {slotValue(run, reading.evidenceCount, hasReached(reading, run.period))}
             </SlotValue>
+            {/* Each earlier round's appeal, where this round's evidence period began because of it:
+                otherwise the round that was appealed drops out of view as soon as the next one
+                starts (#32). */}
+            {run.period === "evidence" &&
+              funding.earlier.map((round) => (
+                <FundingList
+                  key={round.roundIndex}
+                  funding={round}
+                  label={`Round ${round.roundIndex + 1} · ${fundingLabel(round, false).toLowerCase()}`}
+                  nameOf={nameOf}
+                  compact
+                />
+              ))}
             {entries.length > 0 && (
               <Lane aria-label={PERIOD_NAMES[run.period]}>
                 {entries.map((entry) => (
                   <EntryRow key={keyOf(entry)} entry={entry} dayAnchor={dayOf0} nameOf={nameOf} />
                 ))}
               </Lane>
+            )}
+            {run.period === "appeal" && funding.current !== null && (
+              <FundingList
+                funding={funding.current.round}
+                label={fundingLabel(funding.current.round, funding.current.open)}
+                nameOf={nameOf}
+              />
             )}
             {run.period === "evidence" && <Zone>All times UTC</Zone>}
           </Slot>

@@ -1,0 +1,115 @@
+import { render, screen, within } from "@testing-library/react";
+import { ThemeProvider } from "styled-components";
+import { describe, expect, it } from "vitest";
+import { theme } from "../styles/theme";
+import { DISPUTE_156_CHAIN, measured, resolvedRoster } from "../test/court";
+import { buildAppealFunding, stripFundingOf } from "./appeal-funding";
+import detailFixture from "./dispute-156-detail.fixture.json" with { type: "json" };
+import { buildDisputeReading, type RawDisputeDetail, toDisputeDetail } from "./dispute-detail";
+import { buildDisputeTimeline } from "./dispute-timeline";
+import { PeriodStrip } from "./PeriodStrip";
+import type { MatrixRow } from "./performance";
+
+/**
+ * The strip once a dispute has been appealed (#32): the round that was appealed must not drop out
+ * of view when the next one starts. No dispute in court 34 has been appealed, so dispute 156 is
+ * moved into a second round by hand, with its first round's appeal funded on two sides.
+ */
+
+const GROKLEROS = "0x93aa2f8e5ce8288d57f8785f5a40a60a42fd925e";
+
+function appealedRow(): MatrixRow {
+  const row = measured.performance?.rows.find((candidate) => candidate.dispute.id === 156);
+  const [first] = row?.dispute.rounds ?? [];
+  if (row === undefined || first === undefined) throw new Error("dispute 156 is not in the court");
+  const second = {
+    ...first,
+    index: 1,
+    voteOpenedAt: null,
+    appealOpenedAt: null,
+    executionOpenedAt: null,
+  };
+  return {
+    ...row,
+    dispute: { ...row.dispute, rounds: [first, second] },
+    cells: row.cells.map((cell) => (cell === null ? null : { ...cell, roundIndex: 1 })),
+  };
+}
+
+function renderAppealed() {
+  const roster = resolvedRoster.entries.map((entry) => entry.agentJuror);
+  const reading = buildDisputeReading({
+    row: appealedRow(),
+    detail: toDisputeDetail(detailFixture as RawDisputeDetail),
+    template: undefined,
+  });
+  const funding = buildAppealFunding({
+    funding: [
+      {
+        index: 0,
+        sides: [
+          { choice: 1, paidWei: 8_910_000_000_000_000n, funded: true },
+          { choice: 2, paidWei: 11_880_000_000_000_000n, funded: true },
+        ],
+        contributions: [
+          {
+            contributor: "0x1111111111111111111111111111111111111111",
+            choice: 1,
+            wei: 8_910_000_000_000_000n,
+          },
+          { contributor: GROKLEROS, choice: 2, wei: 5_940_000_000_000_000n },
+          {
+            contributor: "0x4444444444444444444444444444444444444444",
+            choice: 2,
+            wei: 5_940_000_000_000_000n,
+          },
+        ],
+      },
+    ],
+    answers: [],
+    aliases: [],
+    roster,
+    creator: null,
+  });
+
+  return render(
+    <ThemeProvider theme={theme}>
+      <PeriodStrip
+        reading={reading}
+        timeline={buildDisputeTimeline({
+          reading,
+          roster,
+          chain: DISPUTE_156_CHAIN,
+          answered: true,
+        })}
+        roster={resolvedRoster}
+        funding={stripFundingOf(funding, reading.round)}
+      />
+    </ThemeProvider>,
+  );
+}
+
+describe("an appealed round, once the next round has started", () => {
+  it("keeps the appealed round's funding in view, at the head of the new round's evidence", () => {
+    renderAppealed();
+    const list = screen.getByRole("list", { name: /round 1 · appealed/i });
+
+    expect(
+      within(list)
+        .getAllByRole("listitem")
+        .map((item) => item.textContent?.replace(/\s+/g, " ").trim()),
+    ).toEqual([
+      "1 funded 0.0089 ETHsomeone else",
+      // Compact: funders on one line, no amount each.
+      "2 funded 0.0119 ETHGrokleros, someone else",
+    ]);
+  });
+
+  it("puts it in the evidence period's slot, which the appeal opened", () => {
+    renderAppealed();
+    const evidence = screen.getByText("Evidence").closest("li");
+    if (evidence === null) throw new Error("no evidence slot");
+
+    expect(within(evidence).getByRole("list", { name: /round 1 · appealed/i })).toBeInTheDocument();
+  });
+});

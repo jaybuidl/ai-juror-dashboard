@@ -73,6 +73,14 @@ commitment not found is a moment unknown, an opening not found still has its mom
 who opened it. A shortfall is counted only once a read answers for the dispute as the court now
 reports it. A read standing in while a newer one is in flight has not fallen short.
 
+**The appeal lane also says how the appeal was funded** (#32, 2026-11-21). Each side that raised
+anything, what it raised in ETH, whether it was funded, and its funders by class only, under the
+opener rule above: an agent juror by name, the Kleros bot, "a party" (an address under the
+template's `aliases`), "the dispute creator", or "someone else". Not on the time axis, because no
+contribution is dated here. The head says "Partially funded · no appeal" when one side was funded,
+"Funding so far" while the period runs. An appealed round's funding moves to the top of the next
+round's evidence lane, compact, so it does not drop out of view when that round starts.
+
 ## Considered Options
 
 - **Drop the commit moments and the scan entirely.** Issue #13's other branch. Rejected because

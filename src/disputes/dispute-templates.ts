@@ -85,6 +85,16 @@ export type DisputeTemplate = {
   question: string;
   /** The named choices, ascending. Empty where the template names none. */
   answers: readonly ChoiceLabel[];
+  /**
+   * The addresses under the template's `aliases`, lowercased: typically the dispute's parties, or
+   * at least the accounts of interest to it (the maintainer's rule, 2026-11-21, #32). Empty where
+   * the template has none, which is most of court 34's: its oracle disputes come from a dispute
+   * resolver and name nobody.
+   *
+   * The addresses and never the names beside them. A name is whatever the arbitrable typed — on
+   * dispute 266 it is "Alice" — and the page says "a party", never who.
+   */
+  aliases: readonly string[];
 };
 
 /** Just enough of a dispute to find its template. */
@@ -176,6 +186,23 @@ function toAnswers(value: unknown): readonly ChoiceLabel[] {
   return [...byChoice.values()].sort((a, b) => a.choice - b.choice);
 }
 
+/** An address, as a template might carry one. */
+const ADDRESS = /^0x[0-9a-fA-F]{40}$/;
+
+/**
+ * The addresses a template's `aliases` object names, lowercased and deduplicated. Anything that
+ * is not an object of addresses is dropped: nothing validates a template before it is published.
+ */
+function toAliases(value: unknown): readonly string[] {
+  if (typeof value !== "object" || value === null || Array.isArray(value)) return [];
+
+  const addresses = new Set<string>();
+  for (const address of Object.values(value)) {
+    if (typeof address === "string" && ADDRESS.test(address)) addresses.add(address.toLowerCase());
+  }
+  return [...addresses];
+}
+
 /**
  * The templates for a batch of ids, keyed by template id.
  *
@@ -202,13 +229,14 @@ export function toDisputeTemplates(
     // fields, and both would otherwise reach the property reads below as `undefined`.
     if (typeof data !== "object" || data === null || Array.isArray(data)) continue;
 
-    const { title, category, question, answers } = data as Record<string, unknown>;
+    const { title, category, question, answers, aliases } = data as Record<string, unknown>;
 
     templates.set(Number(template.id), {
       title: toText(title),
       category: toText(category),
       question: toText(question),
       answers: toAnswers(answers),
+      aliases: toAliases(aliases),
     });
   }
 

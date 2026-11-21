@@ -26,6 +26,7 @@ describe("toDisputeTemplates", () => {
       category: "Image Generation",
       question: "",
       answers: [],
+      aliases: [],
     });
   });
 
@@ -46,6 +47,7 @@ describe("toDisputeTemplates", () => {
       category: "",
       question: "",
       answers: [],
+      aliases: [],
     });
   });
 
@@ -57,6 +59,7 @@ describe("toDisputeTemplates", () => {
       category: "",
       question: "",
       answers: [],
+      aliases: [],
     });
   });
 
@@ -72,6 +75,7 @@ describe("toDisputeTemplates", () => {
       category: "",
       question: "",
       answers: [],
+      aliases: [],
     });
   });
 
@@ -262,5 +266,40 @@ describe("choiceNameOf", () => {
     // "Choice" stays in front so a lone number is never read as a count.
     expect(choiceNameOf(2, answers)).toBe("Choice 2");
     expect(choiceNameOf(3, answers)).toBe("Choice 3");
+  });
+});
+
+describe("a template's aliases (#32)", () => {
+  function aliasesOf(templateData: string) {
+    return toDisputeTemplates([{ id: "277", templateData }]).get(277)?.aliases;
+  }
+
+  it("reads the addresses under aliases, lowercased and once each", () => {
+    // Dispute 266's template, as published: two names for one address.
+    const data = JSON.stringify({
+      title: "t",
+      aliases: {
+        Alice: "0x2442D40B0aeCad0298C2724A97F2f1BbDF2C2615",
+        Bot: "0x2442D40B0aeCad0298C2724A97F2f1BbDF2C2615",
+      },
+    });
+
+    expect(aliasesOf(data)).toEqual(["0x2442d40b0aecad0298c2724a97f2f1bbdf2c2615"]);
+  });
+
+  it("keeps only what is an address, and nothing from a template without aliases", () => {
+    const data = JSON.stringify({
+      aliases: {
+        Alice: "0x2442D40B0aeCad0298C2724A97F2f1BbDF2C2615",
+        Bob: "not an address",
+        Eve: 7,
+      },
+    });
+
+    expect(aliasesOf(data)).toEqual(["0x2442d40b0aecad0298c2724a97f2f1bbdf2c2615"]);
+    expect(aliasesOf(JSON.stringify({ title: "t" }))).toEqual([]);
+    expect(
+      aliasesOf(JSON.stringify({ aliases: ["0x2442D40B0aeCad0298C2724A97F2f1BbDF2C2615"] })),
+    ).toEqual([]);
   });
 });

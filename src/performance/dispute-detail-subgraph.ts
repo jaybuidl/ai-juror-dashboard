@@ -37,6 +37,10 @@ const DRAW_LIMIT = 100;
  * `numberOfChoices`: without it the selection would take whichever kit sorted first, which in a
  * court running one kit is right by accident.
  *
+ * Each round's `answers { paidFee funded }` and `contributions` are its appeal funding: what each
+ * side raised, whether it reached its fee, and who gave how much (#32). `first` bounds the
+ * contributions as it bounds the draws; a round of a single dispute has a handful.
+ *
  * `period`, `lastPeriodChangeBlockNumber` and each draw's `blockNumber` are where the dispute's
  * record sits on chain, which is the range `fetchDisputeChain` scans (ADR-0012). See
  * `blockRangeOf`.
@@ -63,6 +67,15 @@ const DETAIL_QUERY = `
               answers {
                 answerId
                 count
+                paidFee
+                funded
+              }
+              contributions(first: $first) {
+                contributor {
+                  id
+                }
+                amount
+                choice
               }
             }
           }

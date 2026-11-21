@@ -7,6 +7,7 @@ import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import { casePageOf } from "../court-frontend";
 import type { DisputesView } from "../disputes/useDisputes";
+import { buildAppealFunding, stripFundingOf } from "../performance/appeal-funding";
 import { arbitrumSource } from "../performance/arbitrum";
 import { DisputePanel } from "../performance/DisputePanel";
 import type { RawDisputeChain } from "../performance/dispute-chain";
@@ -473,7 +474,12 @@ export function DisputePage(props: DisputePageProps) {
   );
   // Keyed on what the court read says the dispute has reached, so the record is read again when
   // a period opens or an agent juror commits, and not on a clock.
-  const chain = useDisputeChain(disputeId, detail.detail.blockRange, progressOf(row));
+  const chain = useDisputeChain(
+    disputeId,
+    detail.detail.blockRange,
+    progressOf(row),
+    detail.detail.transactionHash as `0x${string}` | null,
+  );
 
   return <DisputeView {...props} pathId={pathId} detail={detail} chain={chain} />;
 }
@@ -535,12 +541,15 @@ export function DisputeView({
           detailBehind: detail.isBehindReveals,
         });
 
+  // Every agent juror on the roster, drawn here or not: any of them may have opened a period or
+  // funded an appeal. The roster the page names them from, which is the whole of it.
+  const agentJurors = roster.entries.map((entry) => entry.agentJuror);
   const timeline =
     reading === null || performance.performance === null
       ? null
       : buildDisputeTimeline({
           reading,
-          roster: performance.performance.agentJurors,
+          roster: agentJurors,
           chain: chain.data,
           answered: chain.answered,
         });
@@ -641,7 +650,23 @@ export function DisputeView({
             </Split>
 
             {timeline !== null && (
-              <PeriodStrip reading={reading} timeline={timeline} roster={roster} />
+              <PeriodStrip
+                reading={reading}
+                timeline={timeline}
+                roster={roster}
+                funding={stripFundingOf(
+                  buildAppealFunding({
+                    funding: detail.detail.funding,
+                    answers: reading.template?.answers ?? [],
+                    aliases: reading.template?.aliases ?? [],
+                    roster: agentJurors,
+                    // `undefined` while the chain read has not answered: whether a funder created
+                    // the dispute is not known until the creation transaction is read.
+                    creator: chain.data === null ? undefined : chain.data.creator,
+                  }),
+                  reading.round,
+                )}
+              />
             )}
           </Header>
 

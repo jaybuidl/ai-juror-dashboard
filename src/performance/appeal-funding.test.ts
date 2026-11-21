@@ -1,0 +1,244 @@
+import { describe, expect, it } from "vitest";
+import { ROSTER } from "../roster/agent-jurors";
+import {
+  buildAppealFunding,
+  type FunderClass,
+  type RoundFunding,
+  stripFundingOf,
+} from "./appeal-funding";
+import detail318 from "./dispute-318-detail.fixture.json" with { type: "json" };
+import { type DetailRound, type RawDisputeDetail, toDisputeDetail } from "./dispute-detail";
+import { KLEROS_BOT } from "./dispute-timeline";
+
+/**
+ * How an appeal was funded (#32), against dispute 318 as the subgraph returned it on 2026-11-21:
+ * choice 1 funded by one account off the roster (synthetic in the fixture), choice 2 contributed to
+ * by Grokleros and not funded. Partially funded, by the maintainer's definition.
+ */
+
+const GROKLEROS = "0x93aa2f8e5ce8288d57f8785f5a40a60a42fd925e";
+const UNKNOWN = "0x1111111111111111111111111111111111111111";
+const CREATOR = "0x2222222222222222222222222222222222222222";
+const PARTY = "0x3333333333333333333333333333333333333333";
+
+const ANSWERS = [
+  { choice: 1, title: "No" },
+  { choice: 2, title: "Yes" },
+];
+
+const funding318 = toDisputeDetail(detail318 as RawDisputeDetail).funding;
+
+function build(
+  funding: readonly DetailRound[] = funding318,
+  overrides: { aliases?: readonly string[]; creator?: string | null | undefined } = {},
+): readonly RoundFunding[] {
+  return buildAppealFunding({
+    funding,
+    answers: ANSWERS,
+    aliases: overrides.aliases ?? [],
+    roster: ROSTER,
+    creator: "creator" in overrides ? overrides.creator : CREATOR,
+  });
+}
+
+function kinds(funders: readonly { funder: FunderClass }[]): string[] {
+  return funders.map(({ funder }) =>
+    funder.kind === "agent-juror" ? funder.agentJuror.nickname : funder.kind,
+  );
+}
+
+describe("buildAppealFunding", () => {
+  it("reads dispute 318 as partially funded: one side funded, one only contributed to", () => {
+    const [round] = build();
+
+    expect(round?.roundIndex).toBe(0);
+    expect(round?.outcome).toBe("partially-funded");
+    expect(round?.sides.map((side) => [side.title, side.raisedWei, side.funded])).toEqual([
+      ["No", 8_910_000_000_000_000n, true],
+      ["Yes", 5_940_000_000_000_000n, false],
+    ]);
+    expect(round?.sides.map((side) => kinds(side.funders))).toEqual([
+      ["someone-else"],
+      ["Grokleros"],
+    ]);
+  });
+
+  it("leaves out a side nobody raised anything for", () => {
+    // Choice 0 has an answer entry with a zero fee: it was voted for, not funded.
+    expect(build()[0]?.sides.map((side) => side.choice)).toEqual([1, 2]);
+  });
+
+  it("calls two or more funded sides appealed", () => {
+    const appealed: DetailRound = {
+      index: 0,
+      sides: [
+        { choice: 1, paidWei: 10n, funded: true },
+        { choice: 2, paidWei: 20n, funded: true },
+      ],
+      contributions: [
+        { contributor: UNKNOWN, choice: 1, wei: 10n },
+        { contributor: GROKLEROS, choice: 2, wei: 20n },
+      ],
+    };
+
+    expect(build([appealed])[0]?.outcome).toBe("appealed");
+  });
+
+  it("calls contributions that funded no side not funded", () => {
+    const short: DetailRound = {
+      index: 0,
+      sides: [{ choice: 2, paidWei: 5n, funded: false }],
+      contributions: [{ contributor: UNKNOWN, choice: 2, wei: 5n }],
+    };
+
+    expect(build([short])[0]?.outcome).toBe("not-funded");
+  });
+
+  it("groups several accounts of one class into one line, with their count and their sum", () => {
+    // One side can have several funders, and several in one class: the maintainer's example of a
+    // Yes side funded by more than one person.
+    const crowded: DetailRound = {
+      index: 0,
+      sides: [{ choice: 2, paidWei: 60n, funded: true }],
+      contributions: [
+        { contributor: "0x4444444444444444444444444444444444444444", choice: 2, wei: 10n },
+        { contributor: "0x5555555555555555555555555555555555555555", choice: 2, wei: 20n },
+        { contributor: "0x4444444444444444444444444444444444444444", choice: 2, wei: 5n },
+        { contributor: GROKLEROS, choice: 2, wei: 25n },
+      ],
+    };
+    const [side] = build([crowded])[0]?.sides ?? [];
+
+    expect(side?.funders.map(({ funder, wei, accounts }) => [funder.kind, wei, accounts])).toEqual([
+      ["someone-else", 35n, 2],
+      ["agent-juror", 25n, 1],
+    ]);
+  });
+
+  it("names each class: an agent juror, the Kleros bot, a party, the creator, someone else", () => {
+    const everyone: DetailRound = {
+      index: 0,
+      sides: [{ choice: 1, paidWei: 15n, funded: true }],
+      contributions: [
+        { contributor: GROKLEROS, choice: 1, wei: 5n },
+        { contributor: KLEROS_BOT.toLowerCase(), choice: 1, wei: 4n },
+        { contributor: PARTY, choice: 1, wei: 3n },
+        { contributor: CREATOR, choice: 1, wei: 2n },
+        { contributor: UNKNOWN, choice: 1, wei: 1n },
+      ],
+    };
+
+    expect(kinds(build([everyone], { aliases: [PARTY] })[0]?.sides[0]?.funders ?? [])).toEqual([
+      "Grokleros",
+      "kleros-bot",
+      "party",
+      "creator",
+      "someone-else",
+    ]);
+  });
+
+  it("calls a party who created the dispute a party", () => {
+    const own: DetailRound = {
+      index: 0,
+      sides: [{ choice: 1, paidWei: 1n, funded: false }],
+      contributions: [{ contributor: CREATOR, choice: 1, wei: 1n }],
+    };
+
+    expect(kinds(build([own], { aliases: [CREATOR] })[0]?.sides[0]?.funders ?? [])).toEqual([
+      "party",
+    ]);
+  });
+
+  it("does not guess creator or someone else before the creator is read", () => {
+    // The roster, the bot and the template's parties are known without the chain read; whether
+    // an unmatched account created the dispute is not, until the creation transaction is read.
+    const [round] = build(funding318, { creator: undefined });
+
+    expect(round?.sides.map((side) => kinds(side.funders))).toEqual([["pending"], ["Grokleros"]]);
+  });
+
+  it("calls an unmatched account someone else where the creator cannot be read at all", () => {
+    expect(build(funding318, { creator: null })[0]?.sides[0]?.funders[0]?.funder.kind).toBe(
+      "someone-else",
+    );
+  });
+
+  it("matches the creator whatever case the chain sends its address in", () => {
+    const own: DetailRound = {
+      index: 0,
+      sides: [{ choice: 1, paidWei: 1n, funded: false }],
+      contributions: [{ contributor: CREATOR, choice: 1, wei: 1n }],
+    };
+
+    expect(
+      build([own], { creator: `0x${CREATOR.slice(2).toUpperCase()}` })[0]?.sides[0]?.funders[0]
+        ?.funder.kind,
+    ).toBe("creator");
+  });
+
+  it("keeps every round, in order, each with its own outcome", () => {
+    const first: DetailRound = {
+      index: 0,
+      sides: [
+        { choice: 1, paidWei: 1n, funded: true },
+        { choice: 2, paidWei: 2n, funded: true },
+      ],
+      contributions: [],
+    };
+    const second: DetailRound = {
+      index: 1,
+      sides: [{ choice: 1, paidWei: 1n, funded: true }],
+      contributions: [],
+    };
+
+    expect(build([first, second]).map((round) => [round.roundIndex, round.outcome])).toEqual([
+      [0, "appealed"],
+      [1, "partially-funded"],
+    ]);
+  });
+});
+
+describe("stripFundingOf", () => {
+  const rounds = build([
+    {
+      index: 0,
+      sides: [
+        { choice: 1, paidWei: 1n, funded: true },
+        { choice: 2, paidWei: 1n, funded: true },
+      ],
+      contributions: [],
+    },
+    { index: 1, sides: [{ choice: 1, paidWei: 1n, funded: true }], contributions: [] },
+  ]);
+
+  it("puts the current round in the appeal lane and earlier ones before it", () => {
+    const strip = stripFundingOf(rounds, { index: 1, appealOpenedAt: 10, executionOpenedAt: 20 });
+
+    expect(strip.current?.round.roundIndex).toBe(1);
+    expect(strip.current?.open).toBe(false);
+    expect(strip.earlier.map((round) => [round.roundIndex, round.outcome])).toEqual([
+      [0, "appealed"],
+    ]);
+  });
+
+  it("says the current round's funding is still open while its appeal period runs", () => {
+    expect(
+      stripFundingOf(rounds, { index: 1, appealOpenedAt: 10, executionOpenedAt: null }).current
+        ?.open,
+    ).toBe(true);
+  });
+
+  it("has nothing for the current round where nothing was contributed to it", () => {
+    expect(
+      stripFundingOf(rounds.slice(0, 1), {
+        index: 1,
+        appealOpenedAt: null,
+        executionOpenedAt: null,
+      }),
+    ).toEqual({
+      current: null,
+      earlier: rounds.slice(0, 1),
+    });
+    expect(stripFundingOf(rounds, undefined)).toEqual({ current: null, earlier: [] });
+  });
+});

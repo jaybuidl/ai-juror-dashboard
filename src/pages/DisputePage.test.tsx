@@ -4,6 +4,7 @@ import { ThemeProvider } from "styled-components";
 import { describe, expect, it } from "vitest";
 import { arbitrumSource } from "../performance/arbitrum";
 import detailFixture from "../performance/dispute-156-detail.fixture.json" with { type: "json" };
+import detail318Fixture from "../performance/dispute-318-detail.fixture.json" with { type: "json" };
 import { NO_DETAIL, type RawDisputeDetail, toDisputeDetail } from "../performance/dispute-detail";
 import type { CourtPerformance, DrawState, LiveStage } from "../performance/performance";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
@@ -745,6 +746,64 @@ function laneLines(period: string): string[] {
     .map((item) => item.textContent?.replace(/\s+/g, " ").trim() ?? "");
 }
 
+/**
+ * Dispute 156's own appeal took no contribution, so its funding here is dispute 318's, as the
+ * subgraph returned it on 2026-11-21: No funded by an account off the roster, Yes contributed to
+ * by Grokleros and not funded (#32).
+ */
+const FUNDED = toDisputeDetail(detail318Fixture as RawDisputeDetail).funding.map((round) => round);
+
+/** The appeal lane's funding block, as the lines a reader sees, head first. */
+function fundingLines(): string[] {
+  const list = screen.getByRole("list", { name: /funded|funding/i });
+  const head = document.getElementById(list.getAttribute("aria-labelledby") ?? "");
+  return [
+    head?.textContent?.replace(/\s+/g, " ").trim() ?? "",
+    ...within(list)
+      .getAllByRole("listitem")
+      .map((item) => item.textContent?.replace(/\s+/g, " ").trim() ?? ""),
+  ];
+}
+
+describe("the appeal's funding (#32)", () => {
+  it("lists each side funded or not, with what it raised and who gave it", () => {
+    renderDispute({ detail: read({ detail: { ...detail156, funding: FUNDED } }) });
+
+    expect(fundingLines()).toEqual([
+      "Partially funded · no appealETH",
+      // Dispute 156's own choice names, since its template is the one on the page.
+      "1 · YES (50% or more) funded 0.0089 ETHsomeone else",
+      "2 · NO (under 50%) not funded 0.0059 ETHGrokleros",
+    ]);
+  });
+
+  it("names a funder by class and never prints its address", () => {
+    const { container } = renderDispute({
+      detail: read({ detail: { ...detail156, funding: FUNDED } }),
+    });
+
+    expect(container.innerHTML).not.toMatch(/0x1111/i);
+    expect(container.innerHTML).not.toMatch(/0x93aa/i);
+  });
+
+  it("says nothing about funding where nothing was contributed", () => {
+    renderDispute();
+
+    expect(screen.queryByRole("list", { name: /funded|funding/i })).not.toBeInTheDocument();
+  });
+
+  it("does not guess who created the dispute before the chain read answers", () => {
+    renderDispute({
+      detail: read({ detail: { ...detail156, funding: FUNDED } }),
+      chain: pending(),
+    });
+
+    expect(fundingLines()[1]).toBe(
+      "1 · YES (50% or more) funded 0.0089 ETH—an account not read yet",
+    );
+  });
+});
+
 describe("the timeline (ADR-0012)", () => {
   it("says when each period opened, and who opened it, in UTC", () => {
     renderDispute();
@@ -993,6 +1052,7 @@ describe("what could not be read", () => {
     // with fewer logs. Two of 156's four commitments and one opening are dropped here.
     renderDispute({
       chain: answered({
+        ...DISPUTE_156_CHAIN,
         openings: DISPUTE_156_CHAIN.openings.filter((opening) => opening.period !== "2"),
         commits: DISPUTE_156_CHAIN.commits.slice(2),
       }),
@@ -1021,7 +1081,7 @@ describe("what could not be read", () => {
     // The court saw a commitment this read predates and a re-read is in flight. What it lacks is
     // not yet a finding.
     renderDispute({
-      chain: { ...answered({ openings: [], commits: [] }), answered: false },
+      chain: { ...answered({ openings: [], commits: [], creator: null }), answered: false },
     });
 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();

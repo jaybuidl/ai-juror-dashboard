@@ -27,11 +27,24 @@ import type { PeriodWindows } from "./windows";
 export type RawChoiceVotes = {
   answerId: string;
   count: string;
+  /** What this side raised in the round's appeal period, in wei. See `DetailRound`. */
+  paidFee?: string | null;
+  /** Whether this side reached its full appeal fee. */
+  funded?: boolean | null;
+};
+
+/** One contribution to one side of a round's appeal, as `ClassicContribution` holds it. */
+export type RawContribution = {
+  contributor: { id: string };
+  /** In wei. */
+  amount: string;
+  choice: string;
 };
 
 export type RawLocalRound = {
   id: string;
   answers?: readonly RawChoiceVotes[] | null;
+  contributions?: readonly RawContribution[] | null;
 };
 
 /**
@@ -124,6 +137,12 @@ export type DisputeDetail = {
   /** What each agent juror published. Absent from this list means no justification was found. */
   justifications: readonly DrawJustification[];
   /**
+   * Each round's appeal funding as the kit recorded it, by round index, ascending: what each side
+   * raised and whether it was funded, and every contribution. Only rounds where anything was
+   * contributed or funded. `appeal-funding.ts` turns this into what the timeline says (#32).
+   */
+  funding: readonly DetailRound[];
+  /**
    * The blocks that hold this dispute's record on chain, every round of it, for the timeline's
    * Arbitrum read (ADR-0012), or `null` where they cannot be known yet. See `blockRangeOf`.
    */
@@ -137,6 +156,20 @@ export const NO_DETAIL: DisputeDetail = {
   transactionHash: null,
   justifications: [],
   blockRange: null,
+  funding: [],
+};
+
+/** One side of a round's appeal: what it raised, and whether that reached its fee. */
+export type DetailSide = { choice: number; paidWei: bigint; funded: boolean };
+
+/** One contribution, its contributor lowercased as The Graph returns it. */
+export type DetailContribution = { contributor: string; choice: number; wei: bigint };
+
+/** One round's appeal funding, from the kit's own entities. See `DisputeDetail.funding`. */
+export type DetailRound = {
+  index: number;
+  sides: readonly DetailSide[];
+  contributions: readonly DetailContribution[];
 };
 
 /** Same canonical-decimal guard as the rest of the model, and for the same reason. */
@@ -225,6 +258,54 @@ function toBallot(kit: RawKitDispute | undefined): readonly ChoiceVotes[] {
 
 function roundSuffixOf(id: string): string {
   return id.slice(id.lastIndexOf("-") + 1);
+}
+
+/** An amount in wei, or `null` where it is not a canonical decimal: never a `number`. */
+function toWei(value: string | null | undefined): bigint | null {
+  if (typeof value !== "string" || !CANONICAL_DECIMAL.test(value)) return null;
+  return BigInt(value);
+}
+
+/**
+ * Each round's appeal funding, from the kit's rounds.
+ *
+ * Tolerant like the rest of this read: an answer or a contribution that cannot be read is left
+ * out, which costs a line of the funding and never the page. A round is kept only where a side
+ * raised anything or was funded, or where anything was contributed; a round nobody funded has
+ * nothing to say. `paidFee` is the kit's own sum for the side, so it is the figure shown, and the
+ * contributions are who made it up.
+ */
+function fundingOf(kit: RawKitDispute | undefined): readonly DetailRound[] {
+  const rounds: DetailRound[] = [];
+
+  for (const local of kit?.localRounds ?? []) {
+    const index = toCount(roundSuffixOf(local.id));
+    if (index === null) continue;
+
+    const sides: DetailSide[] = [];
+    for (const answer of local.answers ?? []) {
+      const choice = toCount(answer.answerId);
+      const paidWei = toWei(answer.paidFee) ?? 0n;
+      const funded = answer.funded === true;
+      if (choice === null || (paidWei === 0n && !funded)) continue;
+      sides.push({ choice, paidWei, funded });
+    }
+
+    const contributions: DetailContribution[] = [];
+    for (const contribution of local.contributions ?? []) {
+      const choice = toCount(contribution.choice);
+      const wei = toWei(contribution.amount);
+      const contributor = contribution.contributor?.id;
+      if (choice === null || wei === null || typeof contributor !== "string") continue;
+      contributions.push({ contributor: contributor.toLowerCase(), choice, wei });
+    }
+
+    if (sides.length === 0 && contributions.length === 0) continue;
+    sides.sort((a, b) => a.choice - b.choice);
+    rounds.push({ index, sides, contributions });
+  }
+
+  return rounds.sort((a, b) => a.index - b.index);
 }
 
 /**
@@ -381,6 +462,7 @@ export function toDisputeDetail(raw: RawDisputeDetail): DisputeDetail {
     evidenceCount: evidenceCountOf(raw),
     justifications: toJustifications(raw),
     blockRange: blockRangeOf(raw),
+    funding: fundingOf(raw.dispute?.disputeKitDispute?.[0]),
   };
 }
 
