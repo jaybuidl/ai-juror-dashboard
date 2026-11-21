@@ -85,8 +85,8 @@ minute while its appeal period runs. Amended again the same day, at the maintain
 dispute 318: an account nothing else names is shown by its short address linked to Arbiscan, not
 as "someone else", which gave a reader nothing to check; and a side that raised something and was
 not funded shows its fee beside its sum ("0.0059 of 0.0089"), since two sides with money against
-them under "Partially funded" read as a contradiction. On 318 the vote tied, so both sides owed the
-loser's fee of 0.00891 ETH, and Grokleros gave Yes the winner's 0.00594. This reverses the
+them under "Partially funded" read as a contradiction. On 318 the vote tied, which the kit reads as Refuse
+winning, so No and Yes both owed the loser's fee of 0.00891 ETH, and Grokleros gave Yes 0.00594. This reverses the
 funder-as-class rule for accounts only; an address is public on chain, is not linked to any agent
 juror, and an opener off the roster is still "an off-roster account".
 The head says "Partially funded · no appeal" when one side was funded,

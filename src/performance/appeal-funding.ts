@@ -1,8 +1,10 @@
 import { type ChoiceLabel, choiceTitleOf } from "../disputes/dispute-templates";
+import type { DisputeRound } from "../disputes/disputes";
 import type { AgentJuror } from "../roster/agent-jurors";
 import type { DetailRound } from "./dispute-detail";
 import { KLEROS_BOT } from "./dispute-timeline";
 import { imitates } from "./lookalike";
+import { type ParameterRegime, rewardsAt } from "./windows";
 
 /**
  * How each round of a dispute's appeal was funded: which sides raised what, whether they reached
@@ -143,14 +145,16 @@ export type AppealCourtFee = { feeForJuror: string; jurorsForCourtJump: string }
  * worked out.
  *
  * The kit's own rule (`fundAppeal`): the appeal's cost, plus the cost times the side's multiplier,
- * the winner's for the choice the round's vote favoured and the loser's for every other. A tied
- * round favoured none, so every side pays the loser's: dispute 318's Yes needed 0.00891 ETH, not
- * the 0.00594 Grokleros gave it.
+ * the winner's for the choice the kit's `currentRuling` names and the loser's for every other.
+ * During the appeal period that ruling is the round's winning choice, or 0 (refuse to arbitrate)
+ * where the vote tied, whatever `winningChoice` says: dispute 318 tied, so Refuse owed the
+ * winner's fee, and Yes the loser's 0.00891 ETH, not the 0.00594 Grokleros gave it.
  *
  * The cost itself, from the first of these that is there:
  * - **A funded side.** The kit caps contributions at the fee, so a funded side raised its fee
- *   exactly, and the cost follows from its multiplier. Exact, and checked: a side whose sum
- *   does not come back out of the cost it implies gives no cost.
+ *   exactly, and the cost follows from its multiplier. Exact where the multiplier is right; the
+ *   check that a side's sum comes back out of the cost it implies catches only an indivisible
+ *   sum, and every funded side must agree on the cost.
  * - **The court's fee** in force for the appeal (`fee`), times the votes the next round would
  *   draw (twice this round's, plus one), as `KlerosCore.appealCost` reckons it. Only where the
  *   appeal stays in this court: past `jurorsForCourtJump` it is the parent court's fee, which is
@@ -163,8 +167,9 @@ function requiredOf(
   const { tied, winningChoice, nbVotes } = round;
   if (tied === null || tied === undefined) return () => null;
   if (!tied && (winningChoice === null || winningChoice === undefined)) return () => null;
+  const favoured = tied ? 0 : winningChoice;
   const multiplierOf = (choice: number) =>
-    !tied && choice === winningChoice ? WINNER_STAKE_MULTIPLIER : LOSER_STAKE_MULTIPLIER;
+    choice === favoured ? WINNER_STAKE_MULTIPLIER : LOSER_STAKE_MULTIPLIER;
   const feeFor = (cost: bigint, choice: number) =>
     cost + (cost * multiplierOf(choice)) / ONE_BASIS_POINT;
 
@@ -182,6 +187,29 @@ function requiredOf(
   }
 
   return (choice) => (cost === null ? null : feeFor(cost, choice));
+}
+
+/**
+ * The court's fee in force for each round's appeal, for a round no side funded (`requiredOf`).
+ *
+ * The court reads its fee at each contribution, so a round whose appeal period has closed is
+ * priced by the configuration in force when that period opened, and the current round's, still
+ * open or yet to open, by the latest one. A closed round with no recorded opening gets nothing
+ * rather than today's fee. Nothing at all with no history read (`rewardsAt`).
+ */
+export function appealFeesOf(
+  rounds: readonly DisputeRound[],
+  currentIndex: number | undefined,
+  regimes: readonly ParameterRegime[],
+): ReadonlyMap<number, AppealCourtFee> {
+  const fees = new Map<number, AppealCourtFee>();
+  for (const round of rounds) {
+    const open = round.index === currentIndex && round.executionOpenedAt === null;
+    if (!open && round.appealOpenedAt === null) continue;
+    const rewards = rewardsAt(regimes, open ? null : round.appealOpenedAt);
+    if (rewards !== null) fees.set(round.index, rewards);
+  }
+  return fees;
 }
 
 /**

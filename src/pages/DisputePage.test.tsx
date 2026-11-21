@@ -775,7 +775,8 @@ describe("the appeal's funding (#32)", () => {
       "Partially funded · no appealETH",
       // Dispute 156's own choice names, since its template is the one on the page.
       "1 · YES (50% or more) funded 0.0089 ETH0x1111…1111",
-      // Short of the 0.0089 a tied round asks of every side (#32, the maintainer's question).
+      // Short of the 0.0089 a tied round asks of every side but Refuse (#32, the maintainer's
+      // question).
       "2 · NO (under 50%) not funded 0.0059 of 0.0089 ETHGrokleros",
     ]);
   });
@@ -787,6 +788,22 @@ describe("the appeal's funding (#32)", () => {
     });
 
     expect(link).toHaveTextContent("0x1111…1111");
+    expect(link).toHaveAttribute(
+      "href",
+      "https://arbiscan.io/address/0x1111111111111111111111111111111111111111",
+    );
+  });
+
+  it("shows a funder with an ENS name by that name, linked to its account on Arbiscan", () => {
+    renderDispute({
+      detail: read({ detail: { ...detail156, funding: FUNDED } }),
+      ensNames: new Map([["0x1111111111111111111111111111111111111111", "alice.eth"]]),
+    });
+    const link = screen.getByRole("link", {
+      name: "alice.eth, account 0x1111111111111111111111111111111111111111 on Arbiscan",
+    });
+
+    expect(link).toHaveTextContent("alice.eth");
     expect(link).toHaveAttribute(
       "href",
       "https://arbiscan.io/address/0x1111111111111111111111111111111111111111",
@@ -828,7 +845,7 @@ describe("the appeal's funding, where a read it depends on is missing (#32)", ()
     titles: { expected: 2, resolved: 1, isLoading, readAt: READ_AT },
   });
 
-  it("does not guess party or someone else while the template is still being read", () => {
+  it("does not guess party or a bare account while the template is still being read", () => {
     renderDispute({ detail: withFunding(), disputes: untemplated(true) });
 
     expect(fundingLines()[1]).toBe("Choice 1 funded 0.0089 ETH—an account not read yet");

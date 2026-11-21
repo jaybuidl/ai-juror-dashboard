@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
+import type { DisputeRound } from "../disputes/disputes";
 import { AGENT_JUROR_ENS_PARENT, ROSTER } from "../roster/agent-jurors";
 import {
+  appealFeesOf,
   buildAppealFunding,
   ensCandidatesOf,
   type FunderClass,
@@ -28,6 +30,13 @@ const ANSWERS = [
 ];
 
 const funding318 = toDisputeDetail(detail318 as RawDisputeDetail).funding;
+
+const WINDOWS = {
+  evidenceSeconds: 600,
+  commitSeconds: 2_700,
+  voteSeconds: 1_800,
+  appealSeconds: 129_600,
+};
 
 function build(
   funding: readonly DetailRound[] = funding318,
@@ -124,7 +133,7 @@ describe("buildAppealFunding", () => {
     ]);
   });
 
-  it("names each class: an agent juror, the Kleros bot, a party, the creator, someone else", () => {
+  it("names each class: an agent juror, the Kleros bot, a party, the creator, an account", () => {
     const everyone: DetailRound = {
       index: 0,
       sides: [{ choice: 1, paidWei: 15n, funded: true }],
@@ -158,7 +167,7 @@ describe("buildAppealFunding", () => {
     ]);
   });
 
-  it("does not guess creator or someone else before the creator is read", () => {
+  it("does not guess creator or a bare account before the creator is read", () => {
     // The roster, the bot and the template's parties are known without the chain read; whether
     // an unmatched account created the dispute is not, until the creation transaction is read.
     const [round] = build(funding318, { creator: undefined });
@@ -345,7 +354,7 @@ describe("buildAppealFunding", () => {
     });
   });
 
-  it("does not guess party or someone else while the template is not read", () => {
+  it("does not guess party or a bare account while the template is not read", () => {
     // The template's parties are a read of their own: until it lands, an unmatched account may be
     // one, and only the roster and the bot are known.
     const everyone: DetailRound = {
@@ -421,9 +430,9 @@ describe("what each side needed to be funded", () => {
   const sideNeeds = (rounds: readonly RoundFunding[]) =>
     rounds[0]?.sides.map((side) => [side.choice, side.requiredWei]);
 
-  it("asks every side of a tied round for the loser's fee: dispute 318's Yes fell short", () => {
-    // 2 for Refuse, 2 for Yes, 1 for No: tied, so no side was the winner and each needed three
-    // times the 0.00297 ETH appeal cost. No raised it; Grokleros gave Yes the winner's 0.00594.
+  it("asks No and Yes of a tied round for the loser's fee: dispute 318's Yes fell short", () => {
+    // 2 for Refuse, 2 for Yes, 1 for No: tied, so the kit's ruling was Refuse, and No and Yes each
+    // needed three times the 0.00297 ETH appeal cost. No raised it; Grokleros gave Yes 0.00594.
     expect(sideNeeds(build())).toEqual([
       [1, 8_910_000_000_000_000n],
       [2, 8_910_000_000_000_000n],
@@ -471,6 +480,25 @@ describe("what each side needed to be funded", () => {
         }),
       ),
     ).toEqual([[2, 8_910_000_000_000_000n]]);
+  });
+
+  it("asks Refuse for the winner's fee in a tie, since a tied ruling is 0", () => {
+    // The kit's currentRuling is `tied ? 0 : winningChoice`, whatever winningChoice says.
+    const refused: DetailRound = {
+      index: 0,
+      tied: true,
+      winningChoice: 2,
+      sides: [
+        { choice: 0, paidWei: 5_940_000_000_000_000n, funded: true },
+        { choice: 1, paidWei: 1_000_000_000_000_000n, funded: false },
+      ],
+      contributions: [],
+    };
+
+    expect(sideNeeds(build([refused]))).toEqual([
+      [0, 5_940_000_000_000_000n],
+      [1, 8_910_000_000_000_000n],
+    ]);
   });
 
   it("does not say where the appeal would leave the court, whose parent's fee is not read", () => {
@@ -522,6 +550,65 @@ describe("what each side needed to be funded", () => {
       [1, null],
       [2, null],
     ]);
+  });
+});
+
+describe("appealFeesOf", () => {
+  const REWARDS = {
+    minStake: "11000000000000000000000",
+    alpha: "170",
+    feeForJuror: "270000000000000",
+    jurorsForCourtJump: "7",
+  };
+  const RAISED = { ...REWARDS, feeForJuror: "540000000000000" };
+  const regimes = [
+    { from: 100, windows: WINDOWS, rewards: REWARDS },
+    { from: 300, windows: WINDOWS, rewards: RAISED },
+  ];
+  const round = (overrides: Partial<DisputeRound>): DisputeRound => ({
+    index: 0,
+    commitOpenedAt: null,
+    voteOpenedAt: null,
+    appealOpenedAt: null,
+    executionOpenedAt: null,
+    ...overrides,
+  });
+
+  it("prices a closed appeal by the fee in force when it opened", () => {
+    const fees = appealFeesOf([round({ appealOpenedAt: 200, executionOpenedAt: 400 })], 0, regimes);
+
+    expect(fees.get(0)?.feeForJuror).toBe("270000000000000");
+  });
+
+  it("prices an appeal still open, or yet to open, by the latest fee", () => {
+    expect(appealFeesOf([round({ appealOpenedAt: 200 })], 0, regimes).get(0)?.feeForJuror).toBe(
+      "540000000000000",
+    );
+    expect(appealFeesOf([round({})], 0, regimes).get(0)?.feeForJuror).toBe("540000000000000");
+  });
+
+  it("prices an earlier round by its own opening, and a closed one with none not at all", () => {
+    const fees = appealFeesOf(
+      [round({ index: 0, appealOpenedAt: 200 }), round({ index: 1 }), round({ index: 2 })],
+      2,
+      regimes,
+    );
+
+    expect(fees.get(0)?.feeForJuror).toBe("270000000000000");
+    expect(fees.has(1)).toBe(false);
+    expect(fees.get(2)?.feeForJuror).toBe("540000000000000");
+  });
+
+  it("prices nothing with no history read", () => {
+    expect(appealFeesOf([round({ appealOpenedAt: 200 })], 0, []).size).toBe(0);
+  });
+});
+
+describe("the read's own round facts", () => {
+  it("carries 318's tie, winning choice and vote count as the subgraph gave them", () => {
+    const [round] = funding318;
+
+    expect([round?.tied, round?.winningChoice, round?.nbVotes]).toEqual([true, 2, 5]);
   });
 });
 

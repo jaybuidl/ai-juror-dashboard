@@ -8,6 +8,7 @@ import {
   type RawCourtParameters,
   type RewardParameters,
   rewardParameterChanges,
+  rewardsAt,
   sameMeasuredWindows,
   toRegimes,
   windowsAt,
@@ -185,6 +186,26 @@ describe("toRegimes", () => {
     // that would fail the day someone reaches for `Number` in `toRegimes`, and it is the only
     // place the full stake is written out.
     expect(toRegimes(HISTORY)[0]?.rewards.minStake).toBe("11000000000000000000000");
+  });
+});
+
+describe("rewardsAt", () => {
+  const raised = { ...REWARDS, feeForJuror: "540000000000000" };
+  const regimes = [regime(100, CURRENT), regime(200, CURRENT, raised)];
+
+  it("holds the fee in force at a moment, from the block it was set in", () => {
+    expect(rewardsAt(regimes, 150)).toEqual(REWARDS);
+    expect(rewardsAt(regimes, 200)).toEqual(raised);
+  });
+
+  it("has nothing before the court existed, or with no history read", () => {
+    expect(rewardsAt(regimes, 99)).toBeNull();
+    expect(rewardsAt([], 150)).toBeNull();
+    expect(rewardsAt([], null)).toBeNull();
+  });
+
+  it("gives the latest for a moment still to come", () => {
+    expect(rewardsAt(regimes, null)).toEqual(raised);
   });
 });
 

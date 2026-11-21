@@ -298,8 +298,9 @@ function By({ by, nameOf }: { by: Opener; nameOf: (agentJuror: AgentJuror) => st
       // own keeper. Named, unlike any other account off the roster, because it is Kleros's.
       return <OffRoster>the Kleros bot</OffRoster>;
     case "off-roster":
-      // A kind and never an address: whoever called is not an agent juror this dashboard follows,
-      // and naming an account off the roster is the personal data it does not hold.
+      // A kind and never an address: whoever called is not an agent juror this dashboard follows.
+      // An appeal's funder off the roster is shown by its address (the maintainer's ruling, #32);
+      // an opener has not been, and whether it should be is his call, not this file's.
       return (
         <OffRoster>
           an <Unbroken>off-roster</Unbroken> account
@@ -435,15 +436,18 @@ function Eth({ wei }: { wei: bigint }) {
 
 /**
  * What a side raised, and, where it was not funded and its fee is known, what it needed: "0.0059 of
- * 0.0089". A funded side raised its fee exactly, so it says one figure.
+ * 0.0089". A funded side raised its fee exactly, so it says one figure. A side short by less than
+ * the last decimal place would print the same figure twice, so its sum is marked as below it.
  */
 function Raised({ side }: { side: SideFunding }) {
   const required = side.funded ? null : side.requiredWei;
+  const short = required !== null && required > side.raisedWei;
+  const raised = formatEthWei(side.raisedWei);
+  const needed = short ? formatEthWei(required) : null;
   return (
     <Amount>
-      {formatEthWei(side.raisedWei)}
-      {required !== null && required > side.raisedWei && ` of ${formatEthWei(required)}`}{" "}
-      <VisuallyHidden>ETH</VisuallyHidden>
+      {needed !== null && needed === raised ? `<${raised}` : raised}
+      {needed !== null && ` of ${needed}`} <VisuallyHidden>ETH</VisuallyHidden>
     </Amount>
   );
 }

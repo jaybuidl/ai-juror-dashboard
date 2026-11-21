@@ -243,7 +243,7 @@ short (`0x1234…abcd`) and linked to Arbiscan (the maintainer's ruling, 2026-11
 are one line with a count. A funder whose class waits on a read not yet in is shown as not read,
 and a sum the read returned no contribution for is "others not read". A side's **fee** is what it
 had to raise to be funded: the appeal's cost plus the cost times the kit's multiplier, the winner's
-for the choice the vote favoured and the loser's for every other, and a tied vote favours none. A
+for the choice the vote favoured and the loser's for every other; a tied vote favours 0, refuse. A
 side short of its fee shows both, "0.0059 of 0.0089".
 _Avoid_: "fully funded" for one side (a side is funded or not; the appeal is what is partial),
 backer, sponsor, "someone else" for an account that can be shown

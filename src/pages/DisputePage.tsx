@@ -8,7 +8,7 @@ import { View } from "../chrome/View";
 import { casePageOf } from "../court-frontend";
 import type { DisputesView } from "../disputes/useDisputes";
 import {
-  type AppealCourtFee,
+  appealFeesOf,
   buildAppealFunding,
   ensCandidatesOf,
   stripFundingOf,
@@ -31,7 +31,6 @@ import { PeriodStrip } from "../performance/PeriodStrip";
 import { type ChainRead, useDisputeChain } from "../performance/useChainReads";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type DisputeDetailView, useDisputeDetail } from "../performance/useDisputeDetail";
-import { type ParameterRegime, rewardsAt } from "../performance/windows";
 import { type FailedRead, failureOf, SOURCES } from "../read-failure";
 import { ensFallbackOf } from "../roster/ens-fallback";
 import { useEnsNames } from "../roster/useEnsNames";
@@ -411,24 +410,6 @@ function arbitrumFailureOf(
 }
 
 /**
- * The court's fee in force for each round's appeal, for a round no side funded (`requiredOf`):
- * the configuration when its appeal period opened, or the latest while it is still open or yet to
- * open, since the court reads its fee at each contribution. Nothing for a round with no history.
- */
-function appealFeesOf(
-  reading: DisputeReading,
-  regimes: readonly ParameterRegime[],
-): ReadonlyMap<number, AppealCourtFee> {
-  const fees = new Map<number, AppealCourtFee>();
-  for (const round of reading.dispute.rounds) {
-    const open = round.index === reading.round?.index && round.executionOpenedAt === null;
-    const rewards = rewardsAt(regimes, open ? null : round.appealOpenedAt);
-    if (rewards !== null) fees.set(round.index, rewards);
-  }
-  return fees;
-}
-
-/**
  * The template subgraph's half: this dispute's template, which it has, did not come back.
  *
  * Only once the template read has settled, since a template still in flight is not missing. It
@@ -661,7 +642,11 @@ export function DisputeView({
           creator: chain.data === null ? undefined : chain.data.creator,
           ensNames,
           displayedNames: roster.entries.map((entry) => entry.identity.nickname),
-          fees: appealFeesOf(reading, performance.performance?.parameters.regimes ?? []),
+          fees: appealFeesOf(
+            reading.dispute.rounds,
+            reading.round?.index,
+            performance.performance?.parameters.regimes ?? [],
+          ),
         });
   const unnamedFunders = funding.some((round) =>
     round.sides.some((side) => side.funders.some(({ funder }) => funder.kind === "pending")),

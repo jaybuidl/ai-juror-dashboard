@@ -151,6 +151,21 @@ describe("an appealed round, once the next round has started", () => {
     ).toBeInTheDocument();
   });
 
+  it("marks a sum short of its fee by less than the last decimal place as below it", () => {
+    renderAppealed(new Map(), {
+      index: 0,
+      tied: true,
+      sides: [
+        { choice: 1, paidWei: 8_910_000_000_000_000n, funded: true },
+        { choice: 2, paidWei: 8_909_990_000_000_000n, funded: false },
+      ],
+      contributions: [],
+    });
+    const list = screen.getByRole("list", { name: /round 1 · appealed/i });
+
+    expect(within(list).getAllByRole("listitem")[1]?.textContent).toContain("<0.0089 of 0.0089");
+  });
+
   it("says what a side raised beyond the contributions read", () => {
     renderAppealed(new Map(), {
       index: 0,
