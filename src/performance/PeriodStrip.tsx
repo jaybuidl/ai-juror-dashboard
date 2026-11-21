@@ -533,8 +533,9 @@ export function PeriodStrip({
                   key={round.roundIndex}
                   funding={round}
                   // Appealed, because a round came after it: the court read's word, never these
-                  // sums', which a read made before the appeal would contradict.
-                  label={`Round ${round.roundIndex + 1} · appealed`}
+                  // sums', which a read made before the appeal would contradict. Said to be as
+                  // last read while they may be, as the current round's head is.
+                  label={`Round ${round.roundIndex + 1} · appealed${funding.behind ? " · funding as last read" : ""}`}
                   nameOf={nameOf}
                   compact
                 />

@@ -66,6 +66,7 @@ const APPEALED_ROUND: DetailRound = {
 function renderAppealed(
   ensNames: ReadonlyMap<string, string> = new Map(),
   round: DetailRound = APPEALED_ROUND,
+  behind = false,
 ) {
   const roster = resolvedRoster.entries.map((entry) => entry.agentJuror);
   const reading = buildDisputeReading({
@@ -93,7 +94,7 @@ function renderAppealed(
           answered: true,
         })}
         roster={resolvedRoster}
-        funding={stripFundingOf(funding, reading.round)}
+        funding={stripFundingOf(funding, reading.round, behind)}
       />
     </ThemeProvider>,
   );
@@ -140,6 +141,14 @@ describe("an appealed round, once the next round has started", () => {
     });
 
     expect(screen.getByRole("list", { name: "Round 1 · appealed" })).toBeInTheDocument();
+  });
+
+  it("says it is as last read while the read predates the court's view of the dispute", () => {
+    renderAppealed(new Map(), APPEALED_ROUND, true);
+
+    expect(
+      screen.getByRole("list", { name: "Round 1 · appealed · funding as last read" }),
+    ).toBeInTheDocument();
   });
 
   it("says what a side raised beyond the contributions read", () => {

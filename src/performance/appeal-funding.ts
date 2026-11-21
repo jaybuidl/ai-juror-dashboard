@@ -81,10 +81,29 @@ function keyOf(funder: FunderClass): string {
   return funder.kind;
 }
 
-/** Letters and digits only, lowercased: the form a look-alike is compared in. */
+/**
+ * The form a look-alike is compared in: accents folded away (`kléros` is `kleros`), lowercased,
+ * the digits that stand in for letters read as those letters (`k1eros`, `oo7`), and everything but
+ * letters and digits dropped. Applied to both sides, so a nickname such as 007 still matches.
+ */
 function bare(text: string): string {
-  return text.toLowerCase().replace(/[^a-z0-9]/g, "");
+  return text
+    .normalize("NFKD")
+    .replace(/\p{M}/gu, "")
+    .toLowerCase()
+    .replace(/[01i3457]/g, (character) => LEET[character] ?? character)
+    .replace(/[^a-z0-9]/g, "");
 }
+
+const LEET: Readonly<Record<string, string>> = {
+  "0": "o",
+  "1": "l",
+  i: "l",
+  "3": "e",
+  "4": "a",
+  "5": "s",
+  "7": "t",
+};
 
 /**
  * Whether an ENS name would pass for an agent juror, for Kleros, or for an address on the page.
@@ -92,9 +111,9 @@ function bare(text: string): string {
  * Anyone can register a name such as `grokleros.eth`, or `x.grokleros.eth` under it, and make it
  * their primary name, and the forward check that `useEnsNames` relies on proves only that the
  * account holds it. Such a funder is "someone else": a name that dresses as the roster or as the
- * court is worth less than none. So every label but the top-level one is read, run together so
- * that `grok.leros.eth` is caught too, against "kleros" and against every name the page gives an
- * agent juror. A label shaped like an address is dropped as well, since no address is ever shown.
+ * court is worth less than none. So every label is read, run together so that `grok.leros.eth`
+ * and `blai.se` are caught too, against "kleros" and against every name the page gives an agent
+ * juror. A label shaped like an address is dropped as well, since no address is ever shown.
  *
  * Exempt: a direct child of the agents parent, which only Kleros issues. A deeper name under it
  * is not, since a subname's holder can issue its own. Conservative by design: a genuine name that
@@ -106,12 +125,20 @@ function imitates(name: string, nicknames: readonly string[]): boolean {
   if (labels.length === parent.length + 1 && name.endsWith(`.${AGENT_JUROR_ENS_PARENT}`)) {
     return false;
   }
-  if (labels.some((label) => /^0x[0-9a-f]{6,}/i.test(label))) return true;
-  const run = bare(labels.slice(0, -1).join(""));
+  // Four hex digits is already the shorthand the page writes an address in (and two roster
+  // nicknames are that shape), so four is enough to pass for one.
+  if (labels.some((label) => /^0x[0-9a-f]{4,}/i.test(label))) return true;
+  // Every label, the top-level one too: `blai.se` is a name, and so is `grok.leros.eth`.
+  const run = bare(labels.join(""));
   if (run.includes("kleros")) return true;
   return nicknames.some((nickname) => {
     const bareNickname = bare(nickname);
-    return bareNickname.length > 0 && run.includes(bareNickname);
+    if (bareNickname.length === 0) return false;
+    // A short nickname, such as 007, only where a label starts with it: anywhere in the run it
+    // would take every name with "oot" in it, `root.eth` included.
+    return bareNickname.length < 5
+      ? labels.some((label) => bare(label).startsWith(bareNickname))
+      : run.includes(bareNickname);
   });
 }
 

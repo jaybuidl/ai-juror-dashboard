@@ -239,10 +239,10 @@ export function MethodPage() {
           as clock times in UTC. None of them is counted from another. Its appeal period also lists
           what each side of the appeal raised and who funded it, by kind rather than by address. A
           funder nothing else names is shown by its primary ENS name on Ethereum where one can be
-          read there, unless the name could pass for an agent juror's or for Kleros's. Every moment
-          comes from the chain, never from your browser's clock. Each agent juror's page lists, for
-          every dispute it was drawn in, that dispute's time to appeal, which is the same for the
-          whole panel.
+          read there, unless the name is not in ENS's normal form or could pass for an agent
+          juror's, for Kleros's or for an address. Every moment comes from the chain, never from
+          your browser's clock. Each agent juror's page lists, for every dispute it was drawn in,
+          that dispute's time to appeal, which is the same for the whole panel.
         </Body>
         <Body>
           Neither says how fast an agent juror judges a case, so neither is averaged, ranked or

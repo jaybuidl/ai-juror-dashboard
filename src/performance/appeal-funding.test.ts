@@ -246,6 +246,27 @@ describe("buildAppealFunding", () => {
       ]);
     });
 
+    it.each([
+      ["accents folded away", "kléros.eth"],
+      ["an accented nickname", "blaisé.eth"],
+      ["the top-level label read too", "blai.se"],
+      ["a digit for a letter", "k1eros.eth"],
+      ["a letter for a digit, against a digit nickname", "oo7.eth"],
+      ["a short address shape", "0xd66c.eth"],
+    ])("is not shown where it passes for one with %s", (_, name) => {
+      const funders =
+        build([named], { ensNames: new Map([[UNKNOWN, name]]) })[0]?.sides[0]?.funders ?? [];
+
+      expect(funders.map(({ funder }) => funder.kind)).not.toContain("ens");
+    });
+
+    it.each(["alice.eth", "root.eth"])("is shown where it resembles nothing: %s", (name) => {
+      const funders =
+        build([named], { ensNames: new Map([[UNKNOWN, name]]) })[0]?.sides[0]?.funders ?? [];
+
+      expect(funders.map(({ funder }) => funder.kind)).toContain("ens");
+    });
+
     it("is not shown where it passes for a name the page gives an agent juror", () => {
       const funders =
         buildAppealFunding({

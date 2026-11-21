@@ -1,5 +1,12 @@
 import { useQuery } from "@tanstack/react-query";
-import { type Address, createPublicClient, http, type PublicClient } from "viem";
+import {
+  type Address,
+  BaseError,
+  ContractFunctionRevertedError,
+  createPublicClient,
+  http,
+  type PublicClient,
+} from "viem";
 import { mainnet } from "viem/chains";
 import { normalize } from "viem/ens";
 import { mainnetRpcUrl } from "./ens";
@@ -38,6 +45,14 @@ function createFunderNameClient(): PublicClient {
   });
 }
 
+/** Whether a lookup failed because the contract reverted, rather than because nothing answered. */
+function isRevert(reason: unknown): boolean {
+  return (
+    reason instanceof BaseError &&
+    reason.walk((error) => error instanceof ContractFunctionRevertedError) !== null
+  );
+}
+
 /**
  * The primary ENS name of each of a few accounts, for appeal funders nothing else names (#32).
  *
@@ -61,11 +76,12 @@ export function useEnsNames(addresses: readonly string[]): ReadonlyMap<string, s
       const lookups = await Promise.allSettled(
         asked.map((address) => client.getEnsName({ address: address as Address })),
       );
-      // Every lookup failing is mainnet not answering, not a set of accounts without names: an
-      // error, so react-query retries it and never holds an empty answer as a fresh one for the
-      // hour below. One that fails alone is that account's (an offchain name, with lookups off)
-      // and costs only its name.
-      if (lookups.every((lookup) => lookup.status === "rejected")) {
+      // Every lookup failing without a revert is mainnet not answering, not a set of accounts
+      // without names: an error, so react-query retries it and never holds an empty answer as a
+      // fresh one for the hour below. A revert is that account's own (an offchain name, with
+      // lookups off) and costs only its name, so a lone such funder is an answer, not an outage
+      // retried on every focus.
+      if (lookups.every((lookup) => lookup.status === "rejected" && !isRevert(lookup.reason))) {
         throw new Error("Mainnet did not answer any ENS lookup");
       }
       return asked.flatMap((address, index) => {

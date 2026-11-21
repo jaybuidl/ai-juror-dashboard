@@ -94,8 +94,11 @@ this file is the full account.
 - **A funder's ENS name is reverse resolution on mainnet** (`getEnsName`, through ENS's universal
   resolver, which forward-checks it), asked only for funders nothing else names. Anyone can register
   `grokleros.eth`, or `x.grokleros.eth` under it, and make it their primary name, so a name is not
-  shown where its labels (all but the top-level one, run together) contain "kleros" or any name the
-  page gives an agent juror, or where a label is shaped like an address. Exempt: a direct child of
+  shown where its labels, run together with the top-level one (`blai.se` is a name), contain
+  "kleros" or any name the page gives an agent juror, once accents are folded and digits read as
+  the letters they stand in for (`kléros`, `k1eros`, `oo7`), or where a label is shaped like an
+  address (`0x` and four hex digits, the page's own shorthand). A nickname under five characters
+  (007) counts only at the start of a label, or `root.eth` would pass for it. Exempt: a direct child of
   `agents.kleroslabs.eth`, which only Kleros issues; a deeper name under it is not, since a subname's
   holder can issue its own. A name not already in ENSIP-15 normal form is dropped too. **It is the
   mainnet primary name** (coin type 60): for a funder that is a contract on Arbitrum, the name

@@ -138,13 +138,19 @@ export function useDisputeDetail(
   // never shadows another kind's: a stuck reveal must not keep the appeal's funding from being
   // read when the period moves (#32). One read answers every kind at once, so every kind behind
   // is marked asked by it, and a failure loops on none of them.
-  const asked = useRef<Record<"reveals" | "draws" | "stage", string | null>>({
-    reveals: null,
-    draws: null,
-    stage: null,
-  });
+  const asked = useRef<{
+    disputeId: number | null;
+    reveals: string | null;
+    draws: string | null;
+    stage: string | null;
+  }>({ disputeId, reveals: null, draws: null, stage: null });
   const { refetch, isFetching } = detail;
   useEffect(() => {
+    // Another dispute starts with nothing asked: a re-read of the last one that a switch away
+    // cancelled must be asked again on the way back, not counted as done.
+    if (asked.current.disputeId !== disputeId) {
+      asked.current = { disputeId, reveals: null, draws: null, stage: null };
+    }
     if (isFetching) return;
     const asks = [
       ["reveals", isBehindReveals ? `${disputeId}:${revealed}` : null],

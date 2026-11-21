@@ -1,6 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
+import { ContractFunctionRevertedError } from "viem";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { shownEnsName, useEnsNames } from "./useEnsNames";
 
@@ -60,6 +61,27 @@ describe("useEnsNames", () => {
       expect(client.getQueryState(["ensNames", [ALICE, BOB]])?.status).toBe("error"),
     );
     expect(result.current.size).toBe(0);
+  });
+
+  it("takes a lone funder whose lookup reverts as an answer, not an outage to retry", async () => {
+    // An offchain primary name, with offchain lookups off: the resolver reverts for that account.
+    getEnsName.mockRejectedValue(
+      new ContractFunctionRevertedError({
+        abi: [],
+        functionName: "reverseWithGateways",
+        message: "OffchainLookup",
+      }),
+    );
+    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    renderHook(() => useEnsNames([ALICE]), {
+      wrapper: ({ children }) => (
+        <QueryClientProvider client={client}>{children}</QueryClientProvider>
+      ),
+    });
+
+    await waitFor(() =>
+      expect(client.getQueryState(["ensNames", [ALICE]])?.status).toBe("success"),
+    );
   });
 
   it("keeps the names it has while a new funder's lookup is in flight", async () => {
