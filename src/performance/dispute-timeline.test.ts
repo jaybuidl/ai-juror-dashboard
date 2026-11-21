@@ -214,6 +214,7 @@ describe("buildDisputeTimeline", () => {
 
   it("counts what an answered read lacks, and marks each such entry not found", () => {
     const short = {
+      ...chain156,
       openings: chain156.openings.filter((opening) => opening.period !== "3"),
       commits: chain156.commits.slice(1),
     };

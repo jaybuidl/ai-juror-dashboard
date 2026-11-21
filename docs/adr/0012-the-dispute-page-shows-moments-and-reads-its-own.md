@@ -73,6 +73,26 @@ commitment not found is a moment unknown, an opening not found still has its mom
 who opened it. A shortfall is counted only once a read answers for the dispute as the court now
 reports it. A read standing in while a newer one is in flight has not fallen short.
 
+**The appeal lane also says how the appeal was funded** (#32, 2026-11-21). Each side that raised
+anything, what it raised in ETH, whether it was funded, and its funders by class only, under the
+opener rule above: an agent juror by name, the Kleros bot, "a party" (an address under the
+template's `aliases`), "the dispute creator", or "someone else". Not on the time axis, because no
+contribution is dated here. Amended the same day at the maintainer's request: a funder nothing else
+names is shown by its primary ENS name, a public name its holder chose and holds (reverse resolution,
+forward-checked), unless it passes for an agent juror or for Kleros. Funding arrives after the
+reveals, so the dispute's own read is read again when the court sees its period move, and every half
+minute while its appeal period runs. Amended again the same day, at the maintainer's request on
+dispute 318: an account nothing else names is shown by its short address linked to Arbiscan, not
+as "someone else", which gave a reader nothing to check; and a side that raised something and was
+not funded shows its fee beside its sum ("0.0059 of 0.0089"), since two sides with money against
+them under "Partially funded" read as a contradiction. On 318 the vote tied, which the kit reads as Refuse
+winning, so No and Yes both owed the loser's fee of 0.00891 ETH, and Grokleros gave Yes 0.00594. This reverses the
+funder-as-class rule for accounts only; an address is public on chain, is not linked to any agent
+juror, and an opener off the roster is still "an off-roster account".
+The head says "Partially funded · no appeal" when one side was funded,
+"Funding so far" while the period runs. An appealed round's funding moves to the top of the next
+round's evidence lane, compact, so it does not drop out of view when that round starts.
+
 ## Considered Options
 
 - **Drop the commit moments and the scan entirely.** Issue #13's other branch. Rejected because

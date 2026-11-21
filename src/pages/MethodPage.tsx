@@ -236,9 +236,15 @@ export function MethodPage() {
           from the moment the vote period opened to the moment its reveal was recorded. Each
           dispute's page shows the moments themselves instead, on its timeline: when each period
           opened and who opened it, and when each agent juror on the panel committed and revealed,
-          as clock times in UTC. None of them is counted from another. Every moment comes from the
-          chain, never from your browser's clock. Each agent juror's page lists, for every dispute
-          it was drawn in, that dispute's time to appeal, which is the same for the whole panel.
+          as clock times in UTC. None of them is counted from another. Its appeal period also lists
+          what each side of the appeal raised, against the fee it needed where it fell short, and
+          who funded it. A funder that is not an agent juror, the Kleros bot, a party or the
+          dispute's creator is shown by its primary ENS name on Ethereum where one can be read
+          there, unless the name is not in ENS's normal form or could pass for an agent juror's, for
+          Kleros's or for an address, and otherwise by its short address, linked to Arbiscan. Every
+          moment comes from the chain, never from your browser's clock. Each agent juror's page
+          lists, for every dispute it was drawn in, that dispute's time to appeal, which is the same
+          for the whole panel.
         </Body>
         <Body>
           Neither says how fast an agent juror judges a case, so neither is averaged, ranked or

@@ -47,6 +47,8 @@ export function useDisputeChain(
   disputeId: number | null,
   range: DisputeBlockRange | null,
   progress: string | null,
+  /** The dispute's creation transaction, for its creator (#32). `null` where none was read. */
+  creationTx: `0x${string}` | null = null,
 ): ChainRead<RawDisputeChain> {
   const enabled = disputeId !== null && range !== null && progress !== null;
   const query = useQuery({
@@ -56,12 +58,14 @@ export function useDisputeChain(
       range?.fromBlock.toString() ?? null,
       range?.toBlock.toString() ?? null,
       progress,
+      creationTx,
     ],
     queryFn: ({ signal }) =>
       fetchDisputeChain({
         client: createArbitrumClient(undefined, signal),
         disputeId: disputeId as number,
         range: range as DisputeBlockRange,
+        creationTx,
       }),
     enabled,
     // A finished dispute's record is fixed for ever; a running one's is re-read when `progress`

@@ -77,6 +77,63 @@ this file is the full account.
   appeal. The timeline names it "the Kleros bot" (`KLEROS_BOT` in `dispute-timeline.ts`); it is
   infrastructure, not a person, so naming it breaks no privacy rule. Dispute 160's commit and vote
   were opened by `0x9e51…d30a`, which nobody has identified, so it stays "an off-roster account".
+- **An appeal's funding is in the core subgraph, per round.** `Answer.paidFee` and `Answer.funded`
+  on each `ClassicRound`'s `answers` are what each side raised and whether it reached its fee, and
+  `ClassicRound.contributions` (contributor, amount, choice) are who made it up; there is also
+  `fundedChoices`. The per-dispute read selects them (#32). **Different sides need different
+  fees** (the kit's winner and loser multipliers), so whether a side was funded cannot be read off
+  its amount: use `funded`. On dispute 318, No was funded at 0.0089 ETH and Yes raised 0.0059 and
+  was not. **A second funded side appeals the dispute in the same transaction**, so a round whose
+  funding reads "appealed" is always an earlier round by the time anything reads it. As of
+  2026-11-21 court 34 holds 5 contributions across disputes 282, 318, 338 and 339, every round
+  one side funded, and no dispute has reached round 2. Contributors seen include Grokleros and the
+  unidentified `0x9e51…d30a`. **`paidFee` is the sum of the round's `Contribution` events for that
+  choice** (the kit caps each at what the side still needs, and the subgraph does not subtract
+  withdrawals), so the contributions returned falling short of it is a short read, which the page
+  shows as "others not read". The read bounds contributions at 100 per round.
+- **A funder's ENS name is reverse resolution on mainnet** (`getEnsName`, through ENS's universal
+  resolver, which forward-checks it), asked only for funders nothing else names. Anyone can register
+  `grokleros.eth`, or `x.grokleros.eth` under it, and make it their primary name, so
+  `performance/lookalike.ts` drops a name that could pass for an agent juror, Kleros or an address,
+  by four rules its docstring lists: a direct child of `agents.kleroslabs.eth` is exempt (only
+  Kleros issues those); an address-shaped label is out; a label that could read as Latin and is not
+  plain Latin is out (`klerøs`, `klero$`, any Cyrillic or Greek); and labels that fold to "kleros"
+  or a nickname are out, each character read as the class that passes for it (`k1eros`, `colurnbo`,
+  `6laise`, `oo7`). A deny rule is never complete: its table test holds every bypass review has
+  found, one row each, and a miss costs a label, never a figure. A name not already in ENSIP-15
+  normal form is dropped too. **It is the mainnet primary name** (coin type 60): for a funder that
+  is a contract on Arbitrum, the name belongs to whoever holds that address on mainnet, and a name
+  set only on an L2 is not read. **A 1-wei contribution is enough** to put a funder's chosen name on
+  the page; the filters bound what it can pass for, not what it says. **Offchain lookups are off for
+  it** (`ccipRead: false`): a funder picks its own resolver, and an offchain one would have every
+  reader's browser fetch a gateway the funder chose. Mainnet-held names resolve without one.
+- **What a side must raise is the kit's rule, not a field.** `fundAppeal` asks the appeal's cost
+  (`KlerosCore.appealCost`: the court's `feeForJuror` times twice the round's `nbVotes` plus one,
+  read at each call, and the parent court's fee once `nbVotes` reaches `jurorsForCourtJump`) plus
+  the cost times a multiplier: `WINNER_STAKE_MULTIPLIER` (10000 bp) for the choice `currentRuling`
+  names, `LOSER_STAKE_MULTIPLIER` (20000) for any other. During the appeal period `currentRuling` is
+  `tied ? 0 : winningChoice`, so **a tie favours choice 0, refuse to arbitrate**, and
+  `ClassicRound.winningChoice` is still set in a tie, misleadingly. Dispute 318 (2026-10-26) tied 2
+  Refuse, 2 Yes, 1 No: No raised the loser's 0.00891 and was funded; Grokleros gave Yes 0.00594, the
+  winner's fee, and Yes was not funded. In execution, with one side funded, `currentRuling` then
+  overrode the tied ruling with No. The page takes the cost from the court's fee in force and checks
+  it against every funded side, whose sum is its fee exactly (contributions are capped): a side that
+  disagrees silences the round. `appealCost` is read at each contribution, so the page prices an
+  appeal only where `feeForJuror` and `jurorsForCourtJump` held still across its window, or, for the
+  current round, by the last fee set in it (`appealFeesOf`); never without the parameter history,
+  and never past the jump threshold, where the parent court's fee applies. The multipliers are
+  `constant` in the kit's implementation (v0.12.0), behind an upgradable proxy, so
+  `appeal-funding.integration.test.ts` pins them live. As of 2026-11-21 every funded side in court
+  34 had paid 3×.
+- **A dispute's parties are the addresses under its template's `aliases`**, when the template has
+  that key (the maintainer's rule, 2026-11-21): typically the parties, or at least the accounts of
+  interest. It is an object of name → address, e.g. dispute 266's template 277 carries
+  `{"Alice": "0x2442…2615", "Bot": "0x2442…2615"}`; `aliasesArray` beside it is not read. 12 of the
+  DRT subgraph's 382 templates had one on 2026-11-21, and court 34's oracle disputes from its
+  dispute resolver (`0xb5526d…4323`) mostly do not. The page says "a party" and never the name,
+  which is whatever the arbitrable typed. **The dispute creator is the sender of the transaction
+  that created it** (`createDisputeForTemplate` on that resolver), read with the dispute's chain
+  record.
 - **The core subgraph does carry block numbers, on `Draw.blockNumber` and
   `Dispute.lastPeriodChangeBlockNumber`.** That is what bounds one dispute's chain read without a
   guess: from its first draw (`passPeriod` cannot leave evidence until every vote ID is drawn) to

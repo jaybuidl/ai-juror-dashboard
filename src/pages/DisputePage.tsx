@@ -7,6 +7,12 @@ import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
 import { casePageOf } from "../court-frontend";
 import type { DisputesView } from "../disputes/useDisputes";
+import {
+  appealFeesOf,
+  buildAppealFunding,
+  ensCandidatesOf,
+  stripFundingOf,
+} from "../performance/appeal-funding";
 import { arbitrumSource } from "../performance/arbitrum";
 import { DisputePanel } from "../performance/DisputePanel";
 import type { RawDisputeChain } from "../performance/dispute-chain";
@@ -14,6 +20,7 @@ import {
   buildDisputeReading,
   type DisputeReading,
   revealedCountOf,
+  stageOf,
 } from "../performance/dispute-detail";
 import {
   buildDisputeTimeline,
@@ -26,6 +33,7 @@ import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import { type DisputeDetailView, useDisputeDetail } from "../performance/useDisputeDetail";
 import { type FailedRead, failureOf, SOURCES } from "../read-failure";
 import { ensFallbackOf } from "../roster/ens-fallback";
+import { useEnsNames } from "../roster/useEnsNames";
 import type { RosterView } from "../roster/useRoster";
 import { narrow } from "../styles/breakpoints";
 import { VisuallyHidden } from "../styles/hidden";
@@ -275,10 +283,16 @@ function coreFailureOf({
   disputes,
   performance,
   detail,
+  appealOpened,
+  funded,
 }: {
   disputes: DisputesView;
   performance: CourtPerformanceView;
   detail: DisputeDetailView;
+  /** Whether the court read says an appeal period has opened, in any round. */
+  appealOpened: boolean;
+  /** Whether the page shows any appeal funding, from this read or an earlier one. */
+  funded: boolean;
 }) {
   if (disputes.error !== null) {
     return failureOf(
@@ -304,9 +318,11 @@ function coreFailureOf({
     return failureOf(
       detail.error,
       SOURCES.core,
+      // Appeal funding is this read's too (#32): named wherever the court says an appeal period
+      // opened, or an earlier read shows some, since an empty lane would read as nobody funding.
       detail.detail.blockRange === null
-        ? "This dispute's ballot, evidence count and published reasoning could not be read, so the ruling card and every column below are missing what they would have said, and the timeline cannot say who opened each period or when each agent juror committed."
-        : "This dispute's ballot, evidence count and published reasoning could not be read again, so the ruling card and every column below show what an earlier read said.",
+        ? `This dispute's ballot, evidence count and published reasoning could not be read, so the ruling card and every column below are missing what they would have said, and the timeline cannot say who opened each period${appealOpened ? ", when each agent juror committed, or how the appeal was funded" : " or when each agent juror committed"}.`
+        : `This dispute's ballot, evidence count and published reasoning could not be read again, so the ruling card and every column below show what an earlier read said${funded || appealOpened ? ", and so does the appeal funding" : ""}.`,
     );
   }
 
@@ -331,9 +347,16 @@ function arbitrumFailureOf(
   performance: CourtPerformanceView,
   chain: ChainRead<RawDisputeChain>,
   timeline: DisputeTimeline | null,
+  unnamedFunders: boolean,
 ): FailedRead | null {
   const source = arbitrumSource();
   const parameters = performance.parametersError;
+  // With no record at all the creator is unknown, so an appeal funder nothing else names cannot
+  // be told from the creator and shows as not read (`appeal-funding.ts`). Said only where one does.
+  const funders =
+    chain.data === null && unnamedFunders
+      ? " An appeal funder nothing else names shows as not read, since who created the dispute is unknown."
+      : "";
 
   if (parameters !== null && chain.error !== null) {
     return failureOf(
@@ -341,7 +364,7 @@ function arbitrumFailureOf(
       source,
       chain.data !== null
         ? "Neither the court's parameter history nor this dispute's record could be read from Arbitrum, so the timeline below does not say what each period was configured to allow, and who opened each period and when each agent juror committed come from an earlier read, which accounts for nothing since."
-        : "Neither the court's parameter history nor this dispute's record could be read from Arbitrum, so the timeline below shows when each period opened and how long it ran, but not what it was configured to allow, who opened it, or when any agent juror committed.",
+        : `Neither the court's parameter history nor this dispute's record could be read from Arbitrum, so the timeline below shows when each period opened and how long it ran, but not what it was configured to allow, who opened it, or when any agent juror committed.${funders}`,
     );
   }
 
@@ -351,7 +374,7 @@ function arbitrumFailureOf(
       source,
       chain.data !== null
         ? "This dispute's record could not be re-read from Arbitrum, so who opened each period and when each agent juror committed come from an earlier read, which accounts for nothing since."
-        : "This dispute's record could not be read from Arbitrum, so the timeline below shows when each period opened but not who opened it, and no agent juror's commitment.",
+        : `This dispute's record could not be read from Arbitrum, so the timeline below shows when each period opened but not who opened it, and no agent juror's commitment.${funders}`,
     );
   }
 
@@ -386,6 +409,27 @@ function arbitrumFailureOf(
   };
 }
 
+/**
+ * The template subgraph's half: this dispute's template, which it has, did not come back.
+ *
+ * Only once the template read has settled, since a template still in flight is not missing. It
+ * costs the title, and the parties an appeal funder would be matched against (#32), which is said
+ * only where a funder is left unnamed for it.
+ */
+function templateFailureOf(
+  disputes: DisputesView,
+  templateUnread: boolean,
+  unnamedFunders: boolean,
+): FailedRead | null {
+  const titles = disputes.titles;
+  if (!templateUnread || titles === undefined || titles.isLoading) return null;
+  return {
+    source: SOURCES.templates,
+    status: titles.resolved === 0 ? "No templates" : "Short read",
+    what: `This dispute's subject could not be read, so it is identified by its ID alone.${unnamedFunders ? " Its parties are unknown too, so an appeal funder nothing else names shows as not read." : ""}`,
+  };
+}
+
 function failuresOf({
   roster,
   disputes,
@@ -393,6 +437,10 @@ function failuresOf({
   detail,
   chain,
   timeline,
+  appealOpened,
+  funded,
+  templateUnread,
+  unnamedFunders,
 }: {
   roster: RosterView;
   disputes: DisputesView;
@@ -400,11 +448,18 @@ function failuresOf({
   detail: DisputeDetailView;
   chain: ChainRead<RawDisputeChain>;
   timeline: DisputeTimeline | null;
+  appealOpened: boolean;
+  funded: boolean;
+  /** Whether the dispute has a template the template read did not return. */
+  templateUnread: boolean;
+  /** Whether any appeal funder shows as not read. */
+  unnamedFunders: boolean;
 }): Failures {
   return {
     blocking: present(
-      coreFailureOf({ disputes, performance, detail }),
-      arbitrumFailureOf(performance, chain, timeline),
+      coreFailureOf({ disputes, performance, detail, appealOpened, funded }),
+      templateFailureOf(disputes, templateUnread, unnamedFunders),
+      arbitrumFailureOf(performance, chain, timeline, unnamedFunders),
     ),
     degraded: [ensFallbackOf(roster)].filter((read) => read !== null),
     offline: disputes.isPaused || performance.isPaused || detail.isPaused || chain.isPaused,
@@ -434,6 +489,11 @@ export type DisputeViewProps = DisputePageProps & {
   detail: DisputeDetailView;
   /** The dispute's own record on Arbitrum, for the timeline. See `useDisputeChain`. */
   chain: ChainRead<RawDisputeChain>;
+  /**
+   * Primary ENS names of the appeal's funders, by lowercased address (`useEnsNames`). Empty
+   * until mainnet answers, and for good if it never does: a funder without one is its account.
+   */
+  ensNames: ReadonlyMap<string, string>;
 };
 
 /**
@@ -470,12 +530,26 @@ export function DisputePage(props: DisputePageProps) {
     disputeId,
     revealedCountOf(row),
     row === undefined ? null : row.panelSize > 0,
+    stageOf(row),
   );
   // Keyed on what the court read says the dispute has reached, so the record is read again when
   // a period opens or an agent juror commits, and not on a clock.
-  const chain = useDisputeChain(disputeId, detail.detail.blockRange, progressOf(row));
+  const chain = useDisputeChain(
+    disputeId,
+    detail.detail.blockRange,
+    progressOf(row),
+    detail.detail.transactionHash as `0x${string}` | null,
+  );
+  const ensNames = useEnsNames(
+    ensCandidatesOf(
+      detail.detail.funding,
+      props.roster.entries.map((entry) => entry.agentJuror),
+    ),
+  );
 
-  return <DisputeView {...props} pathId={pathId} detail={detail} chain={chain} />;
+  return (
+    <DisputeView {...props} pathId={pathId} detail={detail} chain={chain} ensNames={ensNames} />
+  );
 }
 
 /**
@@ -512,6 +586,7 @@ export function DisputeView({
   pathId: raw,
   detail,
   chain,
+  ensNames,
 }: DisputeViewProps) {
   const disputeId = disputeIdOf(raw);
 
@@ -535,15 +610,47 @@ export function DisputeView({
           detailBehind: detail.isBehindReveals,
         });
 
+  // Every agent juror on the roster, drawn here or not: any of them may have opened a period or
+  // funded an appeal. The roster the page names them from, which is the whole of it.
+  const agentJurors = roster.entries.map((entry) => entry.agentJuror);
   const timeline =
     reading === null || performance.performance === null
       ? null
       : buildDisputeTimeline({
           reading,
-          roster: performance.performance.agentJurors,
+          roster: agentJurors,
           chain: chain.data,
           answered: chain.answered,
         });
+
+  // The template's parties, and `undefined` while a template the dispute has is not read: an
+  // unmatched funder is then pending, never a bare account in place of a party it may be (#32).
+  const aliases =
+    reading === null || (reading.template === null && reading.dispute.templateId !== null)
+      ? undefined
+      : (reading.template?.aliases ?? []);
+  const funding =
+    reading === null
+      ? []
+      : buildAppealFunding({
+          funding: detail.detail.funding,
+          answers: reading.template?.answers ?? [],
+          aliases,
+          roster: agentJurors,
+          // `undefined` while the chain read has not answered: whether a funder created the
+          // dispute is not known until the creation transaction is read.
+          creator: chain.data === null ? undefined : chain.data.creator,
+          ensNames,
+          displayedNames: roster.entries.map((entry) => entry.identity.nickname),
+          fees: appealFeesOf(
+            reading.dispute.rounds,
+            reading.round?.index,
+            performance.performance?.parameters.regimes ?? [],
+          ),
+        });
+  const unnamedFunders = funding.some((round) =>
+    round.sides.some((side) => side.funders.some(({ funder }) => funder.kind === "pending")),
+  );
 
   // A failure is loud because it costs a figure, so a page that names nothing here — not a
   // dispute, no dispute, or another court's — raises no banner: it has lost no figure, and every
@@ -554,7 +661,20 @@ export function DisputeView({
     reading === null && (disputeId === null || detail.isUnknownDispute || elsewhere);
   const failures = namesNothingHere
     ? undefined
-    : failuresOf({ roster, disputes, performance, detail, chain, timeline });
+    : failuresOf({
+        roster,
+        disputes,
+        performance,
+        detail,
+        chain,
+        timeline,
+        // Any round's, since an earlier round's appeal is this read's to report too.
+        appealOpened:
+          reading?.dispute.rounds.some((round) => round.appealOpenedAt !== null) ?? false,
+        funded: funding.length > 0,
+        templateUnread: reading !== null && aliases === undefined,
+        unnamedFunders,
+      });
 
   return (
     <View failures={failures}>
@@ -641,7 +761,12 @@ export function DisputeView({
             </Split>
 
             {timeline !== null && (
-              <PeriodStrip reading={reading} timeline={timeline} roster={roster} />
+              <PeriodStrip
+                reading={reading}
+                timeline={timeline}
+                roster={roster}
+                funding={stripFundingOf(funding, reading.round, detail.isBehindStage)}
+              />
             )}
           </Header>
 

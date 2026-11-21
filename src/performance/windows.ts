@@ -186,6 +186,26 @@ export function windowsAt(
 }
 
 /**
+ * What a draw earned and risked at one moment, by the rule `windowsAt` follows: `null` before the
+ * court existed or with no history read, and the latest configuration for a moment still to come
+ * (`null`), which is what the court will read when it does. For an appeal's fee (#32), where the
+ * court reads its fee at each contribution.
+ */
+export function rewardsAt(
+  regimes: readonly ParameterRegime[],
+  moment: number | null,
+): RewardParameters | null {
+  if (moment === null) return regimes[regimes.length - 1]?.rewards ?? null;
+
+  let held: RewardParameters | null = null;
+  for (const regime of regimes) {
+    if (regime.from > moment) break;
+    held = regime.rewards;
+  }
+  return held;
+}
+
+/**
  * The windows one dispute ran under, resolved period by period.
  *
  * Period by period, and not once per dispute, because that is how the court itself works:

@@ -65,6 +65,7 @@ const TEMPLATE: DisputeTemplate = {
     { choice: 1, title: "Refund the buyer" },
     { choice: 2, title: "Pay the seller" },
   ],
+  aliases: [],
 };
 
 describe("toDisputeDetail", () => {

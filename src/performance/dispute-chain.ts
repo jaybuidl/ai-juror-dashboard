@@ -55,6 +55,13 @@ export type RawPeriodOpening = {
 export type RawDisputeChain = {
   openings: readonly RawPeriodOpening[];
   commits: readonly RawCommitCast[];
+  /**
+   * Who sent the transaction that created the dispute, as the chain returns it, or `null` where
+   * no creation transaction was given to read. On court 34's dispute resolver that is the person
+   * who asked the question: an appeal funder is called "the dispute creator" when it matches
+   * (`appeal-funding.ts`, #32). An address, so it never reaches the page.
+   */
+  creator: string | null;
 };
 
 /** Which blocks hold this dispute's record. `toBlock` is `"latest"` while the dispute runs. */
@@ -64,11 +71,14 @@ export async function fetchDisputeChain({
   client = createArbitrumClient(),
   disputeId,
   range,
+  creationTx = null,
   blockTimes = browserBlockTimes(),
 }: {
   client?: PublicClient;
   disputeId: number;
   range: DisputeBlockRange;
+  /** The transaction that created the dispute (`DisputeDetail.transactionHash`), if known. */
+  creationTx?: Hash | null;
   blockTimes?: BlockTimes;
 }): Promise<RawDisputeChain> {
   const [periodLogs, commits] = await Promise.all([
@@ -90,9 +100,15 @@ export async function fetchDisputeChain({
   ]);
 
   // The sender is on the transaction and not on the log: one read per opening, four in a
-  // dispute's life. Deduplicated because one transaction could open two periods, and a
-  // transaction's sender cannot change, so reading it twice would only spend the rate limit.
-  const hashes = [...new Set(periodLogs.map((log) => log.transactionHash))];
+  // dispute's life, and one for the creation. Deduplicated because one transaction could open
+  // two periods, and a transaction's sender cannot change, so reading it twice would only spend
+  // the rate limit.
+  const hashes = [
+    ...new Set([
+      ...periodLogs.map((log) => log.transactionHash),
+      ...(creationTx === null ? [] : [creationTx]),
+    ]),
+  ];
   const senders = new Map<Hash, string>();
   for (const transaction of await Promise.all(
     hashes.map((hash) => client.getTransaction({ hash })),
@@ -117,5 +133,9 @@ export async function fetchDisputeChain({
     };
   });
 
-  return { openings, commits };
+  return {
+    openings,
+    commits,
+    creator: creationTx === null ? null : (senders.get(creationTx) ?? null),
+  };
 }

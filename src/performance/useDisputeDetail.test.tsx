@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import detailFixture from "./dispute-156-detail.fixture.json" with { type: "json" };
 import { fetchDisputeDetail } from "./dispute-detail-subgraph";
-import { useDisputeDetail } from "./useDisputeDetail";
+import { appealPollOf, useDisputeDetail } from "./useDisputeDetail";
 
 vi.mock("./dispute-detail-subgraph", () => ({ fetchDisputeDetail: vi.fn() }));
 const fetched = vi.mocked(fetchDisputeDetail);
@@ -162,5 +162,95 @@ describe("useDisputeDetail and draws it has not seen", () => {
     await new Promise((resolve) => setTimeout(resolve, 50));
 
     expect(fetched).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * #32: appeal funding arrives after the reveals, so no reveal count brings this read back for it.
+ * The court read moving the dispute on does, once per stage.
+ */
+describe("useDisputeDetail and a period it has not seen", () => {
+  beforeEach(() => {
+    fetched.mockReset();
+    fetched.mockResolvedValue(detailFixture as never);
+  });
+
+  it("re-reads once when the court sees the dispute move to another period", async () => {
+    const { result, rerender } = renderHook(({ stage }) => useDisputeDetail(156, 2, true, stage), {
+      wrapper,
+      initialProps: { stage: "1:appeal" as string | null },
+    });
+    await waitFor(() => expect(result.current.readAt).not.toBeNull());
+    expect(fetched).toHaveBeenCalledTimes(1);
+
+    rerender({ stage: "1:execution" });
+    await waitFor(() => expect(fetched).toHaveBeenCalledTimes(2));
+    rerender({ stage: "1:execution" });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(fetched).toHaveBeenCalledTimes(2);
+  });
+
+  it("does not re-read while the dispute stays where it was", async () => {
+    const { result, rerender } = renderHook(({ stage }) => useDisputeDetail(156, 2, true, stage), {
+      wrapper,
+      initialProps: { stage: "1:appeal" as string | null },
+    });
+    await waitFor(() => expect(result.current.readAt).not.toBeNull());
+    rerender({ stage: "1:appeal" });
+    rerender({ stage: null });
+    await new Promise((resolve) => setTimeout(resolve, 50));
+
+    expect(fetched).toHaveBeenCalledTimes(1);
+  });
+
+  it("asks once per period, not again and again while the re-read fails", async () => {
+    const { result, rerender } = renderHook(({ stage }) => useDisputeDetail(156, 2, true, stage), {
+      wrapper,
+      initialProps: { stage: "1:appeal" as string | null },
+    });
+    await waitFor(() => expect(result.current.readAt).not.toBeNull());
+
+    fetched.mockImplementation(
+      () => new Promise((_, reject) => setTimeout(() => reject(new Error("HTTP 503")), 5)),
+    );
+    rerender({ stage: "1:execution" });
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+    await new Promise((resolve) => setTimeout(resolve, 100));
+
+    expect(result.current.isBehindStage).toBe(true);
+    expect(fetched).toHaveBeenCalledTimes(2);
+  });
+
+  it("re-reads for a new period even while a reveal's failed re-read is still behind", async () => {
+    // The shape a single shared ask got wrong: the stuck reveal held the ask, so the appeal's
+    // funding was never read when the period moved, for the whole appeal.
+    const { result, rerender } = renderHook(
+      ({ revealed, stage }) => useDisputeDetail(156, revealed, true, stage),
+      { wrapper, initialProps: { revealed: 2, stage: "1:vote" as string | null } },
+    );
+    await waitFor(() => expect(result.current.readAt).not.toBeNull());
+
+    fetched.mockImplementationOnce(
+      () => new Promise((_, reject) => setTimeout(() => reject(new Error("HTTP 503")), 5)),
+    );
+    rerender({ revealed: 3, stage: "1:vote" });
+    await waitFor(() => expect(result.current.error).not.toBeNull());
+    expect(fetched).toHaveBeenCalledTimes(2);
+
+    rerender({ revealed: 3, stage: "1:appeal" });
+    await waitFor(() => expect(fetched).toHaveBeenCalledTimes(3));
+  });
+});
+
+describe("appealPollOf", () => {
+  it("polls every half minute while the read sees the appeal period", () => {
+    expect(appealPollOf({ dispute: { period: "appeal" } } as never)).toBe(30_000);
+  });
+
+  it("stops once it sees any other period, and before anything is read", () => {
+    expect(appealPollOf({ dispute: { period: "execution" } } as never)).toBe(false);
+    expect(appealPollOf({ dispute: { period: "vote" } } as never)).toBe(false);
+    expect(appealPollOf(undefined)).toBe(false);
   });
 });

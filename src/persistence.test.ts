@@ -220,8 +220,15 @@ describe("the persisted model shape", () => {
     // shape is modelled from `templateData` on every load and the `disputeTemplates` query is
     // deliberately *not* persisted — it holds a `Map`, which `JSON.stringify` turns into `{}`.
     // It is pinned here anyway, because the reason it is not persisted is a decision somebody
-    // could reverse, and the shape is the first thing they would have to answer for.
-    expect(Object.keys(template).sort()).toEqual(["answers", "category", "question", "title"]);
+    // could reverse, and the shape is the first thing they would have to answer for. #32 added
+    // `aliases`, the template's party addresses, on the same terms.
+    expect(Object.keys(template).sort()).toEqual([
+      "aliases",
+      "answers",
+      "category",
+      "question",
+      "title",
+    ]);
   });
 
   it("pins the shape of a reduced commitment", () => {

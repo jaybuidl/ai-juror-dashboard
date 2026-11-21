@@ -248,3 +248,22 @@ overruled by ADR-0010, as above.
 `JurorEmpty.dc.html:83-84`, the first item under "What appears here on its first draw", now names
 the time to appeal rather than "Commit and reveal latency". Same line count (107). Its two median
 tiles at `:67-68` are still overruled by ADR-0010.
+
+## Amended for #32: the appeal's funding
+
+`Dispute.dc.html:95` now ends the appeal lane with the round's funding, under a hairline: a mono
+head naming the outcome ("Partially funded · no appeal") with "ETH" right-aligned once, then one row
+per side ("1 · Refund the buyer  funded  0.0089") and its funders indented under it by class, an
+agent juror's name in heading ink and the rest in meta ink, each with an amount only where a side
+has more than one funder line. The styles were appended to line 30, as the timeline's were, so the
+file is still 288 lines. The sampled figures are sampled. Not drawn, and the implementation's: the
+"Funding so far" head while the period runs, and an appealed round's compact block at the top of
+the next round's evidence lane. Also the implementation's, added the same day: a funder's ENS name
+in the funder line's own meta ink (never the heading ink an agent juror's name takes, so a stranger's
+name never reads as the roster's), "Choice N" for a side the template does not name, and an
+"others not read" line where the contributions read fall short of what a side raised. An earlier
+round's compact head always says "appealed", on the court's word that a round came after it, and
+the current round's head says "Funding as last read" until a re-read catches up with the court. An
+account nothing else names is drawn as its short address (`0x1111…1111`), underlined and linked to
+Arbiscan, and a side short of its fee reads "0.0059 of 0.0089" (the maintainer's request on 318).
+

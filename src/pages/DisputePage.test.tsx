@@ -4,6 +4,7 @@ import { ThemeProvider } from "styled-components";
 import { describe, expect, it } from "vitest";
 import { arbitrumSource } from "../performance/arbitrum";
 import detailFixture from "../performance/dispute-156-detail.fixture.json" with { type: "json" };
+import detail318Fixture from "../performance/dispute-318-detail.fixture.json" with { type: "json" };
 import { NO_DETAIL, type RawDisputeDetail, toDisputeDetail } from "../performance/dispute-detail";
 import type { CourtPerformance, DrawState, LiveStage } from "../performance/performance";
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
@@ -47,6 +48,7 @@ function read(overrides: Partial<DisputeDetailView> = {}): DisputeDetailView {
     readAt: READ_AT,
     retry: () => {},
     isBehindReveals: false,
+    isBehindStage: false,
     ...overrides,
   };
 }
@@ -62,6 +64,7 @@ function renderDispute(overrides: Partial<DisputeViewProps> = {}) {
           pathId="156"
           detail={read()}
           chain={answered(DISPUTE_156_CHAIN)}
+          ensNames={new Map()}
           {...overrides}
         />
       </MemoryRouter>
@@ -745,6 +748,220 @@ function laneLines(period: string): string[] {
     .map((item) => item.textContent?.replace(/\s+/g, " ").trim() ?? "");
 }
 
+/**
+ * Dispute 156's own appeal took no contribution, so its funding here is dispute 318's, as the
+ * subgraph returned it on 2026-11-21: No funded by an account off the roster, Yes contributed to
+ * by Grokleros and not funded (#32).
+ */
+const FUNDED = toDisputeDetail(detail318Fixture as RawDisputeDetail).funding.map((round) => round);
+
+/** The appeal lane's funding block, as the lines a reader sees, head first. */
+function fundingLines(): string[] {
+  const list = screen.getByRole("list", { name: /funded|funding/i });
+  const head = document.getElementById(list.getAttribute("aria-labelledby") ?? "");
+  return [
+    head?.textContent?.replace(/\s+/g, " ").trim() ?? "",
+    ...within(list)
+      .getAllByRole("listitem")
+      .map((item) => item.textContent?.replace(/\s+/g, " ").trim() ?? ""),
+  ];
+}
+
+describe("the appeal's funding (#32)", () => {
+  it("lists each side funded or not, with what it raised and who gave it", () => {
+    renderDispute({ detail: read({ detail: { ...detail156, funding: FUNDED } }) });
+
+    expect(fundingLines()).toEqual([
+      "Partially funded · no appealETH",
+      // Dispute 156's own choice names, since its template is the one on the page.
+      "1 · YES (50% or more) funded 0.0089 ETH0x1111…1111",
+      // Short of the 0.0089 a tied round asks of every side but Refuse (#32, the maintainer's
+      // question).
+      "2 · NO (under 50%) not funded 0.0059 of 0.0089 ETHGrokleros",
+    ]);
+  });
+
+  it("shows a funder nothing else names by its short address, linked to it on Arbiscan", () => {
+    renderDispute({ detail: read({ detail: { ...detail156, funding: FUNDED } }) });
+    const link = screen.getByRole("link", {
+      name: "Account 0x1111111111111111111111111111111111111111 on Arbiscan",
+    });
+
+    expect(link).toHaveTextContent("0x1111…1111");
+    expect(link).toHaveAttribute(
+      "href",
+      "https://arbiscan.io/address/0x1111111111111111111111111111111111111111",
+    );
+  });
+
+  it("shows a funder with an ENS name by that name, linked to its account on Arbiscan", () => {
+    renderDispute({
+      detail: read({ detail: { ...detail156, funding: FUNDED } }),
+      ensNames: new Map([["0x1111111111111111111111111111111111111111", "alice.eth"]]),
+    });
+    const link = screen.getByRole("link", {
+      name: "alice.eth, account 0x1111111111111111111111111111111111111111 on Arbiscan",
+    });
+
+    expect(link).toHaveTextContent("alice.eth");
+    expect(link).toHaveAttribute(
+      "href",
+      "https://arbiscan.io/address/0x1111111111111111111111111111111111111111",
+    );
+  });
+
+  it("names an agent juror by its nickname, never its address", () => {
+    const { container } = renderDispute({
+      detail: read({ detail: { ...detail156, funding: FUNDED } }),
+    });
+
+    expect(container.innerHTML).not.toMatch(/0x93aa/i);
+  });
+
+  it("says nothing about funding where nothing was contributed", () => {
+    renderDispute();
+
+    expect(screen.queryByRole("list", { name: /funded|funding/i })).not.toBeInTheDocument();
+  });
+
+  it("does not guess who created the dispute before the chain read answers", () => {
+    renderDispute({
+      detail: read({ detail: { ...detail156, funding: FUNDED } }),
+      chain: pending(),
+    });
+
+    expect(fundingLines()[1]).toBe(
+      "1 · YES (50% or more) funded 0.0089 ETH—an account not read yet",
+    );
+  });
+});
+
+describe("the appeal's funding, where a read it depends on is missing (#32)", () => {
+  const withFunding = () => read({ detail: { ...detail156, funding: FUNDED } });
+  /** The court's disputes with dispute 156's template not come back, as the template read left it. */
+  const untemplated = (isLoading: boolean) => ({
+    ...disputes,
+    templateFor: () => undefined,
+    titles: { expected: 2, resolved: 1, isLoading, readAt: READ_AT },
+  });
+
+  it("does not guess party or a bare account while the template is still being read", () => {
+    renderDispute({ detail: withFunding(), disputes: untemplated(true) });
+
+    expect(fundingLines()[1]).toBe("Choice 1 funded 0.0089 ETH—an account not read yet");
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
+  });
+
+  it("says so once the template read has settled without it", () => {
+    renderDispute({ detail: withFunding(), disputes: untemplated(false) });
+
+    const banner = screen.getByRole("alert");
+    expect(banner).toHaveTextContent("kleros-v2-drt");
+    expect(banner).toHaveTextContent(
+      /Its parties are unknown too, so an appeal funder nothing else names shows as not read/,
+    );
+  });
+
+  it("says what a failed chain read costs the funders, where it leaves one unnamed", () => {
+    renderDispute({ detail: withFunding(), chain: failed() });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /An appeal funder nothing else names shows as not read, since who created the dispute is unknown/,
+    );
+  });
+
+  it("says nothing about funders a failed chain read leaves unnamed where there are none", () => {
+    renderDispute({ chain: failed() });
+
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/Appeal funders/);
+  });
+
+  it("says the template banner without the funders clause where no funder is left unnamed", () => {
+    renderDispute({ disputes: untemplated(false) });
+
+    const banner = screen.getByRole("alert");
+    expect(banner).toHaveTextContent(/identified by its ID alone\./);
+    expect(banner).not.toHaveTextContent(/appeal funder/);
+  });
+
+  it("does not name an outcome over sums read before the court saw the dispute move on", () => {
+    renderDispute({
+      detail: read({ detail: { ...detail156, funding: FUNDED }, isBehindStage: true }),
+    });
+
+    expect(fundingLines()[0]).toBe("Funding as last readETH");
+  });
+
+  it("says the funding is an earlier read's when this dispute's re-read fails", () => {
+    renderDispute({
+      detail: read({
+        detail: { ...detail156, funding: FUNDED },
+        error: new ReadFailure("The core subgraph returned HTTP 503 Service Unavailable", {
+          source: SOURCES.core,
+          status: "HTTP 503",
+        }),
+      }),
+    });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      /show what an earlier read said, and so does the appeal funding/,
+    );
+  });
+});
+
+describe("what a failed dispute read costs the funding (#32)", () => {
+  const failure = new ReadFailure("The core subgraph returned HTTP 503 Service Unavailable", {
+    source: SOURCES.core,
+    status: "HTTP 503",
+  });
+  /** The court's reading of dispute 156 with no appeal period opened in any round. */
+  const beforeAppeal = (): CourtPerformanceView => {
+    const rows = measured.performance?.rows.map((row) =>
+      row.dispute.id === 156
+        ? {
+            ...row,
+            dispute: {
+              ...row.dispute,
+              rounds: row.dispute.rounds.map((round) => ({
+                ...round,
+                appealOpenedAt: null,
+                executionOpenedAt: null,
+              })),
+            },
+          }
+        : row,
+    );
+    if (measured.performance === null || rows === undefined) throw new Error("no court reading");
+    return { ...measured, performance: { ...measured.performance, rows } };
+  };
+
+  it("leaves the funding out of a first read's failure before any appeal period opened", () => {
+    renderDispute({
+      performance: beforeAppeal(),
+      detail: read({ error: failure, detail: NO_DETAIL, readAt: null }),
+      chain: pending(),
+    });
+
+    const banner = screen.getByRole("alert");
+    expect(banner).toHaveTextContent(
+      /the timeline cannot say who opened each period or when each agent juror committed\./,
+    );
+    expect(banner).not.toHaveTextContent(/funded/);
+  });
+
+  it("names the funding in a failed re-read once an appeal opened, even with none read", () => {
+    renderDispute({ detail: read({ error: failure }) });
+
+    expect(screen.getByRole("alert")).toHaveTextContent(/and so does the appeal funding/);
+  });
+
+  it("leaves it out of a failed re-read with no appeal opened and none read", () => {
+    renderDispute({ performance: beforeAppeal(), detail: read({ error: failure }) });
+
+    expect(screen.getByRole("alert")).not.toHaveTextContent(/appeal funding/);
+  });
+});
+
 describe("the timeline (ADR-0012)", () => {
   it("says when each period opened, and who opened it, in UTC", () => {
     renderDispute();
@@ -935,7 +1152,7 @@ describe("what could not be read", () => {
     });
 
     expect(screen.getByRole("alert")).toHaveTextContent(
-      /the timeline cannot say who opened each period or when each agent juror committed/,
+      /the timeline cannot say who opened each period, when each agent juror committed, or how the appeal was funded/,
     );
   });
 
@@ -993,6 +1210,7 @@ describe("what could not be read", () => {
     // with fewer logs. Two of 156's four commitments and one opening are dropped here.
     renderDispute({
       chain: answered({
+        ...DISPUTE_156_CHAIN,
         openings: DISPUTE_156_CHAIN.openings.filter((opening) => opening.period !== "2"),
         commits: DISPUTE_156_CHAIN.commits.slice(2),
       }),
@@ -1021,7 +1239,7 @@ describe("what could not be read", () => {
     // The court saw a commitment this read predates and a re-read is in flight. What it lacks is
     // not yet a finding.
     renderDispute({
-      chain: { ...answered({ openings: [], commits: [] }), answered: false },
+      chain: { ...answered({ openings: [], commits: [], creator: null }), answered: false },
     });
 
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();

@@ -231,6 +231,23 @@ agent juror acting is a latency, and down one period those rank the panel (ADR-0
 roster order.
 _Avoid_: history, log, activity feed, "+Ns after opening"
 
+**Appeal funding**:
+What each side of a round's appeal raised, whether it reached its fee, and who gave it (#32). A side
+is one ruling option. **Partially funded** means exactly one side was funded, however many accounts
+funded it, so there is no appeal; **appealed** means two or more were, and the dispute moves to the
+next round in that transaction. A **funder** is named by the first that fits: an agent juror on the
+roster by name, the Kleros bot, "a party" (an address under the template's `aliases`), "the dispute
+creator" (who sent the transaction that created it), the account's primary ENS name where the name
+does not pass for an agent juror, Kleros or an address, and otherwise the account itself, drawn
+short (`0x1234…abcd`) and linked to Arbiscan (the maintainer's ruling, 2026-11-21). Several parties
+are one line with a count. A funder whose class waits on a read not yet in is shown as not read,
+and a sum the read returned no contribution for is "others not read". A side's **fee** is what it
+had to raise to be funded: the appeal's cost plus the cost times the kit's multiplier, the winner's
+for the choice the vote favoured and the loser's for every other; a tied vote favours 0, refuse. A
+side short of its fee shows both, "0.0059 of 0.0089".
+_Avoid_: "fully funded" for one side (a side is funded or not; the appeal is what is partial),
+backer, sponsor, "someone else" for an account that can be shown
+
 **Deadline**:
 `lastPeriodChange + timesPerPeriod[period]`. An upper bound, never an entitlement — the commit and
 vote periods end early once every juror has acted, and `passPeriod` is permissionless, so a period

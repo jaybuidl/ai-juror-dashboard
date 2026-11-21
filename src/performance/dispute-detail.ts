@@ -27,11 +27,27 @@ import type { PeriodWindows } from "./windows";
 export type RawChoiceVotes = {
   answerId: string;
   count: string;
+  /** What this side raised in the round's appeal period, in wei. See `DetailRound`. */
+  paidFee?: string | null;
+  /** Whether this side reached its full appeal fee. */
+  funded?: boolean | null;
+};
+
+/** One contribution to one side of a round's appeal, as `ClassicContribution` holds it. */
+export type RawContribution = {
+  contributor: { id: string };
+  /** In wei. */
+  amount: string;
+  choice: string;
 };
 
 export type RawLocalRound = {
   id: string;
+  /** Whether the round's vote ended in a tie, which the kit reads as choice 0 winning. */
+  tied?: boolean | null;
+  winningChoice?: string | null;
   answers?: readonly RawChoiceVotes[] | null;
+  contributions?: readonly RawContribution[] | null;
 };
 
 /**
@@ -77,6 +93,8 @@ export type RawDisputeDetail = {
     period?: string | null;
     /** The block its current period opened in. See `blockRangeOf`. */
     lastPeriodChangeBlockNumber?: string | null;
+    /** The core rounds, for each one's panel size, which its appeal's cost is a multiple of. */
+    rounds?: readonly { id: string; nbVotes?: string | null }[] | null;
     disputeKitDispute?: readonly RawKitDispute[] | null;
   } | null;
   evidenceGroup?: { id: string; nextEvidenceIndex: string } | null;
@@ -124,6 +142,12 @@ export type DisputeDetail = {
   /** What each agent juror published. Absent from this list means no justification was found. */
   justifications: readonly DrawJustification[];
   /**
+   * Each round's appeal funding as the kit recorded it, by round index, ascending: what each side
+   * raised and whether it was funded, and every contribution. Only rounds where anything was
+   * contributed or funded. `appeal-funding.ts` turns this into what the timeline says (#32).
+   */
+  funding: readonly DetailRound[];
+  /**
    * The blocks that hold this dispute's record on chain, every round of it, for the timeline's
    * Arbitrum read (ADR-0012), or `null` where they cannot be known yet. See `blockRangeOf`.
    */
@@ -137,6 +161,29 @@ export const NO_DETAIL: DisputeDetail = {
   transactionHash: null,
   justifications: [],
   blockRange: null,
+  funding: [],
+};
+
+/** One side of a round's appeal: what it raised, and whether that reached its fee. */
+export type DetailSide = { choice: number; paidWei: bigint; funded: boolean };
+
+/** One contribution, its contributor lowercased as The Graph returns it. */
+export type DetailContribution = { contributor: string; choice: number; wei: bigint };
+
+/** One round's appeal funding, from the kit's own entities. See `DisputeDetail.funding`. */
+export type DetailRound = {
+  index: number;
+  sides: readonly DetailSide[];
+  contributions: readonly DetailContribution[];
+  /**
+   * Whether the round's vote tied, and which choice won it; `null` where the read did not say.
+   * The kit asks the winning side for a smaller appeal fee than any other, and in a tie the
+   * winner is choice 0, whatever `winningChoice` says (`requiredOf` in `appeal-funding.ts`).
+   */
+  tied?: boolean | null;
+  winningChoice?: number | null;
+  /** How many votes the round drew, which its appeal's cost is a multiple of; `null` if unread. */
+  nbVotes?: number | null;
 };
 
 /** Same canonical-decimal guard as the rest of the model, and for the same reason. */
@@ -225,6 +272,70 @@ function toBallot(kit: RawKitDispute | undefined): readonly ChoiceVotes[] {
 
 function roundSuffixOf(id: string): string {
   return id.slice(id.lastIndexOf("-") + 1);
+}
+
+/** An amount in wei, or `null` where it is not a canonical decimal: never a `number`. */
+function toWei(value: string | null | undefined): bigint | null {
+  if (typeof value !== "string" || !CANONICAL_DECIMAL.test(value)) return null;
+  return BigInt(value);
+}
+
+/**
+ * Each round's appeal funding, from the kit's rounds.
+ *
+ * Tolerant like the rest of this read: an answer or a contribution that cannot be read is left
+ * out, which costs a line of the funding and never the page. A round is kept only where a side
+ * raised anything or was funded, or where anything was contributed; a round nobody funded has
+ * nothing to say. `paidFee` is the kit's own sum for the side, so it is the figure shown, and the
+ * contributions are who made it up.
+ */
+function fundingOf(
+  kit: RawKitDispute | undefined,
+  coreRounds: readonly { id: string; nbVotes?: string | null }[] | null | undefined,
+): readonly DetailRound[] {
+  const rounds: DetailRound[] = [];
+  const nbVotesOf = new Map<number, number>();
+  for (const round of coreRounds ?? []) {
+    const index = toCount(roundSuffixOf(round.id));
+    const nbVotes = toCount(round.nbVotes);
+    if (index !== null && nbVotes !== null) nbVotesOf.set(index, nbVotes);
+  }
+
+  for (const local of kit?.localRounds ?? []) {
+    const index = toCount(roundSuffixOf(local.id));
+    if (index === null) continue;
+
+    const sides: DetailSide[] = [];
+    for (const answer of local.answers ?? []) {
+      const choice = toCount(answer.answerId);
+      const paidWei = toWei(answer.paidFee) ?? 0n;
+      const funded = answer.funded === true;
+      if (choice === null || (paidWei === 0n && !funded)) continue;
+      sides.push({ choice, paidWei, funded });
+    }
+
+    const contributions: DetailContribution[] = [];
+    for (const contribution of local.contributions ?? []) {
+      const choice = toCount(contribution.choice);
+      const wei = toWei(contribution.amount);
+      const contributor = contribution.contributor?.id;
+      if (choice === null || wei === null || typeof contributor !== "string") continue;
+      contributions.push({ contributor: contributor.toLowerCase(), choice, wei });
+    }
+
+    if (sides.length === 0 && contributions.length === 0) continue;
+    sides.sort((a, b) => a.choice - b.choice);
+    rounds.push({
+      index,
+      sides,
+      contributions,
+      tied: typeof local.tied === "boolean" ? local.tied : null,
+      winningChoice: toCount(local.winningChoice),
+      nbVotes: nbVotesOf.get(index) ?? null,
+    });
+  }
+
+  return rounds.sort((a, b) => a.index - b.index);
 }
 
 /**
@@ -381,6 +492,7 @@ export function toDisputeDetail(raw: RawDisputeDetail): DisputeDetail {
     evidenceCount: evidenceCountOf(raw),
     justifications: toJustifications(raw),
     blockRange: blockRangeOf(raw),
+    funding: fundingOf(raw.dispute?.disputeKitDispute?.[0], raw.dispute?.rounds),
   };
 }
 
@@ -506,6 +618,16 @@ export function hasRevealed(state: DrawState): boolean {
 export function revealedCountOf(row: MatrixRow | undefined): number | null {
   if (row === undefined) return null;
   return row.cells.filter((cell) => cell !== null && hasRevealed(cell.state)).length;
+}
+
+/**
+ * Where the court read says this row's dispute stands: its round and its period. The dispute's own
+ * read is keyed against it as against `revealedCountOf`, for what arrives without a reveal: the
+ * appeal's funding (#32). `null` where the court read holds no row.
+ */
+export function stageOf(row: MatrixRow | undefined): string | null {
+  if (row === undefined) return null;
+  return `${row.dispute.rounds.length}:${row.dispute.period}`;
 }
 
 /** One dispute, as the view renders it. Every figure on the page is one of these fields. */
