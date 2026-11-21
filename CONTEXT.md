@@ -214,9 +214,9 @@ _Avoid_: phase, stage
 **Opener**:
 The account that sent the transaction which opened a period, by calling `passPeriod`. Anyone may
 call it, which is why a latency can read 0s. Named on the **Timeline** when it is an agent juror on
-the roster, matched by address, or the **Kleros bot**: the court's own keeper
-(`0x9EB6…6Bd5`, `KLEROS_BOT`), which advances a period once its time is up and is the routine
-opener. Anyone else is an **off-roster account**, and like an off-roster draw it is a kind and never
+the roster, matched by address. The **Kleros bot**, the court's own keeper (`0x9EB6…6Bd5`,
+`KLEROS_BOT`), which advances a period once its time is up, is the routine opener and so is drawn
+as the bare verb, "Opened", and said to a screen reader (#34). Anyone else is an **off-roster account**, and like an off-roster draw it is a kind and never
 an identity: the address never reaches the page (ADR-0012). The evidence period of a dispute's first
 round has no opener; it opens with the dispute.
 _Avoid_: caller (ambiguous with the arbitrable that created the dispute), "keeper" or "bot" for any
@@ -226,9 +226,11 @@ account but `KLEROS_BOT` (a guess about who runs it), naming an address
 The dispute page's period strip, read as the order things happened in: in each period, when it
 opened and its **Opener**, then each agent juror's commitment or reveal. Every entry is a moment, a
 UTC clock reading, and no entry is counted from another: the time from a period opening to an
-agent juror acting is a latency, and down one period those rank the panel (ADR-0012). The strip's
-"closed in" beside each period is how long the period ran, as before. Ties within a second keep
-roster order.
+agent juror acting is a latency, and down one period those rank the panel (ADR-0012). Each
+period's header is how long it ran and the most the court allowed, "31m 09s (max 45m)", in the
+window's units (#34). A period the Kleros bot passed reads "Opened" or "Closed" alone, and an
+agent juror's moment is its glyph and name; the verb is said to a screen reader. Ties within a
+second keep roster order.
 _Avoid_: history, log, activity feed, "+Ns after opening"
 
 **Appeal funding**:

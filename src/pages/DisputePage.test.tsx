@@ -10,6 +10,7 @@ import type { CourtPerformance, DrawState, LiveStage } from "../performance/perf
 import type { CourtPerformanceView } from "../performance/useCourtPerformance";
 import type { DisputeDetailView } from "../performance/useDisputeDetail";
 import { ReadFailure, SOURCES } from "../read-failure";
+import { VisuallyHidden } from "../styles/hidden";
 import { theme } from "../styles/theme";
 import {
   answered,
@@ -236,7 +237,12 @@ describe("the timeline strip", () => {
     renderDispute();
     const strip = screen.getByRole("list", { name: "Timeline" });
 
-    expect(within(strip).getByText(/45m configured · closed in/)).toBeInTheDocument();
+    // How long it ran, then the most allowed, in the window's own units (#34).
+    expect(within(strip).getAllByText(/^(\d+s|\d+m \d{2}s) \(max 45m\)$/).length).toBeGreaterThan(
+      0,
+    );
+    expect(within(strip).getByText(/^\d+h \d{2}m \(max 36h\)$/)).toBeInTheDocument();
+    expect(within(strip).queryByText(/configured|closed in|\dd /)).not.toBeInTheDocument();
     expect(within(strip).queryByText(/%/)).not.toBeInTheDocument();
   });
 
@@ -774,11 +780,28 @@ describe("the appeal's funding (#32)", () => {
     expect(fundingLines()).toEqual([
       "Partially funded · no appealETH",
       // Dispute 156's own choice names, since its template is the one on the page.
-      "1 · YES (50% or more) funded 0.0089 ETH0x1111…1111",
+      // "funded" is said and not drawn; the check mark is what a sighted reader sees (#34).
+      "1 · YES (50% or more) funded ✓0.0089 ETH0x1111…1111",
       // Short of the 0.0089 a tied round asks of every side but Refuse (#32, the maintainer's
       // question).
       "2 · NO (under 50%) not funded 0.0059 of 0.0089 ETHGrokleros",
     ]);
+  });
+
+  it("marks a funded side with a check mark and says 'funded' only to a screen reader", () => {
+    // #34: the mark carries it on the page; the word stays for whoever cannot see the mark.
+    renderDispute({ detail: read({ detail: { ...detail156, funding: FUNDED } }) });
+    const list = screen.getByRole("list", { name: /funded|funding/i });
+    const [funded, short] = within(list).getAllByRole("listitem");
+
+    expect(within(funded as HTMLElement).getByText("✓")).toHaveAttribute("aria-hidden", "true");
+    expect(within(funded as HTMLElement).getByText("funded").className).toContain(
+      VisuallyHidden.styledComponentId,
+    );
+    expect(within(short as HTMLElement).queryByText("✓")).not.toBeInTheDocument();
+    expect(within(short as HTMLElement).getByText("not funded").className).toContain(
+      VisuallyHidden.styledComponentId,
+    );
   });
 
   it("shows a funder nothing else names by its short address, linked to it on Arbiscan", () => {
@@ -831,7 +854,7 @@ describe("the appeal's funding (#32)", () => {
     });
 
     expect(fundingLines()[1]).toBe(
-      "1 · YES (50% or more) funded 0.0089 ETH—an account not read yet",
+      "1 · YES (50% or more) funded ✓0.0089 ETH—an account not read yet",
     );
   });
 });
@@ -848,7 +871,7 @@ describe("the appeal's funding, where a read it depends on is missing (#32)", ()
   it("does not guess party or a bare account while the template is still being read", () => {
     renderDispute({ detail: withFunding(), disputes: untemplated(true) });
 
-    expect(fundingLines()[1]).toBe("Choice 1 funded 0.0089 ETH—an account not read yet");
+    expect(fundingLines()[1]).toBe("Choice 1 funded ✓0.0089 ETH—an account not read yet");
     expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 
@@ -975,6 +998,25 @@ describe("the timeline (ADR-0012)", () => {
       // The appeal ran into the next day, which is the one place a day is printed again.
       "22 Aug 02:18:45 Closed by the Kleros bot",
     ]);
+  });
+
+  it("draws the bot's periods as the verb alone, and says who to a screen reader", () => {
+    // #34: the bot passes most periods, so naming it on every line was noise. Every other
+    // opener is still drawn.
+    renderDispute();
+    const lane = screen.getByRole("list", { name: "Commit period" });
+    const bot = within(lane).getByText("by the Kleros bot");
+
+    expect(bot.className).toContain(VisuallyHidden.styledComponentId);
+  });
+
+  it("draws an agent juror's commitment as its name alone, and says the verb to a screen reader", () => {
+    renderDispute();
+    const lane = screen.getByRole("list", { name: "Commit period" });
+    const verbs = within(lane).getAllByText("committed");
+
+    expect(verbs.length).toBeGreaterThan(0);
+    for (const verb of verbs) expect(verb.className).toContain(VisuallyHidden.styledComponentId);
   });
 
   it("calls any other account off the roster an off-roster account, never by its address", () => {

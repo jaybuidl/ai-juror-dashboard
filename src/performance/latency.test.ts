@@ -3,6 +3,7 @@ import {
   formatElapsedSeconds,
   formatLatencySeconds,
   formatMinutes,
+  formatRanSeconds,
   formatWindowSeconds,
 } from "./latency";
 
@@ -63,6 +64,24 @@ describe("formatElapsedSeconds", () => {
     for (const seconds of [0, 45, 192, 3600, 64800, 187200]) {
       expect(formatElapsedSeconds(seconds)).not.toMatch(/%|of|window/);
     }
+  });
+});
+
+describe("formatRanSeconds", () => {
+  it("reads a period under an hour's window in minutes and seconds", () => {
+    expect(formatRanSeconds(1869, 2700)).toBe("31m 09s");
+    expect(formatRanSeconds(85, 2700)).toBe("85s");
+  });
+
+  it("reads a period of an hour's window or more in hours and minutes, never days", () => {
+    // The maintainer's case (#34): "36h" beside "1d 12h" mixed two scales for one comparison.
+    expect(formatRanSeconds(129_600, 129_600)).toBe("36h 00m");
+    expect(formatRanSeconds(64_920, 129_600)).toBe("18h 02m");
+  });
+
+  it("keeps the window's units for a period that ran past it", () => {
+    expect(formatRanSeconds(133_920, 129_600)).toBe("37h 12m");
+    expect(formatRanSeconds(5400, 2700)).toBe("90m 00s");
   });
 });
 

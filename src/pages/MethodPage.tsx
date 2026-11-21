@@ -261,12 +261,14 @@ export function MethodPage() {
           <em>whether</em> a juror committed, so the moment comes from the <Term>CommitCast</Term>{" "}
           logs the dispute kit emits on Arbitrum, dated by the block they were mined in. Who opened
           a period is on Arbitrum too: it is the account that sent the transaction, which the
-          timeline names when it is an agent juror's own, or the Kleros bot, the court's own keeper
-          that advances a period once its time is up. Anyone else is an account off the roster, and
-          is not identified. A log scan can come back short without failing, so every draw the
-          subgraph calls committed, and every period it says opened, is checked against a matching
-          log, and any that are missing are counted on the page that shows them rather than shown as
-          things that never happened.
+          timeline names when it is an agent juror's own. A period shown simply as opened or closed
+          was passed by the Kleros bot, the court's own keeper that advances a period once its time
+          is up. Anyone else is an account off the roster, and is not identified. Beside each
+          period, the timeline gives how long it ran and, in brackets, the most the court allowed
+          it. A log scan can come back short without failing, so every draw the subgraph calls
+          committed, and every period it says opened, is checked against a matching log, and any
+          that are missing are counted on the page that shows them rather than shown as things that
+          never happened.
         </Body>
       </Section>
 

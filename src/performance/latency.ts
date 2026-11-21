@@ -70,6 +70,23 @@ export function formatMinutes(seconds: number): string {
 }
 
 /**
+ * How long a period ran, in the units of the window it ran against: `"31m 09s"` beside a 45-minute
+ * window, `"36h 00m"` beside a 36-hour one (#34).
+ *
+ * The window sets the scale, so the two figures a reader compares are in the same units: the
+ * maintainer's case was "36h" beside "1d 12h". Under an hour of window it reads as a latency does
+ * (`formatLatencySeconds`); from an hour, hours and minutes, and never days, however long the period
+ * ran past its window. Still two absolute durations side by side, never one divided by the other
+ * (ADR-0005).
+ */
+export function formatRanSeconds(elapsedSeconds: number, windowSeconds: number): string {
+  if (windowSeconds < HOURS_FROM) return formatLatencySeconds(elapsedSeconds);
+
+  const minutes = Math.floor(elapsedSeconds / 60);
+  return `${Math.floor(minutes / 60)}h ${String(minutes % 60).padStart(2, "0")}m`;
+}
+
+/**
  * A configured window in words: `"45m"`, `"8h"`, `"1h 30m"`.
  *
  * Coarser than a latency on purpose, and a separate function rather than a mode of one. A

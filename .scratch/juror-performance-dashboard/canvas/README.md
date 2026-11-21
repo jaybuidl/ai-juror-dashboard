@@ -267,3 +267,21 @@ the current round's head says "Funding as last read" until a re-read catches up 
 account nothing else names is drawn as its short address (`0x1111…1111`), underlined and linked to
 Arbiscan, and a side short of its fee reads "0.0059 of 0.0089" (the maintainer's request on 318).
 
+
+## Amended for #34: fewer words on the timeline
+
+The maintainer's review of the shipped timeline (2026-11-21). `Dispute.dc.html:91-95` now:
+
+- **Period headers** lead with how long the period ran and give the window as its maximum, in the
+  window's own units: "34m 23s (max 45m)", "18h 02m (max 36h)". Previously "45m configured · closed
+  in 34m 23s", which also mixed "36h" with "1d 12h". An open period reads "open (max 45m)" and one
+  not reached "not reached (max 45m)", both the implementation's.
+- **The Kleros bot** is no longer named: a period it passed reads "Opened" or "Closed" alone, and any
+  other opener is still named ("Opened by blaise").
+- **"committed" and "revealed"** after each agent juror's name are gone: the lane's heading and the
+  glyph say it. A screen reader still hears the word.
+- **A funded side** carries a check mark in meta ink to the left of its amount instead of the word
+  "funded"; a side short of its fee has no mark and reads "0.0059 of 0.0089". The funder lines show
+  an unnamed account by its short address, as #33 shipped.
+
+One style, `.ck`, was appended to line 30, so the file is still 288 lines.
