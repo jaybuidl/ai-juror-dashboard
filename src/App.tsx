@@ -24,7 +24,7 @@ import { theme } from "./styles/theme";
  *
  * The views take what they render as props, so the whole dashboard can be exercised offline
  * against hand-built data. That split is what keeps `yarn test` network-free without a mock
- * anywhere — see README.md § Conventions.
+ * anywhere — see docs/knowledge/testing.md § The test split.
  *
  * The reads happen here rather than per route on purpose: one court read feeds the matrix, the
  * dispute index and the totals above them, and moving to another view must not re-read what is

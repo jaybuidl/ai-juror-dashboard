@@ -140,8 +140,8 @@ grilling session and a later pass that rebuilt the tracker on the finished desig
 one that came from implementation rather than design, and it overrode the spec. Start by reading, not by
 writing.
 
-`README.md` covers the toolchain, the scripts, the test split and the CSP; this file covers the
-domain. Two constraints recorded there and easy to trip over: **yarn must be 4.18 or newer**
-(earlier versions cannot install TypeScript 7 at all), and dependency floors are caret ranges
-rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines fresh releases.
+The toolchain is in `build-deploy-and-tooling.md` (moved out of `README.md` on 2026-11-20), the test
+split in `testing.md`, and the CSP in `netlify.toml`. Two constraints recorded there and easy to
+trip over: **yarn must be 4.18 or newer** (earlier versions cannot install TypeScript 7 at all), and
+dependency floors are caret ranges rather than exact pins because the maintainer's `npmMinimalAgeGate` quarantines fresh releases.
 

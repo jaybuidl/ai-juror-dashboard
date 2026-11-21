@@ -2,7 +2,7 @@
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vitest/config";
 
-// The live half of the split described in README.md § Conventions: these tests hit
+// The live half of the split in docs/knowledge/testing.md § The test split: these tests hit
 // Goldsky and a public RPC for real, so they are never part of `yarn test`.
 export default defineConfig({
   plugins: [react()],
