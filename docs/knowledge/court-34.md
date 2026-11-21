@@ -2,27 +2,27 @@
 
 Court 34 "Agentic Commerce Court" on Arbitrum One is the single subject of this dashboard.
 
-**Count carefully: three configurations, two `CourtModified` events.** One `CourtCreated`
-(2026-08-11) and two modifications (2026-08-20, 2026-08-26). The 2026-08-20 change — commit 8h →
+**Count carefully: five configurations, four `CourtModified` events.** One `CourtCreated`
+(2026-08-11) and four modifications (2026-08-20, 2026-08-26, 2026-11-02, 2026-11-13). The 2026-08-20 change — commit 8h →
 45m, vote 8h → 30m — is the one behind most of the arithmetic traps below, and the entries that
 follow were written while it was the only one, so some still say "the one reconfiguration". Read
 that as *that* reconfiguration.
 
 **Both counts are load-bearing and they are not the same count**, which is the trap ticket 19 spent
-most of its effort on. Three configurations is what `/method` and the live tripwire state. *One*
+most of its effort on. Five configurations is what `/method` and the live tripwire state. *One*
 superseded set of **measured** windows is what `MatrixRow.underEarlierWindows` (read by no view
 since the row marker was removed on 2026-09-24; the live tripwire asserts on it) and every "the
-court has been reconfigured once" comment are about — because the 2026-08-26 change moved the
-evidence period alone, and no latency here is measured from it. (One figure *does* span it: the headline
-median time to appeal runs from creation, so disputes created before 26 August ran a longer
-evidence period inside it. No † marks that: `markedAppealWindows`, which this file once named,
+court has been reconfigured once" comment are about — because every change since 2026-08-20 moved
+the evidence period alone, and no latency here is measured from it. (One figure *does* span them: the
+headline median time to appeal runs from creation, so disputes created before 26 August ran a
+longer evidence period inside it, and those created from 2 to 13 November a shorter one. No † marks that: `markedAppealWindows`, which this file once named,
 never shipped in code, and the last † on the site, the agent juror plot's, went with ADR-0010.
 `/method#window` says it in prose.) A sentence counting one of these is almost
 never improved by being made to count the other, and a global replace across the repo gets it
 wrong in both directions.
 
-All three configurations are in `court-34-parameters.fixture.json` as of ticket 19, and the third
-is what `CourtParameters.current` holds — so the offline suite pins "a harmless change marks
+All five configurations are in `court-34-parameters.fixture.json` (ticket 19 took up the third,
+#30 the fourth and fifth), and the fifth is what `CourtParameters.current` holds — so the offline suite pins "a harmless change marks
 nothing" over captured data rather than only over the invented one-second evidence window in
 `windows.test.ts`.
 
@@ -62,15 +62,20 @@ this file is the full account.
   real data — it was written and it failed. What *is* exact is court-wide: total ETH paid equals
   `feeForJuror × ` the vote-ID count over the executed disputes, which is 61 fees for the fixture
   and ties the payout read to the draw read through the court's own configured fee. PNK is a
-  redistribution and nets to **zero** across the court, to within a wei or two of integer-division
-  dust. Both are pinned in `totals.test.ts` and live in `rewards-subgraph.integration.test.ts`,
+  redistribution and nets to **zero** within each dispute, to within a wei or two of
+  integer-division dust — **except a round with no coherent juror**, which pays nobody: KlerosCore
+  sends its penalties and its fee to the governor, out of the court. Dispute 282 is the first
+  (2026-11). All five votes were for 2, only the appeal side for 0 was funded, so the ruling became
+  0 and every draw was wrong: 935 PNK left the court and no ETH was paid, so the court-wide PNK net
+  is no longer zero and the live check is per dispute (#30). The captured fixture predates it, so
+  `totals.test.ts` still pins zero over it. Both are pinned there and live in `rewards-subgraph.integration.test.ts`,
   because these two figures are *sums*: a read that comes back short renders as an agent juror that
   earned less, which nothing else on the page would catch.
 - **No reconfiguration of court 34 has changed a reward parameter, and that is now checked on
-  every run rather than inspected.** Across all three `CourtCreated`/`CourtModified` logs,
+  every run rather than inspected.** Across all five `CourtCreated`/`CourtModified` logs,
   `hiddenVotes` (true), `minStake` (11000e18), `alpha` (170), `feeForJuror` (2.7e14) and
   `jurorsForCourtJump` (7) are byte-identical; only `timesPerPeriod` moved. The blocks are
-  493394990, 496518927 and 498587731. Stake at risk per vote ID is `minStake × alpha / 10000` =
+  493394990, 496518927, 498587731, 520597889 and 523952090. Stake at risk per vote ID is `minStake × alpha / 10000` =
   **187 PNK** — the divisor is the part that gets dropped, and `src/performance/rewards.ts` states
   the product without it. So the `†` window marker, while it existed (until 2026-09-24), did
   **not** ride cumulative ETH or PNK — it would have been a marker a reader can see is misplaced,
@@ -78,7 +83,7 @@ this file is the full account.
   rather than assumed, because "the court was reconfigured" reads as though everything about it
   changed.
   Ticket 21 put the four reward parameters on `RawCourtParameters` and into the captured fixture,
-  where they cost no extra RPC call — the same three logs already carry them. `rewardParameterChanges`
+  where they cost no extra RPC call — the same logs already carry them. `rewardParameterChanges`
   compares each configuration against the one before it; `windows.test.ts` goes red the moment a
   recaptured fixture carries a moved parameter, and `court-parameters.integration.test.ts` goes red
   against the chain first, on the night of the change. **`hiddenVotes` is the one of the five not
@@ -89,11 +94,11 @@ this file is the full account.
   double at that magnitude steps in units of about 2.1 million wei, so a `Number` comparison would
   answer that two different stakes were the same. What the page would *say* if one of them did move
   is still open — the deferral is on ticket 21, with those two assertions as its floor.
-- Every appeal period ran ~18h against a 36h configured value, under all three configurations —
+- Every appeal period ran ~18h against a 36h configured value, under the first three configurations —
   the appeal window is the one period the court has never retimed. Unexplained, affects no metric
   here, but do not treat appeal duration as understood.
-- **No evidence, commit or vote period has straddled either reconfiguration.** Read off chain over
-  all 46 disputes on 2026-09-04. Dispute 151's commit and vote periods closed ~11h before dispute
+- **No evidence, commit or vote period straddled either August reconfiguration.** Read off chain
+  over all 46 disputes on 2026-09-04; the two November changes have not been checked for it. Dispute 151's commit and vote periods closed ~11h before dispute
   152 was created; what happened 48 minutes before 152's creation is the **2026-08-20 change
   itself**, and those are two different gaps that a sentence naming only one number will
   cheerfully swap (it did, and ticket 19's review caught it). Nothing was mid-period on 2026-08-26
@@ -113,6 +118,13 @@ block 498587731 — so a live demo in front of an audience would not spend three
 waiting for the vote to start. (The panel is drawn *during* the evidence period, usually within
 minutes of creation; what the 45 minutes held back was the commit period.) **Expect more of these.**
 
+**They came.** On **2026-11-02 14:50 UTC** (unix 1793631030, block 520597889) the evidence period
+went 10 minutes to **5**, and on **2026-11-13 19:23 UTC** (unix 1794597815, block 523952090) back to
+**10**, both for a live demonstration (confirmed by the maintainer, 2026-11-21). Nothing else
+moved, so both were case 3 below and nothing more. The fifth configuration repeats the third and
+is still a configuration of its own, because `toRegimes` compares each against the one before it.
+#30 took both up.
+
 This is why any hard-coded parameter list goes stale on its own, and why the two-event account
 that stood for the whole of tickets 08–18 is no longer current. Ticket 19 took the third
 configuration up — into the fixture, the live tripwire and `/method` — and tickets 20 and 21 exist
@@ -129,14 +141,14 @@ reasons between them, in three groups.
 1. **`reads the court's configurations…`** and **`reports no configuration that repeats the one
    before it`** — the read itself broke. A renamed event or a redeployed core returns `[]`, which
    marks no dispute and is silent everywhere else. A log counted twice is the other half, and it
-   is why the order matters: a duplicate leaves both groups below **green** — there are still
-   three configurations, and the fold in 2 swallows a repeat — so a reader who skipped to 3 would
+   is why the order matters: a duplicate leaves both groups below **green** — every real
+   configuration is still there, and the fold in 2 swallows a repeat — so a reader who skipped to 3 would
    recapture the fixture with the duplicate in it.
 2. **`has moved no commit or vote window…`** — a window the dashboard measures from moved.
    `measuredRegimes` folds away every configuration that left both alone, so this fires only on
    the costly kind: latencies either side are no longer comparable and the matrix's marker falls
    on a different set of rows.
-3. **`still holds the three configurations…`** and **`returns what the captured fixture holds…`**,
+3. **`still holds the five configurations…`** and **`returns what the captured fixture holds…`**,
    with 1 and 2 green — documentation upkeep. Recapture the fixture, update the literal, rewrite
    `/method`'s regime strip.
 

@@ -196,7 +196,7 @@ export function useCourtPerformance(
    * The court's parameter history, from Arbitrum rather than the subgraph (ticket 08).
    *
    * Keyed on the court alone and on nothing else: it is not a cross-check against anything, but
-   * the court's own configuration, three logs deep, and it answers the same way whichever
+   * the court's own configuration, one log per change, and it answers the same way whichever
    * disputes have been read beside it.
    *
    * Not waited on. An unread history costs the dispute view's configured windows — worth stating

@@ -273,7 +273,8 @@ export function windowsFor(
  *
  * **That court is this one.** On 2026-08-26 court 34 moved its evidence period from 45 minutes
  * to 10 and left everything else alone, so its second and third configurations differ and this
- * returns true across them — which is what keeps dispute 152 from `underEarlierWindows` while
+ * returns true across them (as it does across the fourth and fifth, which did the same in
+ * November 2026) — which is what keeps dispute 152 from `underEarlierWindows` while
  * being older than a change the court has since made. `MethodPage`'s window section owes a reader that sentence,
  * because no marker on the page says it (the row marker that once could was removed on
  * 2026-09-24).
@@ -392,7 +393,7 @@ export type RewardParameterChange = {
  * Every time the court changed what a draw earns or risks — empty when it never has.
  *
  * `[]` is the answer for court 34 and has been for its whole life: `minStake`, `alpha`,
- * `feeForJuror` and `jurorsForCourtJump` are byte-identical across all three configurations and
+ * `feeForJuror` and `jurorsForCourtJump` are byte-identical across all five configurations and
  * only `timesPerPeriod` has ever moved. That claim is load-bearing rather
  * than incidental. `CourtTotals` sums cumulative ETH and net PNK across the court's whole life
  * and the † window marker, while there was one, deliberately did **not** ride either, on the grounds that a

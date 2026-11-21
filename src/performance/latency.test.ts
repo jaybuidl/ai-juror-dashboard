@@ -67,7 +67,7 @@ describe("formatElapsedSeconds", () => {
 });
 
 describe("formatWindowSeconds", () => {
-  it("reads court 34's three configurations the way the court configured them", () => {
+  it("reads court 34's configured windows the way the court configured them", () => {
     expect(formatWindowSeconds(43_200)).toBe("12h");
     expect(formatWindowSeconds(28_800)).toBe("8h");
     expect(formatWindowSeconds(2_700)).toBe("45m");
@@ -75,6 +75,8 @@ describe("formatWindowSeconds", () => {
     // The evidence window the court took up on 2026-08-26, and the only duration on the method
     // page's third line that differs from its second.
     expect(formatWindowSeconds(600)).toBe("10m");
+    // And the one it held from 2026-11-02 to 2026-11-13.
+    expect(formatWindowSeconds(300)).toBe("5m");
     expect(formatWindowSeconds(129_600)).toBe("36h");
   });
 

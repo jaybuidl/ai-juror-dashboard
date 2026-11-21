@@ -23,16 +23,18 @@ import {
  * changed between dispute 151 and dispute 152, so most of what follows is about which side of
  * that line a moment falls on.
  *
- * The third configuration is here for the opposite reason. It moved the evidence period and
- * nothing else, so it changes no answer this module gives about a commit or a vote — and it is
- * the one the court holds *now*, which is what makes it worth asserting over rather than
- * leaving to the two that came before it.
+ * The last three configurations are here for the opposite reason. Each moved the evidence period
+ * and nothing else, so none changes an answer this module gives about a commit or a vote — and
+ * the last is the one the court holds *now*, which is what makes them worth asserting over rather
+ * than leaving to the two that came before.
  */
 
-/** The three configurations court 34 has had, as the chain reports them. */
+/** The five configurations court 34 has had, as the chain reports them. */
 const CREATED = "1786444490";
 const MODIFIED = "1787230320";
 const TRIMMED = "1787750041";
+const HALVED = "1793631030";
+const RESTORED = "1794597815";
 
 const OLD: PeriodWindows = {
   evidenceSeconds: 43_200,
@@ -57,6 +59,18 @@ const NEW: PeriodWindows = {
  */
 const CURRENT: PeriodWindows = {
   evidenceSeconds: 600,
+  commitSeconds: 2_700,
+  voteSeconds: 1_800,
+  appealSeconds: 129_600,
+};
+
+/**
+ * The fourth, which is `CURRENT` with a five-minute evidence period, for ten days in November
+ * 2026. The fifth put ten minutes back, so the court holds `CURRENT` again: a repeat of an
+ * earlier configuration and not of the one before it, which is why it is still a configuration.
+ */
+const HALVED_WINDOWS: PeriodWindows = {
+  evidenceSeconds: 300,
   commitSeconds: 2_700,
   voteSeconds: 1_800,
   appealSeconds: 129_600,
@@ -125,13 +139,15 @@ function dispute(overrides: Partial<Dispute> = {}): Dispute {
 }
 
 describe("toRegimes", () => {
-  it("reads the three configurations court 34 has had", () => {
+  it("reads the five configurations court 34 has had", () => {
     const regimes = toRegimes(HISTORY);
 
     expect(regimes).toEqual([
       regime(Number(CREATED), OLD),
       regime(Number(MODIFIED), NEW),
       regime(Number(TRIMMED), CURRENT),
+      regime(Number(HALVED), HALVED_WINDOWS),
+      regime(Number(RESTORED), CURRENT),
     ]);
   });
 
@@ -157,6 +173,8 @@ describe("toRegimes", () => {
       Number(CREATED),
       Number(MODIFIED),
       Number(TRIMMED),
+      Number(HALVED),
+      Number(RESTORED),
     ]);
   });
 
@@ -230,7 +248,7 @@ describe("windowsAt", () => {
     // A period yet to open will run under whatever the court holds when it does, and the best
     // available reading of that is the latest configuration. Dating it from the dispute's
     // creation instead would quote a window the court may already have replaced — which is
-    // what the third configuration makes concrete: `NEW` is what the court held for six days
+    // what the later configurations make concrete: `NEW` is what the court held for six days
     // and is no longer what an unopened period will run under.
     expect(windowsAt(regimes, null)).toEqual(CURRENT);
   });
@@ -338,10 +356,10 @@ describe("sameMeasuredWindows", () => {
 });
 
 describe("measuredRegimes", () => {
-  it("collapses the court's three configurations into the two its figures were measured in", () => {
-    // Three configurations, two stretches of comparable time. The 2026-08-26 change moved the
-    // evidence period alone, so it opened nothing: every latency on this dashboard either side
-    // of it is measured from the same commit and vote windows and may be read against another.
+  it("collapses the court's five configurations into the two its figures were measured in", () => {
+    // Five configurations, two stretches of comparable time. The 2026-08-26 change and the two in
+    // November 2026 moved the evidence period alone, so they opened nothing: every latency on this dashboard either side
+    // of them is measured from the same commit and vote windows and may be read against another.
     expect(measuredRegimes(toRegimes(HISTORY))).toEqual([
       { from: Number(CREATED), commitSeconds: 28_800, voteSeconds: 28_800 },
       { from: Number(MODIFIED), commitSeconds: 2_700, voteSeconds: 1_800 },
@@ -349,7 +367,7 @@ describe("measuredRegimes", () => {
   });
 
   it("folds a fourth configuration that moves neither the commit nor the vote window", () => {
-    // The case court 34 has already produced once and will produce again — a duration changed
+    // The case court 34 has already produced three times and will produce again — a duration changed
     // to suit a demonstration, touching nothing any figure here is measured from. It makes the
     // fixture and `/method` stale and it makes no two figures incomparable, which is the whole
     // distinction `court-parameters.integration.test.ts` is split along.
@@ -404,7 +422,7 @@ describe("measuredRegimes", () => {
 });
 
 describe("rewardParameterChanges", () => {
-  it("reports nothing over the three configurations court 34 has held", () => {
+  it("reports nothing over the five configurations court 34 has held", () => {
     // The claim this function exists to check, and the one `CourtTotals` rests on: no
     // reconfiguration of court 34 has ever moved what a coherent draw earns or a wrong one
     // risks. It held by inspection on 2026-08-20 and again on 2026-08-26; from here it holds
