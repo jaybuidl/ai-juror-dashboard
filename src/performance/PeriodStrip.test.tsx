@@ -151,7 +151,7 @@ describe("an appealed round, once the next round has started", () => {
     ).toBeInTheDocument();
   });
 
-  it("marks a sum short of its fee by less than the last decimal place as below it", () => {
+  it("writes a sum short of its fee by less than the last decimal place out to where they part", () => {
     renderAppealed(new Map(), {
       index: 0,
       tied: true,
@@ -163,7 +163,7 @@ describe("an appealed round, once the next round has started", () => {
     });
     const list = screen.getByRole("list", { name: /round 1 · appealed/i });
 
-    expect(within(list).getAllByRole("listitem")[1]?.textContent).toContain("<0.0089 of 0.0089");
+    expect(within(list).getAllByRole("listitem")[1]?.textContent).toContain("0.0089 of 0.00891");
   });
 
   it("says what a side raised beyond the contributions read", () => {

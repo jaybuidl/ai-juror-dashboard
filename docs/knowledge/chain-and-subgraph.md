@@ -118,9 +118,11 @@ this file is the full account.
   winner's fee, and Yes was not funded. In execution, with one side funded, `currentRuling` then
   overrode the tied ruling with No. A funded side's sum is its fee exactly (contributions are
   capped), which is the exact way to recover the cost; the court's fee in force is the fallback
-  where no side was funded. The multipliers are `constant` in the kit's implementation (v0.12.0),
-  behind an upgradable proxy, so `appeal-funding.integration.test.ts` pins them live. As of
-  2026-11-21 every funded side in court 34 had paid 3×.
+  where no side was funded. `appealCost` is read at each contribution, so an appeal the court was
+  reconfigured during is priced by the current fee while it is open and not at all once closed
+  (`appealFeesOf`). The multipliers are `constant` in the kit's implementation (v0.12.0), behind an
+  upgradable proxy, so `appeal-funding.integration.test.ts` pins them live. As of 2026-11-21 every
+  funded side in court 34 had paid 3×.
 - **A dispute's parties are the addresses under its template's `aliases`**, when the template has
   that key (the maintainer's rule, 2026-11-21): typically the parties, or at least the accounts of
   interest. It is an object of name → address, e.g. dispute 266's template 277 carries

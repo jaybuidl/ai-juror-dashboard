@@ -79,6 +79,37 @@ export function formatEthWei(wei: bigint): string {
 }
 
 /**
+ * A sum and the fee it fell short of, as the appeal lane prints them: `["0.0059", "0.0089"]`.
+ *
+ * At `formatEthWei`'s four places where they differ there. Where those agree, a side just short of
+ * its fee would read "0.0089 of 0.0089", so both are written out, truncated, to the first place at
+ * which they part, with trailing zeros dropped: 0.00890999 of 0.00891 is `["0.0089", "0.00891"]`.
+ * Truncated rather than rounded, so the sum is never printed as more than it is.
+ */
+export function formatEthShortfall(raised: bigint, required: bigint): readonly [string, string] {
+  const loose = [formatEthWei(raised), formatEthWei(required)] as const;
+  if (loose[0] !== loose[1] || raised === required) return loose;
+
+  for (let places = ETH_PLACES + 1; places <= WEI; places += 1) {
+    const perPlace = 10n ** BigInt(WEI - places);
+    if (raised / perPlace !== required / perPlace) {
+      return [truncated(raised, places), truncated(required, places)];
+    }
+  }
+  return loose;
+}
+
+function truncated(wei: bigint, places: number): string {
+  const unit = 10n ** BigInt(places);
+  const scaled = wei / 10n ** BigInt(WEI - places);
+  const decimals = String(scaled % unit)
+    .padStart(places, "0")
+    .replace(/0+$/, "")
+    .padEnd(ETH_PLACES, "0");
+  return `${scaled / unit}.${decimals}`;
+}
+
+/**
  * Net PNK, as a column header prints it: `"+218.17"`, `"-561.00"`, `"0.00"`.
  *
  * **The sign is a character in the value and never a colour** — ADR-0006, which the ticket

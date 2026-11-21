@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatEthWei, formatPnkWei } from "./rewards";
+import { formatEthShortfall, formatEthWei, formatPnkWei } from "./rewards";
 
 /**
  * The formatters, pinned against exact wei rather than against numbers.
@@ -68,5 +68,28 @@ describe("formatPnkWei", () => {
     // character; the `<` qualifies the magnitude behind it.
     expect(formatPnkWei(-1n)).toBe("-<0.01");
     expect(formatPnkWei(1n)).toBe("+<0.01");
+  });
+});
+
+describe("formatEthShortfall", () => {
+  it("prints both at four places where they differ there", () => {
+    expect(formatEthShortfall(5_940_000_000_000_000n, 8_910_000_000_000_000n)).toEqual([
+      "0.0059",
+      "0.0089",
+    ]);
+  });
+
+  it("writes both out, truncated, to the first place where they part", () => {
+    // Rounded to four places both would be 0.0089, which says a side short of its fee raised it.
+    expect(formatEthShortfall(8_909_990_000_000_000n, 8_910_000_000_000_000n)).toEqual([
+      "0.0089",
+      "0.00891",
+    ]);
+  });
+
+  it("never prints the sum as more than it is", () => {
+    // 0.00890001 would round up to 0.0089; truncated, it stays below the fee.
+    const [raised, needed] = formatEthShortfall(8_900_010_000_000_000n, 8_900_020_000_000_000n);
+    expect([raised, needed]).toEqual(["0.00890001", "0.00890002"]);
   });
 });

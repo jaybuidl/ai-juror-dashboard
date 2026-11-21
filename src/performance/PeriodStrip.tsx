@@ -9,7 +9,7 @@ import type { DisputeReading, PeriodRun } from "./dispute-detail";
 import type { DisputeTimeline, Moment, Opener, TimelineEntry } from "./dispute-timeline";
 import { formatElapsedSeconds, formatWindowSeconds } from "./latency";
 import { clockOf, dayOf, isoOf, sameDay } from "./moments";
-import { formatEthWei } from "./rewards";
+import { formatEthShortfall, formatEthWei } from "./rewards";
 
 /**
  * The dispute's periods, each with what happened in it: `canvas/Dispute.dc.html:87-96`.
@@ -437,16 +437,17 @@ function Eth({ wei }: { wei: bigint }) {
 /**
  * What a side raised, and, where it was not funded and its fee is known, what it needed: "0.0059 of
  * 0.0089". A funded side raised its fee exactly, so it says one figure. A side short by less than
- * the last decimal place would print the same figure twice, so its sum is marked as below it.
+ * the last decimal place is written to the place where the two part (`formatEthShortfall`).
  */
 function Raised({ side }: { side: SideFunding }) {
   const required = side.funded ? null : side.requiredWei;
-  const short = required !== null && required > side.raisedWei;
-  const raised = formatEthWei(side.raisedWei);
-  const needed = short ? formatEthWei(required) : null;
+  const [raised, needed] =
+    required !== null && required > side.raisedWei
+      ? formatEthShortfall(side.raisedWei, required)
+      : [formatEthWei(side.raisedWei), null];
   return (
     <Amount>
-      {needed !== null && needed === raised ? `<${raised}` : raised}
+      {raised}
       {needed !== null && ` of ${needed}`} <VisuallyHidden>ETH</VisuallyHidden>
     </Amount>
   );

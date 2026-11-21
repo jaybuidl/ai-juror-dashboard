@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import type { DisputeRound } from "../disputes/disputes";
 import { AGENT_JUROR_ENS_PARENT, ROSTER } from "../roster/agent-jurors";
 import {
+  type AppealFeeReading,
   appealFeesOf,
   buildAppealFunding,
   ensCandidatesOf,
@@ -466,7 +467,15 @@ describe("what each side needed to be funded", () => {
       sides: [{ choice: 2, paidWei: 1n, funded: false }],
       contributions: [],
     };
-    const fees = new Map([[0, { feeForJuror: "270000000000000", jurorsForCourtJump: "511" }]]);
+    const fees = new Map([
+      [
+        0,
+        {
+          kind: "steady" as const,
+          fee: { feeForJuror: "270000000000000", jurorsForCourtJump: "511" },
+        },
+      ],
+    ]);
 
     expect(
       sideNeeds(
@@ -509,7 +518,15 @@ describe("what each side needed to be funded", () => {
       sides: [{ choice: 2, paidWei: 1n, funded: false }],
       contributions: [],
     };
-    const fees = new Map([[0, { feeForJuror: "270000000000000", jurorsForCourtJump: "511" }]]);
+    const fees = new Map([
+      [
+        0,
+        {
+          kind: "steady" as const,
+          fee: { feeForJuror: "270000000000000", jurorsForCourtJump: "511" },
+        },
+      ],
+    ]);
 
     expect(
       sideNeeds(
@@ -523,6 +540,62 @@ describe("what each side needed to be funded", () => {
         }),
       ),
     ).toEqual([[2, null]]);
+  });
+
+  it("prices an open appeal by the current fee, not a side funded before the court changed", () => {
+    const funded: DetailRound = {
+      index: 0,
+      tied: true,
+      nbVotes: 5,
+      sides: [
+        { choice: 1, paidWei: 8_910_000_000_000_000n, funded: true },
+        { choice: 2, paidWei: 1n, funded: false },
+      ],
+      contributions: [],
+    };
+    const fees = new Map([
+      [
+        0,
+        {
+          kind: "changed" as const,
+          fee: { feeForJuror: "540000000000000", jurorsForCourtJump: "7" },
+        },
+      ],
+    ]);
+
+    expect(
+      sideNeeds(
+        buildAppealFunding({
+          funding: [funded],
+          answers: ANSWERS,
+          aliases: [],
+          roster: ROSTER,
+          creator: CREATOR,
+          fees,
+        }),
+      ),
+    ).toEqual([
+      [1, 17_820_000_000_000_000n],
+      [2, 17_820_000_000_000_000n],
+    ]);
+  });
+
+  it("says nothing for a closed appeal the court was reconfigured during", () => {
+    expect(
+      sideNeeds(
+        buildAppealFunding({
+          funding: funding318,
+          answers: ANSWERS,
+          aliases: [],
+          roster: ROSTER,
+          creator: CREATOR,
+          fees: new Map([[0, { kind: "unknown" as const }]]),
+        }),
+      ),
+    ).toEqual([
+      [1, null],
+      [2, null],
+    ]);
   });
 
   it("does not say where the round's tie or winner was not read", () => {
@@ -574,29 +647,55 @@ describe("appealFeesOf", () => {
     ...overrides,
   });
 
-  it("prices a closed appeal by the fee in force when it opened", () => {
+  const feeOf = (reading: AppealFeeReading | undefined) =>
+    reading === undefined
+      ? undefined
+      : reading.kind === "unknown"
+        ? "unknown"
+        : reading.fee.feeForJuror;
+
+  it("prices a closed appeal by the fee it ran under throughout", () => {
+    const fees = appealFeesOf([round({ appealOpenedAt: 150, executionOpenedAt: 250 })], 0, regimes);
+
+    expect(fees.get(0)).toEqual({ kind: "steady", fee: REWARDS });
+  });
+
+  it("prices no closed appeal the court was reconfigured during", () => {
+    // The fee moved at 300, inside a period that ran from 200 to 400.
     const fees = appealFeesOf([round({ appealOpenedAt: 200, executionOpenedAt: 400 })], 0, regimes);
 
-    expect(fees.get(0)?.feeForJuror).toBe("270000000000000");
+    expect(fees.get(0)).toEqual({ kind: "unknown" });
   });
 
-  it("prices an appeal still open, or yet to open, by the latest fee", () => {
-    expect(appealFeesOf([round({ appealOpenedAt: 200 })], 0, regimes).get(0)?.feeForJuror).toBe(
-      "540000000000000",
-    );
-    expect(appealFeesOf([round({})], 0, regimes).get(0)?.feeForJuror).toBe("540000000000000");
+  it("prices an open appeal reconfigured since it opened by the current fee alone", () => {
+    expect(appealFeesOf([round({ appealOpenedAt: 200 })], 0, regimes).get(0)).toEqual({
+      kind: "changed",
+      fee: RAISED,
+    });
   });
 
-  it("prices an earlier round by its own opening, and a closed one with none not at all", () => {
+  it("prices an appeal yet to open, or open since the last change, by the latest fee", () => {
+    expect(feeOf(appealFeesOf([round({})], 0, regimes).get(0))).toBe("540000000000000");
+    expect(appealFeesOf([round({ appealOpenedAt: 350 })], 0, regimes).get(0)).toEqual({
+      kind: "steady",
+      fee: RAISED,
+    });
+  });
+
+  it("prices an earlier round up to the next round's start, and a closed one unopened not at all", () => {
     const fees = appealFeesOf(
-      [round({ index: 0, appealOpenedAt: 200 }), round({ index: 1 }), round({ index: 2 })],
+      [
+        round({ index: 0, appealOpenedAt: 120 }),
+        round({ index: 1, commitOpenedAt: 180 }),
+        round({ index: 2, appealOpenedAt: 350 }),
+      ],
       2,
       regimes,
     );
 
-    expect(fees.get(0)?.feeForJuror).toBe("270000000000000");
+    expect(feeOf(fees.get(0))).toBe("270000000000000");
     expect(fees.has(1)).toBe(false);
-    expect(fees.get(2)?.feeForJuror).toBe("540000000000000");
+    expect(feeOf(fees.get(2))).toBe("540000000000000");
   });
 
   it("prices nothing with no history read", () => {

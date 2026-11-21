@@ -141,6 +141,20 @@ const ONE_BASIS_POINT = 10_000n;
 export type AppealCourtFee = { feeForJuror: string; jurorsForCourtJump: string };
 
 /**
+ * What the court charged for one round's appeal, as far as its history says (`appealFeesOf`):
+ * - `steady`: one configuration throughout, so a funded side's sum and the court's fee agree, and
+ *   either prices the round;
+ * - `changed`: a still-open appeal whose court has been reconfigured since it opened, so a side
+ *   funded before the change paid the old fee and only the current configuration says what a
+ *   side needs now;
+ * - `unknown`: a closed appeal reconfigured mid-period, so no one fee priced it and none is said.
+ */
+export type AppealFeeReading =
+  | { kind: "steady"; fee: AppealCourtFee }
+  | { kind: "changed"; fee: AppealCourtFee }
+  | { kind: "unknown" };
+
+/**
  * The fee each side of one round needed to be funded, or `null` per side where it cannot be
  * worked out.
  *
@@ -155,16 +169,21 @@ export type AppealCourtFee = { feeForJuror: string; jurorsForCourtJump: string }
  *   exactly, and the cost follows from its multiplier. Exact where the multiplier is right; the
  *   check that a side's sum comes back out of the cost it implies catches only an indivisible
  *   sum, and every funded side must agree on the cost.
- * - **The court's fee** in force for the appeal (`fee`), times the votes the next round would
- *   draw (twice this round's, plus one), as `KlerosCore.appealCost` reckons it. Only where the
- *   appeal stays in this court: past `jurorsForCourtJump` it is the parent court's fee, which is
- *   not read here, and the answer is `null`.
+ * - **The court's fee** for the appeal (`reading`), times the votes the next round would draw
+ *   (twice this round's, plus one), as `KlerosCore.appealCost` reckons it at each contribution.
+ *   Only where the appeal stays in this court: past `jurorsForCourtJump` it is the parent court's
+ *   fee, which is not read here, and the answer is `null`.
+ *
+ * A court reconfigured during the appeal changes what a side owes partway through (`AppealFee
+ * Reading`): an open appeal is priced by the current configuration alone, and a closed one not at
+ * all.
  */
 function requiredOf(
   round: DetailRound,
-  fee: AppealCourtFee | undefined,
+  reading: AppealFeeReading | undefined,
 ): (choice: number) => bigint | null {
   const { tied, winningChoice, nbVotes } = round;
+  if (reading?.kind === "unknown") return () => null;
   if (tied === null || tied === undefined) return () => null;
   if (!tied && (winningChoice === null || winningChoice === undefined)) return () => null;
   const favoured = tied ? 0 : winningChoice;
@@ -174,7 +193,8 @@ function requiredOf(
     cost + (cost * multiplierOf(choice)) / ONE_BASIS_POINT;
 
   let cost: bigint | null = null;
-  const funded = round.sides.filter((side) => side.funded);
+  const fee = reading?.fee;
+  const funded = reading?.kind === "changed" ? [] : round.sides.filter((side) => side.funded);
   const [first] = funded;
   if (first !== undefined) {
     const implied =
@@ -190,24 +210,45 @@ function requiredOf(
 }
 
 /**
- * The court's fee in force for each round's appeal, for a round no side funded (`requiredOf`).
+ * What the court charged for each round's appeal (`AppealFeeReading`), by round index.
  *
- * The court reads its fee at each contribution, so a round whose appeal period has closed is
- * priced by the configuration in force when that period opened, and the current round's, still
- * open or yet to open, by the latest one. A closed round with no recorded opening gets nothing
- * rather than today's fee. Nothing at all with no history read (`rewardsAt`).
+ * The court reads its fee at each contribution, so what matters is whether it held one
+ * configuration for the whole appeal period: from the period's opening to its close (the
+ * execution period, or the next round's commit period for an appealed round, which is later than
+ * the appeal itself and so errs towards "changed"), or to now while it runs. A period yet to open
+ * is priced by the latest configuration. A closed round with no recorded opening gets nothing,
+ * and so does every round with no history read (`rewardsAt`).
  */
 export function appealFeesOf(
   rounds: readonly DisputeRound[],
   currentIndex: number | undefined,
   regimes: readonly ParameterRegime[],
-): ReadonlyMap<number, AppealCourtFee> {
-  const fees = new Map<number, AppealCourtFee>();
+): ReadonlyMap<number, AppealFeeReading> {
+  const fees = new Map<number, AppealFeeReading>();
   for (const round of rounds) {
     const open = round.index === currentIndex && round.executionOpenedAt === null;
-    if (!open && round.appealOpenedAt === null) continue;
-    const rewards = rewardsAt(regimes, open ? null : round.appealOpenedAt);
-    if (rewards !== null) fees.set(round.index, rewards);
+    const opened = round.appealOpenedAt;
+    if (!open && opened === null) continue;
+
+    const latest = rewardsAt(regimes, null);
+    if (opened === null) {
+      if (latest !== null) fees.set(round.index, { kind: "steady", fee: latest });
+      continue;
+    }
+    const atOpening = rewardsAt(regimes, opened);
+    if (atOpening === null) continue;
+
+    const closed = open
+      ? null
+      : (round.executionOpenedAt ??
+        rounds.find((next) => next.index === round.index + 1)?.commitOpenedAt ??
+        null);
+    const changed = regimes.some(
+      (regime) => regime.from > opened && (closed === null || regime.from <= closed),
+    );
+    if (!changed) fees.set(round.index, { kind: "steady", fee: atOpening });
+    else if (open && latest !== null) fees.set(round.index, { kind: "changed", fee: latest });
+    else fees.set(round.index, { kind: "unknown" });
   }
   return fees;
 }
@@ -273,7 +314,7 @@ export function buildAppealFunding({
    * The court's fee in force for each round's appeal, by round index, where the parameter history
    * was read. Only needed for a round no side funded; see `requiredOf`.
    */
-  fees?: ReadonlyMap<number, AppealCourtFee>;
+  fees?: ReadonlyMap<number, AppealFeeReading>;
 }): readonly RoundFunding[] {
   const context = {
     roster,

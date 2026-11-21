@@ -43,7 +43,7 @@ export type RawContribution = {
 
 export type RawLocalRound = {
   id: string;
-  /** Whether the round's vote ended in a tie, which leaves no side winning. */
+  /** Whether the round's vote ended in a tie, which the kit reads as choice 0 winning. */
   tied?: boolean | null;
   winningChoice?: string | null;
   answers?: readonly RawChoiceVotes[] | null;
@@ -177,7 +177,8 @@ export type DetailRound = {
   contributions: readonly DetailContribution[];
   /**
    * Whether the round's vote tied, and which choice won it; `null` where the read did not say.
-   * The kit asks a winning side for a smaller appeal fee than any other, and a tie has no winner.
+   * The kit asks the winning side for a smaller appeal fee than any other, and in a tie the
+   * winner is choice 0, whatever `winningChoice` says (`requiredOf` in `appeal-funding.ts`).
    */
   tied?: boolean | null;
   winningChoice?: number | null;
