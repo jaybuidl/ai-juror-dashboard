@@ -1,7 +1,7 @@
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { renderHook, waitFor } from "@testing-library/react";
 import type { ReactNode } from "react";
-import { ContractFunctionRevertedError } from "viem";
+import { ContractFunctionRevertedError, RawContractError } from "viem";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { shownEnsName, useEnsNames } from "./useEnsNames";
 
@@ -20,6 +20,40 @@ const ALICE = "0x1111111111111111111111111111111111111111";
 const BOB = "0x4444444444444444444444444444444444444444";
 const CAROL = "0x5555555555555555555555555555555555555555";
 
+/** One multicall leg reverting with OffchainLookup's selector, in the chain viem builds for it. */
+function legReverted(): Error {
+  return new ContractFunctionRevertedError({
+    abi: [],
+    functionName: "reverseWithGateways",
+    data: "0x556f1830",
+    cause: new RawContractError({ data: "0x556f1830" }),
+  });
+}
+
+/**
+ * The node answering the whole call with an error viem also reports as a revert: -32603, or code 3
+ * with `0x` in it. No leg's data, so nothing answered.
+ */
+function nodeFailed(data?: `0x${string}`): Error {
+  return new ContractFunctionRevertedError({
+    abi: [],
+    functionName: "reverseWithGateways",
+    data,
+    message: "Internal error",
+    cause: new Error("Internal error"),
+  });
+}
+
+function withClient() {
+  const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  return {
+    client,
+    wrapper: ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={client}>{children}</QueryClientProvider>
+    ),
+  };
+}
+
 describe("useEnsNames", () => {
   beforeEach(() => {
     getEnsName.mockReset();
@@ -36,9 +70,9 @@ describe("useEnsNames", () => {
     expect(result.current.has(BOB)).toBe(false);
   });
 
-  it("drops one account's failed lookup and keeps the rest", async () => {
+  it("drops one account's reverted lookup and keeps the rest", async () => {
     getEnsName.mockImplementation(async ({ address }: { address: string }) => {
-      if (address === BOB) throw new Error("OffchainLookup");
+      if (address === BOB) throw legReverted();
       return address === ALICE ? "alice.eth" : null;
     });
     const { result } = renderHook(() => useEnsNames([ALICE, BOB]), { wrapper });
@@ -65,43 +99,37 @@ describe("useEnsNames", () => {
 
   it("takes a lone funder whose lookup reverts as an answer, not an outage to retry", async () => {
     // An offchain primary name, with offchain lookups off: the resolver reverts for that account.
-    getEnsName.mockRejectedValue(
-      new ContractFunctionRevertedError({
-        abi: [],
-        functionName: "reverseWithGateways",
-        // OffchainLookup's selector, as the resolver reverts with it.
-        data: "0x556f1830",
-      }),
-    );
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    renderHook(() => useEnsNames([ALICE]), {
-      wrapper: ({ children }) => (
-        <QueryClientProvider client={client}>{children}</QueryClientProvider>
-      ),
-    });
+    getEnsName.mockRejectedValue(legReverted());
+    const { client, wrapper } = withClient();
+    renderHook(() => useEnsNames([ALICE]), { wrapper });
 
     await waitFor(() =>
       expect(client.getQueryState(["ensNames", [ALICE]])?.status).toBe("success"),
     );
   });
 
-  it("takes a node's internal error, which viem also calls a revert, as an outage", async () => {
-    // -32603 with no return data: nothing answered, so it must not be held as "no names".
-    getEnsName.mockRejectedValue(
-      new ContractFunctionRevertedError({
-        abi: [],
-        functionName: "reverseWithGateways",
-        message: "Internal error",
-      }),
-    );
-    const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-    renderHook(() => useEnsNames([ALICE]), {
-      wrapper: ({ children }) => (
-        <QueryClientProvider client={client}>{children}</QueryClientProvider>
-      ),
-    });
+  it.each([
+    ["-32603 with no data", undefined],
+    ["an error carrying 0x", "0x" as const],
+  ])("takes a node's %s, which viem also calls a revert, as an outage", async (_, data) => {
+    getEnsName.mockRejectedValue(nodeFailed(data));
+    const { client, wrapper } = withClient();
+    renderHook(() => useEnsNames([ALICE]), { wrapper });
 
     await waitFor(() => expect(client.getQueryState(["ensNames", [ALICE]])?.status).toBe("error"));
+  });
+
+  it("takes one chunk failing beside another's revert as an outage", async () => {
+    // viem splits the multicall into chunks; one may fail while another's leg reverts.
+    getEnsName.mockImplementation(async ({ address }: { address: string }) => {
+      throw address === ALICE ? nodeFailed() : legReverted();
+    });
+    const { client, wrapper } = withClient();
+    renderHook(() => useEnsNames([ALICE, BOB]), { wrapper });
+
+    await waitFor(() =>
+      expect(client.getQueryState(["ensNames", [ALICE, BOB]])?.status).toBe("error"),
+    );
   });
 
   it("keeps the names it has while a new funder's lookup is in flight", async () => {

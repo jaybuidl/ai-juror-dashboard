@@ -93,21 +93,18 @@ this file is the full account.
   shows as "others not read". The read bounds contributions at 100 per round.
 - **A funder's ENS name is reverse resolution on mainnet** (`getEnsName`, through ENS's universal
   resolver, which forward-checks it), asked only for funders nothing else names. Anyone can register
-  `grokleros.eth`, or `x.grokleros.eth` under it, and make it their primary name, so a name is not
-  shown where its labels, run together with the top-level one unless it is `eth` (`blai.se` is a
-  name; `blais.eth` is a surname), contain "kleros" or any name the page gives an agent juror, once
-  accents are folded, "rn" is read as "m" and digits as the letters they stand in for (`kléros`,
-  `colurnbo`, `k1eros`, `oo7`), or where a label is shaped like an
-  address (`0x` and four hex digits, the page's own shorthand). A nickname under five characters
-  (007) counts folded only at the start of a label, or `root.eth` would pass for it, and as written
-  anywhere in one (`x007.eth`). A label mixing Latin letters with letters the fold cannot read
-  (`klerøs`) is dropped; a label wholly in another script is compared as it is. Exempt: a direct child of
-  `agents.kleroslabs.eth`, which only Kleros issues; a deeper name under it is not, since a subname's
-  holder can issue its own. A name not already in ENSIP-15 normal form is dropped too. **It is the
-  mainnet primary name** (coin type 60): for a funder that is a contract on Arbitrum, the name
-  belongs to whoever holds that address on mainnet, and a name set only on an L2 is not read.
-  **A 1-wei contribution is enough** to put a funder's chosen name on the page; the filters bound
-  what it can pass for, not what it says. **Offchain lookups are off for
+  `grokleros.eth`, or `x.grokleros.eth` under it, and make it their primary name, so
+  `performance/lookalike.ts` drops a name that could pass for an agent juror, Kleros or an address,
+  by four rules its docstring lists: a direct child of `agents.kleroslabs.eth` is exempt (only
+  Kleros issues those); an address-shaped label is out; a label that could read as Latin and is not
+  plain Latin is out (`klerøs`, `klero$`, any Cyrillic or Greek); and labels that fold to "kleros"
+  or a nickname are out, each character read as the class that passes for it (`k1eros`, `colurnbo`,
+  `6laise`, `oo7`). A deny rule is never complete: its table test holds every bypass review has
+  found, one row each, and a miss costs a label, never a figure. A name not already in ENSIP-15
+  normal form is dropped too. **It is the mainnet primary name** (coin type 60): for a funder that
+  is a contract on Arbitrum, the name belongs to whoever holds that address on mainnet, and a name
+  set only on an L2 is not read. **A 1-wei contribution is enough** to put a funder's chosen name on
+  the page; the filters bound what it can pass for, not what it says. **Offchain lookups are off for
   it** (`ccipRead: false`): a funder picks its own resolver, and an offchain one would have every
   reader's browser fetch a gateway the funder chose. Mainnet-held names resolve without one.
 - **A dispute's parties are the addresses under its template's `aliases`**, when the template has

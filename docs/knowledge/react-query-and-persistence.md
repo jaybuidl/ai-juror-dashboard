@@ -92,6 +92,7 @@ this file is the full account.
   changes *within* a period, so the read polls every 30 seconds while it sees the dispute in its
   appeal period (failing or not, as a poll does) and stops when it sees the period close. Until a
   re-read for a new period lands, the strip names no outcome over the old sums. Funders' ENS names
-  (`useEnsNames`) are not persisted, like the roster's identities, and **every lookup failing is
-  an error, not an empty answer**, or an outage would be held as "no names" for the hour the query
-  stays fresh.
+  (`useEnsNames`) are not persisted, like the roster's identities, and **any lookup failing for
+  want of an answer is an error, not an empty answer**, or an outage would be held as "no names" for
+  the hour the query stays fresh. Only a multicall leg's own revert (viem's `RawContractError` in the
+  cause chain) is an account without a name: viem also calls a node's -32603 a reverted call.

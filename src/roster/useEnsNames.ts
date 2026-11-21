@@ -2,10 +2,10 @@ import { useQuery } from "@tanstack/react-query";
 import {
   type Address,
   BaseError,
-  ContractFunctionRevertedError,
   createPublicClient,
   http,
   type PublicClient,
+  RawContractError,
 } from "viem";
 import { mainnet } from "viem/chains";
 import { normalize } from "viem/ens";
@@ -46,18 +46,18 @@ function createFunderNameClient(): PublicClient {
 }
 
 /**
- * Whether a lookup failed because the contract reverted, rather than because nothing answered.
+ * Whether a lookup failed because its own call reverted, rather than because nothing answered.
  *
- * Only a revert that carries return data, as a multicall leg's always does (`0x` for an empty
- * revert): viem also dresses a node's -32603 internal error as a reverted call, and that one has
- * no data and is an outage.
+ * Every lookup goes through multicall, one leg per address even for one address, and a leg that
+ * reverts reaches here as viem's `RawContractError` with that leg's return data. Not its
+ * `ContractFunctionRevertedError`, which viem also makes of a node's -32603 internal error, with or
+ * without data in it: that one is an outage, and taking it for a revert would hold "no names" for
+ * the hour below.
  */
 function isRevert(reason: unknown): boolean {
   return (
     reason instanceof BaseError &&
-    reason.walk(
-      (error) => error instanceof ContractFunctionRevertedError && typeof error.raw === "string",
-    ) !== null
+    reason.walk((error) => error instanceof RawContractError) !== null
   );
 }
 
@@ -84,13 +84,13 @@ export function useEnsNames(addresses: readonly string[]): ReadonlyMap<string, s
       const lookups = await Promise.allSettled(
         asked.map((address) => client.getEnsName({ address: address as Address })),
       );
-      // Every lookup failing without a revert is mainnet not answering, not a set of accounts
-      // without names: an error, so react-query retries it and never holds an empty answer as a
-      // fresh one for the hour below. A revert is that account's own (an offchain name, with
-      // lookups off) and costs only its name, so a lone such funder is an answer, not an outage
-      // retried on every focus.
-      if (lookups.every((lookup) => lookup.status === "rejected" && !isRevert(lookup.reason))) {
-        throw new Error("Mainnet did not answer any ENS lookup");
+      // Any lookup failing without a revert is mainnet not answering, for that lookup's chunk of
+      // the multicall at least: an error, so react-query retries it and never holds a partial
+      // answer as a fresh one for the hour below. A revert is that account's own (an offchain
+      // name, with lookups off) and costs only its name, so a lone such funder is an answer, not
+      // an outage retried on every focus.
+      if (lookups.some((lookup) => lookup.status === "rejected" && !isRevert(lookup.reason))) {
+        throw new Error("Mainnet did not answer every ENS lookup");
       }
       return asked.flatMap((address, index) => {
         const lookup = lookups[index];

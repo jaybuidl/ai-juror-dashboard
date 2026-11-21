@@ -1,7 +1,8 @@
 import { type ChoiceLabel, choiceTitleOf } from "../disputes/dispute-templates";
-import { AGENT_JUROR_ENS_PARENT, type AgentJuror } from "../roster/agent-jurors";
+import type { AgentJuror } from "../roster/agent-jurors";
 import type { DetailRound } from "./dispute-detail";
 import { KLEROS_BOT } from "./dispute-timeline";
+import { imitates } from "./lookalike";
 
 /**
  * How each round of a dispute's appeal was funded: which sides raised what, whether they reached
@@ -32,7 +33,7 @@ export type FunderClass =
   /**
    * Someone else, with a primary ENS name (#32, the maintainer's addition): shown by that name,
    * one line per account. Only where nothing above names the account, and never a name that
-   * passes for an agent juror or for Kleros (`imitates`).
+   * passes for an agent juror or for Kleros (`lookalike.ts`).
    */
   | { kind: "ens"; name: string; address: string }
   | { kind: "someone-else" }
@@ -79,87 +80,6 @@ function keyOf(funder: FunderClass): string {
   if (funder.kind === "agent-juror") return `agent-juror:${funder.agentJuror.address}`;
   if (funder.kind === "ens") return `ens:${funder.address}`;
   return funder.kind;
-}
-
-/**
- * The form a look-alike is compared in: accents folded away (`kléros` is `kleros`), lowercased,
- * "rn" read as the "m" it passes for (`colurnbo`), the digits that stand in for letters read as
- * those letters (`k1eros`, `oo7`), and everything but letters and digits dropped. Applied to both
- * sides, so a nickname such as 007 still matches.
- */
-function bare(text: string): string {
-  return text
-    .normalize("NFKD")
-    .replace(/\p{M}/gu, "")
-    .toLowerCase()
-    .replace(/rn/g, "m")
-    .replace(/[0-9i]/g, (character) => LEET[character] ?? character)
-    .replace(/[^a-z0-9]/g, "");
-}
-
-const LEET: Readonly<Record<string, string>> = {
-  "0": "o",
-  "1": "l",
-  i: "l",
-  "2": "z",
-  "3": "e",
-  "4": "a",
-  "5": "s",
-  "6": "g",
-  "7": "t",
-  "8": "b",
-  "9": "g",
-};
-
-/**
- * Whether an ENS name would pass for an agent juror, for Kleros, or for an address on the page.
- *
- * Anyone can register a name such as `grokleros.eth`, or `x.grokleros.eth` under it, and make it
- * their primary name, and the forward check that `useEnsNames` relies on proves only that the
- * account holds it. Such a funder is "someone else": a name that dresses as the roster or as the
- * court is worth less than none. So every label is read, run together so that `grok.leros.eth`
- * and `blai.se` are caught too, against "kleros" and against every name the page gives an agent
- * juror. A label shaped like an address is dropped as well, since no address is ever shown.
- *
- * Exempt: a direct child of the agents parent, which only Kleros issues. A deeper name under it
- * is not, since a subname's holder can issue its own. Conservative by design: a genuine name that
- * happens to contain a nickname loses a label, never a figure.
- */
-function imitates(name: string, nicknames: readonly string[]): boolean {
-  const labels = name.split(".");
-  const parent = AGENT_JUROR_ENS_PARENT.split(".");
-  if (labels.length === parent.length + 1 && name.endsWith(`.${AGENT_JUROR_ENS_PARENT}`)) {
-    return false;
-  }
-  // Four hex digits is already the shorthand the page writes an address in (and two roster
-  // nicknames are that shape), so four is enough to pass for one.
-  if (labels.some((label) => /^0x[0-9a-f]{4,}/i.test(label))) return true;
-  // A letter outside a–z beside Latin ones in a label survives the fold (`klerøs`), and the
-  // comparison below would drop it and read what is left: such a name is not read at all. A label
-  // in one other script, or of symbols, has no Latin to dress up and is compared as it is.
-  const mixed = labels.some((label) => {
-    const folded = label.normalize("NFKD").replace(/\p{M}/gu, "");
-    return /[a-z]/i.test(folded) && /[^\P{L}a-z]/iu.test(folded);
-  });
-  if (mixed) return true;
-  // Every label, the top-level one too (`blai.se` is a name, and so is `grok.leros.eth`), except
-  // `eth`, which would complete a nickname rather than spell one: `blais.eth` is a surname.
-  const run = bare((labels.at(-1) === "eth" ? labels.slice(0, -1) : labels).join(""));
-  if (run.includes("kleros")) return true;
-  return nicknames.some((nickname) => {
-    const bareNickname = bare(nickname);
-    if (bareNickname.length === 0) return false;
-    if (bareNickname.length >= 5) return run.includes(bareNickname);
-    // A short nickname, such as 007, folded only where a label starts with it: anywhere in the run
-    // it would take every name with "oot" in it, `root.eth` included. As written, anywhere in a
-    // label, so `x007.eth` is taken for it and `root.eth` is not.
-    const written = nickname.toLowerCase().replace(/[^a-z0-9]/g, "");
-    return labels.some(
-      (label) =>
-        bare(label).startsWith(bareNickname) ||
-        (written.length > 0 && label.toLowerCase().includes(written)),
-    );
-  });
 }
 
 /**
