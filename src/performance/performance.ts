@@ -430,7 +430,8 @@ export type RewardCoverage = {
    *
    * It does not catch a read that lost whole disputes off the end — nothing here could, without
    * knowing what the court has executed. `totals.test.ts` pins the arithmetic that would
-   * (`feeForJuror` × the vote-ID count), and this is the half that can be checked at runtime.
+   * (`feeForJuror` × the vote-ID count, less any dispute nobody voted with, whose fee leaves the
+   * court), and this is the half that can be checked at runtime.
    */
   short: boolean;
 };

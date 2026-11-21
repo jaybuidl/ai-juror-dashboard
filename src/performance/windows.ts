@@ -211,9 +211,9 @@ export function rewardsAt(
  * Period by period, and not once per dispute, because that is how the court itself works:
  * `passPeriod` reads `timesPerPeriod` at the moment it is called, so a dispute created under
  * one configuration and passed into its commit period under the next ran a commit window the
- * dispute's own creation moment knows nothing about. Court 34 has been reconfigured twice and
- * no evidence, commit or vote period has straddled either change — read off chain over all 46
- * disputes on 2026-09-04: dispute 151's commit and vote periods both closed before the
+ * dispute's own creation moment knows nothing about. Court 34 has been reconfigured four times
+ * and no evidence, commit or vote period has straddled any change — read off chain over all 46
+ * disputes on 2026-09-04 for the August two, and on 2026-11-21 for the November two: dispute 151's commit and vote periods both closed before the
  * 2026-08-20 change, and dispute 152 was created 48 minutes after it — which is exactly why a
  * per-dispute lookup would have looked correct here and been wrong at the first dispute that
  * did.
@@ -399,7 +399,8 @@ export type RewardParameterChange = {
  * and the † window marker, while there was one, deliberately did **not** ride either, on the grounds that a
  * reward depends on no window — which is only true while one fee has been in force throughout.
  * `totals.test.ts` pins the arithmetic that follows: total ETH equals `feeForJuror` times the
- * vote-ID count over the executed disputes, exact only under a single fee.
+ * vote-ID count over the executed disputes, exact only under a single fee and short by a
+ * forfeited dispute's fee wherever nobody voted with the ruling (dispute 282).
  *
  * So this exists to make that claim *checked* rather than inspected. It was verified by hand on
  * 2026-08-20 and again on 2026-08-26 and it held both times, which is precisely the state worth

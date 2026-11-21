@@ -77,7 +77,7 @@ const HALVED_WINDOWS: PeriodWindows = {
 };
 
 /**
- * What every configuration court 34 has held pays and puts at risk, decoded from the same three
+ * What every configuration court 34 has held pays and puts at risk, decoded from the same
  * logs the windows come from (re-read 2026-09-04, ticket 21).
  *
  * Spelled out for the reason `CURRENT` is: a fourth configuration that moved a fee has to arrive

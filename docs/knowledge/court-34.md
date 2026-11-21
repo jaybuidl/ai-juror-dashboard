@@ -61,14 +61,17 @@ this file is the full account.
   assertion that every payout divides evenly by `feeForJuror` looks obviously right and fails on
   real data — it was written and it failed. What *is* exact is court-wide: total ETH paid equals
   `feeForJuror × ` the vote-ID count over the executed disputes, which is 61 fees for the fixture
-  and ties the payout read to the draw read through the court's own configured fee. PNK is a
+  and ties the payout read to the draw read through the court's own configured fee — **except
+  over a forfeit** (below), whose fee leaves the court too: live on 2026-11-21 the total is short
+  of the identity by exactly dispute 282's five fees. `totals.test.ts` pins it over the fixture,
+  which holds no forfeit; no live test checks the ETH sum. PNK is a
   redistribution and nets to **zero** within each dispute, to within a wei or two of
   integer-division dust — **except a round with no coherent juror**, which pays nobody: KlerosCore
-  sends its penalties and its fee to the governor, out of the court. Dispute 282 is the first
-  (2026-11). All five votes were for 2, only the appeal side for 0 was funded, so the ruling became
+  sends its penalties and its fee to the governor, out of the court (`LeftoverRewardSent`).
+  Dispute 282 is the first, executed 2026-09-20 and noticed in November. All five votes were for 2, only the appeal side for 0 was funded, so the ruling became
   0 and every draw was wrong: 935 PNK left the court and no ETH was paid, so the court-wide PNK net
   is no longer zero and the live check is per dispute (#30). The captured fixture predates it, so
-  `totals.test.ts` still pins zero over it. Both are pinned there and live in `rewards-subgraph.integration.test.ts`,
+  `totals.test.ts` still pins zero over it, and the live PNK check is in `rewards-subgraph.integration.test.ts`,
   because these two figures are *sums*: a read that comes back short renders as an agent juror that
   earned less, which nothing else on the page would catch.
 - **No reconfiguration of court 34 has changed a reward parameter, and that is now checked on
@@ -94,11 +97,14 @@ this file is the full account.
   double at that magnitude steps in units of about 2.1 million wei, so a `Number` comparison would
   answer that two different stakes were the same. What the page would *say* if one of them did move
   is still open — the deferral is on ticket 21, with those two assertions as its floor.
-- Every appeal period ran ~18h against a 36h configured value, under the first three configurations —
-  the appeal window is the one period the court has never retimed. Unexplained, affects no metric
-  here, but do not treat appeal duration as understood.
-- **No evidence, commit or vote period straddled either August reconfiguration.** Read off chain
-  over all 46 disputes on 2026-09-04; the two November changes have not been checked for it. Dispute 151's commit and vote periods closed ~11h before dispute
+- **An appeal nobody funds runs ~18h against a 36h configured value**; the four rounds with a
+  funded side (disputes 282, 318, 338, 339, read 2026-11-21) ran the full 36h. The dispute kit
+  lets the period pass at half the window when no choice is funded (`isAppealFunded` in
+  `DisputeKitClassicBase.sol`, monorepo source, matching what the chain does). The appeal window
+  is the one period the court has never retimed. It affects no metric here.
+- **No evidence, commit or vote period has straddled a reconfiguration.** Read off chain over all
+  46 disputes on 2026-09-04 for the two August changes, and re-read for the two November ones on
+  2026-11-21 (no evidence, commit, vote or appeal period straddles either). Dispute 151's commit and vote periods closed ~11h before dispute
   152 was created; what happened 48 minutes before 152's creation is the **2026-08-20 change
   itself**, and those are two different gaps that a sentence naming only one number will
   cheerfully swap (it did, and ticket 19's review caught it). Nothing was mid-period on 2026-08-26

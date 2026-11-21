@@ -123,7 +123,7 @@ describe("the method page", () => {
     );
     expect(section).toHaveTextContent(/median time to appeal is the exception/i);
     expect(section).toHaveTextContent(
-      /45 minutes of evidence, and one created between 2 and 13 November through 5, where one created today sits through 10/i,
+      /configured for 45 minutes of evidence, and one created between 2 and 13 November for 5, where one created today is configured for 10/i,
     );
   });
 

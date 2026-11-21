@@ -11,7 +11,7 @@ import {
 /**
  * The parameter reader, offline.
  *
- * The fixture beside this is one successful read of a court that has been configured three
+ * The fixture beside this is one successful read of a court that has been configured five
  * times, so the cases worth writing here are the ones it cannot contain: two changes in one
  * block, a log that will not decode, and the endpoint's zero timestamp.
  */

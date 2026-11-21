@@ -390,12 +390,12 @@ export function MethodPage() {
 
         <Body>
           The median time to appeal is the exception, because it is measured from a dispute's
-          creation and so spans the evidence period too. A dispute created before 26 August sat
-          through 45 minutes of evidence, and one created between 2 and 13 November through 5, where
-          one created today sits through 10, so their times to appeal are not the same measurement.
-          The median time to appeal still counts all of them, dispute 151's 12-hour evidence period
-          included. Where a configured window would otherwise stand beside the evidence period, the
-          dispute view gives the count of evidence submissions instead.
+          creation and so spans the evidence period too. A dispute created before 26 August was
+          configured for 45 minutes of evidence, and one created between 2 and 13 November for 5,
+          where one created today is configured for 10, so their times to appeal are not the same
+          measurement. The median time to appeal still counts all of them, dispute 151's 12-hour
+          evidence period included. Where a configured window would otherwise stand beside the
+          evidence period, the dispute view gives the count of evidence submissions instead.
         </Body>
 
         <Body>
@@ -432,9 +432,10 @@ export function MethodPage() {
           multiple of it. The PNK is a redistribution and not an issuance: it is taken from the
           jurors who diverged or failed to reveal and handed to those who voted with the ruling, so
           a negative figure is a real loss rather than a missing number. In a tie, every juror who
-          voted is paid as coherent. Where nobody voted with the ruling, nobody is paid: the court
-          sends that dispute's PNK and fee out of the court, so the PNK does not net to zero across
-          it. Dispute 282 is one. Its sign is always a character in the value itself.
+          voted is paid as coherent. The PNK figure's sign is always a character in the value
+          itself. Where nobody voted with the ruling, nobody is paid: the court sends that dispute's
+          PNK and fee out of the court, so the PNK does not net to zero across it. Dispute 282 is
+          one.
         </Body>
         <Body>
           Both figures lag the rest of this page, and legitimately. A payout is written when the
