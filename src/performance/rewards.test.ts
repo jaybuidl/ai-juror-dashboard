@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { formatEthShortfall, formatEthWei, formatPnkWei } from "./rewards";
+import { formatEthShortfall, formatEthWei, formatEthWeiDown, formatPnkWei } from "./rewards";
 
 /**
  * The formatters, pinned against exact wei rather than against numbers.
@@ -102,5 +102,24 @@ describe("formatEthShortfall", () => {
     // 0.00890001 would round up to 0.0089; truncated, it stays below the fee.
     const [raised, needed] = formatEthShortfall(8_900_010_000_000_000n, 8_900_020_000_000_000n);
     expect([raised, needed]).toEqual(["0.00890001", "0.00890002"]);
+  });
+});
+
+describe("formatEthWeiDown", () => {
+  it("truncates where formatEthWei would round up", () => {
+    expect(formatEthWei(5_950_000_000_000_000n)).toBe("0.0060");
+    expect(formatEthWeiDown(5_950_000_000_000_000n)).toBe("0.0059");
+  });
+
+  it("says a real sum below the fourth place is below it, never zero", () => {
+    expect(formatEthWeiDown(60_000_000_000_000n)).toBe("<0.0001");
+    expect(formatEthWeiDown(0n)).toBe("0.0000");
+  });
+
+  it("keeps a sum far below its fee from reading as nothing at the place they part", () => {
+    expect(formatEthShortfall(1_000_000_000_000n, 40_000_000_000_000n)).toEqual([
+      "<0.00001",
+      "0.00004",
+    ]);
   });
 });

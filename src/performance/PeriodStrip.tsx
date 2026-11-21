@@ -9,7 +9,7 @@ import type { DisputeReading, PeriodRun } from "./dispute-detail";
 import type { DisputeTimeline, Moment, Opener, TimelineEntry } from "./dispute-timeline";
 import { formatElapsedSeconds, formatWindowSeconds } from "./latency";
 import { clockOf, dayOf, isoOf, sameDay } from "./moments";
-import { formatEthShortfall, formatEthWei } from "./rewards";
+import { formatEthShortfall, formatEthWei, formatEthWeiDown } from "./rewards";
 
 /**
  * The dispute's periods, each with what happened in it: `canvas/Dispute.dc.html:87-96`.
@@ -424,10 +424,10 @@ function FunderName({
 }
 
 /** An amount in ETH, the unit said to a screen reader on every figure and drawn once in the head. */
-function Eth({ wei }: { wei: bigint }) {
+function Eth({ wei, down = false }: { wei: bigint; down?: boolean }) {
   return (
     <Amount>
-      {formatEthWei(wei)}
+      {down ? formatEthWeiDown(wei) : formatEthWei(wei)}
       {/* The separating space in a text node, never inside the hidden element (CLAUDE.md). */}{" "}
       <VisuallyHidden>ETH</VisuallyHidden>
     </Amount>
@@ -444,7 +444,7 @@ function Raised({ side }: { side: SideFunding }) {
   const [raised, needed] =
     required !== null && required > side.raisedWei
       ? formatEthShortfall(side.raisedWei, required)
-      : [formatEthWei(side.raisedWei), null];
+      : [side.funded ? formatEthWei(side.raisedWei) : formatEthWeiDown(side.raisedWei), null];
   return (
     <Amount>
       {raised}
@@ -508,7 +508,9 @@ function FundingList({
                     <span>
                       <FunderName funder={funder} nameOf={nameOf} />
                     </span>{" "}
-                    <Eth wei={funder.wei} />
+                    {/* Truncated under a side that fell short, as its own sum is: a funder line
+                        must never read as more than the side it is part of. */}
+                    <Eth wei={funder.wei} down={!side.funded} />
                   </Row>
                 ))}
           </li>

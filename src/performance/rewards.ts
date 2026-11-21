@@ -89,13 +89,7 @@ export function formatEthWei(wei: bigint): string {
  * `["0.0089", "0.00891"]`. A sum too small for the fourth place is "<0.0001".
  */
 export function formatEthShortfall(raised: bigint, required: bigint): readonly [string, string] {
-  const fourth = 10n ** BigInt(WEI - ETH_PLACES);
-  const loose = [
-    raised > 0n && raised < fourth
-      ? `<0.${"0".repeat(ETH_PLACES - 1)}1`
-      : truncated(raised, ETH_PLACES),
-    formatEthWei(required),
-  ] as const;
+  const loose = [formatEthWeiDown(raised), formatEthWei(required)] as const;
   if (loose[0] !== loose[1] || raised === required) return loose;
 
   for (let places = ETH_PLACES + 1; places <= WEI; places += 1) {
@@ -107,9 +101,19 @@ export function formatEthShortfall(raised: bigint, required: bigint): readonly [
   return loose;
 }
 
+/**
+ * ETH at four places, truncated rather than rounded: for a sum that fell short of something, which
+ * must never be printed as more than it is. A sum too small for the fourth place is "<0.0001".
+ */
+export function formatEthWeiDown(wei: bigint): string {
+  return truncated(wei, ETH_PLACES);
+}
+
 function truncated(wei: bigint, places: number): string {
   const unit = 10n ** BigInt(places);
   const scaled = wei / 10n ** BigInt(WEI - places);
+  // A real sum smaller than the last place: "0.0000" would say nothing was given.
+  if (wei > 0n && scaled === 0n) return `<0.${"0".repeat(places - 1)}1`;
   const decimals = String(scaled % unit)
     .padStart(places, "0")
     .replace(/0+$/, "")
