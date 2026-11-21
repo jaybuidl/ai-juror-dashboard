@@ -81,6 +81,10 @@ function renderAppealed(
     roster,
     creator: null,
     ensNames,
+    // Round 1's appeal at court 34's fee, which held throughout.
+    fees: new Map([
+      [0, { kind: "steady", fee: { feeForJuror: "270000000000000", jurorsForCourtJump: "7" } }],
+    ]),
   });
 
   return render(
@@ -155,6 +159,7 @@ describe("an appealed round, once the next round has started", () => {
     renderAppealed(new Map(), {
       index: 0,
       tied: true,
+      nbVotes: 5,
       sides: [
         { choice: 1, paidWei: 8_910_000_000_000_000n, funded: true },
         { choice: 2, paidWei: 8_909_990_000_000_000n, funded: false },

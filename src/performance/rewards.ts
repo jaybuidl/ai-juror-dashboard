@@ -81,13 +81,19 @@ export function formatEthWei(wei: bigint): string {
 /**
  * A sum and the fee it fell short of, as the appeal lane prints them: `["0.0059", "0.0089"]`.
  *
- * At `formatEthWei`'s four places where they differ there. Where those agree, a side just short of
+ * At four places, truncated, where they differ there. Where those agree, a side just short of
  * its fee would read "0.0089 of 0.0089", so both are written out, truncated, to the first place at
  * which they part, with trailing zeros dropped: 0.00890999 of 0.00891 is `["0.0089", "0.00891"]`.
  * Truncated rather than rounded, so the sum is never printed as more than it is.
  */
 export function formatEthShortfall(raised: bigint, required: bigint): readonly [string, string] {
-  const loose = [formatEthWei(raised), formatEthWei(required)] as const;
+  // Truncated at four places too, or 0.00595 would round up to "0.0060" against a fee of 0.0089.
+  // A sum too small for the fourth place keeps `formatEthWei`'s "<0.0001" rather than "0.0000".
+  const tiny = raised > 0n && raised < 10n ** BigInt(WEI - ETH_PLACES);
+  const loose = [
+    tiny ? formatEthWei(raised) : truncated(raised, ETH_PLACES),
+    truncated(required, ETH_PLACES),
+  ] as const;
   if (loose[0] !== loose[1] || raised === required) return loose;
 
   for (let places = ETH_PLACES + 1; places <= WEI; places += 1) {

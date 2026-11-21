@@ -4,7 +4,7 @@ import type { AgentJuror } from "../roster/agent-jurors";
 import type { DetailRound } from "./dispute-detail";
 import { KLEROS_BOT } from "./dispute-timeline";
 import { imitates } from "./lookalike";
-import { type ParameterRegime, rewardsAt } from "./windows";
+import { type ParameterRegime, rewardsAt, windowsAt } from "./windows";
 
 /**
  * How each round of a dispute's appeal was funded: which sides raised what, whether they reached
@@ -142,12 +142,15 @@ export type AppealCourtFee = { feeForJuror: string; jurorsForCourtJump: string }
 
 /**
  * What the court charged for one round's appeal, as far as its history says (`appealFeesOf`):
- * - `steady`: one configuration throughout, so a funded side's sum and the court's fee agree, and
- *   either prices the round;
- * - `changed`: a still-open appeal whose court has been reconfigured since it opened, so a side
- *   funded before the change paid the old fee and only the current configuration says what a
- *   side needs now;
- * - `unknown`: a closed appeal reconfigured mid-period, so no one fee priced it and none is said.
+ * - `steady`: one fee and one jump threshold for the whole appeal window, so a funded side's sum
+ *   and the court's fee agree, and either prices the round;
+ * - `changed`: the current round's appeal, with the fee moved since it opened, so a side funded
+ *   before the change paid the old fee and only the current one says what a side needs now;
+ * - `unknown`: an earlier or closed appeal whose fee moved during its window, so no one fee
+ *   priced it and none is said.
+ *
+ * A round with no reading at all (no history read, or no appeal opened) is priced by nothing,
+ * not even a funded side: without the history, nothing says the fee held still.
  */
 export type AppealFeeReading =
   | { kind: "steady"; fee: AppealCourtFee }
@@ -183,8 +186,13 @@ function requiredOf(
   reading: AppealFeeReading | undefined,
 ): (choice: number) => bigint | null {
   const { tied, winningChoice, nbVotes } = round;
-  if (reading?.kind === "unknown") return () => null;
+  if (reading === undefined || reading.kind === "unknown") return () => null;
   if (tied === null || tied === undefined) return () => null;
+  // Past the jump threshold the appeal costs the parent court's fee, whose history is not read,
+  // so neither its fee nor whether it held still is known.
+  const { fee } = reading;
+  if (nbVotes === null || nbVotes === undefined) return () => null;
+  if (BigInt(nbVotes) >= BigInt(fee.jurorsForCourtJump)) return () => null;
   if (!tied && (winningChoice === null || winningChoice === undefined)) return () => null;
   const favoured = tied ? 0 : winningChoice;
   const multiplierOf = (choice: number) =>
@@ -193,17 +201,14 @@ function requiredOf(
     cost + (cost * multiplierOf(choice)) / ONE_BASIS_POINT;
 
   let cost: bigint | null = null;
-  const fee = reading?.fee;
-  const funded = reading?.kind === "changed" ? [] : round.sides.filter((side) => side.funded);
+  const funded = reading.kind === "changed" ? [] : round.sides.filter((side) => side.funded);
   const [first] = funded;
   if (first !== undefined) {
     const implied =
       (first.paidWei * ONE_BASIS_POINT) / (ONE_BASIS_POINT + multiplierOf(first.choice));
     if (funded.every((side) => feeFor(implied, side.choice) === side.paidWei)) cost = implied;
-  } else if (fee !== undefined && nbVotes !== null && nbVotes !== undefined) {
-    if (BigInt(nbVotes) < BigInt(fee.jurorsForCourtJump)) {
-      cost = BigInt(fee.feeForJuror) * BigInt(nbVotes * 2 + 1);
-    }
+  } else {
+    cost = BigInt(fee.feeForJuror) * BigInt(nbVotes * 2 + 1);
   }
 
   return (choice) => (cost === null ? null : feeFor(cost, choice));
@@ -212,12 +217,14 @@ function requiredOf(
 /**
  * What the court charged for each round's appeal (`AppealFeeReading`), by round index.
  *
- * The court reads its fee at each contribution, so what matters is whether it held one
- * configuration for the whole appeal period: from the period's opening to its close (the
- * execution period, or the next round's commit period for an appealed round, which is later than
- * the appeal itself and so errs towards "changed"), or to now while it runs. A period yet to open
- * is priced by the latest configuration. A closed round with no recorded opening gets nothing,
- * and so does every round with no history read (`rewardsAt`).
+ * The court reads its fee at each contribution, so what matters is whether the two fields that
+ * set it, `feeForJuror` and `jurorsForCourtJump`, held still across the appeal window: from the
+ * period's opening to its deadline, the opening plus the longest appeal window the court held
+ * from then on (a reconfigured window moves the deadline too, so the longest is the safe one).
+ * A move of anything else, a period's window, is not a move of the fee.
+ *
+ * A round whose appeal never opened has nothing to price, since contributions open with the
+ * period; nor has any round with no history read, or one opened before it (`rewardsAt`).
  */
 export function appealFeesOf(
   rounds: readonly DisputeRound[],
@@ -226,28 +233,30 @@ export function appealFeesOf(
 ): ReadonlyMap<number, AppealFeeReading> {
   const fees = new Map<number, AppealFeeReading>();
   for (const round of rounds) {
-    const open = round.index === currentIndex && round.executionOpenedAt === null;
     const opened = round.appealOpenedAt;
-    if (!open && opened === null) continue;
-
-    const latest = rewardsAt(regimes, null);
-    if (opened === null) {
-      if (latest !== null) fees.set(round.index, { kind: "steady", fee: latest });
-      continue;
-    }
+    if (opened === null) continue;
     const atOpening = rewardsAt(regimes, opened);
     if (atOpening === null) continue;
 
-    const closed = open
-      ? null
-      : (round.executionOpenedAt ??
-        rounds.find((next) => next.index === round.index + 1)?.commitOpenedAt ??
-        null);
-    const changed = regimes.some(
-      (regime) => regime.from > opened && (closed === null || regime.from <= closed),
+    const later = regimes.filter((regime) => regime.from > opened);
+    const longest = Math.max(
+      windowsAt(regimes, opened)?.appealSeconds ?? 0,
+      ...later.map((regime) => regime.windows.appealSeconds),
     );
-    if (!changed) fees.set(round.index, { kind: "steady", fee: atOpening });
-    else if (open && latest !== null) fees.set(round.index, { kind: "changed", fee: latest });
+    const deadline = opened + longest;
+    const moved = later.filter(
+      (regime) =>
+        regime.from <= deadline &&
+        (regime.rewards.feeForJuror !== atOpening.feeForJuror ||
+          regime.rewards.jurorsForCourtJump !== atOpening.jurorsForCourtJump),
+    );
+    const current = round.index === currentIndex && round.executionOpenedAt === null;
+    // The last fee set inside the window, not the latest of all: one set after the deadline
+    // priced no contribution.
+    const last = rewardsAt(regimes, deadline);
+
+    if (moved.length === 0) fees.set(round.index, { kind: "steady", fee: atOpening });
+    else if (current && last !== null) fees.set(round.index, { kind: "changed", fee: last });
     else fees.set(round.index, { kind: "unknown" });
   }
   return fees;

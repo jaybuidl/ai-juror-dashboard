@@ -39,12 +39,18 @@ const WINDOWS = {
   appealSeconds: 129_600,
 };
 
+/** Court 34's fee, held throughout round 0's appeal: what every test prices against by default. */
+const STEADY: ReadonlyMap<number, AppealFeeReading> = new Map([
+  [0, { kind: "steady", fee: { feeForJuror: "270000000000000", jurorsForCourtJump: "7" } }],
+]);
+
 function build(
   funding: readonly DetailRound[] = funding318,
   overrides: {
     aliases?: readonly string[];
     creator?: string | null | undefined;
     ensNames?: ReadonlyMap<string, string>;
+    fees?: ReadonlyMap<number, AppealFeeReading>;
   } = {},
 ): readonly RoundFunding[] {
   return buildAppealFunding({
@@ -54,6 +60,7 @@ function build(
     roster: ROSTER,
     creator: "creator" in overrides ? overrides.creator : CREATOR,
     ensNames: overrides.ensNames,
+    fees: overrides.fees ?? STEADY,
   });
 }
 
@@ -445,6 +452,7 @@ describe("what each side needed to be funded", () => {
       index: 0,
       tied: false,
       winningChoice: 2,
+      nbVotes: 5,
       sides: [
         { choice: 1, paidWei: 8_910_000_000_000_000n, funded: true },
         { choice: 2, paidWei: 1_000_000_000_000_000n, funded: false },
@@ -497,6 +505,7 @@ describe("what each side needed to be funded", () => {
       index: 0,
       tied: true,
       winningChoice: 2,
+      nbVotes: 5,
       sides: [
         { choice: 0, paidWei: 5_940_000_000_000_000n, funded: true },
         { choice: 1, paidWei: 1_000_000_000_000_000n, funded: false },
@@ -598,6 +607,24 @@ describe("what each side needed to be funded", () => {
     ]);
   });
 
+  it("does not say with no history read, even where a side was funded", () => {
+    // Without the history nothing says the fee held still across the appeal.
+    expect(sideNeeds(build(funding318, { fees: new Map() }))).toEqual([
+      [1, null],
+      [2, null],
+    ]);
+  });
+
+  it("does not say where the appeal moves to the parent court, whose fee is not read", () => {
+    const [round] = funding318;
+    if (round === undefined) throw new Error("no round");
+
+    expect(sideNeeds(build([{ ...round, nbVotes: 7 }]))).toEqual([
+      [1, null],
+      [2, null],
+    ]);
+  });
+
   it("does not say where the round's tie or winner was not read", () => {
     const unread: DetailRound = {
       index: 0,
@@ -634,9 +661,11 @@ describe("appealFeesOf", () => {
     jurorsForCourtJump: "7",
   };
   const RAISED = { ...REWARDS, feeForJuror: "540000000000000" };
+  // A 50-second appeal window, so a window and a reconfiguration fit in small numbers.
+  const SHORT = { ...WINDOWS, appealSeconds: 50 };
   const regimes = [
-    { from: 100, windows: WINDOWS, rewards: REWARDS },
-    { from: 300, windows: WINDOWS, rewards: RAISED },
+    { from: 100, windows: SHORT, rewards: REWARDS },
+    { from: 300, windows: SHORT, rewards: RAISED },
   ];
   const round = (overrides: Partial<DisputeRound>): DisputeRound => ({
     index: 0,
@@ -647,59 +676,60 @@ describe("appealFeesOf", () => {
     ...overrides,
   });
 
-  const feeOf = (reading: AppealFeeReading | undefined) =>
-    reading === undefined
-      ? undefined
-      : reading.kind === "unknown"
-        ? "unknown"
-        : reading.fee.feeForJuror;
-
-  it("prices a closed appeal by the fee it ran under throughout", () => {
-    const fees = appealFeesOf([round({ appealOpenedAt: 150, executionOpenedAt: 250 })], 0, regimes);
-
-    expect(fees.get(0)).toEqual({ kind: "steady", fee: REWARDS });
+  it("prices an appeal by the fee it ran under throughout", () => {
+    expect(
+      appealFeesOf([round({ appealOpenedAt: 150, executionOpenedAt: 210 })], 0, regimes).get(0),
+    ).toEqual({ kind: "steady", fee: REWARDS });
   });
 
-  it("prices no closed appeal the court was reconfigured during", () => {
-    // The fee moved at 300, inside a period that ran from 200 to 400.
-    const fees = appealFeesOf([round({ appealOpenedAt: 200, executionOpenedAt: 400 })], 0, regimes);
-
-    expect(fees.get(0)).toEqual({ kind: "unknown" });
+  it("does not count a change after the appeal window closed", () => {
+    // Opened at 150, so the window closed at 200: the change at 300 priced nothing.
+    expect(appealFeesOf([round({ appealOpenedAt: 150 })], 0, regimes).get(0)).toEqual({
+      kind: "steady",
+      fee: REWARDS,
+    });
   });
 
-  it("prices an open appeal reconfigured since it opened by the current fee alone", () => {
-    expect(appealFeesOf([round({ appealOpenedAt: 200 })], 0, regimes).get(0)).toEqual({
+  it("does not count a change that moved a window and not the fee", () => {
+    const windowOnly = [
+      { from: 100, windows: SHORT, rewards: REWARDS },
+      { from: 280, windows: { ...SHORT, commitSeconds: 1 }, rewards: REWARDS },
+    ];
+
+    expect(appealFeesOf([round({ appealOpenedAt: 270 })], 0, windowOnly).get(0)).toEqual({
+      kind: "steady",
+      fee: REWARDS,
+    });
+  });
+
+  it("prices no closed appeal whose fee moved during its window", () => {
+    expect(
+      appealFeesOf([round({ appealOpenedAt: 280, executionOpenedAt: 340 })], 0, regimes).get(0),
+    ).toEqual({ kind: "unknown" });
+  });
+
+  it("prices the current appeal by the last fee set in its window, where it moved", () => {
+    expect(appealFeesOf([round({ appealOpenedAt: 280 })], 0, regimes).get(0)).toEqual({
       kind: "changed",
       fee: RAISED,
     });
   });
 
-  it("prices an appeal yet to open, or open since the last change, by the latest fee", () => {
-    expect(feeOf(appealFeesOf([round({})], 0, regimes).get(0))).toBe("540000000000000");
-    expect(appealFeesOf([round({ appealOpenedAt: 350 })], 0, regimes).get(0)).toEqual({
-      kind: "steady",
-      fee: RAISED,
-    });
-  });
-
-  it("prices an earlier round up to the next round's start, and a closed one unopened not at all", () => {
+  it("prices an earlier round whose fee moved not at all", () => {
     const fees = appealFeesOf(
-      [
-        round({ index: 0, appealOpenedAt: 120 }),
-        round({ index: 1, commitOpenedAt: 180 }),
-        round({ index: 2, appealOpenedAt: 350 }),
-      ],
-      2,
+      [round({ index: 0, appealOpenedAt: 280 }), round({ index: 1, appealOpenedAt: 400 })],
+      1,
       regimes,
     );
 
-    expect(feeOf(fees.get(0))).toBe("270000000000000");
-    expect(fees.has(1)).toBe(false);
-    expect(feeOf(fees.get(2))).toBe("540000000000000");
+    expect(fees.get(0)).toEqual({ kind: "unknown" });
+    expect(fees.get(1)).toEqual({ kind: "steady", fee: RAISED });
   });
 
-  it("prices nothing with no history read", () => {
-    expect(appealFeesOf([round({ appealOpenedAt: 200 })], 0, []).size).toBe(0);
+  it("prices nothing where the appeal never opened, before the history, or with none read", () => {
+    expect(appealFeesOf([round({})], 0, regimes).size).toBe(0);
+    expect(appealFeesOf([round({ appealOpenedAt: 50 })], 0, regimes).size).toBe(0);
+    expect(appealFeesOf([round({ appealOpenedAt: 150 })], 0, []).size).toBe(0);
   });
 });
 
