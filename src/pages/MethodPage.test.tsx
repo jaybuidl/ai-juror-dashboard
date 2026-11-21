@@ -72,23 +72,25 @@ describe("the method page", () => {
     expect(section).not.toHaveTextContent(/illustrative/i);
   });
 
-  it("names all three configurations as absolute durations", () => {
+  it("names all five configurations as absolute durations", () => {
     // The account the † marker's link used to reach, until 2026-09-24. Every regime, in the units the court
     // was configured in, and no ratio anywhere between them — ADR-0005.
     renderAt("/method");
 
     const section = screen.getByRole("region", { name: /the window/i });
 
-    expect(section).toHaveTextContent(/configured three times/i);
+    expect(section).toHaveTextContent(/configured five times/i);
     expect(section).toHaveTextContent(/commit window of 8 hours/i);
     expect(section).toHaveTextContent(/commit window of 45 minutes/i);
     expect(section).toHaveTextContent(/vote window of 30 minutes/i);
     expect(section).toHaveTextContent(/Evidence 12h · commit 8h · vote 8h · appeal 36h/);
     expect(section).toHaveTextContent(/Evidence 45m · commit 45m · vote 30m · appeal 36h/);
     expect(section).toHaveTextContent(/Evidence 10m · commit 45m · vote 30m · appeal 36h/);
+    expect(section).toHaveTextContent(/Evidence 5m · commit 45m · vote 30m · appeal 36h/);
+    expect(section).toHaveTextContent(/From 13 Nov/i);
   });
 
-  it("says the third change moved the evidence period and no commit or vote window", () => {
+  it("says every change after the second moved the evidence period and no commit or vote window", () => {
     // Ticket 19. The court was reconfigured on 26 August and dispute 152 is older than that
     // change, and its draws' times were still taken against today's windows, which is a
     // contradiction to anyone who has not been told that only the commit and vote windows matter
@@ -97,9 +99,11 @@ describe("the method page", () => {
 
     const section = screen.getByRole("region", { name: /the window/i });
 
-    expect(section).toHaveTextContent(/moved the evidence period alone, from 45 minutes to 10/i);
     expect(section).toHaveTextContent(
-      /The second reconfiguration left the commit and vote windows exactly where they were/i,
+      /Every change since has moved the evidence period alone: from 45 minutes to 10 on 26 August, to 5 on 2 November, and back to 10 on 13 November/i,
+    );
+    expect(section).toHaveTextContent(
+      /None of the three reconfigurations since moved a commit or vote window/i,
     );
     expect(section).toHaveTextContent(
       /dispute 152 ran under a configuration the court has since replaced, and still its draws' commit and reveal times were taken against the windows the court holds now/i,
@@ -119,7 +123,7 @@ describe("the method page", () => {
     );
     expect(section).toHaveTextContent(/median time to appeal is the exception/i);
     expect(section).toHaveTextContent(
-      /45 minutes of evidence where one created today sits through 10/i,
+      /45 minutes of evidence, and one created between 2 and 13 November through 5, where one created today sits through 10/i,
     );
   });
 
@@ -177,6 +181,17 @@ describe("the method page", () => {
     // section exists to keep a reader out of.
     expect(section).toHaveTextContent(/CourtModified/);
     expect(section).toHaveTextContent(/never from what the court is configured with today/i);
+  });
+
+  it("does not claim the PNK nets to zero, since a dispute nobody voted with pays nobody", () => {
+    // #30. Dispute 282 ruled 0 on a one-sided appeal after all five votes went to 2, and its
+    // 935 PNK left the court. "It nets to zero across the court" stood here until then.
+    renderAt("/method");
+
+    const section = screen.getByRole("region", { name: /what each agent juror has earned/i });
+
+    expect(section).not.toHaveTextContent(/nets to zero across the court/i);
+    expect(section).toHaveTextContent(/Where nobody voted with the ruling, nobody is paid/i);
   });
 
   it("never turns a duration into a fraction of a window, and says so", () => {

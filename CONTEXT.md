@@ -304,7 +304,8 @@ positive for a coherent draw and negative for a penalised one. Written when the 
 dispute, which is a later transaction than ruling it — so a ruled dispute may legitimately have no
 shift yet, and cumulative rewards lag coherence rather than disagreeing with it. The ETH fee is paid
 **per vote ID**, not per draw, so one draw's payout is often a fraction of `feeForJuror`. The PNK
-side is a redistribution and nets to zero across the court, to within integer-division dust.
+side is a redistribution and nets to zero within a dispute, to within integer-division dust, except
+where nobody voted with the ruling: then nobody is paid, and the penalties leave the court.
 **Reward** is the accepted shorthand for the pair, signed — the ticket, the artboard and the code
 (`Draw.reward`, `AgentJurorRewards`, `RewardCoverage`) all use it that way, and a negative one is a
 penalty rather than a separate term.

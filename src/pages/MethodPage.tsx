@@ -26,13 +26,13 @@ import { REFERENCE_COURT_ID } from "../performance/reference";
  * page that showed nothing there until a chain read landed would be withholding a settled fact
  * behind a request that can fail. Court 34's first configuration is a fact from August 2026 and
  * cannot change retroactively, and the guard against it drifting is
- * `court-parameters.integration.test.ts`, which reads the same three configurations from chain
+ * `court-parameters.integration.test.ts`, which reads the same five configurations from chain
  * nightly and fails if the court is ever reconfigured again.
  *
- * **That guard has fired once, and rewriting this section was ticket 19.** Court 34 is a live
+ * **That guard has fired twice: rewriting this section was ticket 19, then #30.** Court 34 is a live
  * demo instrument and its periods get retimed to suit a demo, so expect it again. Two things
  * to hold on to when it does. The prose here counts *configurations*, which is not the count
- * of changes that moved a commit or vote window — the third moved the evidence period alone.
+ * of changes that moved a commit or vote window — the last three moved the evidence period alone.
  * And the section has to keep saying so: a reader who knows the court was reconfigured on 26
  * August is owed the reason dispute 152's per-draw times were taken against today's windows.
  * **It does move one figure**: the headline median time to appeal runs from a dispute's
@@ -113,14 +113,14 @@ const Term = styled.span`
  *
  * **Stacked rather than side by side since ticket 19, and the reason is what a reader has to
  * be able to see.** The artboard draws a two-up strip because the court had two configurations
- * when it was drawn; it has three, and the third differs from the second in one window out of
- * four. Down a column the four durations of each line up under the four above them, so the one
+ * when it was drawn; it has five, and each after the second differs from the one before in one
+ * window out of four. Down a column the four durations of each line up under the four above them, so the one
  * that moved is the one thing that does not repeat — which is the whole finding, and it is not
  * a finding two paragraphs of prose can hand over as quickly.
  *
  * All four windows, in the order `timesPerPeriod` is indexed on chain, rather than the commit
  * and vote windows the figures are measured from. A line that showed only what is measured
- * would print the second and third configurations identically and leave the reader looking for
+ * would print the last four configurations identically and leave the reader looking for
  * the difference between two rows that have none.
  */
 const Regimes = styled.div`
@@ -344,12 +344,12 @@ export function MethodPage() {
           false the moment it is quoted away from the page.
         </Body>
         <Body>
-          The court has been configured three times. It was created on 11 August 2026 with a 12-hour
+          The court has been configured five times. It was created on 11 August 2026 with a 12-hour
           evidence period, a commit window of 8 hours, a vote window of 8 hours and a 36-hour appeal
           period. On 20 August 2026 it was reconfigured: 45 minutes of evidence, a commit window of
-          45 minutes, a vote window of 30 minutes, and the appeal period left as it was. On 26
-          August 2026 it was reconfigured a third time, and that change moved the evidence period
-          alone, from 45 minutes to 10.
+          45 minutes, a vote window of 30 minutes, and the appeal period left as it was. Every
+          change since has moved the evidence period alone: from 45 minutes to 10 on 26 August, to 5
+          on 2 November, and back to 10 on 13 November.
         </Body>
 
         <Regimes>
@@ -365,6 +365,14 @@ export function MethodPage() {
             <RegimeLabel>From 26 Aug</RegimeLabel>
             <RegimeWindows>Evidence 10m · commit 45m · vote 30m · appeal 36h</RegimeWindows>
           </Regime>
+          <Regime>
+            <RegimeLabel>From 2 Nov</RegimeLabel>
+            <RegimeWindows>Evidence 5m · commit 45m · vote 30m · appeal 36h</RegimeWindows>
+          </Regime>
+          <Regime>
+            <RegimeLabel>From 13 Nov</RegimeLabel>
+            <RegimeWindows>Evidence 10m · commit 45m · vote 30m · appeal 36h</RegimeWindows>
+          </Regime>
         </Regimes>
 
         <Body>
@@ -375,19 +383,19 @@ export function MethodPage() {
         </Body>
 
         <Body>
-          The second reconfiguration left the commit and vote windows exactly where they were. So
-          dispute 152 ran under a configuration the court has since replaced, and still its draws'
-          commit and reveal times were taken against the windows the court holds now.
+          None of the three reconfigurations since moved a commit or vote window. So dispute 152 ran
+          under a configuration the court has since replaced, and still its draws' commit and reveal
+          times were taken against the windows the court holds now.
         </Body>
 
         <Body>
           The median time to appeal is the exception, because it is measured from a dispute's
           creation and so spans the evidence period too. A dispute created before 26 August sat
-          through 45 minutes of evidence where one created today sits through 10, so its time to
-          appeal is not the same measurement. The median time to appeal still counts those disputes,
-          dispute 151's 12-hour evidence period included. Where a configured window would otherwise
-          stand beside the evidence period, the dispute view gives the count of evidence submissions
-          instead.
+          through 45 minutes of evidence, and one created between 2 and 13 November through 5, where
+          one created today sits through 10, so their times to appeal are not the same measurement.
+          The median time to appeal still counts all of them, dispute 151's 12-hour evidence period
+          included. Where a configured window would otherwise stand beside the evidence period, the
+          dispute view gives the count of evidence submissions instead.
         </Body>
 
         <Body>
@@ -423,9 +431,10 @@ export function MethodPage() {
           thirds of that dispute's pot, so a payout is often a fraction of the fee rather than a
           multiple of it. The PNK is a redistribution and not an issuance: it is taken from the
           jurors who diverged or failed to reveal and handed to those who voted with the ruling, so
-          it nets to zero across the court and a negative figure is a real loss rather than a
-          missing number. In a tie, every juror who voted is paid as coherent. Its sign is always a
-          character in the value itself.
+          a negative figure is a real loss rather than a missing number. In a tie, every juror who
+          voted is paid as coherent. Where nobody voted with the ruling, nobody is paid: the court
+          sends that dispute's PNK and fee out of the court, so the PNK does not net to zero across
+          it. Dispute 282 is one. Its sign is always a character in the value itself.
         </Body>
         <Body>
           Both figures lag the rest of this page, and legitimately. A payout is written when the

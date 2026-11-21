@@ -6,6 +6,7 @@ import {
 } from "../disputes/court-subgraph";
 import { ROSTER } from "../roster/agent-jurors";
 import { fetchCourtDraws } from "./draws-subgraph";
+import type { Draw } from "./performance";
 import { buildCourtPerformance } from "./performance";
 import { fetchCourtRewards } from "./rewards-subgraph";
 
@@ -101,14 +102,48 @@ describe("fetchCourtRewards", () => {
     // came back short renders as an agent juror that earned less rather than as an error.
     // Nothing about a shorter list would look wrong on its own.
     //
-    // PNK is a redistribution — taken from the incoherent, handed to the coherent — so the
-    // court's net is zero to within the dust integer division leaves behind. A single missing
+    // PNK is a redistribution — taken from the incoherent, handed to the coherent — so a
+    // dispute's net is zero to within the dust integer division leaves behind. A single missing
     // payout moves it by of the order of 1e20, which is fifteen orders of magnitude past the
-    // tolerance.
-    const net = result.data.marginals.reduce((total, m) => total + (m.rewards?.pnkWei ?? 0n), 0n);
-
+    // tolerance. Checked per dispute rather than over the court, because of the one case where
+    // it is not a redistribution at all.
+    //
+    // **A round with no coherent juror pays nobody.** KlerosCore sends its penalties and its fee
+    // to the governor, out of the court. Dispute 282 is the first: all five votes were for 2,
+    // only the appeal side for 0 was funded, so the ruling became 0 and every draw was wrong.
+    // Its 935 PNK left the court, and until this was per dispute the court's net read
+    // -935 PNK, which is what the old court-wide sum caught in November 2026.
     expect(result.data.rewards.read).toBe(true);
     expect(result.data.rewards.paidDraws).toBeGreaterThan(0);
-    expect(net > -1_000_000n && net < 1_000_000n).toBe(true);
+
+    let balanced = 0;
+    for (const row of result.data.rows) {
+      // A juror outside the roster has no cell, so its payout is not on this row to sum.
+      if (row.offRosterDraws > 0) continue;
+      const draws = row.cells.filter((cell): cell is Draw => cell !== null && cell.reward !== null);
+      if (draws.length === 0) continue;
+
+      const net = draws.reduce((total, draw) => total + (draw.reward?.pnkWei ?? 0n), 0n);
+      // Read off every cell and not only the paid ones: a coherent draw whose payout went
+      // missing must still make this a dispute that has to balance.
+      const anyonePaid = row.cells.some(
+        (cell) => cell?.state.kind === "coherent" || cell?.state.kind === "tied",
+      );
+
+      if (anyonePaid) {
+        expect(net > -1_000_000n && net < 1_000_000n, `dispute ${row.dispute.id}: ${net}`).toBe(
+          true,
+        );
+        balanced += 1;
+      } else {
+        // The forfeit: nobody gained anything, in PNK or ETH, and something was taken.
+        for (const draw of draws) {
+          expect(draw.reward?.pnkWei ?? 0n, `dispute ${row.dispute.id}`).toBeLessThanOrEqual(0n);
+          expect(draw.reward?.ethWei, `dispute ${row.dispute.id}`).toBe(0n);
+        }
+      }
+    }
+
+    expect(balanced).toBeGreaterThan(0);
   }, 30_000);
 });
