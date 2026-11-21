@@ -651,9 +651,9 @@ export function failed<T>(data: T | null = null): ChainRead<T> {
  * Dispute 156's record on Arbitrum, captured on 2026-11-20 from the block its panel was drawn in
  * to the block its execution period opened in: four period openings and four commitments.
  *
- * Every opening was sent by the same account off the roster. That address is replaced in the
- * fixture by `OFF_ROSTER_ADDRESS`: it is whoever called `passPeriod`, and an account off the
- * roster is not one this repository holds, in a fixture any more than on the page.
+ * Every opening was sent by the Kleros bot (`KLEROS_BOT`), the court's own keeper, which the page
+ * names. A test that needs an opener off the roster swaps in `OFF_ROSTER_ADDRESS`, because an
+ * unknown account is not one this repository holds, in a fixture any more than on the page.
  */
 export const DISPUTE_156_CHAIN = disputeChainFixture as RawDisputeChain;
 

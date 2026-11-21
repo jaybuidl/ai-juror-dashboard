@@ -30,11 +30,13 @@ ADR-0011 removed. (Each period's "closed in" beside its window is how long the p
 before.) UTC rather than the reader's zone, so that a cited page reads the same for everyone. The
 day is printed on the creation and on any moment that falls on a later UTC day.
 
-**Who opened a period is named only when it is an agent juror on the roster.** `passPeriod` is
-permissionless and anyone may call it. The account that sent the transaction is matched against
-the roster by address. A match is named, as the panel names it. Anyone else is "an off-roster
-account", and the address never reaches the page. This is the same rule as an off-roster draw: a
-kind or a count, never who.
+**Who opened a period is named only when it is an agent juror on the roster, or the Kleros bot.**
+`passPeriod` is permissionless and anyone may call it. The account that sent the transaction is
+matched against the roster by address, and a match is named as the panel names it. The court's own
+keeper, which advances a period once its time is up, is "the Kleros bot" (the maintainer's call,
+2026-11-20: it is Kleros's account, and naming it shortens the routine case). Anyone else is "an
+off-roster account", and the address never reaches the page. This is the same rule as an
+off-roster draw: a kind or a count, never who.
 
 **The agent juror page shows each dispute's time to appeal where the two latencies were.** Its
 table of draws had kept each draw's commit and reveal latency as the per-draw record ADR-0011

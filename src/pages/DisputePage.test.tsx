@@ -751,22 +751,35 @@ describe("the timeline (ADR-0012)", () => {
 
     expect(laneLines("Evidence")).toEqual(["21 Aug 06:56:27 Dispute created"]);
     expect(screen.getByText("All times UTC")).toBeInTheDocument();
-    expect(laneLines("Commit period")[0]).toBe("07:42:00 Opened by an off-roster account");
-    expect(laneLines("Vote period")[0]).toBe("08:02:35 Opened by an off-roster account");
+    expect(laneLines("Commit period")[0]).toBe("07:42:00 Opened by the Kleros bot");
+    expect(laneLines("Vote period")[0]).toBe("08:02:35 Opened by the Kleros bot");
     expect(laneLines("Appeal period")).toEqual([
-      "08:12:55 Opened by an off-roster account",
+      "08:12:55 Opened by the Kleros bot",
       // The appeal ran into the next day, which is the one place a day is printed again.
-      "22 Aug 02:18:45 Closed by an off-roster account",
+      "22 Aug 02:18:45 Closed by the Kleros bot",
     ]);
   });
 
-  it("never prints the address of an account off the roster", () => {
-    // Whoever called `passPeriod` is not an agent juror this dashboard follows, and an address
-    // is the personal data it does not hold. The fixture's sender is the synthetic one.
-    const { container } = renderDispute();
+  it("calls any other account off the roster an off-roster account, never by its address", () => {
+    // Whoever called `passPeriod` is not an agent juror this dashboard follows, nor the court's
+    // own bot, and an address is the personal data it does not hold.
+    const unknown = "0x1111111111111111111111111111111111111111";
+    const { container } = renderDispute({
+      chain: answered({
+        ...DISPUTE_156_CHAIN,
+        openings: DISPUTE_156_CHAIN.openings.map((opening) => ({ ...opening, from: unknown })),
+      }),
+    });
 
+    expect(laneLines("Commit period")[0]).toBe("07:42:00 Opened by an off-roster account");
     expect(container.textContent).not.toMatch(/0x1111/i);
     expect(container.innerHTML).not.toMatch(/0x1111/i);
+  });
+
+  it("names the Kleros bot without printing its address either", () => {
+    const { container } = renderDispute();
+
+    expect(container.innerHTML).not.toMatch(/0x9eb6/i);
   });
 
   it("names a rostered agent juror that opened a period, by the name the panel uses", () => {

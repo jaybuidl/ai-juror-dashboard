@@ -16,6 +16,7 @@ import {
 import {
   buildDisputeTimeline,
   type DisputeTimeline,
+  KLEROS_BOT,
   progressOf,
   type TimelineEntry,
 } from "./dispute-timeline";
@@ -75,6 +76,9 @@ function line(entry: TimelineEntry): string {
 
 const BLAISE = "0x57eb05d4dfFAc43A0C52B42C47a4E7d1838725Ea";
 
+/** An account that is neither an agent juror nor the Kleros bot. Synthetic: see `test/court.tsx`. */
+const OFF_ROSTER = "0x1111111111111111111111111111111111111111";
+
 /**
  * Dispute 156 as if appealed into round `index`, with that round's commit period open and its
  * panel the same agent jurors. No dispute in court 34 has been appealed; this is the shape the
@@ -107,22 +111,22 @@ describe("buildDisputeTimeline", () => {
 
     expect(lanes.evidence.map(line)).toEqual(["1787295387 created"]);
     expect(lanes.commit.map(line)).toEqual([
-      "1787298120 opened by off-roster",
+      "1787298120 opened by kleros-bot",
       "1787298223 Daemonhill committed",
       "1787298252 007 committed",
       "1787298443 Blaise committed",
       "1787298857 Columbo committed",
     ]);
     expect(lanes.vote.map(line)).toEqual([
-      "1787299355 opened by off-roster",
+      "1787299355 opened by kleros-bot",
       "1787299386 Blaise revealed",
       "1787299395 Daemonhill revealed",
       "1787299438 007 revealed",
       "1787299472 Columbo revealed",
     ]);
     expect(lanes.appeal.map(line)).toEqual([
-      "1787299975 opened by off-roster",
-      "1787365125 closed by off-roster",
+      "1787299975 opened by kleros-bot",
+      "1787365125 closed by kleros-bot",
     ]);
   });
 
@@ -149,8 +153,30 @@ describe("buildDisputeTimeline", () => {
     });
   });
 
-  it("calls an opener off the roster an off-roster account, and carries no address for it", () => {
+  it("names the Kleros bot, the court's own keeper, and carries no address for it", () => {
     const opened = timeline().lanes.commit[0];
+
+    expect(opened).toEqual({ kind: "opened", at: 1787298120, by: { kind: "kleros-bot" } });
+  });
+
+  it("recognises the Kleros bot whatever case the chain sends its address in", () => {
+    const shouted = {
+      ...chain156,
+      openings: chain156.openings.map((opening) => ({
+        ...opening,
+        from: `0x${KLEROS_BOT.slice(2).toUpperCase()}`,
+      })),
+    };
+
+    expect(timeline(shouted).lanes.commit[0]).toMatchObject({ by: { kind: "kleros-bot" } });
+  });
+
+  it("calls any other opener off the roster an off-roster account, and carries no address", () => {
+    const unknown = {
+      ...chain156,
+      openings: chain156.openings.map((opening) => ({ ...opening, from: OFF_ROSTER })),
+    };
+    const opened = timeline(unknown).lanes.commit[0];
 
     expect(opened).toEqual({ kind: "opened", at: 1787298120, by: { kind: "off-roster" } });
   });
@@ -166,7 +192,7 @@ describe("buildDisputeTimeline", () => {
     };
 
     expect(timeline(chain).lanes.commit.map(line)).toEqual([
-      `${opened} opened by off-roster`,
+      `${opened} opened by kleros-bot`,
       `${opened} 007 committed`,
       `${opened} Blaise committed`,
       `${opened} Columbo committed`,
@@ -217,7 +243,7 @@ describe("buildDisputeTimeline", () => {
     const later = { period: "1", from: BLAISE, blockNumber: "497100000", logIndex: "3" };
     const { lanes } = timeline({ ...chain156, openings: [...chain156.openings, later] });
 
-    expect(lanes.commit[0]).toMatchObject({ by: { kind: "off-roster" } });
+    expect(lanes.commit[0]).toMatchObject({ by: { kind: "kleros-bot" } });
   });
 
   it("orders two openings in one block by log index", () => {
@@ -274,7 +300,7 @@ describe("buildDisputeTimeline", () => {
     const { lanes, missing } = timeline(twoRounds, true, reading(executed));
 
     expect(missing.openings).toBe(0);
-    expect(lanes.appeal.at(-1)).toMatchObject({ kind: "closed", by: { kind: "off-roster" } });
+    expect(lanes.appeal.at(-1)).toMatchObject({ kind: "closed", by: { kind: "kleros-bot" } });
   });
 
   it("never names an earlier round's opener for a round whose opening has not been read", () => {

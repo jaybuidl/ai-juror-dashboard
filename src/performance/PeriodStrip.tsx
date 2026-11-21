@@ -219,6 +219,10 @@ function By({ by, nameOf }: { by: Opener; nameOf: (agentJuror: AgentJuror) => st
   switch (by.kind) {
     case "agent-juror":
       return <Name>{nameOf(by.agentJuror)}</Name>;
+    case "kleros-bot":
+      // The routine case, so in the quiet ink: a period whose time was up, advanced by the court's
+      // own keeper. Named, unlike any other account off the roster, because it is Kleros's.
+      return <OffRoster>the Kleros bot</OffRoster>;
     case "off-roster":
       // A kind and never an address: whoever called is not an agent juror this dashboard follows,
       // and naming an account off the roster is the personal data it does not hold.

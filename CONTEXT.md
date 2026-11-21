@@ -213,12 +213,14 @@ _Avoid_: phase, stage
 
 **Opener**:
 The account that sent the transaction which opened a period, by calling `passPeriod`. Anyone may
-call it, which is why a latency can read 0s. Named on the **Timeline** only when it is an agent
-juror on the roster, matched by address. Anyone else is an **off-roster account**, and like an
-off-roster draw it is a kind and never an identity: the address never reaches the page (ADR-0012).
-The evidence period of a dispute's first round has no opener; it opens with the dispute.
-_Avoid_: caller (ambiguous with the arbitrable that created the dispute), keeper, bot (both guesses
-about who runs an account this dashboard does not identify), naming the address
+call it, which is why a latency can read 0s. Named on the **Timeline** when it is an agent juror on
+the roster, matched by address, or the **Kleros bot**: the court's own keeper
+(`0x9EB6…6Bd5`, `KLEROS_BOT`), which advances a period once its time is up and is the routine
+opener. Anyone else is an **off-roster account**, and like an off-roster draw it is a kind and never
+an identity: the address never reaches the page (ADR-0012). The evidence period of a dispute's first
+round has no opener; it opens with the dispute.
+_Avoid_: caller (ambiguous with the arbitrable that created the dispute), "keeper" or "bot" for any
+account but `KLEROS_BOT` (a guess about who runs it), naming an address
 
 **Timeline**:
 The dispute page's period strip, read as the order things happened in: in each period, when it

@@ -71,6 +71,12 @@ this file is the full account.
   first evidence period has no `NewPeriod`: it opens with `DisputeCreation`. On disputes 156 and 160
   every opening was sent by one of two accounts off the roster; on 366 Intendant opened the commit
   and vote periods and committed in the same block it opened the first.
+- **The Kleros bot is `0x9EB6a13D66fb9B8De447E44d8CEbda05d0446Bd5`** — Kleros's own keeper for the
+  court, which calls `passPeriod` once a period's time is up (identified by the maintainer,
+  2026-11-20). It sent all four of dispute 156's openings, 160's appeal and execution, and 366's
+  appeal. The timeline names it "the Kleros bot" (`KLEROS_BOT` in `dispute-timeline.ts`); it is
+  infrastructure, not a person, so naming it breaks no privacy rule. Dispute 160's commit and vote
+  were opened by `0x9e51…d30a`, which nobody has identified, so it stays "an off-roster account".
 - **The core subgraph does carry block numbers, on `Draw.blockNumber` and
   `Dispute.lastPeriodChangeBlockNumber`.** That is what bounds one dispute's chain read without a
   guess: from its first draw (`passPeriod` cannot leave evidence until every vote ID is drawn) to

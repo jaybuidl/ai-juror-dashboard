@@ -211,7 +211,8 @@ other glyphs, so if they read too small in a browser, raise them in both places 
 Stage 3 of issue #8, 2026-11-20. `Dispute.dc.html:87-96` now draws the period strip as a timeline:
 each period keeps its window and how long it ran, and below a hairline lists its moments in the
 order they happened, a time column and a line of words. When the period opened and who opened it
-(an agent juror by name in heading ink, anyone else as "an off-roster account" in meta ink), each
+(an agent juror by name in heading ink; the court's own keeper as "the Kleros bot" and anyone else
+as "an off-roster account", both in meta ink), each
 commitment under `◐` and each reveal under `●`, in the legend's own glyphs at meta ink. Times are
 UTC clock readings and nothing between them is a duration. The day is printed on the dispute's
 creation and on any moment that falls on a later day, and "All times UTC" sits under the evidence

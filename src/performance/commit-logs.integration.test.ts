@@ -4,6 +4,7 @@ import { createArbitrumClient, DEFAULT_ARBITRUM_RPC_URL } from "./arbitrum";
 import { createBlockTimes } from "./block-times";
 import disputeChainFixture from "./dispute-156-chain.fixture.json" with { type: "json" };
 import { fetchDisputeChain, type RawDisputeChain } from "./dispute-chain";
+import { KLEROS_BOT } from "./dispute-timeline";
 
 /**
  * Live against Arbitrum One, held out of `yarn test` — run with `yarn test:integration`.
@@ -40,22 +41,22 @@ describe("one dispute's record, as its timeline reads it", () => {
     }
   });
 
-  it("still reads what the captured fixture holds, sender aside", () => {
-    // The fixture replaces the off-roster sender with a synthetic address (`test/court.tsx`),
-    // so that is the one field not compared. Everything else of a finished dispute is fixed.
+  it("still reads exactly what the captured fixture holds", () => {
+    // A finished dispute's record is fixed, sender included.
     const fixture = disputeChainFixture as RawDisputeChain;
-    const withoutSender = (record: RawDisputeChain) =>
-      record.openings.map(({ from: _from, ...rest }) => rest);
+    const lowered = (record: RawDisputeChain) =>
+      record.openings.map((opening) => ({ ...opening, from: opening.from.toLowerCase() }));
 
-    expect(withoutSender(chain)).toEqual(withoutSender(fixture));
+    expect(lowered(chain)).toEqual(lowered(fixture));
     expect(chain.commits).toEqual(fixture.commits);
   });
 
-  it("names no rostered agent juror as an opener of dispute 156", () => {
-    // Every opening was sent by one account off the roster. If one ever reads as an agent
-    // juror, the join or the read has changed, not the history.
+  it("finds every opening of dispute 156 sent by the Kleros bot, and none by an agent juror", () => {
+    // If one ever reads as an agent juror, or as anyone else, the join or the read has changed,
+    // not the history.
     const roster = new Set(ROSTER.map((agentJuror) => agentJuror.address.toLowerCase()));
     for (const opening of chain.openings) {
+      expect(opening.from.toLowerCase()).toBe(KLEROS_BOT.toLowerCase());
       expect(roster.has(opening.from.toLowerCase())).toBe(false);
     }
   });

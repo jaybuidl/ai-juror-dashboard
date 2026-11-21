@@ -20,15 +20,28 @@ import type { MatrixRow } from "./performance";
  */
 
 /**
+ * The Kleros bot: the court's own keeper, which calls `passPeriod` when a period's time is up and
+ * nobody else has. Identified by the maintainer on 2026-11-20 as Kleros's account, so it is named,
+ * as infrastructure and not as a person. Read off chain that day, it opened all four of dispute
+ * 156's periods, dispute 160's appeal and execution, and dispute 366's appeal; dispute 160's
+ * commit and vote were opened by a second account off the roster, which stays unnamed
+ * (`docs/knowledge/chain-and-subgraph.md`).
+ */
+export const KLEROS_BOT = "0x9EB6a13D66fb9B8De447E44d8CEbda05d0446Bd5";
+
+/**
  * Who opened a period, as far as this page may say.
  *
  * An agent juror on the roster is named, because its own account is the one public identity it
- * has here. Anyone else is an account off the roster and is never named: `passPeriod` is
- * permissionless, the caller may be anyone, and an address is the personal data this dashboard
- * does not hold. The same rule as an off-roster draw — a count, or here a kind, never who.
+ * has here, and so is the Kleros bot, which is the court's own. Anyone else is an account off the
+ * roster and is never named: `passPeriod` is permissionless, the caller may be anyone, and an
+ * address is the personal data this dashboard does not hold. The same rule as an off-roster draw —
+ * a count, or here a kind, never who.
  */
 export type Opener =
   | { kind: "agent-juror"; agentJuror: AgentJuror }
+  /** `KLEROS_BOT`, the routine case: a period opened because its time was up. */
+  | { kind: "kleros-bot" }
   | { kind: "off-roster" }
   /** No chain read answers for this dispute as it stands yet. Nothing is known. */
   | { kind: "pending" }
@@ -121,7 +134,8 @@ function openerOf(
 
   const from = opening.from.toLowerCase();
   const agentJuror = roster.find((candidate) => candidate.address.toLowerCase() === from);
-  return agentJuror === undefined ? { kind: "off-roster" } : { kind: "agent-juror", agentJuror };
+  if (agentJuror !== undefined) return { kind: "agent-juror", agentJuror };
+  return from === KLEROS_BOT.toLowerCase() ? { kind: "kleros-bot" } : { kind: "off-roster" };
 }
 
 /** Where an entry sorts: its moment, or after every dated entry where it has none. */
