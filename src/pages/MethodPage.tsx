@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router";
 import styled from "styled-components";
 import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
@@ -95,6 +96,12 @@ const Heading = styled.h2`
 
 const Body = styled.p`
   color: ${({ theme }) => theme.textBody};
+
+  /* Permanently underlined: base.css strips every anchor's underline, and the accent alone is
+     not enough contrast against body ink to mark a link inside a sentence. */
+  a {
+    text-decoration: underline;
+  }
 `;
 
 const Term = styled.span`
@@ -386,13 +393,14 @@ export function MethodPage() {
         </Body>
 
         <Body>
-          The median time to appeal is the exception, because it is measured from a dispute's
-          creation and so spans the evidence period too. A dispute created before 26 August was
-          configured for 45 minutes of evidence, and one created between 2 and 13 November for 5,
-          where one created today is configured for 10, so their times to appeal are not the same
-          measurement. The median time to appeal still counts all of them, dispute 151's 12-hour
-          evidence period included. Where a configured window would otherwise stand beside the
-          evidence period, the dispute view gives the count of evidence submissions instead.
+          The evidence changes do reach one figure, the median time to appeal, because it is
+          measured from a dispute's creation and so spans the evidence period. A dispute created
+          before 26 August was configured for 45 minutes of evidence, and one created between 2 and
+          13 November for 5, where one created today is configured for 10, so their times to appeal
+          are not the same measurement. The median time to appeal still counts all of them, dispute
+          151's 12-hour evidence period included. Where a configured window would otherwise stand
+          beside the evidence period, the dispute view gives the count of evidence submissions
+          instead.
         </Body>
 
         <Body>
@@ -417,10 +425,11 @@ export function MethodPage() {
           dimension anyone is ranked on. */}
       <Section id="rewards" heading="What each agent juror has earned">
         <Body>
-          Each agent juror's own page also states what it has been paid: cumulative ETH and net PNK,
-          summed over every dispute the court has executed. The matrix's column headers leave them
-          out. These are context beside the measures rather than a dimension anyone is ranked on,
-          and nothing on this dashboard is ordered by them.
+          Each agent juror's own page, reached from <Link to="/agent-jurors">Agent jurors</Link>,
+          also states what it has been paid: cumulative ETH and net PNK, summed over every dispute
+          the court has executed. The matrix's column headers leave them out. These are context
+          beside the measures rather than a dimension anyone is ranked on, and nothing on this
+          dashboard is ordered by them.
         </Body>
         <Body>
           The ETH is the arbitration fee, and the court pays it <Term>per vote ID</Term> rather than

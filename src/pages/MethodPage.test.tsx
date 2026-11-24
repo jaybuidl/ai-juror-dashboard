@@ -90,7 +90,7 @@ describe("the method page", () => {
     expect(section).toHaveTextContent(/From 13 Nov/i);
   });
 
-  it("says every change after the second moved the evidence period and no commit or vote window", () => {
+  it("says every change after the second moved the evidence period alone", () => {
     // Ticket 19, then #39. Since ADR-0010 no commit or reveal time is measured against a window,
     // so the section no longer explains how dispute 152's were: what is left is the history, and
     // the one dispute whose timeline shows a different maximum.
@@ -115,7 +115,7 @@ describe("the method page", () => {
     const section = screen.getByRole("region", { name: /what each agent juror has earned/i });
 
     expect(section).toHaveTextContent(
-      /Each agent juror's own page also states what it has been paid/i,
+      /Each agent juror's own page, reached from Agent jurors, also states what it has been paid/i,
     );
     expect(section).not.toHaveTextContent(/Each column header also states/i);
   });
@@ -131,7 +131,9 @@ describe("the method page", () => {
     expect(section).not.toHaveTextContent(
       /nothing on this dashboard is measured from the evidence/i,
     );
-    expect(section).toHaveTextContent(/median time to appeal is the exception/i);
+    expect(section).toHaveTextContent(
+      /The evidence changes do reach one figure, the median time to appeal/i,
+    );
     expect(section).toHaveTextContent(
       /configured for 45 minutes of evidence, and one created between 2 and 13 November for 5, where one created today is configured for 10/i,
     );

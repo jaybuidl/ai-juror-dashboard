@@ -275,9 +275,9 @@ export function windowsFor(
  * to 10 and left everything else alone, so its second and third configurations differ and this
  * returns true across them (as it does across the fourth and fifth, which did the same in
  * November 2026) — which is what keeps dispute 152 from `underEarlierWindows` while
- * being older than a change the court has since made. `MethodPage`'s window section owes a reader that sentence,
- * because no marker on the page says it (the row marker that once could was removed on
- * 2026-09-24).
+ * being older than a change the court has since made. `MethodPage`'s window section no longer
+ * says so: since ADR-0010 no per-draw time is measured against a window, and #39 cut the
+ * paragraph that explained dispute 152's.
  */
 export function sameMeasuredWindows(a: PeriodWindows, b: PeriodWindows): boolean {
   return a.commitSeconds === b.commitSeconds && a.voteSeconds === b.voteSeconds;
