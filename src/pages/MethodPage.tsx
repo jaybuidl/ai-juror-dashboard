@@ -247,10 +247,11 @@ export function MethodPage() {
           chain, never from your browser's clock. The appeal period also lists what each side
           raised, the fee it needed where it fell short, and who funded it. A funder that is not an
           agent juror, the Kleros bot, a party or the dispute's creator is named by its primary ENS
-          name on Ethereum, or by its short address linked to Arbiscan where it has none. A name is
-          not used if it is not in ENS's normal form, or if it could pass for an agent juror's, for
-          Kleros's or for an address. Each agent juror's page lists, for every dispute it was drawn
-          in, that dispute's time to appeal, which is the same for the whole panel.
+          name on Ethereum where one can be read, and otherwise by its short address, linked to
+          Arbiscan. A name is not used if it is not in ENS's normal form, or if it could pass for an
+          agent juror's, for Kleros's or for an address. Each agent juror's page lists, for every
+          dispute it was drawn in, that dispute's time to appeal, which is the same for the whole
+          panel.
         </Body>
         <Body>
           Neither says how fast an agent juror judges a case, so neither is averaged, ranked or
@@ -287,9 +288,9 @@ export function MethodPage() {
           The court's time to appeal is plotted on the matrix page with a violet band marking where
           an ordinary Kleros court sits on the same time axis. The band is read live: its boundary
           is the median <Term>time to ruling</Term> of court {REFERENCE_COURT_ID} on the same core
-          subgraph, over every single-round dispute that court has ruled: the seconds from a
-          dispute's creation to the moment its execution period opened, when the ruling became
-          final.
+          subgraph, over every single-round dispute that court has ruled. Time to ruling is the
+          seconds from a dispute's creation to the moment its execution period opened, when the
+          ruling became final.
         </Body>
         <Body>
           Court {REFERENCE_COURT_ID} is the reference because it has ruled far more disputes than
@@ -429,10 +430,10 @@ export function MethodPage() {
           thirds of that dispute's pot, so a payout is often a fraction of the fee. The PNK is
           redistributed, not issued: it is taken from the jurors who diverged or failed to reveal
           and given to those who voted with the ruling, so a negative figure is a real loss. In a
-          tie, every juror who voted is paid as coherent. The PNK figure always shows its sign as a
-          plus or minus. Where nobody voted with the ruling, nobody is paid: the court sends that
-          dispute's PNK and fee out of the court, so the PNK does not net to zero across it. Dispute
-          282 is one.
+          tie, every juror who voted is paid as coherent. A PNK figure other than zero always shows
+          its sign as a plus or minus. Where nobody voted with the ruling, nobody is paid: the court
+          sends that dispute's PNK and fee out of the court, so the PNK does not net to zero across
+          it. Dispute 282 is one.
         </Body>
         <Body>
           Both figures lag the rest of this page. A payout is written when the court{" "}
@@ -495,12 +496,14 @@ export function MethodPage() {
           resolver template subgraph for what each dispute is about; an Arbitrum RPC for the
           commitment logs, the period-opening logs and the transactions that sent them, and the
           court's own parameter history; and Ethereum mainnet for the agent jurors' ENS names and
-          avatars. There is no backend and no database. Your browser keeps what it last read for up
-          to a day so the page opens faster, and reads every source again each time it loads.
+          avatars. There is no backend and no database. Your browser keeps the court's disputes,
+          draws and payouts for up to a day so the page opens faster, and reads them again on every
+          load unless its copy is less than a minute old.
         </Body>
         <Body>
           This dashboard is read-only, and always will be. It has no wallet, holds no key, and can
-          neither vote nor stake.
+          neither vote nor stake. The browser policy it ships under lets it read only from the
+          endpoints it needs.
         </Body>
       </Section>
     </View>
