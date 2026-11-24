@@ -30,11 +30,12 @@ import { REFERENCE_COURT_ID } from "../performance/reference";
  * nightly and fails if the court is ever reconfigured again.
  *
  * **That guard has fired twice: rewriting this section was ticket 19, then #30.** Court 34 is a live
- * demo instrument and its periods get retimed to suit a demo, so expect it again. Two things
- * to hold on to when it does. The prose here counts *configurations*, which is not the count
- * of changes that moved a commit or vote window — the last three moved the evidence period alone.
- * And the section has to keep saying so: a reader who knows the court was reconfigured on 26
- * August is owed the reason dispute 152's per-draw times were taken against today's windows.
+ * demo instrument and its periods get retimed to suit a demo, so expect it again. The prose here
+ * counts *configurations*, which is not the count of changes that moved a commit or vote window —
+ * the last three moved the evidence period alone. Since ADR-0010 no per-draw time is measured
+ * against a window, so the configurations reach the page in two places only: each period's
+ * "(max …)" on a dispute's timeline, and the headline below. #39 cut the paragraphs that justified
+ * a commit and reveal comparison nothing makes any more.
  * **It does move one figure**: the headline median time to appeal runs from a dispute's
  * creation, so the evidence window is inside it, and nothing on the matrix marks the disputes
  * created before 26 August. The section says both halves, and it is the only place either is said.
@@ -379,15 +380,9 @@ export function MethodPage() {
 
         <Body>
           Dispute 151 is the only dispute that ran under the first configuration: the change was
-          mined 48 minutes before dispute 152 was created. Its commit and vote periods ran under
-          windows of 8 hours rather than 45 and 30 minutes, so its draws' commit and reveal times
-          cannot be set beside any later dispute's, and nothing here sets them side by side.
-        </Body>
-
-        <Body>
-          None of the three reconfigurations since moved a commit or vote window. So dispute 152 ran
-          under a configuration the court has since replaced, and still its draws' commit and reveal
-          times were taken against the windows the court holds now.
+          mined 48 minutes before dispute 152 was created. Its timeline gives 8 hours as the most
+          its commit and vote periods were allowed, where every later dispute's gives 45 and 30
+          minutes.
         </Body>
 
         <Body>
@@ -422,10 +417,10 @@ export function MethodPage() {
           dimension anyone is ranked on. */}
       <Section id="rewards" heading="What each agent juror has earned">
         <Body>
-          Each column header also states what that agent juror has been paid: cumulative ETH and net
-          PNK, summed over every dispute the court has executed. These are context beside the
-          measures rather than a dimension anyone is ranked on, and nothing on this dashboard is
-          ordered by them.
+          Each agent juror's own page also states what it has been paid: cumulative ETH and net PNK,
+          summed over every dispute the court has executed. The matrix's column headers leave them
+          out. These are context beside the measures rather than a dimension anyone is ranked on,
+          and nothing on this dashboard is ordered by them.
         </Body>
         <Body>
           The ETH is the arbitration fee, and the court pays it <Term>per vote ID</Term> rather than
