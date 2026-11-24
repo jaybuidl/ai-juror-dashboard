@@ -221,17 +221,15 @@ describe("the method page", () => {
 
   it("says the browser keeps a copy for a day and when it reads again", () => {
     // #41. The page said "no stored copy", but the read payloads persist in the browser for
-    // PERSISTED_MAX_AGE_MS and every query refetches on mount (persistence.ts).
+    // PERSISTED_MAX_AGE_MS and every query refetches on mount once its one-minute staleTime has passed.
     expect(PERSISTED_MAX_AGE_MS).toBe(24 * 60 * 60 * 1000);
     renderAt("/method");
 
     const section = screen.getByRole("region", { name: /sources/i });
 
+    expect(section).toHaveTextContent(/keeps most of what it has read for up to a day/i);
     expect(section).toHaveTextContent(
-      /keeps the court's disputes, draws and payouts for up to a day/i,
-    );
-    expect(section).toHaveTextContent(
-      /reads them again on every load unless its copy is less than a minute old/i,
+      /reads it again on every load unless its copy is less than a minute old/i,
     );
     expect(section).not.toHaveTextContent(/no stored copy/i);
   });

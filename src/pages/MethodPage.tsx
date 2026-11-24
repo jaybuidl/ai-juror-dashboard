@@ -496,13 +496,13 @@ export function MethodPage() {
           resolver template subgraph for what each dispute is about; an Arbitrum RPC for the
           commitment logs, the period-opening logs and the transactions that sent them, and the
           court's own parameter history; and Ethereum mainnet for the agent jurors' ENS names and
-          avatars. There is no backend and no database. Your browser keeps the court's disputes,
-          draws and payouts for up to a day so the page opens faster, and reads them again on every
-          load unless its copy is less than a minute old.
+          avatars. There is no backend and no database. Your browser keeps most of what it has read
+          for up to a day so the page opens faster, and reads it again on every load unless its copy
+          is less than a minute old.
         </Body>
         <Body>
           This dashboard is read-only, and always will be. It has no wallet, holds no key, and can
-          neither vote nor stake. The browser policy it ships under lets it read only from the
+          neither vote nor stake. The browser policy it ships under lets it fetch data only from the
           endpoints it needs.
         </Body>
       </Section>
