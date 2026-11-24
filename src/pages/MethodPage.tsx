@@ -211,14 +211,14 @@ export function MethodPage() {
       <Section id="unit" heading="The unit is the draw">
         <Body>
           A <Term>draw</Term> is one agent juror's involvement in one dispute, however many vote IDs
-          it holds. That is the unit everything here is counted and measured in. An agent juror
-          reasons once per dispute and acts once per period, so a draw holding three vote IDs is one
-          data point and not three — across the first thirteen disputes, 61 vote IDs were 44 draws.
+          it holds, and everything here is counted and measured in draws. An agent juror reasons
+          once per dispute and acts once per period, so a draw holding three vote IDs is one data
+          point. Across the first thirteen disputes, 61 vote IDs made 44 draws.
         </Body>
         <Body>
           A <Term>panel</Term> is everyone the court drew for one dispute, counted the same way. It
-          is a fact about the court rather than about this dashboard's roster: a juror outside the
-          roster gets no column in the matrix and is still counted in the panel.
+          includes jurors outside the roster: they get no column in the matrix, but they count in
+          the panel.
         </Body>
       </Section>
 
@@ -229,13 +229,12 @@ export function MethodPage() {
         <Body>
           <Term>Time to appeal</Term> is the figure at the top of the matrix page, and it is the one
           figure here that measures speed. It is the seconds from the moment a dispute was created
-          to the moment its first round's appeal period opened — the point at which every vote in
-          that round was in and the parties could see the result. It is measured per dispute rather
-          than per draw. It spans the evidence, commit and vote periods, so it includes the time the
-          court spent drawing a panel as well as the time the panel took to act. Only the first
-          round counts, whatever rounds follow. A dispute that has not reached its appeal period yet
-          has no time to appeal; it is not plotted, and the plot says how many such disputes there
-          are.
+          to the moment its first round's appeal period opened, when every vote in that round was in
+          and the parties could see the result. It is measured per dispute rather than per draw. It
+          spans the evidence, commit and vote periods, so it includes the time the court spent
+          drawing a panel as well as the time the panel took to act. Only the first round counts,
+          whatever rounds follow. A dispute that has not reached its appeal period yet has no time
+          to appeal; it is not plotted, and the plot says how many such disputes there are.
         </Body>
         <Body>
           Commit and reveal latency are not shown anywhere on this dashboard.{" "}
@@ -244,39 +243,37 @@ export function MethodPage() {
           from the moment the vote period opened to the moment its reveal was recorded. Each
           dispute's page shows the moments themselves instead, on its timeline: when each period
           opened and who opened it, and when each agent juror on the panel committed and revealed,
-          as clock times in UTC. None of them is counted from another. Its appeal period also lists
-          what each side of the appeal raised, against the fee it needed where it fell short, and
-          who funded it. A funder that is not an agent juror, the Kleros bot, a party or the
-          dispute's creator is shown by its primary ENS name on Ethereum where one can be read
-          there, unless the name is not in ENS's normal form or could pass for an agent juror's, for
-          Kleros's or for an address, and otherwise by its short address, linked to Arbiscan. Every
-          moment comes from the chain, never from your browser's clock. Each agent juror's page
-          lists, for every dispute it was drawn in, that dispute's time to appeal, which is the same
-          for the whole panel.
+          as clock times in UTC. None of them is counted from another, and all of them come from the
+          chain, never from your browser's clock. The appeal period also lists what each side
+          raised, the fee it needed where it fell short, and who funded it. A funder that is not an
+          agent juror, the Kleros bot, a party or the dispute's creator is named by its primary ENS
+          name on Ethereum, or by its short address linked to Arbiscan where it has none. A name is
+          not used if it is not in ENS's normal form, or if it could pass for an agent juror's, for
+          Kleros's or for an address. Each agent juror's page lists, for every dispute it was drawn
+          in, that dispute's time to appeal, which is the same for the whole panel.
         </Body>
         <Body>
           Neither says how fast an agent juror judges a case, so neither is averaged, ranked or
           plotted here, and no page sets one agent juror's beside another's. The evidence is public
           from the moment a dispute is created and the panel is drawn during the evidence period, so
           an agent juror can study a case before the commit period opens. A reveal involves no
-          judgment at all, because the vote was fixed at commit. And both count from the moment a
-          period opened, which is whenever any account told the court to advance it: an agent juror
-          that advances the period itself and reveals in the same block reads 0 seconds. The matrix
-          shows what a draw did, not when.
+          judgment, because the vote was fixed at commit. And both count from the moment a period
+          opened, which is whenever any account told the court to advance it: an agent juror that
+          advances the period itself and reveals in the same block reads 0 seconds. The matrix shows
+          what a draw did, not when.
         </Body>
         <Body>
-          The commit moment is the one no subgraph carries. The subgraph records only{" "}
-          <em>whether</em> a juror committed, so the moment comes from the <Term>CommitCast</Term>{" "}
-          logs the dispute kit emits on Arbitrum, dated by the block they were mined in. Who opened
-          a period is on Arbitrum too: it is the account that sent the transaction, which the
-          timeline names when it is an agent juror's own. A period shown simply as opened or closed
-          was passed by the Kleros bot, the court's own keeper that advances a period once its time
-          is up. Anyone else is an account off the roster, and is not identified. Beside each
-          period, the timeline gives how long it ran and, in brackets, the most the court allowed
-          it. A log scan can come back short without failing, so every draw the subgraph calls
-          committed, and every period it says opened, is checked against a matching log, and any
-          that are missing are counted on the page that shows them rather than shown as things that
-          never happened.
+          No subgraph carries the commit moment. The subgraph records only <em>whether</em> a juror
+          committed, so the moment comes from the <Term>CommitCast</Term> logs the dispute kit emits
+          on Arbitrum, dated by the block they were mined in. Who opened a period is on Arbitrum
+          too: it is the account that sent the transaction, which the timeline names when it is an
+          agent juror's own. A period shown simply as opened or closed was passed by the Kleros bot,
+          the court's keeper that advances a period once its time is up. Anyone else is an account
+          off the roster, and is not identified. Beside each period, the timeline gives how long it
+          ran and, in brackets, the most the court allowed. A log scan can come back short without
+          failing, so every draw the subgraph calls committed, and every period it says opened, is
+          checked against a matching log. Any that are missing are counted on the page that shows
+          them, not drawn as if they never happened.
         </Body>
       </Section>
 
@@ -288,25 +285,25 @@ export function MethodPage() {
       <Section id="comparison" heading="The comparison band is another court's time to ruling">
         <Body>
           The court's time to appeal is plotted on the matrix page with a violet band marking where
-          an ordinary Kleros court sits on the same time axis. It is read, not drawn by hand. Its
-          boundary is the median <Term>time to ruling</Term> of court {REFERENCE_COURT_ID} on the
-          same core subgraph, over every single-round dispute that court has ruled: the seconds from
-          a dispute's creation to the moment its execution period opened, when the ruling became
+          an ordinary Kleros court sits on the same time axis. The band is read live: its boundary
+          is the median <Term>time to ruling</Term> of court {REFERENCE_COURT_ID} on the same core
+          subgraph, over every single-round dispute that court has ruled: the seconds from a
+          dispute's creation to the moment its execution period opened, when the ruling became
           final.
         </Body>
         <Body>
-          Court {REFERENCE_COURT_ID} is the reference because it has ruled more disputes than any
-          other court on this deployment, by a wide margin. On 23 September 2026 the next two courts
-          by number of disputes took a median of about four and about six days, so it was not chosen
-          for being slow. It is one named court and not a pool of several. The courts are configured
-          differently, and a pooled figure would describe no court a reader could go and check.
+          Court {REFERENCE_COURT_ID} is the reference because it has ruled far more disputes than
+          any other court on this deployment. On 23 September 2026 the next two courts by number of
+          disputes took a median of about four and about six days, so it was not chosen for being
+          slow. It is one named court rather than a pool, because the courts are configured
+          differently and a pooled figure would describe no court a reader could check.
         </Body>
         <Body>
           Appealed disputes are left out, and so are disputes not yet ruled. Court 34's disputes are
           single-round, and an appeal adds at least one more round with its own vote and its own
-          appeal period. Folding appealed disputes in would move the band to the right and flatter
-          this experiment with a gap it did not earn. The band is labelled only as other Kleros
-          courts; this section is where the court and the reading are named.
+          appeal period. Including appealed disputes would move the band to the right and make court
+          34 look faster by comparison than it is. The band is labelled only as other Kleros courts;
+          this section is where the court is named.
         </Body>
         <Body>
           The marks and the band are not the same quantity: each mark is a time to appeal, which
@@ -314,23 +311,21 @@ export function MethodPage() {
           through the appeal period to the ruling.
         </Body>
         <Body>
-          A read of that court can come back short without failing. So the disputes returned are
+          A read of that court can come back short without failing, so the disputes returned are
           counted against the number the court itself says it holds, and a shortfall is reported as
-          those two numbers. Where the read is short, has failed, or is still out, no band is drawn
-          at all. The band's place on the plot says which, and a failure raises the banner wherever
-          the plot is drawn; a phone draws neither. The band is never drawn at a default, and no
-          figure is shown as a fraction of it: it is a position on an absolute time axis, like every
-          mark beside it.
+          those two numbers. Where the read is short, has failed or is still loading, no band is
+          drawn, and the band's place on the plot says which. A failure also raises the banner
+          wherever the plot is drawn; a phone draws neither. The band is never drawn at a default,
+          and no figure is shown as a fraction of it.
         </Body>
       </Section>
 
       <Section id="coherence" heading="Coherence is having voted for the final ruling">
         <Body>
-          A draw is <Term>coherent</Term> when the choice it revealed is the dispute's final ruling
-          — the winning choice the arbitrator reports, not the majority of a round. The distinction
-          is not academic: a dispute in its appeal period has every vote in and no ruling, and a
-          majority read off it would be a prediction. Those draws are shown as revealed and are
-          excluded from coherence.
+          A draw is <Term>coherent</Term> when the choice it revealed is the dispute's final ruling:
+          the winning choice the arbitrator reports, not the majority of a round. A dispute in its
+          appeal period has every vote in and no ruling yet, and a majority read off it would be a
+          prediction, so those draws are shown as revealed and left out of coherence.
         </Body>
         <Body>
           Refusing to arbitrate is a ruling. An agent juror that voted to refuse in a dispute the
@@ -349,9 +344,8 @@ export function MethodPage() {
       <Section id="window" heading="The window">
         <Body>
           Court {COURT_ID}'s period durations changed partway through this experiment, so the same
-          duration means different things either side of that change. This is why every duration on
-          this dashboard is absolute and never a percentage of the window it ran in: a fraction is
-          false the moment it is quoted away from the page.
+          duration means different things either side of a change. That is why every duration on
+          this dashboard is absolute, never a percentage of the window it ran in.
         </Body>
         <Body>
           The court has been configured five times. It was created on 11 August 2026 with a 12-hour
@@ -404,8 +398,8 @@ export function MethodPage() {
         </Body>
 
         <Body>
-          Which configuration applies is read from the court's own history — the{" "}
-          <Term>CourtCreated</Term> and <Term>CourtModified</Term> events on Arbitrum — and never
+          Which configuration applies is read from the court's own history, the{" "}
+          <Term>CourtCreated</Term> and <Term>CourtModified</Term> events on Arbitrum, and never
           from what the court is configured with today. It is resolved period by period rather than
           once per dispute, because the court reads its own durations at the moment it passes a
           period: a dispute created under one configuration and passed into its commit period under
@@ -413,10 +407,9 @@ export function MethodPage() {
         </Body>
 
         <Body>
-          A window appears on this dashboard only ever beside a duration, as two absolute figures,
-          and no duration is ever divided by one. A ratio is a fact about a relationship whose
-          second term changed midway through this dataset, and it cannot carry that caveat into a
-          screenshot.
+          A window appears on this dashboard only beside a duration, as two absolute figures, and no
+          duration is ever divided by one. A ratio quoted on its own cannot say which of the court's
+          windows it was taken against.
         </Body>
       </Section>
 
@@ -427,27 +420,24 @@ export function MethodPage() {
         <Body>
           Each agent juror's own page, reached from <Link to="/agent-jurors">Agent jurors</Link>,
           also states what it has been paid: cumulative ETH and net PNK, summed over every dispute
-          the court has executed. The matrix's column headers leave them out. These are context
-          beside the measures rather than a dimension anyone is ranked on, and nothing on this
-          dashboard is ordered by them.
+          the court has executed. The matrix's column headers leave them out. Nothing on this
+          dashboard is ranked or ordered by them.
         </Body>
         <Body>
           The ETH is the arbitration fee, and the court pays it <Term>per vote ID</Term> rather than
-          per draw — an agent juror holding two of a dispute's three coherent vote IDs earns two
-          thirds of that dispute's pot, so a payout is often a fraction of the fee rather than a
-          multiple of it. The PNK is a redistribution and not an issuance: it is taken from the
-          jurors who diverged or failed to reveal and handed to those who voted with the ruling, so
-          a negative figure is a real loss rather than a missing number. In a tie, every juror who
-          voted is paid as coherent. The PNK figure's sign is always a character in the value
-          itself. Where nobody voted with the ruling, nobody is paid: the court sends that dispute's
-          PNK and fee out of the court, so the PNK does not net to zero across it. Dispute 282 is
-          one.
+          per draw: an agent juror holding two of a dispute's three coherent vote IDs earns two
+          thirds of that dispute's pot, so a payout is often a fraction of the fee. The PNK is
+          redistributed, not issued: it is taken from the jurors who diverged or failed to reveal
+          and given to those who voted with the ruling, so a negative figure is a real loss. In a
+          tie, every juror who voted is paid as coherent. The PNK figure always shows its sign as a
+          plus or minus. Where nobody voted with the ruling, nobody is paid: the court sends that
+          dispute's PNK and fee out of the court, so the PNK does not net to zero across it. Dispute
+          282 is one.
         </Body>
         <Body>
-          Both figures lag the rest of this page, and legitimately. A payout is written when the
-          court <Term>executes</Term> a dispute, which is a later transaction than ruling it — so a
-          dispute counted in the coherence figures may have paid nothing yet. That is a delay in the
-          court, not a gap in this read.
+          Both figures lag the rest of this page. A payout is written when the court{" "}
+          <Term>executes</Term> a dispute, which is a later transaction than ruling it, so a dispute
+          counted in the coherence figures may not have paid anything yet.
         </Body>
       </Section>
 
@@ -458,15 +448,13 @@ export function MethodPage() {
           right. Such disputes are counted, and marked wherever they are counted.
         </Body>
         <Body>
-          The matrix is sparse, and that is its normal state. Jurors are drawn at random, so a blank
-          cell means an agent juror was not drawn for that dispute — never that it failed to act. An
-          agent juror added to the roster before the court has ever drawn it reads the same way down
-          its whole column: not drawn, not failed.
+          The matrix is normally sparse. Jurors are drawn at random, so a blank cell means an agent
+          juror was not drawn for that dispute, never that it failed to act. An agent juror added to
+          the roster before the court has drawn it is blank down its whole column.
         </Body>
         <Body>
-          Nothing here is sampled or estimated. Where a figure could not be read it is absent and
-          said to be absent, and where a source failed the page says so where the figure would have
-          been.
+          Nothing here is sampled or estimated. A figure that could not be read is left out and
+          marked as missing, and where a source failed, the page says so in its place.
         </Body>
       </Section>
 
@@ -477,28 +465,25 @@ export function MethodPage() {
       <Section id="partial" heading="Partial reads, and what a banner over these figures means">
         <Body>
           Every figure here is read live in your browser from four public endpoints, and any of them
-          can fail or answer short. When one does, this dashboard says so twice: in the place where
-          the missing figure would have been, and once in a banner across the top of the page. It
-          never fills the gap in — what could not be read is shown as unknown, never as zero and
-          never as nothing at all.
+          can fail or answer short. When one does, this dashboard says so twice: where the missing
+          figure would have been, and in a banner across the top of the page. What could not be read
+          is shown as unknown, never as zero or as a blank.
         </Body>
         <Body>
-          The distinction the banner draws is between a failure that changes a number and one that
-          changes only a label. The core subgraph, the template subgraph and the Arbitrum endpoint
-          carry figures, or the identity of the rows those figures sit in, so a failure of any of
-          them raises the banner on every page that shows a figure read from it, and nothing on that
-          page should be quoted. Ethereum mainnet carries only the agent jurors' ENS nicknames and
-          avatars, on which no measurement depends: when it fails you get an amber note saying names
-          have fallen back to this repository's own roster, and every figure on the page is still
-          whole.
+          The banner separates a failure that changes a number from one that changes only a label.
+          The core subgraph, the template subgraph and the Arbitrum endpoint carry figures, or the
+          identity of the rows those figures sit in, so a failure of any of them raises the banner
+          on every page that shows a figure read from it, and nothing on that page should be quoted.
+          Ethereum mainnet carries only the agent jurors' ENS nicknames and avatars, which no
+          measurement depends on: when it fails, an amber note says the names have fallen back to
+          this repository's own roster, and every figure on the page is still complete.
         </Body>
         <Body>
-          A dispute whose draws could not be read is drawn as a row of <Term>Unknown</Term> cells —
-          a question mark in every cell, and a "Not read" flag on the row — and is left out of every
-          total above it. That is deliberately as far as possible from a blank cell, which means the
-          opposite: an agent juror was not drawn for that dispute, which is the ordinary state of a
-          sparse matrix and not a gap in anything. Retrying from the banner re-reads the failing
-          source without a page reload, and the banner goes when it succeeds.
+          A dispute whose draws could not be read is drawn as a row of <Term>Unknown</Term> cells,
+          with a question mark in every cell and a "Not read" flag on the row, and is left out of
+          every total above it. It looks nothing like a blank cell, which means the agent juror was
+          not drawn for that dispute. Retrying from the banner re-reads the failing source without a
+          page reload, and the banner goes when it succeeds.
         </Body>
       </Section>
 
@@ -510,11 +495,12 @@ export function MethodPage() {
           resolver template subgraph for what each dispute is about; an Arbitrum RPC for the
           commitment logs, the period-opening logs and the transactions that sent them, and the
           court's own parameter history; and Ethereum mainnet for the agent jurors' ENS names and
-          avatars. There is no backend, no database and no stored copy — a reload reads again.
+          avatars. There is no backend and no database. Your browser keeps what it last read for up
+          to a day so the page opens faster, and reads every source again each time it loads.
         </Body>
         <Body>
-          This dashboard is read-only forever. It has no wallet, holds no key, and can neither vote
-          nor stake; the browser policy it ships under would break loudly if it tried.
+          This dashboard is read-only, and always will be. It has no wallet, holds no key, and can
+          neither vote nor stake.
         </Body>
       </Section>
     </View>
