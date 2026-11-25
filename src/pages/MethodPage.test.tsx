@@ -90,11 +90,10 @@ describe("the method page", () => {
     expect(section).toHaveTextContent(/From 13 Nov/i);
   });
 
-  it("says every change after the second moved the evidence period and no commit or vote window", () => {
-    // Ticket 19. The court was reconfigured on 26 August and dispute 152 is older than that
-    // change, and its draws' times were still taken against today's windows, which is a
-    // contradiction to anyone who has not been told that only the commit and vote windows matter
-    // to them. This is where they are told.
+  it("says every change after the second moved the evidence period alone", () => {
+    // Ticket 19, then #39. Since ADR-0010 no commit or reveal time is measured against a window,
+    // so the section no longer explains how dispute 152's were: what is left is the history, and
+    // the one dispute whose timeline shows a different maximum.
     renderAt("/method");
 
     const section = screen.getByRole("region", { name: /the window/i });
@@ -103,11 +102,22 @@ describe("the method page", () => {
       /Every change since has moved the evidence period alone: from 45 minutes to 10 on 26 August, to 5 on 2 November, and back to 10 on 13 November/i,
     );
     expect(section).toHaveTextContent(
-      /None of the three reconfigurations since moved a commit or vote window/i,
+      /Its timeline gives 8 hours as the most its commit and vote periods were allowed/i,
     );
+    expect(section).not.toHaveTextContent(/commit and reveal times/i);
+  });
+
+  it("sends a reader to each agent juror's page for payouts, not to the column headers", () => {
+    // #39. Past 40 disputes the matrix is compact, and the compact header drops ETH and PNK
+    // (`Marginals.test.tsx`), so no column header on the live site shows a payout.
+    renderAt("/method");
+
+    const section = screen.getByRole("region", { name: /what each agent juror has earned/i });
+
     expect(section).toHaveTextContent(
-      /dispute 152 ran under a configuration the court has since replaced, and still its draws' commit and reveal times were taken against the windows the court holds now/i,
+      /Each agent juror's own page, reached from Agent jurors, also states what it has been paid/i,
     );
+    expect(section).not.toHaveTextContent(/Each column header also states/i);
   });
 
   it("says the evidence change does reach the median time to appeal, and why", () => {
@@ -121,7 +131,9 @@ describe("the method page", () => {
     expect(section).not.toHaveTextContent(
       /nothing on this dashboard is measured from the evidence/i,
     );
-    expect(section).toHaveTextContent(/median time to appeal is the exception/i);
+    expect(section).toHaveTextContent(
+      /The evidence changes do reach one figure, the median time to appeal/i,
+    );
     expect(section).toHaveTextContent(
       /configured for 45 minutes of evidence, and one created between 2 and 13 November for 5, where one created today is configured for 10/i,
     );

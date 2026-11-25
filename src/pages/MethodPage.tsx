@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Link } from "react-router";
 import styled from "styled-components";
 import { useDocumentTitle } from "../chrome/title";
 import { View } from "../chrome/View";
@@ -30,11 +31,12 @@ import { REFERENCE_COURT_ID } from "../performance/reference";
  * nightly and fails if the court is ever reconfigured again.
  *
  * **That guard has fired twice: rewriting this section was ticket 19, then #30.** Court 34 is a live
- * demo instrument and its periods get retimed to suit a demo, so expect it again. Two things
- * to hold on to when it does. The prose here counts *configurations*, which is not the count
- * of changes that moved a commit or vote window — the last three moved the evidence period alone.
- * And the section has to keep saying so: a reader who knows the court was reconfigured on 26
- * August is owed the reason dispute 152's per-draw times were taken against today's windows.
+ * demo instrument and its periods get retimed to suit a demo, so expect it again. The prose here
+ * counts *configurations*, which is not the count of changes that moved a commit or vote window —
+ * the last three moved the evidence period alone. Since ADR-0010 no per-draw time is measured
+ * against a window, so the configurations reach the page in two places only: each period's
+ * "(max …)" on a dispute's timeline, and the headline below. #39 cut the paragraphs that justified
+ * a commit and reveal comparison nothing makes any more.
  * **It does move one figure**: the headline median time to appeal runs from a dispute's
  * creation, so the evidence window is inside it, and nothing on the matrix marks the disputes
  * created before 26 August. The section says both halves, and it is the only place either is said.
@@ -94,6 +96,12 @@ const Heading = styled.h2`
 
 const Body = styled.p`
   color: ${({ theme }) => theme.textBody};
+
+  /* Permanently underlined: base.css strips every anchor's underline, and the accent alone is
+     not enough contrast against body ink to mark a link inside a sentence. */
+  a {
+    text-decoration: underline;
+  }
 `;
 
 const Term = styled.span`
@@ -379,25 +387,20 @@ export function MethodPage() {
 
         <Body>
           Dispute 151 is the only dispute that ran under the first configuration: the change was
-          mined 48 minutes before dispute 152 was created. Its commit and vote periods ran under
-          windows of 8 hours rather than 45 and 30 minutes, so its draws' commit and reveal times
-          cannot be set beside any later dispute's, and nothing here sets them side by side.
+          mined 48 minutes before dispute 152 was created. Its timeline gives 8 hours as the most
+          its commit and vote periods were allowed, where every later dispute's gives 45 and 30
+          minutes.
         </Body>
 
         <Body>
-          None of the three reconfigurations since moved a commit or vote window. So dispute 152 ran
-          under a configuration the court has since replaced, and still its draws' commit and reveal
-          times were taken against the windows the court holds now.
-        </Body>
-
-        <Body>
-          The median time to appeal is the exception, because it is measured from a dispute's
-          creation and so spans the evidence period too. A dispute created before 26 August was
-          configured for 45 minutes of evidence, and one created between 2 and 13 November for 5,
-          where one created today is configured for 10, so their times to appeal are not the same
-          measurement. The median time to appeal still counts all of them, dispute 151's 12-hour
-          evidence period included. Where a configured window would otherwise stand beside the
-          evidence period, the dispute view gives the count of evidence submissions instead.
+          The evidence changes do reach one figure, the median time to appeal, because it is
+          measured from a dispute's creation and so spans the evidence period. A dispute created
+          before 26 August was configured for 45 minutes of evidence, and one created between 2 and
+          13 November for 5, where one created today is configured for 10, so their times to appeal
+          are not the same measurement. The median time to appeal still counts all of them, dispute
+          151's 12-hour evidence period included. Where a configured window would otherwise stand
+          beside the evidence period, the dispute view gives the count of evidence submissions
+          instead.
         </Body>
 
         <Body>
@@ -422,10 +425,11 @@ export function MethodPage() {
           dimension anyone is ranked on. */}
       <Section id="rewards" heading="What each agent juror has earned">
         <Body>
-          Each column header also states what that agent juror has been paid: cumulative ETH and net
-          PNK, summed over every dispute the court has executed. These are context beside the
-          measures rather than a dimension anyone is ranked on, and nothing on this dashboard is
-          ordered by them.
+          Each agent juror's own page, reached from <Link to="/agent-jurors">Agent jurors</Link>,
+          also states what it has been paid: cumulative ETH and net PNK, summed over every dispute
+          the court has executed. The matrix's column headers leave them out. These are context
+          beside the measures rather than a dimension anyone is ranked on, and nothing on this
+          dashboard is ordered by them.
         </Body>
         <Body>
           The ETH is the arbitration fee, and the court pays it <Term>per vote ID</Term> rather than
